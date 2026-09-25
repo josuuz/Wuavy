@@ -1,0 +1,149 @@
+.footer {
+  padding: clamp(8px, 1vw, 16px);
+  background: var(--wuavy-carbon);
+}
+
+.panel {
+  position: relative;
+  overflow: clip;
+  padding-top: var(--space-4);
+  border-radius: calc(clamp(18px, 1.2vw + 10px, 28px) * 1.4);
+  background: var(--wuavy-graphite);
+  color: var(--wuavy-paper);
+}
+
+.grid {
+  row-gap: var(--space-3);
+}
+
+.lead {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  align-content: start;
+}
+
+.line {
+  font-size: var(--fs-h3);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  max-width: 16ch;
+}
+
+.col {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.title {
+  margin-bottom: 0.4rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wuavy-stone);
+}
+
+.titleGap {
+  margin-top: var(--space-2);
+}
+
+.col li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--gutter);
+}
+
+.priced li {
+  flex-direction: column;
+  align-items: start;
+  gap: 0;
+  margin-bottom: 0.3rem;
+}
+
+.col a {
+  display: inline-block;
+  padding-block: 0.2rem;
+}
+
+.price {
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--wuavy-stone);
+}
+
+@media (hover: hover) {
+  .col a:hover,
+  .legalLinks a:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+
+.pending {
+  color: var(--wuavy-stone);
+}
+
+.legal {
+  margin-top: var(--space-4);
+  row-gap: 0.6rem;
+  font-size: var(--fs-micro);
+  color: var(--wuavy-stone);
+}
+
+.legal > span,
+.legalLinks {
+  grid-column: 1 / -1;
+}
+
+.legalLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem var(--space-2);
+}
+
+.legalLinks a {
+  color: var(--wuavy-paper);
+}
+
+.mark {
+  margin-top: var(--space-3);
+  padding-inline: var(--margin);
+  margin-bottom: -2.2%;
+  color: color-mix(in srgb, var(--wuavy-paper) 92%, transparent);
+}
+
+@media (min-width: 640px) {
+  .col {
+    grid-column: span 6;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lead {
+    grid-column: 1 / span 5;
+  }
+
+  .col {
+    grid-column: span 2;
+  }
+
+  .col:nth-of-type(2) {
+    grid-column: span 3;
+  }
+
+  .legal > span {
+    grid-column: 1 / span 6;
+  }
+
+  .legalLinks {
+    grid-column: 7 / span 6;
+    justify-content: flex-end;
+  }
+}

@@ -1,0 +1,102 @@
+.trigger {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-height: 2.75rem;
+  padding-inline: 0.5rem;
+  cursor: pointer;
+}
+
+@media (min-width: 1024px) {
+  .trigger {
+    display: none;
+  }
+}
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0 var(--margin) max(var(--margin), env(safe-area-inset-bottom));
+  border: 0;
+  background: var(--surface);
+  color: var(--text);
+  flex-direction: column;
+}
+
+.dialog[open] {
+  display: flex;
+}
+
+.dialog::backdrop {
+  background: var(--wuavy-black);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-h);
+}
+
+.brand {
+  width: clamp(76px, 4vw + 52px, 116px);
+}
+
+.nav {
+  margin-top: var(--space-4);
+}
+
+.nav li {
+  overflow: clip;
+}
+
+.link {
+  display: block;
+  font-size: clamp(2.75rem, 1rem + 9vw, 5.5rem);
+  font-weight: var(--wuavy-display);
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  padding-block: 0.08em;
+}
+
+.dialog[open] .link {
+  animation: menu-in var(--duration-scene) var(--wuavy-ease-out)
+    calc(80ms + var(--i) * var(--wuavy-wave-step)) both;
+}
+
+.bottom {
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+
+@keyframes menu-in {
+  from {
+    transform: translateY(100%);
+    font-stretch: 125%;
+  }
+  to {
+    transform: none;
+    font-stretch: 100%;
+  }
+}
+
+/* Light tier: the links rise without the width shift, which reflows them every frame. */
+@keyframes menu-in-lite {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+:global(html[data-perf="lite"]) .dialog[open] .link {
+  animation-name: menu-in-lite;
+}

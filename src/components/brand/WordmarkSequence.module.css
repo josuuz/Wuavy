@@ -1,0 +1,110 @@
+/*
+  Timings from brandbook/motion/logo.html (ms from --t0):
+  cross 0–560 · U A V Y from 360, 84 apart, 640 each · channel 1050–1810.
+  Base styles are the resting frame; the keyframes below carry the start.
+*/
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* The channel overshoots the letters; let it, but never far enough to reach type. */
+  overflow: visible;
+  clip-path: inset(-6% -2% -6% -2%);
+}
+
+.svg path,
+.svg line {
+  transform-box: fill-box;
+}
+
+/* The two Vs of the W cross, then hand over to the real W (its slits open). */
+.vLeft,
+.vRight {
+  opacity: 0;
+}
+
+.vLeft {
+  animation: logo-v-left 560ms var(--wuavy-ease-out) var(--t0) backwards;
+}
+
+.vRight {
+  animation: logo-v-right 560ms var(--wuavy-ease-out) var(--t0) backwards;
+}
+
+.w {
+  animation: swap-in 1ms linear calc(var(--t0) + 559ms) backwards;
+}
+
+/* U, A, V, Y propagate on width from their left edge. */
+.letter {
+  transform-origin: 0 50%;
+  animation: logo-width 640ms var(--wuavy-ease-out) calc(var(--t0) + 360ms + var(--n) * 84ms) both;
+}
+
+/* The channel draws in from the top left and leaves at the bottom right:
+   no signal remains at rest. */
+.channel {
+  stroke: var(--mark);
+  stroke-linecap: butt;
+  fill: none;
+  stroke-dasharray: 1;
+  stroke-dashoffset: -1;
+  animation: logo-channel 760ms var(--wuavy-ease-inout) calc(var(--t0) + 1050ms) both;
+}
+
+/* Keyframes are local to this module (CSS Modules scope @keyframes). */
+@keyframes logo-v-left {
+  from {
+    transform: translateX(-22%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes logo-v-right {
+  from {
+    transform: translateX(22%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes logo-width {
+  from {
+    transform: scaleX(1.45);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes logo-channel {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+
+/* The two crossing Vs hand over to the real W, whose slits open. */
+@keyframes swap-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

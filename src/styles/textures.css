@@ -1,0 +1,91 @@
+/*
+  Texture system (site v2). Five textures, at most two per section.
+  Each one comes from the brand, not from decoration:
+
+  T01 Grain   — film grain over a surface; gives flat fills a material.
+  T02 Grid    — the real 12-column grid, drawn: the page shows its own module.
+  T03 Light   — one localized light behind what matters (static or following the pointer).
+  T04 Wave    — frequency lines drifting (components/brand/WaveField).
+  T05 Band    — only the docked header: content passes under it.
+
+  Usage: add the class to a positioned element (every Section already is).
+  Colours read the surface tokens of the element, so one class works on
+  Black, Carbon, Paper and Fog alike.
+*/
+
+/* ── T01 Grain ─────────────────────────────────────────────── */
+.tx-grain {
+  isolation: isolate;
+}
+
+.tx-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image: var(--grain);
+  background-size: 180px 180px;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+}
+
+/* Light tier: a blended layer over every section costs the GPU on each
+   scroll frame; on small screens and weaker machines the grain is dropped. */
+html[data-perf="lite"] .tx-grain::after {
+  content: none;
+}
+
+/* ── T02 Technical grid: column starts of the 12-column frame ── */
+.tx-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  --col: calc((100% - 2 * var(--margin) + var(--gutter)) / 12);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--text) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(to left, color-mix(in srgb, var(--text) 8%, transparent) 1px, transparent 1px);
+  background-size:
+    var(--col) 100%,
+    100% 100%;
+  background-position:
+    var(--margin) 0,
+    calc(-1 * var(--margin)) 0;
+  background-repeat: repeat-x, no-repeat;
+  /* The grid is a presence, not a cage: it fades in and out vertically. */
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 70%, transparent);
+}
+
+/* Mobile draws four of the twelve columns: 1, 4, 7, 10. */
+@media (max-width: 767px) {
+  .tx-grid::before {
+    --col: calc((100% - 2 * var(--margin) + var(--gutter)) / 4);
+  }
+}
+
+/* Content sits above the drawn grid. */
+.tx-grid > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── T03 Light ─────────────────────────────────────────────── */
+.tx-light {
+  position: absolute;
+  z-index: 0;
+  width: var(--light-size, 70vmax);
+  aspect-ratio: 1;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--light-color, var(--light)), transparent);
+  translate: var(--lx, 55vw) var(--ly, -10vmax);
+  transform: translate(-50%, -50%);
+}
+
+.tx-light[data-tone="signal"] {
+  --light-color: var(--light-signal);
+}

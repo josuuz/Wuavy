@@ -1,0 +1,13 @@
+.media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Brand photo treatment: monochrome, deep blacks, open highlights.
+   Client work keeps its colour (treatment "none"). */
+.mono {
+  filter: grayscale(1) contrast(1.22);
+}

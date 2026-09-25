@@ -1,0 +1,277 @@
+.section {
+  padding-block: var(--space-4) var(--section-pad);
+}
+
+.head {
+  row-gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.chapter {
+  grid-column: 1 / -1;
+  font-size: var(--fs-chapter);
+  font-weight: var(--wuavy-chapter);
+}
+
+.headline {
+  grid-column: 1 / -1;
+  max-width: 16ch;
+  font-size: var(--fs-h2);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.lead {
+  grid-column: 1 / -1;
+  max-width: 30ch;
+  color: var(--text-2);
+  font-size: var(--fs-lead);
+  line-height: 1.3;
+}
+
+.list {
+  position: relative;
+  border-bottom: var(--rule) solid var(--border);
+}
+
+/* The preview frame lives in the list (it positions against it) but is not a row. */
+.previewSlot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.row {
+  position: relative;
+  overflow: clip;
+  border-top: var(--rule) solid var(--border);
+}
+
+/* The band: Paper runs in behind the row, its leading edge on the channel angle. */
+.row::before {
+  content: "";
+  position: absolute;
+  inset: 0 -20%;
+  z-index: 0;
+  background: var(--wuavy-paper);
+  transform: translateX(-104%) skewX(var(--wuavy-angle));
+  transition: transform 620ms var(--wuavy-ease-inout);
+}
+
+.inner {
+  --muted: var(--text-2);
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-3) var(--margin);
+  transition: color 420ms var(--wuavy-ease-out) 80ms;
+}
+
+.index,
+.outcome,
+.priceLabel,
+.includesTitle {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  transition: color 420ms var(--wuavy-ease-out) 80ms;
+}
+
+.index {
+  font-variant-numeric: tabular-nums;
+}
+
+.title {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.name {
+  font-size: clamp(2.25rem, 1rem + 4.6vw, 6.5rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.price {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.priceValue {
+  font-size: var(--fs-h3);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.period {
+  margin-left: 0.1em;
+  font-size: 0.55em;
+  font-weight: var(--wuavy-chapter);
+  letter-spacing: 0;
+}
+
+.summary {
+  max-width: 38ch;
+  color: var(--muted);
+  transition: color 420ms var(--wuavy-ease-out) 80ms;
+}
+
+.includes {
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 0.45rem var(--gutter);
+  font-size: max(0.875rem, var(--fs-micro));
+  line-height: 1.3;
+}
+
+.keys li {
+  position: relative;
+  padding-left: 1rem;
+}
+
+/* Each item is marked by a short stroke on the channel angle. */
+.keys li::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: 0.2em;
+  width: 2px;
+  height: 0.9em;
+  background: var(--wuavy-signal);
+  transform: skewX(calc(var(--wuavy-angle) * -1));
+}
+
+.foot {
+  display: grid;
+  gap: var(--space-1);
+  align-content: end;
+  justify-items: start;
+}
+
+.note {
+  max-width: 30ch;
+  font-size: max(0.8125rem, var(--fs-micro));
+  line-height: 1.4;
+  color: var(--muted);
+  transition: color 420ms var(--wuavy-ease-out) 80ms;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  min-height: 2.75rem;
+  font-weight: 640;
+}
+
+.ctaText {
+  text-decoration: underline;
+  text-decoration-thickness: max(1px, 0.08em);
+  text-underline-offset: 0.28em;
+}
+
+/* The call to action covers the whole row: one big target, one short name. */
+.cta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.cta:focus-visible {
+  outline: none;
+}
+
+.row:has(.cta:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+}
+
+.arrow {
+  display: inline-block;
+  color: var(--wuavy-signal);
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .row:hover::before {
+    transform: translateX(0) skewX(var(--wuavy-angle));
+  }
+
+  .row:hover .inner {
+    --muted: var(--wuavy-ink-2);
+    color: var(--wuavy-black);
+  }
+
+  .row:hover .arrow {
+    transform: translateX(0.35em);
+  }
+
+  .row:hover :global(.m-roll-char) {
+    transform: translateY(-100%);
+  }
+}
+
+@media (min-width: 1024px) {
+  .headline {
+    grid-column: 1 / span 8;
+  }
+
+  .lead {
+    grid-column: 9 / span 4;
+    align-self: end;
+  }
+
+  .inner {
+    grid-template-columns: 4rem minmax(0, 5fr) minmax(0, 4fr) minmax(13rem, 3fr);
+    column-gap: var(--gutter);
+    row-gap: var(--space-3);
+  }
+
+  .index {
+    grid-row: 1;
+    padding-top: 0.9em;
+  }
+
+  .title {
+    grid-column: 2 / span 2;
+  }
+
+  .price {
+    grid-column: 4;
+    justify-items: end;
+    text-align: right;
+    padding-top: 0.6em;
+  }
+
+  .summary {
+    grid-column: 2;
+  }
+
+  .includes {
+    grid-column: 3;
+  }
+
+  .foot {
+    grid-column: 4;
+    justify-items: end;
+    text-align: right;
+  }
+}

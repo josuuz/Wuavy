@@ -1,0 +1,85 @@
+import type { Metadata, Viewport } from "next";
+import { Mona_Sans } from "next/font/google";
+
+import { CustomCursor, RevealObserver } from "@/components/motion";
+import { site } from "@/data/site";
+import { brandColors } from "@/lib/brand";
+import { organizationJsonLd } from "@/lib/seo";
+import "./globals.css";
+
+// One family. Both axes: weight builds hierarchy, width is reserved for motion.
+const mona = Mona_Sans({
+  subsets: ["latin"],
+  axes: ["wdth"],
+  display: "swap",
+  variable: "--font-mona",
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
+  title: {
+    default: site.title,
+    template: `%s | ${site.name}`,
+  },
+  description: site.description,
+  applicationName: site.name,
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: site.name,
+    title: site.title,
+    description: site.description,
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: site.title,
+    description: site.description,
+  },
+  alternates: {
+    canonical: "/",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: brandColors.black,
+  colorScheme: "dark light",
+};
+
+/*
+  Marks the document as scripted before first paint, so reveal content can
+  wait for the viewport. If the app never boots, the mark is removed and
+  everything simply shows (see styles/motion.css).
+
+  It also picks the motion tier before first paint: html[data-perf="lite"]
+  for touch screens, machines with few cores or little memory, Save-Data,
+  or a machine the intro measured as slow on an earlier visit. The light
+  tier keeps every signature animation and drops the costly extras.
+*/
+const bootScript = `document.documentElement.classList.add('js');try{if(sessionStorage.getItem('wuavy-intro'))document.documentElement.setAttribute('data-intro-done','')}catch(e){}try{var n=navigator,c=n.hardwareConcurrency||8,d=n.deviceMemory||8,s=n.connection&&n.connection.saveData;if(matchMedia('(pointer: coarse)').matches||c<=2||d<=2||(c<=4&&d<=4)||s||localStorage.getItem('wuavy-perf')==='lite')document.documentElement.setAttribute('data-perf','lite')}catch(e){}setTimeout(function(){if(!window.__wuavyReveal)document.documentElement.classList.remove('js')},4000);`;
+
+/*
+  The document only. Page chrome lives in route groups: (site) renders the
+  current site's header and footer; /v renders each variation's own.
+*/
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html lang="pt-BR" className={mona.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: bootScript }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
+        />
+      </head>
+      <body>
+        <a href="#conteudo" className="skip-link">
+          Pular para o conteúdo
+        </a>
+        {children}
+        <RevealObserver />
+        <CustomCursor />
+      </body>
+    </html>
+  );
+}

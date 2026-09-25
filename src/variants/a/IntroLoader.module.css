@@ -1,0 +1,85 @@
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+  color: var(--wuavy-paper);
+  /* Never trap the page: if scripts never run, the overlay dismisses itself. */
+  animation: fallback 0s linear 4.5s forwards;
+}
+
+:global(html[data-intro-done]) .intro {
+  display: none;
+}
+
+.panel {
+  position: absolute;
+  inset: 0;
+  background: var(--wuavy-carbon);
+  transition: transform 1000ms var(--wuavy-ease-inout);
+}
+
+/* The two halves meet on the channel angle: tan(20.81°) × 100svh ≈ 38svh. */
+.left {
+  clip-path: polygon(0 0, calc(50% - 19svh) 0, calc(50% + 19svh) 100%, 0 100%);
+}
+
+.right {
+  clip-path: polygon(calc(50% - 19svh + 1px) 0, 100% 0, 100% 100%, calc(50% + 19svh + 1px) 100%);
+}
+
+.intro[data-state="open"] .left {
+  transform: translateX(-72%);
+}
+
+.intro[data-state="open"] .right {
+  transform: translateX(72%);
+}
+
+.meter {
+  position: absolute;
+  left: var(--margin);
+  right: var(--margin);
+  top: 50%;
+  translate: 0 -50%;
+  transition: opacity 360ms linear;
+}
+
+.intro[data-state="open"] .meter {
+  opacity: 0;
+}
+
+.row {
+  position: relative;
+  height: clamp(18px, 1.4vw + 8px, 34px);
+}
+
+/* A line grows in when the progress passes it: density is the progress. */
+.line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: max(1.5px, 0.11vw);
+  translate: -50% 0;
+  background: currentColor;
+  transform-origin: 50% 100%;
+  transform: scaleY(clamp(0, var(--p) * 33 - var(--i), 1));
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--wuavy-stone);
+}
+
+@keyframes fallback {
+  to {
+    visibility: hidden;
+  }
+}

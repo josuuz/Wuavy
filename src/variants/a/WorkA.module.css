@@ -1,0 +1,156 @@
+.section {
+  padding-block: var(--space-4) var(--section-pad);
+}
+
+.head {
+  row-gap: var(--space-2);
+  align-items: end;
+}
+
+.counts {
+  grid-column: 1 / -1;
+}
+
+.title {
+  grid-column: 1 / -1;
+  font-size: var(--fs-h1);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.lead {
+  grid-column: 1 / -1;
+  max-width: 30ch;
+  color: var(--text-2);
+}
+
+.grid {
+  margin-top: var(--space-5);
+  row-gap: var(--space-5);
+  align-items: start;
+}
+
+.card {
+  position: relative;
+  grid-column: 1 / -1;
+}
+
+.media {
+  background: var(--wuavy-graphite);
+}
+
+.media img {
+  transition: transform var(--duration-scene) var(--wuavy-ease-out);
+}
+
+/* Each case drifts at its own speed: the grid breathes out of step. */
+@supports (animation-timeline: view()) {
+  @media (min-width: 1024px) {
+    .card {
+      animation: float linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+@keyframes float {
+  from {
+    transform: translateY(calc(var(--speed) * -1vh));
+  }
+  to {
+    transform: translateY(calc(var(--speed) * 1vh));
+  }
+}
+
+/* Reduced motion: no parallax. */
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+}
+
+.caption {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.9rem;
+  margin-top: var(--space-1);
+  align-items: baseline;
+}
+
+.number {
+  grid-row: span 2;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--wuavy-signal);
+}
+
+.name {
+  font-size: var(--fs-h3);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.meta,
+.tag {
+  grid-column: 2;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .media img {
+    transform: scale(1.05);
+  }
+
+  .card:hover .link {
+    text-decoration: underline;
+    text-decoration-thickness: max(1px, 0.06em);
+    text-underline-offset: 0.12em;
+  }
+}
+
+@media (min-width: 1024px) {
+  .counts {
+    grid-column: 1 / span 3;
+  }
+
+  .title {
+    grid-column: 4 / span 6;
+  }
+
+  .lead {
+    grid-column: 10 / span 3;
+  }
+
+  .a {
+    grid-column: 1 / span 5;
+  }
+
+  .b {
+    grid-column: 7 / span 6;
+    margin-top: 22vh;
+  }
+
+  .c {
+    grid-column: 3 / span 7;
+  }
+}

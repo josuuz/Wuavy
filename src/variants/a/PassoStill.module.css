@@ -1,0 +1,34 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Drifts with the photograph as the page scrolls (the photo's dim layer covers it too). */
+@supports (animation-timeline: scroll()) {
+  .overlay {
+    animation: drift linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 100svh;
+  }
+}
+
+@keyframes drift {
+  to {
+    transform: translateY(12%) scale(1.06);
+  }
+}
+
+/* Reduced motion: the photo holds still, so his spot does too. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
+}
+
+/* The walk has taken over: this drawing only keeps his spot (and stops its eye loop). */
+:global(html[data-passo-live]) .still {
+  display: none;
+}

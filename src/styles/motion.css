@@ -1,0 +1,265 @@
+/*
+  Motion layer — shared keyframes and the reveal gate.
+
+  The brand moves in three ways only (brand/DESIGN.md → Motion):
+  propagation (neighbours 42 ms apart), width shift (wdth 100 → 125 → 100)
+  and the channel wipe at 20.81°. Only transform, opacity, clip-path and
+  font-stretch animate. Weight and size never do.
+
+  Contract for every animated element:
+  - its base style is the FINAL state; keyframes carry the start state;
+  - it carries [data-anim] and uses `animation-fill-mode: both`;
+  - inside a [data-reveal] container it waits (paused) until the
+    RevealObserver sets [data-inview]. Without JS it simply plays.
+*/
+
+@property --reveal {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+
+/* ── Gate: wait for the viewport ───────────────────────────── */
+html.js [data-reveal]:not([data-inview]) [data-anim],
+html.js [data-reveal]:not([data-inview]) [data-anim]::after,
+html.js [data-reveal][data-anim]:not([data-inview]) {
+  animation-play-state: paused;
+}
+
+/* ── Keyframes ─────────────────────────────────────────────── */
+
+/* Word rises into its own clip (type.html entry, per word). */
+@keyframes w-rise {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(0.22em);
+  }
+  to {
+    clip-path: inset(-20% -10% -20% -10%);
+    transform: none;
+  }
+}
+
+/* Width settle: the start state is wide, the rest state is 100. */
+@keyframes w-settle {
+  from {
+    font-stretch: 125%;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(0.22em);
+  }
+  to {
+    font-stretch: 100%;
+    clip-path: inset(-20% -10% -20% -10%);
+    transform: none;
+  }
+}
+
+/* Width wave: 100 → 125 → 100. The start state is always visible. */
+@keyframes w-wave {
+  0%,
+  100% {
+    font-stretch: 100%;
+  }
+  50% {
+    font-stretch: 125%;
+  }
+}
+
+/* Plain fade for supporting text. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Channel wipe: a diagonal edge at 20.81° sweeps left to right.
+   --dx is the horizontal run of the angle across the element's height,
+   as a percentage of its width (set by the component from its aspect). */
+@keyframes channel-reveal {
+  from {
+    --reveal: 0%;
+  }
+  to {
+    --reveal: 100%;
+  }
+}
+
+/* Image settles while the channel opens over it. */
+@keyframes settle-scale {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ── Primitives (used by components/motion) ────────────────── */
+
+/* TextReveal: each word rises into its own clip, 42 ms apart. */
+.m-word {
+  display: inline-block;
+  animation: w-rise var(--duration-scene) var(--wuavy-ease-out) var(--d, 0ms) both;
+}
+
+/* Fade for supporting copy that follows a reveal. */
+.m-fade {
+  animation: fade-up var(--duration-scene) var(--wuavy-ease-out) var(--d, 0ms) both;
+}
+
+/* WidthWave: characters carry the width axis. */
+.m-char {
+  font-stretch: 100%;
+}
+
+.m-wave[data-entry="settle"] .m-char {
+  display: inline-block;
+  animation: w-settle 820ms var(--wuavy-ease-out)
+    calc(var(--d0, 0ms) + var(--i) * var(--wuavy-wave-step)) both;
+}
+
+.m-wave[data-entry="wave"] .m-char,
+.m-wave[data-waving] .m-char {
+  animation: w-wave var(--duration-scene) var(--wuavy-ease-inout)
+    calc(var(--d0, 0ms) + var(--i) * var(--wuavy-wave-step)) both;
+}
+
+/* Light tier: width is layout, so entries keep the rise and drop the width shift. */
+html[data-perf="lite"] .m-wave[data-entry="settle"] .m-char {
+  animation-name: w-rise;
+}
+
+html[data-perf="lite"] .m-wave[data-entry="wave"] .m-char {
+  animation: none;
+}
+
+/* ImageReveal: the channel wipe at 20.81°, top left to bottom right.
+   --dx is the angle's horizontal run across the height, as a fraction of the width. */
+.m-channel {
+  --run: var(--dx-m, var(--dx, 0.2));
+  --x-top: calc(var(--reveal) + var(--reveal) * var(--run) - var(--run) * 100%);
+  aspect-ratio: var(--ar-m, var(--ar));
+  clip-path: polygon(0 0, var(--x-top) 0, calc(var(--x-top) + var(--run) * 100%) 100%, 0 100%);
+  animation: channel-reveal 1100ms var(--wuavy-ease-inout) var(--d, 0ms) both;
+}
+
+@media (min-width: 768px) {
+  .m-channel {
+    --run: var(--dx, 0.2);
+    aspect-ratio: var(--ar);
+  }
+}
+
+.m-channel-media {
+  animation: settle-scale 1400ms var(--wuavy-ease-out) var(--d, 0ms) both;
+}
+
+/* LineReveal: each line rises through a mask fixed at its baseline.
+   clip-path and translate share one curve, so the mask edge stays put. */
+@keyframes line-rise {
+  from {
+    transform: translateY(100%);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    transform: none;
+    clip-path: inset(-12% -6% -28% -6%);
+  }
+}
+
+.m-line {
+  display: inline-block;
+  animation: line-rise 900ms var(--wuavy-ease-out) var(--d, 0ms) both;
+}
+
+/* The accent word: a Signal rule draws under it once its line has risen. */
+.m-emph {
+  position: relative;
+}
+
+.m-emph::after {
+  content: "";
+  position: absolute;
+  left: 0.02em;
+  right: 0.08em;
+  bottom: -0.02em;
+  height: max(3px, 0.07em);
+  background: var(--wuavy-signal);
+  transform-origin: 0 50%;
+  animation: rule-draw 700ms var(--wuavy-ease-out) calc(var(--d, 0ms) + 650ms) both;
+}
+
+@keyframes rule-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ReadReveal: dim words light up as the paragraph crosses the screen. */
+.m-read {
+  view-timeline-name: --read;
+}
+
+@supports (animation-timeline: view()) {
+  .m-read-word {
+    animation: read-on linear both;
+    animation-timeline: --read;
+    animation-range:
+      cover calc(18% + var(--i) / var(--n) * 42%)
+      cover calc(22% + var(--i) / var(--n) * 42%);
+  }
+}
+
+@keyframes read-on {
+  from {
+    opacity: 0.16;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.m-read-accent {
+  color: var(--wuavy-signal);
+}
+
+/* RollText: two stacked rows; the link hover rolls them up, letter by letter. */
+.m-roll {
+  position: relative;
+  display: inline-block;
+  overflow: clip;
+  vertical-align: top;
+}
+
+.m-roll-row {
+  display: block;
+}
+
+.m-roll-word {
+  white-space: nowrap;
+}
+
+.m-roll-row[data-under] {
+  position: absolute;
+  inset: 100% 0 auto;
+}
+
+.m-roll-char {
+  display: inline-block;
+  transition: transform var(--duration-element) var(--wuavy-ease-out) calc(var(--i) * 18ms);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(a, button):hover .m-roll-char,
+  :is(a, button):focus-visible .m-roll-char {
+    transform: translateY(-100%);
+  }
+}

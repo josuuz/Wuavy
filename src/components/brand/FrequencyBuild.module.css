@@ -1,0 +1,53 @@
+.row {
+  position: relative;
+  height: var(--line-h, clamp(14px, 0.9vw + 8px, 28px));
+}
+
+.line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--line-w, max(1.5px, 0.11vw));
+  translate: -50% 0;
+  background: var(--text-2);
+  transform-origin: 50% 100%;
+  animation: grow var(--duration-element) var(--wuavy-ease-out) var(--d) both;
+}
+
+/* The module and the first interval carry the full text colour. */
+.line[data-level="0"],
+.line[data-level="1"] {
+  background: var(--text);
+}
+
+/* Portrait: one row per level, stacked. */
+.stack {
+  display: none;
+}
+
+.stackRow {
+  --line-h: clamp(14px, 1.2vw + 10px, 26px);
+}
+
+.stackRow + .stackRow {
+  margin-top: clamp(10px, 1vw + 6px, 20px);
+}
+
+@media (orientation: portrait) {
+  .row:not(.stackRow) {
+    display: none;
+  }
+
+  .stack {
+    display: block;
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}

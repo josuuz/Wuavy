@@ -1,0 +1,48 @@
+.frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  aspect-ratio: 4 / 5;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.92;
+  transition:
+    opacity var(--duration-element) var(--wuavy-ease-out),
+    scale var(--duration-element) var(--wuavy-ease-out);
+  will-change: transform;
+}
+
+.frame:not([data-active=""]) {
+  opacity: 1;
+  scale: 1;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 520ms var(--wuavy-ease-out);
+}
+
+.slide[data-on] {
+  clip-path: inset(0);
+}
+
+.image {
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.2);
+  scale: 1.12;
+  transition: scale 900ms var(--wuavy-ease-out);
+}
+
+.slide[data-on] .image {
+  scale: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .frame {
+    display: none;
+  }
+}

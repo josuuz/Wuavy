@@ -1,0 +1,67 @@
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--radius-button);
+  background: var(--mark);
+  color: var(--on-mark);
+  font-weight: 640;
+  letter-spacing: -0.005em;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    color var(--duration-element) var(--wuavy-ease-out),
+    transform 160ms var(--wuavy-ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Press: the button answers before the page does. */
+.button:active {
+  transform: scale(0.97);
+}
+
+/* The channel: a skewed panel of the surface's text colour sweeps in. */
+.button::before {
+  content: "";
+  position: absolute;
+  inset: 0 -30%;
+  z-index: -1;
+  background: var(--text);
+  transform: translateX(-112%) skewX(var(--wuavy-angle));
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+@media (hover: hover) {
+  .button:hover {
+    color: var(--surface);
+  }
+
+  .button:hover::before {
+    transform: translateX(0) skewX(var(--wuavy-angle));
+  }
+}
+
+.button:focus-visible {
+  outline-color: var(--text);
+}
+
+.label {
+  display: inline-block;
+  /* The magnetic pull (CustomCursor) moves the label, never the hit area. */
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.md {
+  min-height: 3.25rem;
+  padding: 0 1.5rem;
+  font-size: var(--fs-body);
+}
+
+.sm {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  font-size: max(0.875rem, var(--fs-micro));
+}

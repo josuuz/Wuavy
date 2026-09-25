@@ -1,0 +1,57 @@
+.field {
+  position: relative;
+  height: var(--field-h, clamp(56px, 6vw + 24px, 120px));
+  color: var(--text-2);
+}
+
+.line {
+  position: absolute;
+  bottom: 0;
+  width: max(1.5px, 0.11vw);
+  height: 100%;
+  translate: -50% 0;
+  background: currentColor;
+  transform-origin: 50% 100%;
+  transform: scaleY(0.18);
+  opacity: 0.7;
+}
+
+.line {
+  animation: travel 3.2s var(--wuavy-ease-inout) calc(var(--i) * -42ms) infinite alternate;
+}
+
+/* Runs only while the band is on screen (RevealObserver toggles data-onscreen). */
+:global(html.js) .field:not([data-onscreen]) .line {
+  animation-play-state: paused;
+}
+
+/* Light tier and reduced motion: the band holds one frame of its wave (the
+   staggered delays freeze it mid-travel), so it still reads as frequency and
+   costs nothing. */
+:global(html[data-perf="lite"]) .line {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line {
+    animation-play-state: paused;
+  }
+}
+
+@media (max-width: 767px) {
+  .line:nth-child(odd) {
+    display: none;
+  }
+}
+
+@keyframes travel {
+  0% {
+    transform: scaleY(0.12);
+  }
+  50% {
+    transform: scaleY(0.62);
+  }
+  100% {
+    transform: scaleY(0.2);
+  }
+}

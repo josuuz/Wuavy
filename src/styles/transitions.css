@@ -1,0 +1,50 @@
+/*
+  View transitions (components/motion/PageTransition, WorkCard ↔ case cover).
+  The header keeps its own name (site-header) and never animates.
+*/
+
+::view-transition-group(site-header),
+::view-transition-old(site-header),
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+/* The header is painted before the page in the DOM; keep it above the crossing. */
+::view-transition-group(site-header) {
+  z-index: 10;
+}
+
+/* The page crossing: tan(20.81°) × 100vh ≈ 38vh of horizontal run. */
+::view-transition-new(.channel-in) {
+  animation: channel-in 820ms var(--wuavy-ease-inout) both;
+}
+
+::view-transition-old(.channel-out) {
+  animation: channel-out 820ms var(--wuavy-ease-inout) both;
+}
+
+@keyframes channel-in {
+  from {
+    clip-path: polygon(0 0, -38vh 0, 0 100%, 0 100%);
+  }
+  to {
+    clip-path: polygon(0 0, 100% 0, calc(100% + 38vh) 100%, 0 100%);
+  }
+}
+
+@keyframes channel-out {
+  to {
+    transform: translateX(-4%);
+    opacity: 0.35;
+  }
+}
+
+/* A case cover travels from its card into the case page. */
+::view-transition-group(.case-morph) {
+  animation-duration: 720ms;
+  animation-timing-function: var(--wuavy-ease-inout);
+}
+
+::view-transition-image-pair(.case-morph) {
+  isolation: auto;
+}

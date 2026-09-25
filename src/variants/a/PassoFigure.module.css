@@ -1,0 +1,123 @@
+.body {
+  fill: var(--pb, #edeeea);
+  transition: fill var(--duration-ui) linear;
+}
+
+.limb {
+  fill: none;
+  stroke: var(--pb, #edeeea);
+  stroke-width: 10.2;
+  stroke-linecap: round;
+  transition: stroke var(--duration-ui) linear;
+}
+
+.signal {
+  fill: var(--ps, #ff4513);
+}
+
+.mark,
+.eye {
+  fill: var(--pe, #000);
+  transition: fill var(--duration-ui) linear;
+}
+
+.pupil {
+  fill: var(--pb, #edeeea);
+  transition: fill var(--duration-ui) linear;
+}
+
+/* The cast shadow: the same drawing, every colour black. */
+.shadow {
+  --pb: #000;
+  --pe: #000;
+  --ps: #000;
+}
+
+/* The outline: the black silhouette grown by 2.2 units all round, so the light
+   body never dissolves into a white stripe of the crossing. */
+.outline :is(.body, .signal, .mark) {
+  stroke: #000;
+  stroke-width: 4.4;
+  stroke-linejoin: round;
+}
+
+.outline .limb {
+  stroke-width: 14.6;
+}
+
+/* ── The eyes: he looks around when he stands, and up when he walks ── */
+.look,
+.pupils {
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.blink {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* The eyes cross the head to the other side (a head turn), the pupils follow. */
+[data-mode="idle"] .look {
+  animation: look 6.4s var(--wuavy-ease-inout) 1.2s infinite;
+}
+
+[data-mode="idle"] .pupils {
+  animation: glance 6.4s var(--wuavy-ease-inout) 1.2s infinite;
+}
+
+[data-mode="idle"] .blink {
+  animation: blink 6.4s linear 1.2s infinite;
+}
+
+[data-mode="walk"] .pupils {
+  transform: translate(-2px, -8px);
+}
+
+@keyframes look {
+  0%,
+  26% {
+    transform: none;
+  }
+  34%,
+  60% {
+    transform: translateX(-39.6px);
+  }
+  68%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes glance {
+  0%,
+  8% {
+    transform: none;
+  }
+  14%,
+  22% {
+    transform: translate(1px, -5px);
+  }
+  30%,
+  60% {
+    transform: translateX(-7.8px);
+  }
+  68%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes blink {
+  0%,
+  45%,
+  48.5%,
+  88%,
+  91.5%,
+  100% {
+    transform: none;
+  }
+  46.6%,
+  89.6% {
+    transform: scaleY(0.12);
+  }
+}

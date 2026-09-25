@@ -1,0 +1,156 @@
+/*
+  WUAVY — design tokens for the website.
+  Source of truth: ID Wuavy/brand/tokens/wuavy-tokens.css + brand/DESIGN.md (Direção A, Frequência).
+  Every brand value lives here once. Components read semantic tokens (--surface, --text…),
+  never raw hex. Tailwind reads these through @theme inline in app/globals.css.
+*/
+
+:root {
+  /* ── Colour: brand primitives ─────────────────────────────── */
+  --wuavy-black: #000000;
+  --wuavy-paper: #edeeea;
+  --wuavy-signal: #ff4513; /* accent: details, states, lines, one word on dark (6.1:1 on black) */
+  --wuavy-graphite: #1e1f1f; /* dark surfaces, never text */
+  --wuavy-stone: #8c8e89; /* secondary text on Black only */
+  --wuavy-concrete: #d5d6d1; /* rules and fills on Paper */
+  --wuavy-ink-2: #4a4b48; /* secondary text on Paper */
+
+  /* Depth: neutral steps between Black and Paper (site v2). Same hue as the
+     brand greys, so surfaces differ by light, never by colour. */
+  --wuavy-carbon: #0c0d0d; /* the dark between Black and Graphite */
+  --wuavy-fog: #e3e4df; /* the light between Paper and Concrete */
+
+  /* ── Type: one family, Mona Sans (wght 200–900, wdth 75–125) ─ */
+  --wuavy-display: 900; /* caps · wdth 100 · -0.03em · lh 0.84 */
+  --wuavy-headline: 800; /* sentence case · -0.025em · lh 1.0 */
+  --wuavy-chapter: 640; /* chapter heads ("01 Ideia") */
+  --wuavy-micro: 560; /* caps · +0.06em · tabular */
+  --wuavy-body: 420; /* lh 1.42 · max 65ch */
+
+  /* Fluid scale (rem + vw so browser zoom still scales text).
+     Brand boards are drawn at 1920; the web keeps their ratios at reading distance. */
+  --fs-micro: clamp(0.6875rem, 0.62rem + 0.18vw, 0.8125rem);
+  --fs-chapter: clamp(0.8125rem, 0.68rem + 0.3vw, 1.0625rem);
+  --fs-body: clamp(1rem, 0.86rem + 0.3vw, 1.1875rem);
+  --fs-lead: clamp(1.1875rem, 0.8rem + 0.8vw, 1.75rem);
+  --fs-h3: clamp(1.625rem, 0.95rem + 1.45vw, 2.75rem);
+  --fs-h2: clamp(2.25rem, 0.9rem + 3.5vw, 5.5rem);
+  --fs-h1: clamp(2.625rem, 0.9rem + 5vw, 7.75rem);
+
+  /* ── Geometry: taken from the logotype ────────────────────── */
+  --wuavy-angle: 20.81deg; /* the only diagonal in the system */
+  --wuavy-interval: 0.08; /* AV channel, W slits, W notch — fraction of cap height */
+  --wordmark-ratio: 4.1166; /* standard master: width / cap height */
+
+  /* ── Grid: 12 columns, margin 1/24 of the width, gutter 1/80 ─ */
+  --grid-columns: 12;
+  --margin: max(16px, 4.1667vw);
+  --gutter: max(12px, 1.25vw);
+  --rule: max(1px, 0.06vw);
+  --header-h: clamp(3.25rem, 2.4rem + 1.6vw, 4.5rem);
+
+  /* ── Space: one scale, used for rhythm between blocks ─────── */
+  --space-1: clamp(0.5rem, 0.4rem + 0.4vw, 1rem);
+  --space-2: clamp(1rem, 0.75rem + 0.9vw, 2rem);
+  --space-3: clamp(1.5rem, 1rem + 1.9vw, 3.5rem);
+  --space-4: clamp(2.5rem, 1.5rem + 4vw, 6.5rem);
+  --space-5: clamp(4rem, 2.2rem + 7vw, 11rem);
+  --section-pad: var(--space-5);
+
+  /* ── Radius: surfaces and images have none; buttons get 3px ─ */
+  --radius-button: 3px;
+
+  /* ── Motion (brand: propagation, width shift, channel wipe) ─ */
+  --wuavy-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --wuavy-ease-inout: cubic-bezier(0.76, 0, 0.24, 1);
+  --duration-ui: 180ms; /* micro-interactions */
+  --duration-element: 420ms; /* elements */
+  --duration-scene: 760ms; /* scenes, the wave */
+  --wuavy-wave-step: 42ms; /* delay between neighbours in a propagation */
+
+  /* ── Texture (styles/textures.css) ───────────────────────── */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1.1 -.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-opacity: 0.16;
+  --grain-blend: overlay;
+  --light: color-mix(in srgb, var(--wuavy-paper) 7%, transparent);
+  --light-signal: color-mix(in srgb, var(--wuavy-signal) 10%, transparent);
+  --shadow-lift: 0 -2.5rem 5rem -1rem rgb(0 0 0 / 0.45);
+
+  /* ── Semantic surface tokens (default surface: Black) ─────── */
+  --surface: var(--wuavy-black);
+  --text: var(--wuavy-paper);
+  --text-2: var(--wuavy-stone);
+  --border: color-mix(in srgb, var(--wuavy-paper) 20%, transparent);
+  --mark: var(--wuavy-signal); /* the one signal on this surface */
+  --on-mark: var(--wuavy-black);
+  --focus: var(--wuavy-signal);
+}
+
+/* Surfaces. A section declares data-surface; everything inside inherits
+   the right text, rule and signal colours. */
+[data-surface="black"] {
+  --surface: var(--wuavy-black);
+  --text: var(--wuavy-paper);
+  --text-2: var(--wuavy-stone);
+  --border: color-mix(in srgb, var(--wuavy-paper) 20%, transparent);
+  --mark: var(--wuavy-signal);
+  --on-mark: var(--wuavy-black);
+  --focus: var(--wuavy-signal);
+}
+
+[data-surface="carbon"] {
+  --surface: var(--wuavy-carbon);
+  --text: var(--wuavy-paper);
+  --text-2: var(--wuavy-stone);
+  --border: color-mix(in srgb, var(--wuavy-paper) 16%, transparent);
+  --mark: var(--wuavy-signal);
+  --on-mark: var(--wuavy-black);
+  --focus: var(--wuavy-signal);
+}
+
+[data-surface="fog"] {
+  --surface: var(--wuavy-fog);
+  --text: var(--wuavy-black);
+  --text-2: var(--wuavy-ink-2);
+  --border: color-mix(in srgb, var(--wuavy-black) 16%, transparent);
+  --mark: var(--wuavy-signal);
+  --on-mark: var(--wuavy-black);
+  --focus: var(--wuavy-black);
+  --grain-opacity: 0.22;
+  --grain-blend: multiply;
+  --light: color-mix(in srgb, #fff 55%, transparent);
+}
+
+[data-surface="paper"] {
+  --grain-opacity: 0.2;
+  --grain-blend: multiply;
+  --light: color-mix(in srgb, #fff 55%, transparent);
+  --surface: var(--wuavy-paper);
+  --text: var(--wuavy-black);
+  --text-2: var(--wuavy-ink-2);
+  --border: color-mix(in srgb, var(--wuavy-black) 18%, transparent);
+  --mark: var(--wuavy-signal);
+  --on-mark: var(--wuavy-black);
+  --focus: var(--wuavy-black);
+}
+
+/* On Signal the signal is the field itself, so the mark turns Black. */
+[data-surface="signal"] {
+  --surface: var(--wuavy-signal);
+  --text: var(--wuavy-black);
+  --text-2: var(--wuavy-black);
+  --border: color-mix(in srgb, var(--wuavy-black) 28%, transparent);
+  --mark: var(--wuavy-black);
+  --on-mark: var(--wuavy-paper);
+  --focus: var(--wuavy-black);
+}
+
+[data-surface="graphite"] {
+  --surface: var(--wuavy-graphite);
+  --text: var(--wuavy-paper);
+  --text-2: var(--wuavy-stone);
+  --border: color-mix(in srgb, var(--wuavy-paper) 16%, transparent);
+  --mark: var(--wuavy-signal);
+  --on-mark: var(--wuavy-black);
+  --focus: var(--wuavy-signal);
+}

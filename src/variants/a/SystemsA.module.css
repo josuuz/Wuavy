@@ -1,0 +1,187 @@
+.section {
+  padding-block: var(--space-3) var(--space-4);
+  overflow: clip;
+}
+
+.light {
+  --light-size: 90vmax;
+  --lx: 88vw;
+  --ly: 8vmax;
+}
+
+.head {
+  position: relative;
+  z-index: 1;
+  row-gap: var(--space-3);
+}
+
+.chapter {
+  grid-column: 1 / -1;
+  margin-bottom: var(--space-2);
+}
+
+.headline {
+  grid-column: 1 / -1;
+  font-size: var(--fs-h2);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.aside {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  align-content: end;
+}
+
+.lead {
+  max-width: 40ch;
+  color: var(--text-2);
+}
+
+.price {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: var(--space-1);
+  border-top: var(--rule) solid var(--border);
+  width: 100%;
+}
+
+.priceLabel {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.priceValue {
+  font-size: var(--fs-h3);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+/* ── The spec sheet: hairline cells, one light under the pointer ── */
+.grid {
+  position: relative;
+  z-index: 1;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: var(--space-4);
+  border-top: var(--rule) solid var(--border);
+  border-left: var(--rule) solid var(--border);
+}
+
+.cell {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  min-height: clamp(11rem, 8rem + 8vw, 17rem);
+  padding: var(--space-2);
+  border-right: var(--rule) solid var(--border);
+  border-bottom: var(--rule) solid var(--border);
+  overflow: clip;
+}
+
+.cell > :not([data-spot]) {
+  position: relative;
+}
+
+.spot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 26rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--wuavy-signal) 20%, transparent), transparent);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-element) var(--wuavy-ease-out);
+}
+
+.index {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--wuavy-signal);
+}
+
+.name {
+  margin-top: var(--space-3);
+  font-size: clamp(1.25rem, 0.95rem + 0.9vw, 1.875rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.text {
+  font-size: max(0.875rem, var(--fs-micro));
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* Its own layer only while it follows the pointer: moving it is then free. */
+  .cell:hover .spot {
+    opacity: 1;
+    will-change: translate;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .cell {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(2.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 479px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cell {
+    min-height: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .headline {
+    grid-column: 1 / span 7;
+  }
+
+  .aside {
+    grid-column: 9 / span 4;
+  }
+
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

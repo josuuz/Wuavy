@@ -1,0 +1,150 @@
+.section {
+  padding-block: var(--space-3) var(--section-pad);
+}
+
+.side {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+
+.chapter {
+  margin-bottom: var(--space-2);
+}
+
+.headline {
+  font-size: var(--fs-h2);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.more {
+  color: var(--text-2);
+}
+
+.more a {
+  color: var(--text);
+}
+
+.list {
+  grid-column: 1 / -1;
+  margin-top: var(--space-4);
+  border-bottom: var(--rule) solid var(--border);
+}
+
+.item {
+  border-top: var(--rule) solid var(--border);
+}
+
+.question {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 1.5rem;
+  align-items: baseline;
+  gap: var(--gutter);
+  padding-block: var(--space-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+.question::-webkit-details-marker {
+  display: none;
+}
+
+.index {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  transition: color var(--duration-ui) linear;
+}
+
+.q {
+  font-size: var(--fs-lead);
+  font-weight: 640;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-wrap: pretty;
+}
+
+/* Plus → minus: the vertical stroke leans to the channel angle and folds away. */
+.icon {
+  position: relative;
+  align-self: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  justify-self: end;
+}
+
+.icon::before,
+.icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  translate: -50% -50%;
+  transition:
+    transform var(--duration-element) var(--wuavy-ease-out),
+    background-color var(--duration-ui) linear;
+}
+
+.icon::after {
+  transform: rotate(90deg);
+}
+
+.item[open] .icon::after {
+  transform: rotate(180deg) scaleX(0);
+}
+
+.item[open] .icon::before {
+  background: var(--wuavy-signal);
+}
+
+.item[open] .index {
+  color: var(--text);
+}
+
+.answer {
+  max-width: 58ch;
+  padding: 0 0 var(--space-2) calc(2.5rem + var(--gutter));
+  color: var(--text-2);
+}
+
+@media (hover: hover) {
+  .question:hover .index {
+    color: var(--text);
+  }
+}
+
+.item[open] .answer {
+  animation: open var(--duration-element) var(--wuavy-ease-out) both;
+}
+
+@keyframes open {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .side {
+    grid-column: 1 / span 4;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--header-h) + var(--space-3));
+  }
+
+  .list {
+    grid-column: 6 / span 7;
+    margin-top: calc(var(--space-2) + var(--fs-chapter) * 1.5 + var(--space-2));
+  }
+}

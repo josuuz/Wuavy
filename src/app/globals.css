@@ -1,0 +1,106 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+@import "../styles/base.css";
+@import "../styles/motion.css";
+@import "../styles/textures.css";
+@import "../styles/transitions.css";
+
+/*
+  Tailwind reads the brand tokens; it never defines its own values.
+  The default palette is removed so only brand colours exist as utilities.
+*/
+@theme inline {
+  --color-*: initial;
+  --color-black: var(--wuavy-black);
+  --color-paper: var(--wuavy-paper);
+  --color-signal: var(--wuavy-signal);
+  --color-graphite: var(--wuavy-graphite);
+  --color-stone: var(--wuavy-stone);
+  --color-concrete: var(--wuavy-concrete);
+  --color-ink-2: var(--wuavy-ink-2);
+  --color-carbon: var(--wuavy-carbon);
+  --color-fog: var(--wuavy-fog);
+
+  /* Semantic colours follow the surface the element sits on. */
+  --color-surface: var(--surface);
+  --color-fg: var(--text);
+  --color-fg-2: var(--text-2);
+  --color-line: var(--border);
+  --color-mark: var(--mark);
+  --color-on-mark: var(--on-mark);
+
+  --font-sans: var(--font-mona), "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --text-micro: var(--fs-micro);
+  --text-chapter: var(--fs-chapter);
+  --text-body: var(--fs-body);
+  --text-lead: var(--fs-lead);
+  --text-h3: var(--fs-h3);
+  --text-h2: var(--fs-h2);
+  --text-h1: var(--fs-h1);
+
+  --ease-out: var(--wuavy-ease-out);
+  --ease-in-out: var(--wuavy-ease-inout);
+}
+
+/* ── Grid: 12 columns, margin 1/24, gutter 1/80 ─────────────── */
+@utility frame {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  column-gap: var(--gutter);
+  padding-inline: var(--margin);
+}
+
+@utility px-frame {
+  padding-inline: var(--margin);
+}
+
+/* ── Type roles (brand/DESIGN.md → Typography) ──────────────── */
+@utility type-display {
+  font-weight: var(--wuavy-display);
+  font-stretch: 100%;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.84;
+}
+
+@utility type-headline {
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+@utility type-body {
+  font-weight: var(--wuavy-body);
+  line-height: 1.42;
+  text-wrap: pretty;
+}
+
+@utility type-micro {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  font-stretch: 100%;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility type-chapter {
+  font-size: var(--fs-chapter);
+  font-weight: var(--wuavy-chapter);
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility measure {
+  max-width: 65ch;
+}
+
+/* A section surface paints itself from the tokens it declares. */
+@utility surface {
+  background-color: var(--surface);
+  color: var(--text);
+}

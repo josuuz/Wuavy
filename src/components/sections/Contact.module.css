@@ -1,0 +1,121 @@
+.section {
+  padding-block: var(--space-3) 0;
+  overflow: clip;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* A warm light low behind the action, like the last of the day. */
+.light {
+  --light-size: 95vmax;
+  --lx: 28vw;
+  --ly: 0px;
+  top: 92%;
+}
+
+.accent {
+  color: var(--wuavy-signal);
+}
+
+/* The frequency band runs to the edge and into the footer. */
+.wave {
+  position: relative;
+  z-index: 1;
+  margin-top: var(--space-5);
+  margin-inline: var(--margin);
+}
+
+.chapter {
+  grid-column: 1 / -1;
+  margin-bottom: var(--space-4);
+}
+
+.display {
+  grid-column: 1 / -1;
+  font-size: clamp(3.25rem, 0.8rem + 11.2vw, 15rem);
+  font-weight: var(--wuavy-display);
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.84;
+}
+
+.line {
+  display: block;
+  white-space: nowrap;
+  margin-left: -0.04em;
+}
+
+/* A line with a descender (the cedilla in FAÇA) makes room for it. */
+.descender {
+  margin-bottom: 0.16em;
+}
+
+.action {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin-top: var(--space-4);
+}
+
+.body {
+  max-width: 34ch;
+  font-size: var(--fs-lead);
+  line-height: 1.3;
+}
+
+.channels {
+  grid-column: 1 / -1;
+  margin-top: var(--space-4);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.channels li {
+  display: flex;
+  gap: var(--gutter);
+  padding-block: 0.6rem;
+  border-top: var(--rule) solid var(--border);
+}
+
+.channelLabel {
+  min-width: 8.5em;
+}
+
+.channelValue {
+  display: inline-block;
+  padding-block: 0.5rem;
+  margin-block: -0.5rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--fs-body);
+  font-weight: 640;
+}
+
+@media (hover: hover) {
+  .channelValue:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* A line with a descender (the cedilla in FAÇA) makes room for it. */
+.descender {
+  margin-bottom: 0.16em;
+}
+
+.action {
+    grid-column: 1 / span 6;
+  }
+
+  .channels {
+    grid-column: 9 / span 4;
+    align-self: end;
+  }
+}

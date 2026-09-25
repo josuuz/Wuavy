@@ -1,0 +1,27 @@
+/* One fixed layer above the page and the header, under the intro and the cursor.
+   Its origin is PASSO's feet; the script moves and scales it. */
+.journey {
+  --pb: var(--text);
+  --pe: var(--surface);
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* The drawing in its own units: user point (120, 284), the feet, sits on the origin. */
+.svg {
+  position: absolute;
+  left: -240px;
+  top: -284px;
+  width: 400px;
+  height: 440px;
+  max-width: none;
+  overflow: visible;
+}

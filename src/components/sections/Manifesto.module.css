@@ -1,0 +1,139 @@
+/* ── Static break (fallback): Paper, black type ── */
+.section {
+  container-type: inline-size;
+  overflow: clip;
+  padding-inline: var(--margin);
+  background: var(--wuavy-paper);
+  color: var(--wuavy-black);
+}
+
+.stage {
+  position: relative;
+  padding-top: var(--section-pad);
+}
+
+.plane {
+  display: none;
+}
+
+/* Sized so FREQUÊNCIA (6.6 em at rest, measured) spans the frame between the margins. */
+.lines {
+  position: relative;
+  z-index: 1;
+  --display-size: calc(100cqi / var(--fit, 6.7));
+  font-size: var(--display-size);
+  font-weight: var(--wuavy-display);
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.84;
+}
+
+.line {
+  display: block;
+  white-space: nowrap;
+  margin-left: -0.05em;
+}
+
+.line:nth-child(2) {
+  --line: 1;
+}
+
+.line:nth-child(3) {
+  --line: 2;
+}
+
+.descender {
+  margin-bottom: 0.16em;
+}
+
+/* The rupture: the last line is cut by the frame, keeping over 80% of its height. */
+.line:last-child {
+  margin-bottom: -0.12em;
+}
+
+/* ── Scroll-driven break ───────────────────────────────────── */
+@supports (animation-timeline: view()) {
+  .section {
+    height: 210svh;
+    padding-inline: 0;
+    background: var(--wuavy-black);
+    color: var(--wuavy-paper);
+    view-timeline-name: --manifesto;
+  }
+
+  .stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 var(--margin);
+    overflow: clip;
+    isolation: isolate;
+  }
+
+  /* The Paper plane: its leading edge runs top left to bottom right at 20.81°
+     (38svh across the full height = tan 20.81° × 100svh). The shape is fixed
+     and one screen plus that run wide; the sweep only translates it, so the
+     compositor moves it without repainting. */
+  .plane {
+    display: block;
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(100% + 38svh);
+    background: var(--wuavy-paper);
+    clip-path: polygon(0 0, calc(100% - 38svh) 0, 100% 100%, 0 100%);
+    animation: sweep linear both;
+    animation-timeline: --manifesto;
+    animation-range: contain 8% contain 78%;
+  }
+
+  /* Paper type over Black, Black type over Paper: the letters invert as the plane passes. */
+  .lines {
+    color: var(--wuavy-paper);
+    mix-blend-mode: difference;
+    --display-size: calc((100cqi - 2 * var(--margin)) / var(--fit, 6.9));
+    /* The width wave reflows these letters every frame: keep that inside. */
+    contain: layout;
+  }
+
+  /* Width travels through the words with the scroll, one letter after another. */
+  .lines :global(.m-char) {
+    animation: wave linear both;
+    animation-timeline: --manifesto;
+    animation-range:
+      contain calc((var(--i) + var(--line, 0) * 3) * 2.4%)
+      contain calc(34% + (var(--i) + var(--line, 0) * 3) * 2.4%);
+  }
+
+  /* The letter wave is layout work on every frame: only where there is room for it. */
+  :global(html[data-perf="lite"]) .lines :global(.m-char) {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lines :global(.m-char) {
+      animation: none;
+    }
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    font-stretch: 100%;
+  }
+  50% {
+    font-stretch: 125%;
+  }
+}

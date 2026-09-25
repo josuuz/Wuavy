@@ -1,0 +1,201 @@
+.hero {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  padding-top: calc(var(--header-h) + var(--space-3));
+  overflow: clip;
+}
+
+/* ── The photograph: settles when the intro opens, drifts with the scroll ── */
+.photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  animation: settle 1800ms var(--wuavy-ease-out) both;
+}
+
+/* The photo darkens as it leaves: a black layer's opacity (compositor only),
+   not an animated filter, which would repaint the whole photo every frame.
+   0.45 of black takes brightness 0.82 down to 0.45, as before. */
+.photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+
+:global(html.js:not([data-intro-done])) .photo {
+  animation-play-state: paused;
+}
+
+.image {
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.25) brightness(0.82);
+}
+
+@keyframes settle {
+  from {
+    transform: scale(1.16);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .image {
+    animation: drift linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 100svh;
+  }
+
+  .photo::after {
+    animation: dim linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 100svh;
+  }
+}
+
+@keyframes drift {
+  to {
+    transform: translateY(12%) scale(1.06);
+  }
+}
+
+@keyframes dim {
+  to {
+    opacity: 0.45;
+  }
+}
+
+/* Reduced motion: no zoom and no parallax; the photo still darkens. */
+@media (prefers-reduced-motion: reduce) {
+  .photo,
+  .image {
+    animation: none;
+  }
+}
+
+/* Type only ever sits on the dark, quiet part of the image. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(to bottom, rgb(0 0 0 / 0.55), transparent 32%),
+    linear-gradient(to top, rgb(0 0 0 / 0.7), transparent 45%);
+}
+
+.top {
+  position: relative;
+  z-index: 1;
+  row-gap: var(--space-3);
+  align-items: start;
+}
+
+.details {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.3rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.details li {
+  animation: up 700ms var(--wuavy-ease-out) calc(700ms + var(--i) * 90ms) both;
+}
+
+:global(html.js:not([data-intro-done])) .details li,
+:global(html.js:not([data-intro-done])) .card {
+  animation-play-state: paused;
+}
+
+@keyframes up {
+  from {
+    opacity: 0;
+    transform: translateY(0.8rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The glass card: the one sentence and the one action. */
+.card {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  max-width: 30rem;
+  padding: var(--space-2) var(--space-2) var(--space-2);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--wuavy-black) 42%, transparent);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  border: 1px solid color-mix(in srgb, var(--wuavy-paper) 16%, transparent);
+  animation: up 900ms var(--wuavy-ease-out) 950ms both;
+}
+
+/* Light tier: the blur is recomputed whenever the photo behind moves, so
+   weaker machines get the same card as a deeper tint instead. */
+:global(html[data-perf="lite"]) .card {
+  background: color-mix(in srgb, var(--wuavy-black) 66%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.title {
+  font-size: var(--fs-h3);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.lead {
+  color: color-mix(in srgb, var(--wuavy-paper) 78%, transparent);
+  max-width: 34ch;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem var(--space-2);
+}
+
+.secondary {
+  font-size: max(0.875rem, var(--fs-micro));
+}
+
+.brandZone {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding-top: 12.6%;
+}
+
+.wordmark {
+  width: 105.2%;
+  margin-left: -1.4%;
+  margin-bottom: -4.4%;
+  color: var(--wuavy-paper);
+  transform-origin: 0 0;
+  transition: opacity var(--duration-ui) linear;
+  will-change: transform;
+}
+
+@media (min-width: 1024px) {
+  .details {
+    grid-column: 1 / span 4;
+  }
+
+  .card {
+    grid-column: 8 / span 5;
+    justify-self: end;
+  }
+}

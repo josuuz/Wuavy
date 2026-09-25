@@ -1,0 +1,24 @@
+.band {
+  overflow: clip;
+  white-space: nowrap;
+}
+
+.track {
+  display: inline-flex;
+  will-change: transform;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The separator is the module: one short vertical line. */
+.sep {
+  display: inline-block;
+  width: max(2px, 0.06em);
+  height: 0.62em;
+  margin-inline: 0.55em;
+  background: var(--wuavy-signal);
+  transform: translateY(-0.04em);
+}

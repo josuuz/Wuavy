@@ -1,0 +1,201 @@
+.header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  height: var(--header-h);
+  color: var(--text);
+  transition: color var(--duration-ui) linear;
+  view-transition-name: site-header;
+}
+
+/* T05: once the wordmark has docked, content passes under a band of the
+   current surface. Over the hero it stays clear, so the flying wordmark is
+   never covered on its way in. No backdrop blur: at this opacity it was
+   invisible, and it was recomputed on every scroll frame. */
+.header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border-bottom: var(--rule) solid var(--border);
+  opacity: 0;
+  transition:
+    opacity var(--duration-element) var(--wuavy-ease-out),
+    background-color var(--duration-ui) linear;
+}
+
+.header[data-docked]::before {
+  opacity: 1;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--gutter);
+  height: 100%;
+  padding-inline: var(--margin);
+}
+
+/* ── Docking wordmark ─────────────────────────────────────
+   Uncovered left to right like a wipe; the index slides over to make room.
+   Only clip-path and transform move: nothing reflows. */
+.inner {
+  --brand-w: clamp(76px, 4vw + 52px, 116px);
+  --brand-shift: calc(var(--brand-w) + var(--space-2));
+  position: relative;
+}
+
+.brand {
+  position: absolute;
+  left: var(--margin);
+  top: 50%;
+  width: var(--brand-w);
+  translate: 0 -50%;
+  visibility: hidden;
+  clip-path: inset(0 100% 0 0);
+  transition:
+    clip-path var(--duration-element) var(--wuavy-ease-out),
+    visibility 0s linear var(--duration-element);
+}
+
+.header[data-docked] .brand {
+  visibility: visible;
+  clip-path: inset(-10% -10% -10% 0);
+  transition-delay: 0s;
+}
+
+/* ── Frequency index: one line per section ────────────────── */
+.index {
+  display: none;
+  align-items: flex-end;
+  gap: 7px;
+  height: 18px;
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.header[data-docked] .index {
+  transform: translateX(var(--brand-shift));
+}
+
+.tick {
+  display: block;
+  width: max(1.5px, 0.1vw);
+  height: 18px;
+  background: currentColor;
+  opacity: 0.4;
+  transform: scaleY(0.44);
+  transform-origin: 50% 100%;
+  transition:
+    transform var(--duration-element) var(--wuavy-ease-out),
+    opacity var(--duration-ui) linear;
+}
+
+.tick::after {
+  /* Larger hit area for pointer users without widening the drawing. */
+  content: "";
+  display: block;
+  width: 7px;
+  height: 22px;
+  translate: -3px -2px;
+}
+
+.tickActive {
+  transform: none;
+  opacity: 1;
+  background: var(--mark);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tick:hover {
+    opacity: 1;
+  }
+}
+
+/* ── PASSO's spot: pushes the actions right and keeps a place beside them ── */
+.passoDock {
+  flex: none;
+  width: calc(var(--header-h) * 0.4);
+  height: calc(var(--header-h) * 0.52);
+  margin-left: auto;
+}
+
+/* ── Navigation ───────────────────────────────────────────── */
+.nav {
+  display: none;
+}
+
+.nav ul {
+  display: flex;
+  gap: clamp(1rem, 1.6vw, 2.25rem);
+}
+
+.navLink {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  position: relative;
+  padding-block: 0.5rem;
+}
+
+.navLink::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.2rem;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+/* The section you are in: a Signal rule under its name. */
+.navLink[aria-current]::after {
+  transform: none;
+  background: var(--wuavy-signal);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .navLink:hover::after {
+    transform: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .index {
+    display: flex;
+  }
+
+  .nav {
+    display: block;
+  }
+
+  .cta {
+    margin-left: clamp(1rem, 2vw, 2.5rem);
+  }
+}
+
+/* Small phones: the short label keeps room for the wordmark and PASSO. */
+.ctaShort {
+  display: none;
+}
+
+@media (max-width: 399px) {
+  .ctaFull {
+    display: none;
+  }
+
+  .ctaShort {
+    display: inline;
+  }
+}
+
+/* Very small screens: the menu carries the action. */
+@media (max-width: 359px) {
+  .cta {
+    display: none;
+  }
+}
