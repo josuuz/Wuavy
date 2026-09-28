@@ -28,7 +28,7 @@ export function FaqA() {
     <Section id="faq" surface="fog" label="FAQ" className={`tx-grain ${styles.section}`}>
       <div className="frame">
         <div className={styles.side}>
-          <ChapterHead index={6} name={chapter} className={styles.chapter} />
+          <ChapterHead index={5} name={chapter} className={styles.chapter} />
           <h2 className={styles.headline}>{headline}</h2>
           <p className={styles.more}>
             Ficou alguma dúvida?{" "}

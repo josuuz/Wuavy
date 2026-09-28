@@ -5,7 +5,8 @@ import { splitChars, splitWords } from "@/lib/motion/wave";
 /**
  * Link text that rolls up letter by letter on hover, 18 ms apart, and the
  * copy underneath takes its place (idea from 21st.dev "Stagger Text").
- * Letters are grouped by word, so long names wrap between words only.
+ * Each word rolls inside its own box with its copy right under it, so a name
+ * that wraps onto two lines still rolls in place, line by line.
  * Put it inside the link; the link is the hover host. CSS only.
  */
 export function RollText({ text }: { text: string }) {
@@ -15,28 +16,29 @@ export function RollText({ text }: { text: string }) {
     return acc;
   }, []);
 
-  const row = (under: boolean) => (
-    <span className="m-roll-row" aria-hidden="true" data-under={under ? "" : undefined}>
-      {words.map((word, w) => (
-        <Fragment key={w}>
-          <span className="m-roll-word">
-            {word.chars.map((c, i) => (
-              <span key={i} className="m-roll-char" style={{ "--i": word.offset + i } as CSSProperties}>
-                {c}
-              </span>
-            ))}
-          </span>
-          {w < words.length - 1 ? " " : null}
-        </Fragment>
-      ))}
-    </span>
-  );
+  const chars = (word: (typeof words)[number]) =>
+    word.chars.map((c, i) => (
+      <span key={i} className="m-roll-char" style={{ "--i": word.offset + i } as CSSProperties}>
+        {c}
+      </span>
+    ));
 
   return (
     <span className="m-roll">
       <span className="sr-only">{text}</span>
-      {row(false)}
-      {row(true)}
+      <span aria-hidden="true">
+        {words.map((word, w) => (
+          <Fragment key={w}>
+            <span className="m-roll-word">
+              <span className="m-roll-row">{chars(word)}</span>
+              <span className="m-roll-row" data-under="">
+                {chars(word)}
+              </span>
+            </span>
+            {w < words.length - 1 ? " " : null}
+          </Fragment>
+        ))}
+      </span>
     </span>
   );
 }

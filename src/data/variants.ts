@@ -1,6 +1,3 @@
-import archRhythm from "@/assets/photo/arch-rhythm.jpg";
-import motionTrain from "@/assets/photo/motion-train.jpg";
-import structureLines from "@/assets/photo/structure-lines.jpg";
 import urbanCrowd from "@/assets/photo/urban-crowd.jpg";
 
 /*
@@ -25,12 +22,5 @@ export const phrases = {
   method:
     "Planejamos a mensagem, construímos o canal e repetimos o sinal com precisão até o mercado se mover junto.", // frequência
 } as const;
-
-/** One image per service, in services.ts order (licensed brand stock). */
-export const serviceImages = [
-  { src: structureLines, alt: "Cabos e torres de uma ponte: caminhos que levam ao mesmo ponto." },
-  { src: archRhythm, alt: "Fachada em módulos repetidos." },
-  { src: motionTrain, alt: "Trem em movimento na estação." },
-];
 
 export const heroImage = { src: urbanCrowd, alt: "Multidão atravessando uma rua, vista de cima, em preto e branco." };

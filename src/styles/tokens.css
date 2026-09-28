@@ -63,6 +63,7 @@
   /* ── Motion (brand: propagation, width shift, channel wipe) ─ */
   --wuavy-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --wuavy-ease-inout: cubic-bezier(0.76, 0, 0.24, 1);
+  --wuavy-ease-soft: cubic-bezier(0.33, 1, 0.68, 1); /* scroll-linked entries: they land, not stop */
   --duration-ui: 180ms; /* micro-interactions */
   --duration-element: 420ms; /* elements */
   --duration-scene: 760ms; /* scenes, the wave */

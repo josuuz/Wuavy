@@ -33,6 +33,8 @@ export function Header({ nav, cta }: HeaderProps) {
   const ref = useRef<HTMLElement>(null);
   const [surface, setSurface] = useState("black");
   const [docked, setDocked] = useState(false);
+  // Set with the first measured frame: until then the band follows the scroll in CSS.
+  const [live, setLive] = useState(false);
   const [active, setActive] = useState(0);
   const [sections, setSections] = useState<SectionMark[]>([]);
 
@@ -73,6 +75,7 @@ export function Header({ nav, cta }: HeaderProps) {
       setSurface(nextSurface);
       setActive(nextActive);
       if (!choreographed) setDocked(nextDocked);
+      setLive(true);
     };
 
     const unsubscribe = subscribeFrame({ read, write });
@@ -88,6 +91,7 @@ export function Header({ nav, cta }: HeaderProps) {
       className={styles.header}
       data-surface={surface}
       data-docked={docked ? "" : undefined}
+      data-live={live ? "" : undefined}
     >
       <div className={styles.inner}>
         <Link
@@ -114,7 +118,7 @@ export function Header({ nav, cta }: HeaderProps) {
           </div>
         ) : null}
 
-        {/* PASSO's spot once he has walked up from the hero (PassoJourney). */}
+        {/* PASSO's spot once he has walked up from the hero: he peeks over its bottom edge (PassoJourney). */}
         <span className={styles.passoDock} data-passo-dock="" aria-hidden="true" />
 
         <nav aria-label="Principal" className={styles.nav}>

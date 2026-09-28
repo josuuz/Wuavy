@@ -36,13 +36,6 @@
   border-bottom: var(--rule) solid var(--border);
 }
 
-/* The preview frame lives in the list (it positions against it) but is not a row. */
-.previewSlot {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
 .row {
   position: relative;
   overflow: clip;
@@ -57,7 +50,8 @@
   z-index: 0;
   background: var(--wuavy-paper);
   transform: translateX(-104%) skewX(var(--wuavy-angle));
-  transition: transform 620ms var(--wuavy-ease-inout);
+  /* Answers the pointer at once, then glides to rest (a full in-out felt late). */
+  transition: transform 580ms cubic-bezier(0.45, 0, 0.15, 1);
 }
 
 .inner {
@@ -73,7 +67,6 @@
 
 .index,
 .outcome,
-.priceLabel,
 .includesTitle {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
@@ -98,28 +91,6 @@
   letter-spacing: -0.03em;
   line-height: 1.02;
   text-wrap: balance;
-}
-
-.price {
-  display: grid;
-  gap: 0.35rem;
-  align-content: start;
-}
-
-.priceValue {
-  font-size: var(--fs-h3);
-  font-weight: var(--wuavy-headline);
-  letter-spacing: -0.025em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.period {
-  margin-left: 0.1em;
-  font-size: 0.55em;
-  font-weight: var(--wuavy-chapter);
-  letter-spacing: 0;
 }
 
 .summary {
@@ -251,14 +222,7 @@
   }
 
   .title {
-    grid-column: 2 / span 2;
-  }
-
-  .price {
-    grid-column: 4;
-    justify-items: end;
-    text-align: right;
-    padding-top: 0.6em;
+    grid-column: 2 / -1;
   }
 
   .summary {

@@ -29,6 +29,27 @@
   opacity: 1;
 }
 
+/* Until the script has read the page (first paint, a reload halfway down, a
+   slow connection) the band follows the scroll on its own: clear over the
+   hero, solid past it. It is Black then, the server default, so the white
+   links always sit on it and never vanish into a Paper section. */
+@supports (animation-timeline: scroll()) {
+  .header:not([data-live])::before {
+    animation: band linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 60svh;
+  }
+}
+
+@keyframes band {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .inner {
   display: flex;
   align-items: center;
@@ -112,11 +133,12 @@
   }
 }
 
-/* ── PASSO's spot: pushes the actions right and keeps a place beside them ── */
+/* ── PASSO's spot: pushes the actions right and keeps a place beside them.
+   Full height: its bottom is the edge he peeks over (PassoJourney). ── */
 .passoDock {
   flex: none;
-  width: calc(var(--header-h) * 0.4);
-  height: calc(var(--header-h) * 0.52);
+  align-self: stretch;
+  width: calc(var(--header-h) * 0.8);
   margin-left: auto;
 }
 

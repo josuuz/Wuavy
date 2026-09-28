@@ -11,7 +11,8 @@ const LETTERS = ["w", "u", "a", "v", "y"] as const;
  * (84 ms apart, two wave steps). The box is the mask. Each letter is its own
  * full-size SVG layer, so the rise is a plain transform the compositor moves,
  * instead of repainting the whole wordmark on every frame. Waits for the
- * intro to finish when there is one (html[data-intro-done]).
+ * intro to start opening when there is one (html[data-intro-open], or
+ * [data-intro-done] when it was skipped).
  */
 export function WordmarkRise({ className, delay = 0 }: { className?: string; delay?: number }) {
   const { letters } = standard;

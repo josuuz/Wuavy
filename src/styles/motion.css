@@ -231,20 +231,19 @@ html[data-perf="lite"] .m-wave[data-entry="wave"] .m-char {
   color: var(--wuavy-signal);
 }
 
-/* RollText: two stacked rows; the link hover rolls them up, letter by letter. */
-.m-roll {
+/* RollText: each word is a small window with its copy stacked under it; the
+   link hover rolls both up, letter by letter. One window per word, so a name
+   that wraps rolls line by line and never swaps its lines. */
+.m-roll-word {
   position: relative;
   display: inline-block;
   overflow: clip;
   vertical-align: top;
+  white-space: nowrap;
 }
 
 .m-roll-row {
   display: block;
-}
-
-.m-roll-word {
-  white-space: nowrap;
 }
 
 .m-roll-row[data-under] {

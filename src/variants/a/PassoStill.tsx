@@ -15,7 +15,7 @@ import styles from "./PassoStill.module.css";
 
 const PHOTO = { width: 1920, height: 1282 };
 const SPOT = { x: 880, y: 700 }; // where he stands, in photo pixels
-const HEIGHT = 84; // about the height of the people around him
+const HEIGHT = 72; // a little shorter than the people around him
 const scale = HEIGHT / PASSO_HEIGHT;
 
 export function PassoStill() {

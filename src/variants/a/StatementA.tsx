@@ -7,7 +7,7 @@ import styles from "./StatementA.module.css";
 /*
   The idea, drawn: FREQUÊNCIA set solid, VOLUME. set hollow. The paragraph
   lights up word by word with the scroll; the positioning says it plainly,
-  and the four values close the chapter.
+  and the four values close the chapter in one compact row.
 */
 
 export function StatementA() {
@@ -30,16 +30,16 @@ export function StatementA() {
           <ReadReveal text={home.idea.body} accents={["precisão:"]} />
         </p>
         <p className={styles.positioning}>{home.idea.positioning}</p>
-      </div>
 
-      <div className={`frame ${styles.columns}`}>
         <h3 className={styles.valuesTitle}>{home.idea.valuesTitle}</h3>
         <ul className={styles.values}>
           {home.idea.values.map((value, i) => (
-            <li key={value.name} className={styles.col}>
-              <span className={styles.colIndex}>({pad(i + 1)})</span>
-              <h4 className={styles.colTitle}>{value.name}</h4>
-              <p className={styles.colText}>{value.text}</p>
+            <li key={value.name} className={styles.value}>
+              <h4 className={styles.valueName}>
+                <span className={styles.valueIndex}>{pad(i + 1)}</span>
+                {value.name}
+              </h4>
+              <p className={styles.valueText}>{value.text}</p>
             </li>
           ))}
         </ul>

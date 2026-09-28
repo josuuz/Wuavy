@@ -76,6 +76,8 @@ export function IntroLoader() {
       if (shown >= 1) {
         judge();
         el.dataset.state = "open";
+        // The hero starts under the parting panels, not after them.
+        html.setAttribute("data-intro-open", "");
         window.setTimeout(finish, 1050);
         return;
       }

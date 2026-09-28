@@ -25,17 +25,6 @@ export type Media = ImageMedia | VideoMedia;
 
 /* ── Services ──────────────────────────────────────────────── */
 
-export interface ServicePrice {
-  /** "R$ 1.099", or the words that stand in for a price ("Sob consulta"). */
-  value: string;
-  /** "/mês" for a recurring fee. */
-  period?: string;
-  /** What the price is: "Investimento único", "Projeto personalizado"… */
-  label: string;
-  /** The fine print that must be said, e.g. ad budget is separate. */
-  note?: string;
-}
-
 export interface Service {
   id: string;
   /** Discipline name, e.g. "Websites". */
@@ -44,7 +33,8 @@ export interface Service {
   outcome: string;
   summary: string;
   deliverables: string[];
-  price: ServicePrice;
+  /** The fine print that must be said, e.g. ad budget is separate. */
+  note?: string;
   /** `soon` keeps a service in the data without showing it on the site. */
   status: "active" | "soon";
   /** Set when the service gets its own page; the row then becomes a link. */
@@ -62,12 +52,20 @@ export interface CaseStudy {
   slug: string;
   client: string;
   title: string;
+  /** One line on what the work changed, for the projects list. */
+  tagline?: string;
   segment: string;
   services: Service["id"][];
   year: number;
   summary: string;
+  /** What was delivered, as the work reads it: two or more make a combo ("Website + Identidade Visual"). Defaults to the services' names. */
+  scope?: string[];
   /** Only real, verifiable results. Never estimates. */
   result?: CaseResult;
+  /** The live project, when it can be visited. */
+  url?: string;
+  /** The cover is the "after"; this is where the client started, and what changed. */
+  before?: { media: Media; changes: string[] };
   cover: Media;
   gallery?: Media[];
   body?: {

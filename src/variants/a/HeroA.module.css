@@ -6,12 +6,14 @@
   overflow: clip;
 }
 
-/* ── The photograph: settles when the intro opens, drifts with the scroll ── */
+/* ── The photograph: settles when the intro opens, drifts with the scroll ──
+   It starts as the panels part, so the camera is already easing in behind
+   them: one continuous move instead of a curtain, then a zoom. */
 .photo {
   position: absolute;
   inset: 0;
   z-index: 0;
-  animation: settle 1800ms var(--wuavy-ease-out) both;
+  animation: settle 2400ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* The photo darkens as it leaves: a black layer's opacity (compositor only),
@@ -26,7 +28,7 @@
   pointer-events: none;
 }
 
-:global(html.js:not([data-intro-done])) .photo {
+:global(html.js:not([data-intro-done]):not([data-intro-open])) .photo {
   animation-play-state: paused;
 }
 
@@ -37,7 +39,7 @@
 
 @keyframes settle {
   from {
-    transform: scale(1.16);
+    transform: scale(1.1);
   }
   to {
     transform: none;
@@ -105,19 +107,21 @@
   letter-spacing: 0.06em;
 }
 
+/* Times count from the moment the intro starts to open (or from load). The
+   wordmark rises at 460ms, as the slit widens; the text follows it in. */
 .details li {
-  animation: up 700ms var(--wuavy-ease-out) calc(700ms + var(--i) * 90ms) both;
+  animation: up 800ms var(--wuavy-ease-out) calc(820ms + var(--i) * 80ms) both;
 }
 
-:global(html.js:not([data-intro-done])) .details li,
-:global(html.js:not([data-intro-done])) .card {
+:global(html.js:not([data-intro-done]):not([data-intro-open])) .details li,
+:global(html.js:not([data-intro-done]):not([data-intro-open])) .card {
   animation-play-state: paused;
 }
 
 @keyframes up {
   from {
     opacity: 0;
-    transform: translateY(0.8rem);
+    transform: translateY(1rem);
   }
   to {
     opacity: 1;
@@ -125,7 +129,8 @@
   }
 }
 
-/* The glass card: the one sentence and the one action. */
+/* The card: the one sentence and the one action, on a deep tint. No backdrop
+   blur: it was recomputed on every frame the photo behind it moved. */
 .card {
   grid-column: 1 / -1;
   display: grid;
@@ -134,19 +139,9 @@
   max-width: 30rem;
   padding: var(--space-2) var(--space-2) var(--space-2);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--wuavy-black) 42%, transparent);
-  backdrop-filter: blur(18px) saturate(1.1);
-  -webkit-backdrop-filter: blur(18px) saturate(1.1);
-  border: 1px solid color-mix(in srgb, var(--wuavy-paper) 16%, transparent);
-  animation: up 900ms var(--wuavy-ease-out) 950ms both;
-}
-
-/* Light tier: the blur is recomputed whenever the photo behind moves, so
-   weaker machines get the same card as a deeper tint instead. */
-:global(html[data-perf="lite"]) .card {
   background: color-mix(in srgb, var(--wuavy-black) 66%, transparent);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  border: 1px solid color-mix(in srgb, var(--wuavy-paper) 16%, transparent);
+  animation: up 1000ms var(--wuavy-ease-out) 980ms both;
 }
 
 .title {

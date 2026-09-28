@@ -7,18 +7,19 @@ import { useEffect } from "react";
 
 /**
  * Inertial scroll (Lenis), the HOBRO feel. Wheel and trackpad only: touch
- * keeps native momentum, and so do the light tier (html[data-perf="lite"],
- * weaker machines) and reduced motion, where native scrolling stays on the
- * compositor and never waits for script. Lenis
+ * keeps native momentum, and so does the light tier (html[data-perf="lite"],
+ * weaker machines), where native scrolling stays on the compositor and never
+ * waits for script. Reduced motion keeps it: with system animations off the
+ * browser drops its own smooth scrolling, the wheel then jumps 100px a notch
+ * and the whole page (the hero, PASSO) moves in jolts. Lenis
  * moves the real window scroll, so CSS scroll-driven animations and
  * IntersectionObservers keep working unchanged. Anchor links glide too.
  */
 export function SmoothScroll() {
   useEffect(() => {
     const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const lite = document.documentElement.dataset.perf === "lite";
-    if (!fine || reduced || lite) return;
+    if (!fine || lite) return;
 
     const html = document.documentElement;
     const lenis = new Lenis({ lerp: 0.1, autoRaf: true, anchors: { offset: -64 } });

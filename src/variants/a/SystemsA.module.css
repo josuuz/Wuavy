@@ -42,29 +42,6 @@
   color: var(--text-2);
 }
 
-.price {
-  display: grid;
-  gap: 0.35rem;
-  padding-top: var(--space-1);
-  border-top: var(--rule) solid var(--border);
-  width: 100%;
-}
-
-.priceLabel {
-  font-size: var(--fs-micro);
-  font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-2);
-}
-
-.priceValue {
-  font-size: var(--fs-h3);
-  font-weight: var(--wuavy-headline);
-  letter-spacing: -0.025em;
-  line-height: 1;
-}
-
 /* ── The spec sheet: hairline cells, one light under the pointer ── */
 .grid {
   position: relative;
@@ -139,7 +116,7 @@
 
 @supports (animation-timeline: view()) {
   .cell {
-    animation: rise linear both;
+    animation: rise var(--wuavy-ease-soft) both;
     animation-timeline: view();
     animation-range: entry 0% entry 60%;
   }

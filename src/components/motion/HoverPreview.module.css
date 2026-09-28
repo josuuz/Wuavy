@@ -3,7 +3,6 @@
   left: 0;
   top: 0;
   z-index: 5;
-  aspect-ratio: 4 / 5;
   pointer-events: none;
   opacity: 0;
   scale: 0.92;
@@ -32,13 +31,54 @@
 
 .image {
   object-fit: cover;
-  filter: grayscale(1) contrast(1.2);
   scale: 1.12;
   transition: scale 900ms var(--wuavy-ease-out);
 }
 
+.mono {
+  filter: grayscale(1) contrast(1.2);
+}
+
 .slide[data-on] .image {
   scale: 1;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* Before/after: the frame opens on the old work, then the new one sweeps in
+   over it along the channel (20.81°: a run of ~24% of the width at 16:10).
+   Leaving, it resets only once the slide has closed. */
+.after {
+  clip-path: polygon(0 0, -24% 0, 0 100%, 0 100%);
+  transition: clip-path 0s linear 520ms;
+}
+
+.slide[data-on] .after {
+  clip-path: polygon(0 0, 100% 0, 124% 100%, 0 100%);
+  transition: clip-path 1000ms var(--wuavy-ease-inout) 420ms;
+}
+
+.tag {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 2px;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--wuavy-paper);
+  background: color-mix(in srgb, var(--wuavy-black) 72%, transparent);
+}
+
+.tagAfter {
+  color: var(--wuavy-black);
+  background: var(--wuavy-signal);
 }
 
 @media (hover: none), (pointer: coarse) {

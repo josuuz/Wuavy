@@ -39,8 +39,6 @@ export const home = {
     chapter: "Sistemas de crescimento",
     headline: "Construímos sistemas personalizados para empresas que precisam ir além do marketing.", // new (from the brief)
     lead: "Quando o gargalo não é atenção, é operação: atendimento que não escala, vendas que dependem de planilha, dados espalhados. Desenhamos a solução e colocamos para rodar.", // new
-    price: "Sob consulta",
-    priceLabel: "Projeto personalizado",
     cta: "Solicitar diagnóstico",
     items: [
       { name: "Inteligência artificial", text: "IA aplicada ao seu negócio, onde ela economiza tempo ou vende mais." },
@@ -73,8 +71,8 @@ export const home = {
         text: "Entendemos a operação antes de recomendar qualquer coisa. A proposta vem do que você precisa agora, não de um pacote pronto.",
       },
       {
-        name: "Preço claro",
-        text: "Sites e gestão de tráfego com valor publicado. O que não está incluso, como a verba de anúncios, fica dito desde o início.",
+        name: "Proposta clara",
+        text: "Escopo, prazo e investimento definidos antes de começar. O que não está incluso, como a verba de anúncios, fica dito desde o início.",
       },
       {
         name: "Decisão por dados",
@@ -89,10 +87,13 @@ export const home = {
 
   work: {
     chapter: "Projetos",
-    title: "Projetos selecionados",
+    title: "Marcas que saíram do lugar.", // deslocamento ("Crescer é sair do lugar.")
     lead: "Cada projeto é medido pelo que move, não pelo que mostra.",
     placeholderTag: "Em preparação",
     open: "Ver case",
+    combo: "Combo",
+    before: "Antes",
+    after: "Depois",
   },
 
   faq: {
@@ -101,11 +102,11 @@ export const home = {
     items: [
       {
         q: "Quanto custa um site?",
-        a: "R$ 1.099, em investimento único. Inclui estratégia, design responsivo, desenvolvimento, estrutura pensada para conversão, otimização para desktop e mobile, publicação e configuração inicial.",
+        a: "O investimento vem na proposta, depois de uma conversa sobre o projeto. Todo site inclui estratégia, design responsivo, desenvolvimento, estrutura pensada para conversão, otimização para desktop e mobile, publicação e configuração inicial.",
       },
       {
         q: "A verba de anúncios está inclusa na gestão de tráfego?",
-        a: "Não. A gestão custa R$ 1.099 por mês e cobre estratégia, criação e organização das campanhas, otimizações, acompanhamento e análise de resultados. A verba é paga direto às plataformas de anúncio, e o valor é definido junto com você conforme o objetivo.",
+        a: "Não. A gestão cobre estratégia, criação e organização das campanhas, otimizações, acompanhamento e análise de resultados. A verba é paga direto às plataformas de anúncio, e o valor é definido junto com você conforme o objetivo.",
       },
       {
         q: "Quais plataformas de anúncio vocês gerenciam?",

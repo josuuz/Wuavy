@@ -8,12 +8,12 @@ import { pad } from "@/lib/utils";
 import styles from "./SystemsA.module.css";
 
 /*
-  The advanced tier. No fixed price: a custom project that starts with a
-  diagnosis. The capabilities sit in a hairline grid like a spec sheet;
-  a light follows the pointer across the cell under it.
+  The advanced tier: a custom project that starts with a diagnosis. The
+  capabilities sit in a hairline grid like a spec sheet; a light follows the
+  pointer across the cell under it.
 */
 export function SystemsA() {
-  const { chapter, headline, lead, price, priceLabel, cta, items } = home.systems;
+  const { chapter, headline, lead, cta, items } = home.systems;
 
   return (
     <Section id="sistemas" surface="carbon" label="Sistemas" className={`tx-grain ${styles.section}`}>
@@ -28,10 +28,6 @@ export function SystemsA() {
 
         <div className={styles.aside}>
           <p className={styles.lead}>{lead}</p>
-          <p className={styles.price}>
-            <span className={styles.priceLabel}>{priceLabel}</span>
-            <span className={styles.priceValue}>{price}</span>
-          </p>
           <Button href={contactHref(site.contact.primary, chapter)}>{cta}</Button>
         </div>
       </div>

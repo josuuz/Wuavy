@@ -54,6 +54,9 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
   const body = Object.entries(item.body ?? {}).filter(([, text]) => Boolean(text)) as Array<
     [keyof typeof BODY_LABELS, string]
   >;
+  const combo = item.scope && item.scope.length > 1;
+  // The before/after, when there is one, opens the story as chapter 01.
+  const first = item.before ? 2 : 1;
 
   return (
     <>
@@ -64,6 +67,11 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
           </p>
           <h1 className={styles.title}>{item.title}</h1>
           <p className={`type-body ${styles.summary}`}>{item.summary}</p>
+          {item.url ? (
+            <p className={styles.live}>
+              <TextLink href={item.url}>Ver o site no ar ↗</TextLink>
+            </p>
+          ) : null}
 
           <dl className={styles.facts}>
             <div>
@@ -74,10 +82,17 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
               <dt>Segmento</dt>
               <dd>{item.segment}</dd>
             </div>
-            <div>
-              <dt>{item.services.length > 1 ? "Serviços" : "Serviço"}</dt>
-              <dd>{item.services.map(serviceName).join(", ")}</dd>
-            </div>
+            {combo ? (
+              <div>
+                <dt>Combo</dt>
+                <dd className={styles.combo}>{item.scope?.join(" + ")}</dd>
+              </div>
+            ) : (
+              <div>
+                <dt>{item.services.length > 1 ? "Serviços" : "Serviço"}</dt>
+                <dd>{(item.scope ?? item.services.map(serviceName)).join(", ")}</dd>
+              </div>
+            )}
             <div>
               <dt>Ano</dt>
               <dd>{item.year}</dd>
@@ -95,6 +110,28 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
 
       <Section id="case-conteudo" surface="paper" label="Conteúdo" className={styles.body}>
         <div className="frame">
+          {item.before ? (
+            <div className={styles.compare}>
+              <ChapterHead index={1} name="Antes e depois" className={styles.label} />
+              {[
+                { media: item.before.media, label: "Antes" },
+                { media: item.cover, label: "Depois" },
+              ].map(({ media, label }) => (
+                <figure key={label} className={styles.shot}>
+                  <div className={styles.shotMedia}>
+                    <CaseMedia media={media} sizes="(min-width: 1024px) 50vw, 100vw" />
+                  </div>
+                  <figcaption className={styles.shotLabel}>{label}</figcaption>
+                </figure>
+              ))}
+              <ul className={styles.changes}>
+                {item.before.changes.map((change) => (
+                  <li key={change}>{change}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {item.placeholder || body.length === 0 ? (
             <>
               <ChapterHead index={1} name="Em preparação" className={styles.label} />
@@ -105,7 +142,7 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
           ) : (
             body.map(([key, text], i) => (
               <div key={key} className={styles.block}>
-                <ChapterHead index={i + 1} name={BODY_LABELS[key]} className={styles.label} />
+                <ChapterHead index={i + first} name={BODY_LABELS[key]} className={styles.label} />
                 <p className={styles.text}>{text}</p>
               </div>
             ))

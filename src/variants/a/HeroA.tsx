@@ -17,14 +17,14 @@ import { PassoStill } from "./PassoStill";
 /*
   A · Editorial — the brand moment as a photograph. The intro opens on a
   full-bleed black-and-white street; the wordmark rises out of the bottom
-  edge (cover proportions); a glass card carries the one sentence and the
+  edge (cover proportions); a tinted card carries the one sentence and the
   action. On scroll the photo drifts and darkens and the wordmark docks
   into the header (HeroChoreography).
 */
 
 export function HeroA() {
   return (
-    <Section id="inicio" surface="black" label="Início" className={`tx-grain ${styles.hero}`} data-hero="">
+    <Section id="inicio" surface="black" label="Início" className={styles.hero} data-hero="">
       <div className={styles.photo} data-intro-image="">
         <Image src={heroImage.src} alt={heroImage.alt} fill priority sizes="100vw" className={styles.image} />
         <PassoStill />
@@ -59,7 +59,7 @@ export function HeroA() {
 
       <div className={styles.brandZone}>
         <div className={styles.wordmark} data-dock-target="">
-          <WordmarkRise delay={260} />
+          <WordmarkRise delay={460} />
         </div>
       </div>
 

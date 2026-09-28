@@ -8,7 +8,8 @@
   overflow: clip;
   padding-top: var(--space-4);
   border-radius: calc(clamp(18px, 1.2vw + 10px, 28px) * 1.4);
-  background: var(--wuavy-graphite);
+  /* It rises out of the Carbon above: no hard top edge, just a gradient. */
+  background: linear-gradient(to bottom, var(--wuavy-carbon), var(--wuavy-graphite) min(16rem, 35%));
   color: var(--wuavy-paper);
 }
 
@@ -60,22 +61,9 @@
   gap: 0 var(--gutter);
 }
 
-.priced li {
-  flex-direction: column;
-  align-items: start;
-  gap: 0;
-  margin-bottom: 0.3rem;
-}
-
 .col a {
   display: inline-block;
   padding-block: 0.2rem;
-}
-
-.price {
-  font-size: var(--fs-micro);
-  font-variant-numeric: tabular-nums;
-  color: var(--wuavy-stone);
 }
 
 @media (hover: hover) {
@@ -117,6 +105,9 @@
   padding-inline: var(--margin);
   margin-bottom: -2.2%;
   color: color-mix(in srgb, var(--wuavy-paper) 92%, transparent);
+  /* The signature settles into the panel: full at the top, fading at its foot. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 10%, rgb(0 0 0 / 0.1) 100%);
+  mask-image: linear-gradient(to bottom, #000 10%, rgb(0 0 0 / 0.1) 100%);
 }
 
 @media (min-width: 640px) {

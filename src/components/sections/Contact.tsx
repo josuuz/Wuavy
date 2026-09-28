@@ -9,7 +9,7 @@ import { cn, hasDescender } from "@/lib/utils";
 import styles from "./Contact.module.css";
 
 /*
-  07 — The call. v2: no longer a full Signal field. Carbon, a warm light
+  06 — The call. v2: no longer a full Signal field. Carbon, a warm light
   low behind the action (T03, Signal-tinted) and the frequency band running
   into the footer (T04). Signal marks only what matters: the last line —
   the verb — and the button. Signal on Carbon is 6:1.
@@ -17,7 +17,7 @@ import styles from "./Contact.module.css";
   or form is a data change.
 */
 
-export function Contact({ index = 7 }: { index?: number }) {
+export function Contact({ index = 6 }: { index?: number }) {
   const { chapter, lines, body } = home.contact;
   const { primary, channels } = site.contact;
 

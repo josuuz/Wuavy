@@ -8,111 +8,64 @@
   cursor: text;
 }
 
+/* A popover in the top layer: the resets undo the popover's default box. */
 .cursor {
   --press: 1;
   position: fixed;
-  left: 0;
-  top: 0;
+  inset: 0 auto auto 0;
   z-index: 200;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: none;
   pointer-events: none;
   will-change: transform;
 }
 
-/* The orb, after the frequency orb of the method section: a dark core with a
-   warm centre, ringed by Signal rays. It is drawn at 64px and scaled, so every
-   state is a transform: 0.5 is the resting 32px. */
-.orb {
-  --s: 0.5;
-  --glow: 0.55;
+/* A popover's backdrop covers the viewport and would take the clicks. */
+.cursor::backdrop {
+  display: none;
+}
+
+/* A plain Signal dot. It is drawn at its largest (88px, the case label) and
+   scaled, so every state is a transform: 0.114 is the resting 10px. */
+.dot {
+  --s: 0.114;
   position: absolute;
-  left: -32px;
-  top: -32px;
-  width: 64px;
-  height: 64px;
+  left: -44px;
+  top: -44px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
+  background: var(--wuavy-signal);
   transform: scale(calc(var(--s) * var(--press)));
-  /* A painted glow (not a filter): drawn once, then only moved and scaled. */
-  box-shadow: 0 0 10px 1px color-mix(in srgb, var(--wuavy-signal) 40%, transparent);
   transition:
     transform var(--duration-element) var(--wuavy-ease-out),
     opacity var(--duration-ui) linear;
 }
 
-.rays {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: repeating-conic-gradient(
-    from 0deg,
-    var(--wuavy-signal) 0deg 4deg,
-    transparent 4deg 10deg
-  );
-  -webkit-mask: radial-gradient(circle closest-side, transparent 62%, #000 64%);
-  mask: radial-gradient(circle closest-side, transparent 62%, #000 64%);
-  animation: spin var(--spin, 16s) linear infinite paused;
+/* Over something pressable it swells into a soft halo around the pointer. */
+.cursor[data-state="action"] .dot {
+  --s: 0.32;
+  opacity: 0.35;
 }
 
-/* The rays turn only when there is something to press or see: at rest the orb
-   holds still (paused, so it never snaps back). */
-.cursor:is([data-state="action"], [data-state="view"]) .rays {
-  animation-play-state: running;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cursor .rays {
-    animation: none;
-  }
-}
-
-.core {
-  position: absolute;
-  inset: 18%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle closest-side,
-    color-mix(in srgb, var(--wuavy-signal) calc(var(--glow) * 100%), transparent) 0%,
-    color-mix(in srgb, var(--wuavy-signal) 22%, var(--wuavy-carbon)) 46%,
-    var(--wuavy-carbon) 100%
-  );
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-/* Over something pressable the orb grows and its light rises. */
-.cursor[data-state="action"] .orb {
-  --s: 0.82;
-  --glow: 0.85;
-}
-
-.cursor[data-state="action"] .rays {
-  --spin: 6s;
-}
-
-/* Over a case the core fills with Signal and carries the label. */
-.cursor[data-state="view"] .orb {
-  --s: 2.05;
-}
-
-.cursor[data-state="view"] .rays {
-  --spin: 10s;
-}
-
-.cursor[data-state="view"] .core {
-  background: var(--wuavy-signal);
+/* Over a case it fills out and carries the label. */
+.cursor[data-state="view"] .dot {
+  --s: 1;
 }
 
 /* Over a field the native text cursor takes over. */
-.cursor[data-state="text"] .orb,
-.cursor[data-state="hidden"] .orb {
+.cursor[data-state="text"] .dot,
+.cursor[data-state="hidden"] .dot {
   opacity: 0;
 }
 
 .cursor[data-pressed] {
-  --press: 0.86;
+  --press: 0.8;
 }
 
 .label {

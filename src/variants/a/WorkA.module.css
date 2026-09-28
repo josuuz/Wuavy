@@ -1,22 +1,25 @@
 .section {
-  padding-block: var(--space-4) var(--section-pad);
+  padding-block: var(--space-4);
 }
 
 .head {
-  row-gap: var(--space-2);
+  row-gap: var(--space-1);
   align-items: end;
+  margin-bottom: var(--space-3);
 }
 
-.counts {
+.chapter {
   grid-column: 1 / -1;
 }
 
 .title {
   grid-column: 1 / -1;
-  font-size: var(--fs-h1);
+  max-width: 18ch;
+  font-size: var(--fs-h2);
   font-weight: var(--wuavy-headline);
-  letter-spacing: -0.03em;
-  line-height: 0.95;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-wrap: balance;
 }
 
 .lead {
@@ -25,76 +28,129 @@
   color: var(--text-2);
 }
 
-.grid {
-  margin-top: var(--space-5);
-  row-gap: var(--space-5);
-  align-items: start;
-}
-
-.card {
+/* ── The index: one short row per case ─────────────────────── */
+.list {
   position: relative;
-  grid-column: 1 / -1;
+  border-bottom: var(--rule) solid var(--border);
 }
 
-.media {
-  background: var(--wuavy-graphite);
+/* The preview frame lives in the list (it positions against it) but is not a row. */
+.previewSlot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.media img {
-  transition: transform var(--duration-scene) var(--wuavy-ease-out);
+.row {
+  position: relative;
+  border-top: var(--rule) solid var(--border);
+  transition: opacity var(--duration-element) var(--wuavy-ease-out);
 }
 
-/* Each case drifts at its own speed: the grid breathes out of step. */
-@supports (animation-timeline: view()) {
-  @media (min-width: 1024px) {
-    .card {
-      animation: float linear both;
-      animation-timeline: view();
-      animation-range: cover 0% cover 100%;
-    }
-  }
-}
-
-@keyframes float {
-  from {
-    transform: translateY(calc(var(--speed) * -1vh));
-  }
-  to {
-    transform: translateY(calc(var(--speed) * 1vh));
-  }
-}
-
-/* Reduced motion: no parallax. */
-@media (prefers-reduced-motion: reduce) {
-  .card {
-    animation: none;
-  }
-}
-
-.caption {
+.inner {
+  position: relative;
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.25rem 0.9rem;
-  margin-top: var(--space-1);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.6rem var(--gutter);
   align-items: baseline;
+  padding: var(--space-2) var(--margin);
 }
 
-.number {
-  grid-row: span 2;
+.index,
+.year {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
-  color: var(--wuavy-signal);
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.index {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.heading {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  gap: 0.5rem;
 }
 
 .name {
-  font-size: var(--fs-h3);
+  font-size: clamp(1.625rem, 1rem + 2.2vw, 3.25rem);
   font-weight: var(--wuavy-headline);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 
+/* Reserved slots stay quiet, so the published work leads. */
+.row[data-muted] .inner {
+  padding-block: var(--space-1);
+}
+
+.row[data-muted] .name {
+  font-size: clamp(1.125rem, 0.9rem + 0.9vw, 1.75rem);
+  color: var(--text-2);
+}
+
+.tagline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.8rem;
+  font-size: max(0.875rem, var(--fs-micro));
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.shift,
+.scope {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.shift {
+  white-space: nowrap;
+  color: var(--wuavy-signal);
+}
+
+.scope {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.6rem;
+}
+
+/* Two disciplines delivered as one: the combo. */
+.combo {
+  padding: 0.28rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--wuavy-signal) 60%, transparent);
+  border-radius: 2px;
+  line-height: 1;
+  color: var(--wuavy-signal);
+}
+
+.year {
+  grid-column: 3;
+  grid-row: 2;
+  justify-self: end;
+}
+
+.arrow {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  font-size: var(--fs-lead);
+  color: var(--wuavy-signal);
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+/* The link covers the whole row: one big target. */
 .link::after {
   content: "";
   position: absolute;
@@ -102,34 +158,74 @@
 }
 
 .link:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 4px;
+  outline: none;
 }
 
-.meta,
-.tag {
-  grid-column: 2;
+.row:has(.link:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+}
+
+/* Touch has no hover: the before/after pair sits in the row. */
+.compare {
+  display: none;
+  grid-column: 2 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  pointer-events: none;
+}
+
+@media (hover: none) {
+  .compare {
+    display: grid;
+  }
+}
+
+.shot {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--wuavy-graphite);
+}
+
+.shotImage {
+  object-fit: cover;
+}
+
+.shotTag {
+  position: absolute;
+  left: 0.4rem;
+  top: 0.4rem;
+  padding: 0.28rem 0.45rem;
+  border-radius: 2px;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-2);
+  line-height: 1;
+  color: var(--wuavy-paper);
+  background: color-mix(in srgb, var(--wuavy-black) 72%, transparent);
+}
+
+.shot + .shot .shotTag {
+  color: var(--wuavy-black);
+  background: var(--wuavy-signal);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .card:hover .media img {
-    transform: scale(1.05);
+  /* The row under the pointer stays; the others step back. */
+  .list:has(.row:hover) .row:not(:hover) {
+    opacity: 0.4;
   }
 
-  .card:hover .link {
-    text-decoration: underline;
-    text-decoration-thickness: max(1px, 0.06em);
-    text-underline-offset: 0.12em;
+  .row:hover .arrow {
+    transform: translateX(0.35em);
   }
 }
 
 @media (min-width: 1024px) {
-  .counts {
+  .chapter {
     grid-column: 1 / span 3;
   }
 
@@ -141,16 +237,23 @@
     grid-column: 10 / span 3;
   }
 
-  .a {
-    grid-column: 1 / span 5;
+  .inner {
+    grid-template-columns: 4rem minmax(0, 6fr) minmax(0, 4fr) 4rem 2rem;
+    align-items: center;
   }
 
-  .b {
-    grid-column: 7 / span 6;
-    margin-top: 22vh;
+  .scope {
+    grid-column: 3;
+    grid-row: 1;
   }
 
-  .c {
-    grid-column: 3 / span 7;
+  .year {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .arrow {
+    grid-column: 5;
+    grid-row: 1;
   }
 }

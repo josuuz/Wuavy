@@ -59,7 +59,8 @@ const mixArm = (a: Arm, b: Arm, t: number): Arm => [
   mix(a[3], b[3], t),
 ];
 
-function mixPose(a: PassoPose, b: PassoPose, t: number): PassoPose {
+/** Blend two poses: `t` 0 is `a`, 1 is `b`. */
+export function mixPose(a: PassoPose, b: PassoPose, t: number): PassoPose {
   return {
     legL: mix(a.legL, b.legL, t),
     legR: mix(a.legR, b.legR, t),
@@ -79,6 +80,21 @@ export function walkPose(theta: number, amount: number): PassoPose {
   // A leg at the end of its swing lifts its foot; the body sinks to meet the ground.
   stride.dy = 4.5 * Math.abs(s);
   return mixPose(STAND, stride, amount);
+}
+
+/**
+ * Peeking over an edge at height `rim` (in his own units): legs straight,
+ * both hands up on the edge just outside his body, the arms tucked behind it.
+ */
+export function peekPose(rim: number): PassoPose {
+  const hand = rim - 9;
+  return {
+    legL: STAND.legL,
+    legR: STAND.legR,
+    armL: [54, hand + 12, 41, hand],
+    armR: [194, hand + 12, 207, hand],
+    dy: 0,
+  };
 }
 
 const r1 = (v: number) => Math.round(v * 10) / 10;

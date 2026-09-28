@@ -5,8 +5,8 @@ import { pad } from "@/lib/utils";
 import styles from "./DifferentialsA.module.css";
 
 /*
-  Why WUAVY, as an editorial list. The manifesto's Paper plane lands here.
-  Hovering a row passes the width wave through its name.
+  Why WUAVY, as a compact grid (like the values). The manifesto's Paper plane
+  lands here. Hovering an item passes the width wave through its name.
 */
 export function DifferentialsA() {
   const { chapter, headline, items } = home.differentials;
@@ -22,7 +22,7 @@ export function DifferentialsA() {
         <ol className={styles.list}>
           {items.map((item, i) => (
             <li key={item.name} className={styles.row} data-wave-host="">
-              <span className={styles.index}>({pad(i + 1)})</span>
+              <span className={styles.index}>{pad(i + 1)}</span>
               <h3 className={styles.name}>
                 <WidthWave text={item.name} hover hoverHost="closest" />
               </h3>

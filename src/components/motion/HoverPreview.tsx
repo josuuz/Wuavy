@@ -3,12 +3,25 @@
 import Image, { type StaticImageData } from "next/image";
 import { useEffect, useRef } from "react";
 
+import { cn } from "@/lib/utils";
 import styles from "./HoverPreview.module.css";
 
+interface PreviewImage {
+  src: StaticImageData;
+  alt: string;
+  /** Brand photo treatment (black and white). Client work keeps its colour: pass false. */
+  mono?: boolean;
+  /** A before/after: the frame opens on `before`, then `src` sweeps in over it on the channel angle. */
+  before?: StaticImageData;
+}
+
 interface HoverPreviewProps {
-  images: Array<{ src: StaticImageData; alt: string }>;
-  /** Frame width in CSS (the height follows the 4:5 ratio). */
+  images: PreviewImage[];
+  /** Frame width in CSS; the height follows `ratio`. */
   width?: string;
+  ratio?: string;
+  /** Tags on a before/after. */
+  labels?: { before: string; after: string };
 }
 
 /**
@@ -19,7 +32,12 @@ interface HoverPreviewProps {
  * only; touch never sees it (the rows stand alone).
  * Ideas from 21st.dev "Hover Image List" and "Cursor Follow", rebuilt here.
  */
-export function HoverPreview({ images, width = "clamp(220px, 20vw, 360px)" }: HoverPreviewProps) {
+export function HoverPreview({
+  images,
+  width = "clamp(220px, 20vw, 360px)",
+  ratio = "4 / 5",
+  labels = { before: "Antes", after: "Depois" },
+}: HoverPreviewProps) {
   const frame = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,12 +106,24 @@ export function HoverPreview({ images, width = "clamp(220px, 20vw, 360px)" }: Ho
   }, []);
 
   return (
-    <div ref={frame} className={styles.frame} style={{ width }} aria-hidden="true" data-active="">
-      {images.map((image, i) => (
-        <div key={i} className={styles.slide} data-slide={i}>
-          <Image src={image.src} alt="" fill sizes="360px" className={styles.image} />
-        </div>
-      ))}
+    <div ref={frame} className={styles.frame} style={{ width, aspectRatio: ratio }} aria-hidden="true" data-active="">
+      {images.map((image, i) => {
+        const tone = cn(styles.image, image.mono !== false && styles.mono);
+        return (
+          <div key={i} className={styles.slide} data-slide={i}>
+            {image.before ? (
+              <>
+                <Image src={image.before} alt="" fill sizes="480px" className={tone} />
+                <span className={styles.tag}>{labels.before}</span>
+              </>
+            ) : null}
+            <div className={cn(styles.layer, image.before && styles.after)}>
+              <Image src={image.src} alt="" fill sizes="480px" className={tone} />
+              {image.before ? <span className={cn(styles.tag, styles.tagAfter)}>{labels.after}</span> : null}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

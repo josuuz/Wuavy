@@ -14,8 +14,8 @@
   animation: rise 1100ms var(--wuavy-ease-out) calc(var(--d0) + var(--n) * 84ms) both;
 }
 
-/* Hold until the intro has opened (only pages with an intro set the flag late). */
-:global(html.js:not([data-intro-done])) .letter {
+/* Hold until the intro starts to open (only pages with an intro set the flags late). */
+:global(html.js:not([data-intro-done]):not([data-intro-open])) .letter {
   animation-play-state: paused;
 }
 

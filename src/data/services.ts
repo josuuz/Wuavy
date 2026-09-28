@@ -1,7 +1,8 @@
 import type { Service } from "@/lib/types";
 
 /*
-  Services, framed as outcomes (brand/DESIGN.md → Voice), with their price.
+  Services, framed as outcomes (brand/DESIGN.md → Voice). No prices on the
+  site: the investment comes in the proposal.
   Order here is the order on the page. `status: "soon"` keeps a service in
   the data without showing it.
 */
@@ -20,7 +21,6 @@ export const services: Service[] = [
       "Otimização para desktop e mobile",
       "Publicação e configuração inicial",
     ],
-    price: { value: "R$ 1.099", label: "Investimento único" },
     status: "active",
   },
   {
@@ -36,12 +36,7 @@ export const services: Service[] = [
       "Acompanhamento",
       "Análise de resultados",
     ],
-    price: {
-      value: "R$ 1.099",
-      period: "/mês",
-      label: "Gestão mensal",
-      note: "A verba de anúncios é paga direto às plataformas e não está inclusa na gestão.",
-    },
+    note: "A verba de anúncios é paga direto às plataformas e não está inclusa na gestão.",
     status: "active",
   },
   {
@@ -50,7 +45,6 @@ export const services: Service[] = [
     outcome: "Manter o movimento.",
     summary: "IA, automações, CRM, aplicativos e integrações feitos sob medida para a operação vender mais.",
     deliverables: ["Inteligência artificial", "Automações", "Aplicativos", "CRM", "Integrações", "Dashboards"],
-    price: { value: "Sob consulta", label: "Projeto personalizado" },
     href: "#sistemas",
     status: "active",
   },

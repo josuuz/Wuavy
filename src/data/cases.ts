@@ -3,13 +3,16 @@ import type { CaseStudy } from "@/lib/types";
 import archConcrete from "@/assets/photo/arch-concrete.jpg";
 import structureLines from "@/assets/photo/structure-lines.jpg";
 import caseArchitecture from "@/assets/photo/case-architecture.jpg";
+import vidaNaturalAntes from "@/assets/work/vida-natural-antes.jpg";
+import vidaNaturalDepois from "@/assets/work/vida-natural-depois.jpg";
 
 /*
   Cases. The first entry is the featured case on the home page.
 
-  PLACEHOLDER: every entry below is a reserved slot, not a real project.
-  No client, result or metric here is real. Images are licensed stock from
-  the brandbook (credits in src/assets/photo/CREDITS.md).
+  Vida Natural is real work: its images are screenshots of the old site and
+  of the new one. The entries marked `placeholder` are reserved slots, not
+  real projects: no client, result or metric there is real, and their images
+  are licensed stock from the brandbook (src/assets/photo/CREDITS.md).
   To publish a case: replace the fields, set `placeholder: false`, and add
   `result` only with a verified number.
 */
@@ -19,9 +22,52 @@ const placeholderSummary =
 
 export const cases: CaseStudy[] = [
   {
+    slug: "vida-natural",
+    client: "Vida Natural",
+    title: "Vida Natural",
+    tagline: "De catálogo antigo a marca de fábrica premium.",
+    segment: "Méis e produtos naturais",
+    services: ["sites"],
+    scope: ["Website", "Identidade Visual"],
+    year: 2026,
+    summary:
+      "Uma fábrica de mel com mais de 40 anos e um site que não mostrava isso. Redesenhamos marca e loja juntas, para o produto aparecer com o peso que tem.",
+    url: "https://vidanaturall.vercel.app/",
+    body: {
+      challenge:
+        "O site anterior funcionava como um catálogo: um banner decorativo no topo, as categorias concentradas em um único menu e os produtos listados sem contexto. A história de uma fábrica com quatro décadas não aparecia na tela.",
+      approach:
+        "Tratamos identidade visual e website como um só projeto. Paleta, tipografia e fotografia de produto passaram a falar a mesma língua, e a navegação foi reorganizada em torno do que o cliente procura: méis, própolis e abelhas sem ferrão.",
+      outcome:
+        "Uma marca com presença de fábrica premium: visual moderno, conteúdo organizado, navegação direta e produtos apresentados como protagonistas.",
+    },
+    before: {
+      media: {
+        kind: "image",
+        src: vidaNaturalAntes,
+        alt: "Página inicial antiga da Vida Natural: banner decorativo e menu de categorias.",
+        treatment: "none",
+      },
+      changes: [
+        "Visual moderno e premium",
+        "Conteúdo organizado",
+        "Navegação mais clara",
+        "Produtos em destaque",
+        "Identidade profissional",
+      ],
+    },
+    cover: {
+      kind: "image",
+      src: vidaNaturalDepois,
+      alt: "Nova página inicial da Vida Natural: título editorial e os produtos em destaque.",
+      treatment: "none",
+    },
+    placeholder: false,
+  },
+  {
     slug: "projeto-01",
     client: "Cliente a publicar",
-    title: "Projeto 01",
+    title: "Case em preparação",
     segment: "Segmento a publicar",
     services: ["sites", "trafego-pago"],
     year: 2026,
@@ -37,7 +83,7 @@ export const cases: CaseStudy[] = [
   {
     slug: "projeto-02",
     client: "Cliente a publicar",
-    title: "Projeto 02",
+    title: "Case em preparação",
     segment: "Segmento a publicar",
     services: ["trafego-pago"],
     year: 2026,
@@ -53,7 +99,7 @@ export const cases: CaseStudy[] = [
   {
     slug: "projeto-03",
     client: "Cliente a publicar",
-    title: "Projeto 03",
+    title: "Case em preparação",
     segment: "Segmento a publicar",
     services: ["sites"],
     year: 2026,

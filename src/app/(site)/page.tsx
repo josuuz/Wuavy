@@ -7,14 +7,16 @@ import { IntroLoader } from "@/variants/a/IntroLoader";
 import { ServicesA } from "@/variants/a/ServicesA";
 import { StatementA } from "@/variants/a/StatementA";
 import { SystemsA } from "@/variants/a/SystemsA";
-import { WorkA } from "@/variants/a/WorkA";
 
 /*
   The home page is a composition: each section owns its layout and reads its
   copy from src/data. Surfaces alternate so every chapter reads as a turn:
-  black, paper, black, carbon, the manifesto break landing on paper, black,
-  fog for the questions, and the carbon call before the footer (mounted by
+  black, paper, black, carbon, the manifesto break landing on paper, fog for
+  the questions, and the carbon call before the footer (mounted by
   SiteChrome).
+  Projects (WorkA, chapter 05 between Differentials and FAQ) are off until
+  the real cases are in src/data/cases.ts; the FAQ and Contact chapter
+  numbers move back up by one when it returns.
 */
 export default function Home() {
   return (
@@ -26,7 +28,6 @@ export default function Home() {
       <SystemsA />
       <Manifesto lines={["Crescer", "é sair do", "lugar."]} fit={5.3} />
       <DifferentialsA />
-      <WorkA />
       <FaqA />
       <Contact />
     </>
