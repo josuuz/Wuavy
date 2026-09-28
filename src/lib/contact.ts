@@ -11,16 +11,18 @@ export function contactHref(channel: ContactChannel, topic?: string): string {
       const subject = topic ? `${channel.subject ?? "Projeto"}: ${topic}` : channel.subject;
       return `mailto:${channel.address}${subject ? `?subject=${encodeURIComponent(subject)}` : ""}`;
     }
-    case "whatsapp": {
-      const digits = channel.number.replace(/\D/g, "");
-      const text = topic ? `${channel.message ?? "Olá, WUAVY."} Assunto: ${topic}.` : channel.message;
-      return `https://wa.me/${digits}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
-    }
+    case "whatsapp":
+      return whatsappHref(channel.number, topic ? `${channel.message ?? "Olá, WUAVY."} Assunto: ${topic}.` : channel.message);
     case "calendar":
       return channel.url;
     case "form":
       return topic ? `${channel.href}?assunto=${encodeURIComponent(topic)}` : channel.href;
   }
+}
+
+/** A WhatsApp chat with `text` already typed. The number may carry any formatting. */
+export function whatsappHref(number: string, text?: string): string {
+  return `https://wa.me/${number.replace(/\D/g, "")}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }
 
 /** Human-readable value for listing a channel (the address, the number…). */

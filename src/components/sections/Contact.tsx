@@ -4,7 +4,7 @@ import { WidthWave } from "@/components/motion";
 import { Button } from "@/components/ui/Button";
 import { home } from "@/data/home";
 import { site } from "@/data/site";
-import { contactHref, contactValue } from "@/lib/contact";
+import { contactHref, contactValue, isExternal } from "@/lib/contact";
 import { cn, hasDescender } from "@/lib/utils";
 import styles from "./Contact.module.css";
 
@@ -53,7 +53,11 @@ export function Contact({ index = 7 }: { index?: number }) {
           {channels.map((channel) => (
             <li key={channel.kind}>
               <span className={styles.channelLabel}>{channel.label}</span>
-              <a href={contactHref(channel)} className={styles.channelValue}>
+              <a
+                href={contactHref(channel)}
+                className={styles.channelValue}
+                {...(isExternal(contactHref(channel)) ? { target: "_blank", rel: "noopener" } : {})}
+              >
                 {contactValue(channel)}
               </a>
             </li>

@@ -14,8 +14,15 @@ const email: ContactChannel = {
   subject: "Orçamento",
 };
 
+// O contato principal (todos os "Solicitar orçamento") e a entrega do diagnóstico do PASSO.
+export const whatsapp = {
+  kind: "whatsapp",
+  label: "WhatsApp",
+  number: "+55 19 99448-7967",
+  message: "Olá! Vim pelo site da Wuavy.",
+} satisfies ContactChannel;
+
 // Exemplos prontos para ativar quando os dados existirem:
-// const whatsapp: ContactChannel = { kind: "whatsapp", label: "WhatsApp", number: "+55 …", message: "Olá, WUAVY." };
 // const calendar: ContactChannel = { kind: "calendar", label: "Agendar conversa", url: "https://…" };
 // const form: ContactChannel = { kind: "form", label: "Formulário", href: "/contato" };
 
@@ -36,8 +43,8 @@ export const site: SiteConfig = {
   ],
   cta: { label: "Solicitar orçamento", short: "Orçamento" },
   contact: {
-    primary: email,
-    channels: [email],
+    primary: whatsapp,
+    channels: [whatsapp, email],
   },
   // TODO(social): preencher os perfis. Sem href, o nome aparece como texto, sem link.
   social: [

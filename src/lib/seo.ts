@@ -1,4 +1,8 @@
 import { site } from "@/data/site";
+import type { ContactChannel } from "./types";
+
+const channel = <K extends ContactChannel["kind"]>(kind: K) =>
+  site.contact.channels.find((c): c is Extract<ContactChannel, { kind: K }> => c.kind === kind);
 
 /** Absolute URL on the site's domain. */
 export function absoluteUrl(path = "/"): string {
@@ -14,7 +18,8 @@ export function organizationJsonLd() {
     url: site.url,
     logo: absoluteUrl("/icon.svg"),
     description: site.description,
-    email: site.contact.primary.kind === "email" ? site.contact.primary.address : undefined,
+    email: channel("email")?.address,
+    telephone: channel("whatsapp")?.number,
     sameAs: site.social.map((s) => s.href).filter(Boolean),
   };
 }

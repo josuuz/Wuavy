@@ -73,6 +73,33 @@
   transform: translate(-2px, -8px);
 }
 
+/* Talking (PassoGuide open), he stops looking around and looks at the card. */
+[data-talk] .look,
+[data-talk] .pupils {
+  animation: none;
+}
+
+[data-talk="below"] .pupils {
+  transform: translate(-2px, 5px);
+}
+
+[data-talk="above"] .pupils {
+  transform: translate(-2px, -7px);
+}
+
+[data-talk="right"] .pupils {
+  transform: translateX(3px);
+}
+
+/* To his left he turns his head, as when he looks around. */
+[data-talk="left"] .look {
+  transform: translateX(-39.6px);
+}
+
+[data-talk="left"] .pupils {
+  transform: translateX(-5px);
+}
+
 @keyframes look {
   0%,
   26% {

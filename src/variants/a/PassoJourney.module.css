@@ -24,4 +24,91 @@
   height: 440px;
   max-width: none;
   overflow: visible;
+  /* His feet (user 120, 284): the hop squashes and stretches from there. */
+  transform-origin: 60% 64.5%;
+}
+
+/* The press area: his body, in his own units (the layer scales it with him).
+   Docked, it stays inside the header band, over what shows of him. */
+.hit {
+  position: absolute;
+  left: -82px;
+  top: -252px;
+  width: 170px;
+  height: 262px;
+  padding: 0;
+  border: 0;
+  border-radius: 48px;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The hint: a small bubble hanging under him, its tail pointing up at him.
+   Placed by the script (its transform); `translate` centres it on him. */
+.hint {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 61;
+  translate: -50% 0;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 14px 32px -14px rgb(0 0 0 / 0.6);
+  font-size: max(0.8125rem, var(--fs-micro));
+  font-weight: 600;
+  white-space: nowrap;
+  transform-origin: 50% 0;
+  opacity: 0;
+  scale: 0.9;
+  visibility: hidden;
+  cursor: pointer;
+  transition:
+    opacity 220ms var(--wuavy-ease-out),
+    scale 260ms var(--wuavy-ease-out),
+    visibility 0s linear 260ms;
+}
+
+.hint[data-show] {
+  opacity: 1;
+  scale: 1;
+  visibility: visible;
+  transition:
+    opacity 220ms var(--wuavy-ease-out),
+    scale 440ms cubic-bezier(0.2, 1.3, 0.4, 1),
+    visibility 0s;
+}
+
+.hint::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  transform: rotate(45deg);
+}
+
+.hint:hover {
+  border-color: color-mix(in srgb, var(--wuavy-signal) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint,
+  .hint[data-show] {
+    scale: 1;
+  }
+}
+
+.hit:focus-visible {
+  outline: calc(2px / var(--k, 0.2)) solid var(--wuavy-signal);
+  outline-offset: calc(2px / var(--k, 0.2));
 }

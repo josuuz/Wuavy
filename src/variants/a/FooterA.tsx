@@ -35,14 +35,10 @@ export function FooterA() {
 
           <div className={styles.col}>
             <h2 className={styles.title}>{servicesTitle}</h2>
-            <ul className={styles.priced}>
+            <ul>
               {activeServices.map((s) => (
                 <li key={s.id}>
                   <Link href="/#servicos">{s.name}</Link>
-                  <span className={styles.price}>
-                    {s.price.value}
-                    {s.price.period}
-                  </span>
                 </li>
               ))}
             </ul>
@@ -53,7 +49,9 @@ export function FooterA() {
             <ul>
               {site.contact.channels.map((c) => (
                 <li key={c.kind}>
-                  <a href={contactHref(c)}>{contactValue(c)}</a>
+                  <a href={contactHref(c)} {...(isExternal(contactHref(c)) ? { target: "_blank", rel: "noopener" } : {})}>
+                    {contactValue(c)}
+                  </a>
                 </li>
               ))}
             </ul>
