@@ -8,12 +8,13 @@ import { pad } from "@/lib/utils";
 import styles from "./SystemsA.module.css";
 
 /*
-  The advanced tier: a custom project that starts with a diagnosis. The
-  capabilities sit in a hairline grid like a spec sheet; a light follows the
-  pointer across the cell under it.
+  The advanced tier: a custom project that starts with a diagnosis. Four
+  blocks in a hairline grid like a spec sheet; each keeps its examples in a
+  native <details> (click or tap, keyboard for free, one open at a time), and
+  a light follows the pointer across the block under it.
 */
 export function SystemsA() {
-  const { chapter, headline, lead, cta, items } = home.systems;
+  const { chapter, headline, lead, cta, examples, items } = home.systems;
 
   return (
     <Section id="sistemas" surface="carbon" label="Sistemas" className={`tx-grain ${styles.section}`}>
@@ -40,11 +41,21 @@ export function SystemsA() {
               <span className={styles.index}>{pad(i + 1)}</span>
               <h3 className={styles.name}>{item.name}</h3>
               <p className={styles.text}>{item.text}</p>
+              <details className={styles.more} name="sistemas">
+                <summary className={styles.toggle}>
+                  {examples}
+                  <span className={styles.icon} aria-hidden="true" />
+                </summary>
+                <ul className={styles.examples}>
+                  {item.examples.map((example) => (
+                    <li key={example}>{example}</li>
+                  ))}
+                </ul>
+              </details>
             </li>
           ))}
         </ul>
       </div>
-
     </Section>
   );
 }

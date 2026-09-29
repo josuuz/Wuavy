@@ -1,11 +1,11 @@
 .section {
-  padding-block: var(--space-4);
+  padding-block: var(--space-3) var(--space-4);
 }
 
 .head {
   row-gap: var(--space-1);
   align-items: end;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .chapter {
@@ -14,31 +14,15 @@
 
 .title {
   grid-column: 1 / -1;
-  max-width: 18ch;
-  font-size: var(--fs-h2);
+  font-size: var(--fs-h3);
   font-weight: var(--wuavy-headline);
-  letter-spacing: -0.025em;
-  line-height: 1;
-  text-wrap: balance;
-}
-
-.lead {
-  grid-column: 1 / -1;
-  max-width: 30ch;
-  color: var(--text-2);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
 }
 
 /* ── The index: one short row per case ─────────────────────── */
 .list {
-  position: relative;
   border-bottom: var(--rule) solid var(--border);
-}
-
-/* The preview frame lives in the list (it positions against it) but is not a row. */
-.previewSlot {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
 }
 
 .row {
@@ -56,8 +40,9 @@
   padding: var(--space-2) var(--margin);
 }
 
-.index,
-.year {
+.index {
+  grid-column: 1;
+  grid-row: 1;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
   font-variant-numeric: tabular-nums;
@@ -65,56 +50,25 @@
   color: var(--text-2);
 }
 
-.index {
-  grid-column: 1;
-  grid-row: 1;
-}
-
 .heading {
   grid-column: 2;
   grid-row: 1;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .name {
-  font-size: clamp(1.625rem, 1rem + 2.2vw, 3.25rem);
+  font-size: clamp(1.5rem, 1rem + 1.6vw, 2.5rem);
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.03em;
   line-height: 1;
 }
 
-/* Reserved slots stay quiet, so the published work leads. */
-.row[data-muted] .inner {
-  padding-block: var(--space-1);
-}
-
-.row[data-muted] .name {
-  font-size: clamp(1.125rem, 0.9rem + 0.9vw, 1.75rem);
-  color: var(--text-2);
-}
-
 .tagline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.3rem 0.8rem;
+  max-width: 44ch;
   font-size: max(0.875rem, var(--fs-micro));
   line-height: 1.35;
   color: var(--text-2);
-}
-
-.shift,
-.scope {
-  font-size: var(--fs-micro);
-  font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.shift {
-  white-space: nowrap;
-  color: var(--wuavy-signal);
 }
 
 .scope {
@@ -124,6 +78,10 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.35rem 0.6rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 /* Two disciplines delivered as one: the combo. */
@@ -136,9 +94,8 @@
 }
 
 .year {
-  grid-column: 3;
-  grid-row: 2;
-  justify-self: end;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
 }
 
 .arrow {
@@ -166,38 +123,35 @@
   outline-offset: -4px;
 }
 
-/* Touch has no hover: the before/after pair sits in the row. */
+/* ── Before → after: two small frames, the new one tagged in Signal ── */
 .compare {
-  display: none;
   grid-column: 2 / -1;
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
+  max-width: 26rem;
   margin-top: 0.4rem;
   pointer-events: none;
-}
-
-@media (hover: none) {
-  .compare {
-    display: grid;
-  }
 }
 
 .shot {
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
+  border-radius: 2px;
   background: var(--wuavy-graphite);
 }
 
 .shotImage {
   object-fit: cover;
+  object-position: top;
 }
 
 .shotTag {
   position: absolute;
-  left: 0.4rem;
-  top: 0.4rem;
-  padding: 0.28rem 0.45rem;
+  left: 0.35rem;
+  top: 0.35rem;
+  padding: 0.25rem 0.4rem;
   border-radius: 2px;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
@@ -230,15 +184,11 @@
   }
 
   .title {
-    grid-column: 4 / span 6;
-  }
-
-  .lead {
-    grid-column: 10 / span 3;
+    grid-column: 4 / span 9;
   }
 
   .inner {
-    grid-template-columns: 4rem minmax(0, 6fr) minmax(0, 4fr) 4rem 2rem;
+    grid-template-columns: 4rem minmax(0, 5fr) minmax(0, 3fr) minmax(0, 4fr) 2rem;
     align-items: center;
   }
 
@@ -247,13 +197,15 @@
     grid-row: 1;
   }
 
-  .year {
+  .compare {
     grid-column: 4;
     grid-row: 1;
+    width: 100%;
+    margin-top: 0;
+    justify-self: end;
   }
 
   .arrow {
     grid-column: 5;
-    grid-row: 1;
   }
 }

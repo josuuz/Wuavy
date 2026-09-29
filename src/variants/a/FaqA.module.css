@@ -1,5 +1,5 @@
 .section {
-  padding-block: var(--space-3) var(--section-pad);
+  padding-block: var(--space-3) var(--space-4);
 }
 
 .side {

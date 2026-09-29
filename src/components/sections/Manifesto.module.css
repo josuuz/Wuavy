@@ -54,7 +54,7 @@
 /* ── Scroll-driven break ───────────────────────────────────── */
 @supports (animation-timeline: view()) {
   .section {
-    height: 210svh;
+    height: 160svh;
     padding-inline: 0;
     background: var(--wuavy-black);
     color: var(--wuavy-paper);

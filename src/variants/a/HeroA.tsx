@@ -48,7 +48,7 @@ export function HeroA() {
           <p className={styles.lead}>{home.hero.lead}</p>
           <div className={styles.actions}>
             <Button href={contactHref(site.contact.primary)} size="sm">
-              {site.cta.label}
+              {home.hero.cta}
             </Button>
             <TextLink href={home.hero.secondary.href} className={styles.secondary}>
               {home.hero.secondary.label}

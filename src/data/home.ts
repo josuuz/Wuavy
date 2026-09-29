@@ -9,20 +9,21 @@ export const home = {
   hero: {
     details: ["Agência de crescimento digital", "Sites, tráfego e sistemas", "Um só ritmo"], // new
     lead: "Sites, tráfego pago e sistemas sob medida para empresas que querem crescer com constância, não com sorte.", // new
+    cta: "Quero melhorar meu negócio",
     secondary: { label: "Ver serviços", href: "#servicos" },
   },
 
   idea: {
-    chapter: "Ideia",
+    chapter: "Sobre",
     body: "Crescimento não é um estouro de ruído. É um sinal repetido com precisão: a mensagem certa, no canal certo, quantas vezes forem precisas para um mercado se mover.", // approved
     positioning:
       "A WUAVY é uma agência de crescimento digital. Criamos sites, operamos tráfego pago e construímos sistemas que ajudam a operação a vender mais, tudo no mesmo ritmo.", // new
     valuesTitle: "Valores",
     values: [
-      { name: "Frequência", text: "Constância vence estouro. Repetimos o que funciona até o mercado responder." },
-      { name: "Precisão", text: "Cada decisão tem um motivo e uma medida. Nada entra só para enfeitar." },
-      { name: "Sem ruído", text: "Comunicação direta, escopo claro e o que está incluso dito desde o início." }, // "Performance sem ruído" (approved)
-      { name: "Crescer junto", text: "Uma agência que cresce junto com o cliente, não à frente dele." }, // deslocamento (approved)
+      { name: "Frequência", text: "Constância vence estouro." },
+      { name: "Precisão", text: "Nada entra só para enfeitar." },
+      { name: "Sem ruído", text: "Direto, sem letra miúda." }, // "Performance sem ruído" (approved)
+      { name: "Crescer junto", text: "Com o cliente, não à frente dele." }, // deslocamento (approved)
     ],
   },
 
@@ -31,7 +32,7 @@ export const home = {
     headline: "Três formas de colocar o crescimento em movimento.", // new
     lead: "Você compra um resultado. As disciplinas são como chegamos lá.",
     includes: "O que inclui",
-    cta: "Solicitar orçamento",
+    cta: "Falar sobre meu projeto",
     more: "Conhecer sistemas",
   },
 
@@ -40,17 +41,45 @@ export const home = {
     headline: "Construímos sistemas personalizados para empresas que precisam ir além do marketing.", // new (from the brief)
     lead: "Quando o gargalo não é atenção, é operação: atendimento que não escala, vendas que dependem de planilha, dados espalhados. Desenhamos a solução e colocamos para rodar.", // new
     cta: "Solicitar diagnóstico",
+    examples: "Exemplos",
     items: [
-      { name: "Inteligência artificial", text: "IA aplicada ao seu negócio, onde ela economiza tempo ou vende mais." },
-      { name: "Agentes de IA", text: "Agentes que respondem, qualificam e executam tarefas com as regras da sua operação." },
-      { name: "Automações", text: "Processos repetitivos rodando sozinhos, sem copiar e colar entre ferramentas." },
-      { name: "Atendimento", text: "Automação de atendimento que responde rápido e passa para a equipe quando precisa." },
-      { name: "Comercial", text: "Automação comercial e funis que levam o contato do primeiro clique à venda." },
-      { name: "CRM", text: "Cada contato, conversa e oportunidade em um só lugar, com o funil à vista." },
-      { name: "Aplicativos", text: "Aplicativos web e mobile para clientes ou para a equipe." },
-      { name: "Sistemas internos", text: "Ferramentas sob medida para o jeito que a sua empresa trabalha." },
-      { name: "Integrações", text: "Site, anúncios, CRM, pagamentos e planilhas conversando entre si." },
-      { name: "Dashboards", text: "Os números que importam em um painel, atualizados sem esforço manual." },
+      {
+        name: "Atendimento & Vendas",
+        text: "Responder rápido e levar cada contato até a venda.",
+        examples: [
+          "Atendimento automatizado no WhatsApp",
+          "Qualificação de leads",
+          "Funis e automação comercial",
+          "Passagem para a equipe na hora certa",
+        ],
+      },
+      {
+        name: "Automação",
+        text: "Processos repetitivos rodando sozinhos.",
+        examples: [
+          "Tarefas repetitivas sem copiar e colar",
+          "Site, anúncios, CRM e pagamentos integrados",
+          "Planilhas e ferramentas conversando entre si",
+        ],
+      },
+      {
+        name: "Sistemas & CRM",
+        text: "Ferramentas sob medida para o jeito que sua empresa trabalha.",
+        examples: [
+          "CRM com o funil à vista",
+          "Sistemas internos",
+          "Aplicativos web e mobile para clientes ou para a equipe",
+        ],
+      },
+      {
+        name: "IA & Dados",
+        text: "IA onde ela economiza tempo, e os números à vista.",
+        examples: [
+          "IA aplicada ao seu negócio",
+          "Agentes de IA com as regras da sua operação",
+          "Dashboards atualizados sem esforço manual",
+        ],
+      },
     ],
   },
 
@@ -78,19 +107,12 @@ export const home = {
         name: "Decisão por dados",
         text: "Campanhas acompanhadas e analisadas continuamente. Ajustamos pelo que os números mostram, não por impressão.",
       },
-      {
-        name: "Além do marketing",
-        text: "Quando atrair clientes não basta, construímos o que falta: IA, automações, CRM e aplicativos sob medida.",
-      },
     ],
   },
 
   work: {
     chapter: "Projetos",
-    title: "Marcas que saíram do lugar.", // deslocamento ("Crescer é sair do lugar.")
-    lead: "Cada projeto é medido pelo que move, não pelo que mostra.",
-    placeholderTag: "Em preparação",
-    open: "Ver case",
+    title: "Projetos recentes.",
     combo: "Combo",
     before: "Antes",
     after: "Depois",
@@ -135,6 +157,7 @@ export const home = {
     chapter: "Contato",
     lines: ["Faça o", "mercado", "se mover."], // approved
     body: "Conte o que você quer mover e para onde. A conversa começa pelo diagnóstico e termina com uma proposta clara.", // new
+    cta: "Solicitar diagnóstico",
   },
 
   footer: {

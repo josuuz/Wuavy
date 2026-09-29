@@ -1,10 +1,10 @@
 .section {
-  padding-block: var(--space-4) var(--section-pad);
+  padding-block: var(--space-4);
 }
 
 .head {
   row-gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .chapter {
@@ -15,7 +15,7 @@
 
 .headline {
   grid-column: 1 / -1;
-  max-width: 16ch;
+  max-width: 22ch;
   font-size: var(--fs-h2);
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.025em;
@@ -61,7 +61,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
-  padding: var(--space-3) var(--margin);
+  padding: var(--space-2) var(--margin) var(--space-3);
   transition: color 420ms var(--wuavy-ease-out) 80ms;
 }
 
@@ -86,7 +86,7 @@
 }
 
 .name {
-  font-size: clamp(2.25rem, 1rem + 4.6vw, 6.5rem);
+  font-size: clamp(2rem, 1rem + 3.4vw, 4.75rem);
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.03em;
   line-height: 1.02;
@@ -213,7 +213,7 @@
   .inner {
     grid-template-columns: 4rem minmax(0, 5fr) minmax(0, 4fr) minmax(13rem, 3fr);
     column-gap: var(--gutter);
-    row-gap: var(--space-3);
+    row-gap: var(--space-2);
   }
 
   .index {

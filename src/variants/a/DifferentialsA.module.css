@@ -17,7 +17,7 @@
   text-wrap: balance;
 }
 
-/* ── The five differentials: a compact grid, like the values ── */
+/* ── The four differentials: a compact grid ── */
 .list {
   grid-column: 1 / -1;
   display: grid;
@@ -90,12 +90,6 @@
   }
 
   .list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1280px) {
-  .list {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

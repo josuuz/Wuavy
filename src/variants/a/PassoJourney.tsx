@@ -54,9 +54,10 @@ const HAND_R = 7.9; // PassoFigure's hands; they open a little to hold the edge
 const GRIP_R = 10;
 const SINK_MS = 760;
 const RISE_MS = 420;
-const HINT_KEY = "wuavy-passo-hint";
-const HINT_DELAY_MS = 700; // after he settles into his peek
-const HINT_MS = 5200;
+const HINT_KEY = "wuavy-passo-hint"; // set once he has been talked to: no more hints this visit
+const HINT_FIRST_MS = 700; // after he settles into his peek
+const HINT_SHOW_MS = 4000;
+const HINT_GAP_MS = [6000, 10000]; // hidden between two appearances
 
 // The portal needs document.body, so the walk renders on the client only.
 const noSubscribe = () => () => {};
@@ -235,44 +236,51 @@ export function PassoJourney() {
       writeCard();
     };
 
-    // The hint: once per visit, a moment after he first peeks from the header,
-    // a small bubble says he can help; he hops as it appears. It leaves on its
-    // own, when he climbs out, or when his card opens.
+    // The hint: while he peeks from the header and nobody has talked to him, a
+    // small bubble says he can help, leaves, and comes back 6–10 s later (he
+    // hops the first time). Talking to him ends it for the visit; climbing out
+    // of the header pauses it.
     const bubble = hint.current;
-    let hintState: "wait" | "armed" | "done" = "wait";
+    let hintDone = false;
+    let hintOn = false;
     let hintTimer = 0;
     try {
-      if (sessionStorage.getItem(HINT_KEY)) hintState = "done";
+      hintDone = Boolean(sessionStorage.getItem(HINT_KEY));
     } catch {}
 
+    const stopHint = () => {
+      clearTimeout(hintTimer);
+      hintOn = false;
+      if (bubble?.hasAttribute("data-show")) bubble.removeAttribute("data-show");
+    };
     const retireHint = () => {
-      hintState = "done";
+      hintDone = true;
+      stopHint();
       try {
         sessionStorage.setItem(HINT_KEY, "1");
       } catch {}
     };
-    const dropHint = () => {
-      clearTimeout(hintTimer);
-      if (bubble?.hasAttribute("data-show")) bubble.removeAttribute("data-show");
-    };
-    const showHint = () => {
+    const showHint = (first: boolean) => {
       if (!bubble) return;
-      retireHint();
       const x = Math.min(Math.max(spot.x, 90), html.clientWidth - 90);
-      bubble.style.transform = `translate3d(${x.toFixed(0)}px, ${(spot.feet + 12).toFixed(0)}px, 0)`;
+      bubble.style.transform = `translate3d(${x.toFixed(0)}px, ${(spot.feet + 12).toFixed(0)}px, 0) translateX(-50%)`;
       bubble.setAttribute("data-show", "");
-      react("answer");
-      hintTimer = window.setTimeout(dropHint, HINT_MS);
+      if (first) react("answer");
+      hintTimer = window.setTimeout(hideHint, HINT_SHOW_MS);
     };
-    // Counted as seen only once it has shown (or his card was opened first).
+    const hideHint = () => {
+      bubble?.removeAttribute("data-show");
+      const [min, max] = HINT_GAP_MS;
+      hintTimer = window.setTimeout(() => showHint(false), min + Math.random() * (max - min));
+    };
     const watchHint = () => {
-      if (talk.current.open && hintState !== "done") retireHint();
-      if (talk.current.open || peekTo !== 1) {
-        if (hintState === "armed") hintState = "wait";
-        dropHint();
-      } else if (hintState === "wait" && peek === 1) {
-        hintState = "armed";
-        hintTimer = window.setTimeout(showHint, HINT_DELAY_MS);
+      if (hintDone) return;
+      if (talk.current.open) retireHint();
+      else if (peekTo !== 1) {
+        if (hintOn) stopHint();
+      } else if (!hintOn && peek === 1) {
+        hintOn = true;
+        hintTimer = window.setTimeout(() => showHint(true), HINT_FIRST_MS);
       }
     };
 
@@ -414,7 +422,7 @@ export function PassoJourney() {
       unsubscribe();
       headerWatch.disconnect();
       introWatch.disconnect();
-      dropHint();
+      stopHint();
       resizeWatch.disconnect();
       cardWatch.disconnect();
       placeCard.current = null;

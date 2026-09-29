@@ -44,7 +44,7 @@ export const services: Service[] = [
     name: "Sistemas de crescimento",
     outcome: "Manter o movimento.",
     summary: "IA, automações, CRM, aplicativos e integrações feitos sob medida para a operação vender mais.",
-    deliverables: ["Inteligência artificial", "Automações", "Aplicativos", "CRM", "Integrações", "Dashboards"],
+    deliverables: ["Atendimento & Vendas", "Automação", "Sistemas & CRM", "IA & Dados"],
     href: "#sistemas",
     status: "active",
   },

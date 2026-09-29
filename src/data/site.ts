@@ -14,7 +14,7 @@ const email: ContactChannel = {
   subject: "Orçamento",
 };
 
-// O contato principal (todos os "Solicitar orçamento") e a entrega do diagnóstico do PASSO.
+// O contato principal (todos os CTAs do site) e a entrega do diagnóstico do PASSO.
 export const whatsapp = {
   kind: "whatsapp",
   label: "WhatsApp",
@@ -37,10 +37,11 @@ export const site: SiteConfig = {
   nav: [
     { label: "Serviços", href: "/#servicos" },
     { label: "Sistemas", href: "/#sistemas" },
+    { label: "Projetos", href: "/#projetos" },
     { label: "FAQ", href: "/#faq" },
     { label: "Contato", href: "/#contato" },
   ],
-  cta: { label: "Solicitar orçamento", short: "Orçamento" },
+  cta: { label: "Falar sobre meu projeto", short: "WhatsApp" },
   contact: {
     primary: whatsapp,
     channels: [whatsapp, email],

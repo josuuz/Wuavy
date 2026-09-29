@@ -17,7 +17,7 @@
 
 .chapter {
   grid-column: 1 / -1;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .headline {
@@ -42,31 +42,33 @@
   color: var(--text-2);
 }
 
-/* ── The spec sheet: hairline cells, one light under the pointer ── */
+/* ── The spec sheet: four hairline blocks, one light under the pointer ── */
 .grid {
   position: relative;
   z-index: 1;
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: var(--space-4);
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: var(--space-3);
   border-top: var(--rule) solid var(--border);
   border-left: var(--rule) solid var(--border);
 }
 
 .cell {
   position: relative;
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-1);
-  min-height: clamp(11rem, 8rem + 8vw, 17rem);
   padding: var(--space-2);
   border-right: var(--rule) solid var(--border);
   border-bottom: var(--rule) solid var(--border);
   overflow: clip;
 }
 
-.cell > :not([data-spot]) {
+.index,
+.name,
+.text,
+.examples {
   position: relative;
 }
 
@@ -92,8 +94,8 @@
 }
 
 .name {
-  margin-top: var(--space-3);
-  font-size: clamp(1.25rem, 0.95rem + 0.9vw, 1.875rem);
+  margin-top: var(--space-2);
+  font-size: clamp(1.375rem, 1rem + 1vw, 2rem);
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.02em;
   line-height: 1.05;
@@ -101,9 +103,123 @@
 }
 
 .text {
+  max-width: 30ch;
   font-size: max(0.875rem, var(--fs-micro));
   line-height: 1.4;
   color: var(--text-2);
+}
+
+/* ── The examples: behind a quiet toggle at the foot of the block ── */
+.more {
+  margin-top: auto;
+  padding-top: var(--space-1);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  list-style: none;
+  cursor: pointer;
+  transition: color var(--duration-ui) linear;
+}
+
+.toggle::-webkit-details-marker {
+  display: none;
+}
+
+/* The whole block is the toggle: one big target. */
+.toggle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.toggle:focus-visible {
+  outline: none;
+}
+
+.cell:has(.toggle:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+}
+
+/* Plus → minus, as in the questions. */
+.icon {
+  position: relative;
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.icon::before,
+.icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 1.5px;
+  background: currentColor;
+  translate: -50% -50%;
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.icon::after {
+  transform: rotate(90deg);
+}
+
+.more[open] .toggle {
+  color: var(--text);
+}
+
+.more[open] .icon::after {
+  transform: rotate(180deg) scaleX(0);
+}
+
+.more[open] .icon::before {
+  background: var(--wuavy-signal);
+}
+
+.examples {
+  display: grid;
+  gap: 0.45rem;
+  padding-bottom: 0.25rem;
+  font-size: max(0.875rem, var(--fs-micro));
+  line-height: 1.3;
+}
+
+.examples li {
+  position: relative;
+  padding-left: 1rem;
+}
+
+/* Each example is marked by a short stroke on the channel angle. */
+.examples li::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: 0.2em;
+  width: 2px;
+  height: 0.9em;
+  background: var(--wuavy-signal);
+  transform: skewX(calc(var(--wuavy-angle) * -1));
+}
+
+.more[open] .examples {
+  animation: open var(--duration-element) var(--wuavy-ease-out) both;
+}
+
+@keyframes open {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -111,6 +227,10 @@
   .cell:hover .spot {
     opacity: 1;
     will-change: translate;
+  }
+
+  .cell:hover .toggle {
+    color: var(--text);
   }
 }
 
@@ -133,19 +253,32 @@
   }
 }
 
-@media (max-width: 479px) {
-  .grid {
-    grid-template-columns: minmax(0, 1fr);
+/* One column: the number sits beside the name, so each block stays short. */
+@media (max-width: 639px) {
+  .cell {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.35rem 0.6rem;
   }
 
-  .cell {
-    min-height: 0;
+  .name {
+    margin-top: 0;
+  }
+
+  .text,
+  .more {
+    grid-column: 2;
+  }
+
+  .more {
+    padding-top: 0;
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -159,6 +292,10 @@
   }
 
   .grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .cell {
+    min-height: 16rem;
   }
 }

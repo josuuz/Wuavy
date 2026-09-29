@@ -5,41 +5,28 @@ import { pad } from "@/lib/utils";
 import styles from "./StatementA.module.css";
 
 /*
-  The idea, drawn: FREQUÊNCIA set solid, VOLUME. set hollow. The paragraph
-  lights up word by word with the scroll; the positioning says it plainly,
-  and the four values close the chapter in one compact row.
+  About: the idea lights up word by word with the scroll, the positioning
+  says it plainly, and the four values close it as one compact line.
 */
 
 export function StatementA() {
+  const { chapter, body, positioning, valuesTitle, values } = home.idea;
+
   return (
-    <Section id="ideia" surface="paper" label="Ideia" className={`tx-grid tx-grain ${styles.section}`}>
-      <p className={styles.display}>
-        <span className="sr-only">Frequência vence volume.</span>
-        <span className={styles.solid} aria-hidden="true">
-          Frequência
-        </span>
-        <span className={styles.second} aria-hidden="true">
-          <span className={styles.small}>vence</span>
-          <span className={styles.hollow}>volume.</span>
-        </span>
-      </p>
-
+    <Section id="ideia" surface="paper" label={chapter} className={`tx-grid tx-grain ${styles.section}`}>
       <div className={`frame ${styles.body}`}>
-        <ChapterHead index={1} name={home.idea.chapter} className={styles.chapter} />
+        <ChapterHead index={1} name={chapter} className={styles.chapter} />
         <p className={styles.read}>
-          <ReadReveal text={home.idea.body} accents={["precisão:"]} />
+          <ReadReveal text={body} accents={["precisão:"]} />
         </p>
-        <p className={styles.positioning}>{home.idea.positioning}</p>
+        <p className={styles.positioning}>{positioning}</p>
 
-        <h3 className={styles.valuesTitle}>{home.idea.valuesTitle}</h3>
-        <ul className={styles.values}>
-          {home.idea.values.map((value, i) => (
+        <ul className={styles.values} aria-label={valuesTitle}>
+          {values.map((value, i) => (
             <li key={value.name} className={styles.value}>
-              <h4 className={styles.valueName}>
-                <span className={styles.valueIndex}>{pad(i + 1)}</span>
-                {value.name}
-              </h4>
-              <p className={styles.valueText}>{value.text}</p>
+              <span className={styles.valueIndex}>{pad(i + 1)}</span>
+              <strong className={styles.valueName}>{value.name}</strong>
+              <span className={styles.valueText}>{value.text}</span>
             </li>
           ))}
         </ul>

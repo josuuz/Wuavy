@@ -17,4 +17,3 @@ export { SmoothScroll } from "./SmoothScroll";
 export { ScrollMarquee } from "./ScrollMarquee";
 export { ReadReveal } from "./ReadReveal";
 export { RollText } from "./RollText";
-export { HoverPreview } from "./HoverPreview";

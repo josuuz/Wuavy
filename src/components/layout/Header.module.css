@@ -205,7 +205,7 @@
   display: none;
 }
 
-@media (max-width: 399px) {
+@media (max-width: 479px) {
   .ctaFull {
     display: none;
   }

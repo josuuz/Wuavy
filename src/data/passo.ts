@@ -235,5 +235,5 @@ export const guide = {
   restart: "Refazer",
   close: "Fechar",
   open: "Falar com o PASSO: descubra o que sua empresa precisa",
-  hint: "Oi! Posso te ajudar?",
+  hint: "Oi, posso ajudar?",
 } as const;
