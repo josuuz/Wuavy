@@ -1,8 +1,8 @@
 /*
-  Wuavy Flow's domain. Each entity mirrors a future table (supabase/migrations/
+  Wuavy Flow's domain. Each entity mirrors a table (supabase/migrations/
   0001_flow.sql): camelCase here, snake_case there, and every row carries its
   organization, so one clinic never reads another's data. Money is in cents,
-  times are ISO strings.
+  times are ISO strings in the clinic's wall clock (see clock.ts).
 */
 
 export type ID = string;
@@ -23,7 +23,8 @@ export interface User {
 
 export const LEAD_STAGES = ["novo", "contato", "avaliacao", "orcamento", "agendado", "procedimento", "retorno"] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
-export type LeadSource = "instagram" | "google" | "indicacao" | "whatsapp" | "site";
+export const LEAD_SOURCES = ["instagram", "google", "indicacao", "whatsapp", "site"] as const;
+export type LeadSource = (typeof LEAD_SOURCES)[number];
 
 export interface Lead {
   id: ID;
@@ -46,22 +47,24 @@ export interface Patient {
   organizationId: ID;
   name: string;
   phone: string;
-  firstVisitAt: string;
-  lastVisitAt: string;
+  /** Empty until the first procedure is done. */
+  firstVisitAt?: string;
+  lastVisitAt?: string;
   nextReturnAt?: string;
   totalSpent: number;
   /** Commercial and operational notes only: never clinical records. */
   notes: string;
 }
 
-export type AppointmentStatus = "agendado" | "confirmado" | "cancelado" | "concluido";
+export const APPOINTMENT_STATUSES = ["agendado", "confirmado", "cancelado", "concluido"] as const;
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
 export interface Appointment {
   id: ID;
   organizationId: ID;
   patientId: ID;
   procedureId: ID;
-  professionalId: ID;
+  professionalId?: ID;
   startsAt: string;
   durationMin: number;
   status: AppointmentStatus;
@@ -76,11 +79,13 @@ export interface WaitlistEntry {
   createdAt: string;
 }
 
+export const PROCEDURE_CATEGORIES = ["facial", "injetaveis", "corporal"] as const;
+
 export interface Procedure {
   id: ID;
   organizationId: ID;
   name: string;
-  category: "facial" | "injetaveis" | "corporal";
+  category: (typeof PROCEDURE_CATEGORIES)[number];
   price: number;
   durationMin: number;
   /** Typical interval before the next session. */

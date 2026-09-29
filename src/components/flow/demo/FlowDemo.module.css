@@ -126,6 +126,29 @@
   display: none;
 }
 
+.signOut {
+  min-height: 1.5rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.signOut:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .signOut:hover {
+    color: var(--text);
+  }
+}
+
 .askSmall {
   min-height: 2.5rem;
   padding: 0 0.75rem;

@@ -4,12 +4,14 @@ import { createContext, useContext, useMemo, useReducer, type Dispatch, type Rea
 
 import { opportunities } from "@/lib/flow/insights";
 import type { FlowData, ID, LeadStage, Opportunity, OpportunityKind, OpportunityStatus } from "@/lib/flow/types";
+import { BASE } from "./copy";
 
 /*
   The demo's state: the clinic's data plus what the visitor did to it (a lead
   moved, a slot cancelled, an opportunity prepared). It lives in memory only;
-  a reload starts the demo over. With a real source these actions become
-  writes, and the shape of the screens stays the same.
+  a reload starts the demo over. In the real Flow (`live`) the data is the
+  server's: screens write through Server Actions, the route refreshes and the
+  new data arrives as `initial`. The shape of the screens stays the same.
 */
 
 interface State {
@@ -76,15 +78,27 @@ interface FlowContext {
   ops: Opportunity[];
   focus: OpportunityKind | null;
   dispatch: Dispatch<Action>;
+  /** Where the screens live: the demo's or the real Flow's address. */
+  base: string;
+  /** A real clinic: records can be created, edited and deleted. */
+  live: boolean;
 }
 
 const Context = createContext<FlowContext | null>(null);
 
-export function FlowProvider({ initial, children }: { initial: FlowData; children: ReactNode }) {
+interface ProviderProps {
+  initial: FlowData;
+  base?: string;
+  live?: boolean;
+  children: ReactNode;
+}
+
+export function FlowProvider({ initial, base = BASE, live = false, children }: ProviderProps) {
   const [state, dispatch] = useReducer(reducer, { data: initial, statuses: {}, focus: null, seq: 0 });
+  const data = live ? initial : state.data;
   const value = useMemo(
-    () => ({ data: state.data, ops: opportunities(state.data, state.statuses), focus: state.focus, dispatch }),
-    [state],
+    () => ({ data, ops: opportunities(data, state.statuses), focus: state.focus, dispatch, base, live }),
+    [data, state.statuses, state.focus, base, live],
   );
   return <Context value={value}>{children}</Context>;
 }

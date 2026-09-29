@@ -4,20 +4,14 @@ import { notFound } from "next/navigation";
 import { VIEWS } from "@/components/flow/demo/copy";
 import { SCREENS } from "@/components/flow/demo/screens";
 
-/* Every screen of the demo but the overview: one static page each. */
+/* Every screen of the real Flow but the overview. Rendered per request: the data is the clinic's. */
 
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return Object.keys(SCREENS).map((view) => ({ view }));
-}
-
-export async function generateMetadata(props: PageProps<"/flow/demo/[view]">): Promise<Metadata> {
+export async function generateMetadata(props: PageProps<"/flow/app/[view]">): Promise<Metadata> {
   const { view } = await props.params;
   return { title: VIEWS.find((v) => v.slug === view)?.label };
 }
 
-export default async function FlowDemoView(props: PageProps<"/flow/demo/[view]">) {
+export default async function FlowAppView(props: PageProps<"/flow/app/[view]">) {
   const { view } = await props.params;
   const Screen = SCREENS[view];
   if (!Screen) notFound();

@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { localAssistant, SUGGESTED, type FlowAnswer, type FlowAssistant } from "@/lib/flow/assistant";
 import { PassoFigure } from "@/variants/a/PassoFigure";
 import { STAND } from "@/variants/a/passoRig";
+import { viewHref } from "./copy";
 import { Sheet } from "./Sheet";
 import { useFlow } from "./store";
 import styles from "./ui.module.css";
@@ -25,7 +26,7 @@ interface Turn {
 }
 
 export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { data } = useFlow();
+  const { data, base } = useFlow();
   const [thread, setThread] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -77,7 +78,7 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
                   </ul>
                 ) : null}
                 {turn.a.link ? (
-                  <Link href={turn.a.link.href} className={styles.textAction} onClick={onClose}>
+                  <Link href={viewHref(turn.a.link.view, base)} className={styles.textAction} onClick={onClose}>
                     {turn.a.link.label} <span aria-hidden="true">→</span>
                   </Link>
                 ) : null}

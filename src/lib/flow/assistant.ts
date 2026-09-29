@@ -21,7 +21,7 @@ import type { FlowData } from "./types";
 export interface FlowAnswer {
   text: string;
   items?: { label: string; value: string }[];
-  link?: { label: string; href: string };
+  link?: { label: string; /** A screen of the Flow, as in VIEWS. */ view: string };
 }
 
 export interface FlowAssistant {
@@ -35,7 +35,6 @@ export const SUGGESTED = [
   "Quais leads estão parados?",
 ];
 
-const BASE = "/flow/demo";
 const plain = (s: string) =>
   s
     .normalize("NFD")
@@ -54,7 +53,7 @@ function status(d: FlowData): FlowAnswer {
       { label: "Horários livres amanhã", value: String(slots.length) },
       { label: "Recuperado em 30 dias", value: brl(recovered(d).total) },
     ],
-    link: { label: "Abrir a visão geral", href: BASE },
+    link: { label: "Abrir a visão geral", view: "" },
   };
 }
 
@@ -71,7 +70,7 @@ function today(d: FlowData): FlowAnswer {
       .filter((o) => o.count > 0)
       .sort((a, b) => b.value - a.value)
       .map((o) => ({ label: `${labels[o.kind]} (${o.count})`, value: brl(o.value) })),
-    link: { label: "Ver oportunidades", href: `${BASE}/oportunidades` },
+    link: { label: "Ver oportunidades", view: "oportunidades" },
   };
 }
 
@@ -91,7 +90,7 @@ function stock(d: FlowData): FlowAnswer {
         value: `${brl(lotValue(d, lot))} · ${used}`,
       };
     }),
-    link: { label: "Ver estoque", href: `${BASE}/estoque` },
+    link: { label: "Ver estoque", view: "estoque" },
   };
 }
 
@@ -103,7 +102,7 @@ function leads(d: FlowData): FlowAnswer {
       label: `${l.name} · ${procedureOf(d, l.procedureId)?.name}`,
       value: `${brl(l.potentialValue)} · ${-daysFrom(d.now, l.lastContactAt)} dias`,
     })),
-    link: { label: "Abrir o CRM", href: `${BASE}/crm` },
+    link: { label: "Abrir o CRM", view: "crm" },
   };
 }
 
@@ -114,7 +113,7 @@ function schedule(d: FlowData): FlowAnswer {
       ? `Amanhã há ${plural(slots.length, "horário livre", "horários livres")}. A lista de espera pode ocupar parte deles.`
       : "A agenda de amanhã está cheia.",
     items: slots.map((s) => ({ label: `Amanhã às ${hour(s.startsAt)}`, value: s.status === "cancelado" ? "cancelamento" : "livre" })),
-    link: { label: "Abrir a agenda", href: `${BASE}/agenda` },
+    link: { label: "Abrir a agenda", view: "agenda" },
   };
 }
 
@@ -126,7 +125,7 @@ function returns(d: FlowData): FlowAnswer {
       const days = daysFrom(d.now, p.nextReturnAt!);
       return { label: p.name, value: days < 0 ? `retorno passou há ${-days} dias` : `retorno em ${days} dias` };
     }),
-    link: { label: "Ver pacientes", href: `${BASE}/pacientes` },
+    link: { label: "Ver pacientes", view: "pacientes" },
   };
 }
 

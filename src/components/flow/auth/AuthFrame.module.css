@@ -1,0 +1,45 @@
+/* ── The Flow's doors: one column on the black surface, the form in the middle ── */
+.frame {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+.card {
+  width: min(100%, 26rem);
+  display: grid;
+  gap: 1.75rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-self: start;
+}
+
+.brand svg {
+  width: 5.25rem;
+  height: auto;
+}
+
+.brand:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The product mark, as in the app's rail: outlined in Signal. */
+.product {
+  padding: 0.22rem 0.4rem;
+  border: 1px solid var(--wuavy-signal);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

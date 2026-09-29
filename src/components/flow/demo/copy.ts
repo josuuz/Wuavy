@@ -3,7 +3,9 @@ import type { LeadSource, LeadStage, Opportunity, OpportunityKind, OpportunitySt
 
 /* The demo's words: its screens, and how each kind of opportunity is said. */
 
+/** The demo's address. The real Flow runs the same screens under APP_BASE. */
 export const BASE = "/flow/demo";
+export const APP_BASE = "/flow/app";
 
 export const VIEWS = [
   { slug: "", label: "Visão geral" },
@@ -16,7 +18,7 @@ export const VIEWS = [
   { slug: "automacoes", label: "Automações" },
 ] as const;
 
-export const viewHref = (slug: string) => (slug ? `${BASE}/${slug}` : BASE);
+export const viewHref = (slug: string, base = BASE) => (slug ? `${base}/${slug}` : base);
 
 export const STAGE_LABEL: Record<LeadStage, string> = {
   novo: "Novo lead",

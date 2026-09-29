@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 
+import { deletePatient, savePatient } from "@/lib/flow/actions";
 import { brl, daysFrom, relDay } from "@/lib/flow/format";
 import { dueReturns, hasUpcoming, history, procedureOf } from "@/lib/flow/insights";
 import type { Patient } from "@/lib/flow/types";
+import { DeleteButton, Field, FormError, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
@@ -17,15 +19,16 @@ const FILTERS = [
 ] as const;
 
 export function Patients() {
-  const { data, dispatch } = useFlow();
+  const { data, dispatch, live } = useFlow();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("todos");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const due = new Set(dueReturns(data).map((p) => p.id));
   const q = query.trim().toLowerCase();
   const list = data.patients
     .filter((p) => (filter === "todos" || due.has(p.id)) && (!q || p.name.toLowerCase().includes(q)))
-    .sort((a, b) => b.lastVisitAt.localeCompare(a.lastVisitAt));
+    .sort((a, b) => (b.lastVisitAt ?? "").localeCompare(a.lastVisitAt ?? ""));
   const patient = data.patients.find((p) => p.id === selected);
 
   return (
@@ -35,6 +38,13 @@ export function Patients() {
         <p className={styles.lead}>
           {data.patients.length} pacientes, {due.size} potencialmente perto do período de retorno.
         </p>
+        {live ? (
+          <div className={styles.actions}>
+            <button type="button" className={styles.primary} onClick={() => setCreating(true)}>
+              Novo paciente
+            </button>
+          </div>
+        ) : null}
       </header>
 
       <div className={styles.toolbar}>
@@ -76,7 +86,7 @@ export function Patients() {
                 </button>
                 {due.has(p.id) ? <span className={styles.dot}>Retorno próximo</span> : null}
               </td>
-              <td data-label="Último atendimento">{relDay(data.now, p.lastVisitAt)}</td>
+              <td data-label="Último atendimento">{p.lastVisitAt ? relDay(data.now, p.lastVisitAt) : "—"}</td>
               <td data-label="Próximo retorno">{p.nextReturnAt ? relDay(data.now, p.nextReturnAt) : "—"}</td>
               <td data-label="Valor gasto">{brl(p.totalSpent)}</td>
             </tr>
@@ -88,35 +98,55 @@ export function Patients() {
       <Sheet open={Boolean(patient)} onClose={() => setSelected(null)} title={patient?.name ?? ""} kicker="Paciente">
         {patient ? (
           <Profile
+            key={patient.id}
             patient={patient}
             due={due.has(patient.id)}
             onInvite={() => dispatch({ type: "note", text: `Convite de retorno preparado para ${patient.name}. Não enviado.` })}
+            onDeleted={() => setSelected(null)}
           />
         ) : null}
       </Sheet>
+
+      {live ? (
+        <Sheet open={creating} onClose={() => setCreating(false)} title="Novo paciente" kicker="Paciente">
+          <PatientForm onDone={() => setCreating(false)} />
+        </Sheet>
+      ) : null}
     </div>
   );
 }
 
-function Profile({ patient, due, onInvite }: { patient: Patient; due: boolean; onInvite: () => void }) {
-  const { data } = useFlow();
+interface ProfileProps {
+  patient: Patient;
+  due: boolean;
+  onInvite: () => void;
+  onDeleted: () => void;
+}
+
+function Profile({ patient, due, onInvite, onDeleted }: ProfileProps) {
+  const { data, live } = useFlow();
+  const { pending, error, write } = useWrite();
   const visits = history(data, patient.id);
   const [invited, setInvited] = useState(false);
+  const [editing, setEditing] = useState(false);
   const next = patient.nextReturnAt ? daysFrom(data.now, patient.nextReturnAt) : null;
+
+  if (editing) return <PatientForm patient={patient} onDone={() => setEditing(false)} />;
+
   return (
     <>
       <dl className={styles.fields}>
         <div>
           <dt>Contato</dt>
-          <dd>{patient.phone}</dd>
+          <dd>{patient.phone || "—"}</dd>
         </div>
         <div>
           <dt>Paciente desde</dt>
-          <dd>{relDay(data.now, patient.firstVisitAt)}</dd>
+          <dd>{patient.firstVisitAt ? relDay(data.now, patient.firstVisitAt) : "—"}</dd>
         </div>
         <div>
           <dt>Último atendimento</dt>
-          <dd>{relDay(data.now, patient.lastVisitAt)}</dd>
+          <dd>{patient.lastVisitAt ? relDay(data.now, patient.lastVisitAt) : "—"}</dd>
         </div>
         <div>
           <dt>Próximo retorno</dt>
@@ -141,8 +171,10 @@ function Profile({ patient, due, onInvite }: { patient: Patient; due: boolean; o
         ))}
       </ol>
 
+      {visits.length === 0 ? <p className={styles.fine}>Nenhum procedimento concluído ainda.</p> : null}
+
       <p className={styles.label}>Observações comerciais</p>
-      <p className={styles.note}>{patient.notes}</p>
+      <p className={styles.note}>{patient.notes || "—"}</p>
 
       {due ? (
         <div className={styles.suggestion}>
@@ -168,6 +200,49 @@ function Profile({ patient, due, onInvite }: { patient: Patient; due: boolean; o
           )}
         </div>
       ) : null}
+
+      {live ? (
+        <>
+          <FormError error={error} />
+          <div className={styles.actions}>
+            <button type="button" className={styles.quiet} onClick={() => setEditing(true)}>
+              Editar
+            </button>
+            <DeleteButton
+              confirm="Excluir paciente e seus agendamentos"
+              pending={pending}
+              onDelete={() => write(() => deletePatient(patient.id), onDeleted)}
+            />
+          </div>
+        </>
+      ) : null}
     </>
+  );
+}
+
+function PatientForm({ patient, onDone }: { patient?: Patient; onDone: () => void }) {
+  const { pending, error, submit } = useWrite();
+  return (
+    <form className={styles.form} onSubmit={submit((form) => savePatient(patient?.id ?? null, form), onDone)}>
+      <Field label="Nome">
+        <input className={styles.input} name="name" required maxLength={200} defaultValue={patient?.name} autoComplete="off" />
+      </Field>
+      <Field label="Telefone">
+        <input className={styles.input} name="phone" type="tel" maxLength={40} defaultValue={patient?.phone} />
+      </Field>
+      <Field label="Observações comerciais">
+        <textarea className={styles.input} name="notes" maxLength={1000} defaultValue={patient?.notes} />
+      </Field>
+      <p className={styles.fine}>Só observações comerciais e operacionais. Nada de prontuário ou dado clínico.</p>
+      <FormError error={error} />
+      <div className={styles.actions}>
+        <button type="submit" className={styles.primary} disabled={pending}>
+          {patient ? "Salvar" : "Criar paciente"}
+        </button>
+        <button type="button" className={styles.quiet} onClick={onDone}>
+          Cancelar
+        </button>
+      </div>
+    </form>
   );
 }

@@ -175,6 +175,34 @@
   outline-offset: 1px;
 }
 
+/* ── Forms (the real Flow: create and edit records) ── */
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.form .input {
+  width: 100%;
+  color-scheme: dark;
+}
+
+.form textarea.input {
+  min-height: 6rem;
+  padding: 0.65rem 0.9rem;
+  resize: vertical;
+}
+
+.formError {
+  font-size: 0.875rem;
+  font-weight: 640;
+  color: var(--wuavy-signal);
+}
+
 /* ── Overview ── */
 .greet {
   max-width: 22ch;

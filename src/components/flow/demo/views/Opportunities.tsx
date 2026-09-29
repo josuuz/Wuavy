@@ -18,7 +18,7 @@ import {
   stuckLeads,
 } from "@/lib/flow/insights";
 import type { FlowData, OpportunityKind } from "@/lib/flow/types";
-import { BASE, KIND, SOURCE_LABEL, STATUS_LABEL } from "../copy";
+import { KIND, SOURCE_LABEL, STATUS_LABEL, viewHref } from "../copy";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
@@ -27,7 +27,7 @@ import styles from "../ui.module.css";
 const SHOWN = 8;
 
 export function Opportunities() {
-  const { data, ops, focus, dispatch } = useFlow();
+  const { data, ops, focus, dispatch, base } = useFlow();
   // Opened from another screen: start on that one, then the request is spent.
   const [opened, setOpened] = useState<OpportunityKind | null>(focus);
   useEffect(() => {
@@ -96,7 +96,7 @@ export function Opportunities() {
                         ) : null}
                       </>
                     )}
-                    <Link href={`${BASE}/${copy.view}`} className={styles.textAction}>
+                    <Link href={viewHref(copy.view, base)} className={styles.textAction}>
                       Ver na tela de {copy.tag.toLowerCase()} <span aria-hidden="true">→</span>
                     </Link>
                   </div>

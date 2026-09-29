@@ -5,7 +5,7 @@ import { useSyncExternalStore } from "react";
 
 import { brl, hour, relDay } from "@/lib/flow/format";
 import { daySlots, recovered } from "@/lib/flow/insights";
-import { BASE, KIND } from "../copy";
+import { KIND, viewHref } from "../copy";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
@@ -25,7 +25,7 @@ const RECOVERED_LABEL: Record<string, string> = {
 };
 
 export function Overview() {
-  const { data, ops, dispatch } = useFlow();
+  const { data, ops, dispatch, base } = useFlow();
   const hello = useSyncExternalStore(noSubscribe, greeting, () => "Bom dia");
   const back = recovered(data);
   const tomorrow = daySlots(data, 1);
@@ -45,7 +45,7 @@ export function Overview() {
               <span className={styles.signalValue}>{value}</span>
               <span className={styles.signalLabel}>{label}</span>
               <Link
-                href={`${BASE}/oportunidades`}
+                href={viewHref("oportunidades", base)}
                 className={styles.textAction}
                 onClick={() => dispatch({ type: "focus", kind: o.kind })}
               >
@@ -88,7 +88,7 @@ export function Overview() {
               );
             })}
           </ol>
-          <Link href={`${BASE}/agenda`} className={styles.textAction}>
+          <Link href={viewHref("agenda", base)} className={styles.textAction}>
             Abrir a agenda <span aria-hidden="true">→</span>
           </Link>
         </section>

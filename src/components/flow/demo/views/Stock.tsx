@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { brl, daysFrom, plural, units } from "@/lib/flow/format";
 import { expiringLots, lotStatus, lotValue, proceduresUsing, type LotStatus } from "@/lib/flow/insights";
 import type { InventoryLot } from "@/lib/flow/types";
-import { BASE } from "../copy";
+import { viewHref } from "../copy";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
@@ -15,7 +15,7 @@ const STATUS: Record<LotStatus, string> = { proximo: "Próximo da validade", ate
 const ORDER: Record<LotStatus, number> = { proximo: 0, atencao: 1, normal: 2 };
 
 export function Stock() {
-  const { data, dispatch } = useFlow();
+  const { data, dispatch, base } = useFlow();
   const router = useRouter();
   const near = expiringLots(data);
   const nearValue = near.reduce((s, l) => s + lotValue(data, l), 0);
@@ -24,7 +24,7 @@ export function Stock() {
   );
   const analyse = () => {
     dispatch({ type: "focus", kind: "stock_expiry" });
-    router.push(`${BASE}/oportunidades`);
+    router.push(viewHref("oportunidades", base));
   };
   // The one worth the most is the one worth acting on first.
   const lead = [...near].sort((a, b) => lotValue(data, b) - lotValue(data, a))[0];
