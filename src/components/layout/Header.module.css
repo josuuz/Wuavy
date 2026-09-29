@@ -180,9 +180,84 @@
   background: var(--wuavy-signal);
 }
 
+/* A product link (Flow): outlined in Signal on a faint Signal tint, which
+   reads on every surface; on hover it fills. Its line drops in under it. */
+.navProduct {
+  margin-block: -0.4rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.65rem;
+  border: 1px solid var(--wuavy-signal);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+  transition:
+    background-color var(--duration-ui) linear,
+    color var(--duration-ui) linear;
+}
+
+.navProduct::after {
+  display: none;
+}
+
+.navProduct[aria-current] {
+  background: color-mix(in srgb, var(--wuavy-signal) 26%, transparent);
+}
+
+.navArrow {
+  display: inline-block;
+  margin-left: 0.3em;
+  color: var(--wuavy-signal);
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.navHint {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.55rem);
+  padding: 0.4rem 0.6rem;
+  border: var(--rule) solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 0;
+  translate: -50% -0.3rem;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-ui) linear,
+    translate var(--duration-element) var(--wuavy-ease-out);
+}
+
+.navLink:focus-visible .navHint {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+.navLink:focus-visible .navArrow {
+  transform: translate(0.12em, -0.12em);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .navLink:hover::after {
     transform: none;
+  }
+
+  .navLink:hover .navHint {
+    opacity: 1;
+    translate: -50% 0;
+  }
+
+  .navLink:hover .navArrow {
+    transform: translate(0.12em, -0.12em);
+  }
+
+  .navProduct:hover {
+    background: var(--wuavy-signal);
+    color: var(--wuavy-black);
+  }
+
+  .navProduct:hover .navArrow {
+    color: var(--wuavy-black);
   }
 }
 

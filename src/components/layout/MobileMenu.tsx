@@ -6,6 +6,7 @@ import { useRef, type CSSProperties } from "react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { Button } from "@/components/ui/Button";
 import type { NavItem } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import styles from "./MobileMenu.module.css";
 
 interface MobileMenuProps {
@@ -47,8 +48,9 @@ export function MobileMenu({ nav, cta }: MobileMenuProps) {
           <ul>
             {nav.map((item, i) => (
               <li key={item.href} style={{ "--i": i } as CSSProperties}>
-                <Link href={item.href} className={styles.link} onClick={close}>
+                <Link href={item.href} className={cn(styles.link, item.hint && styles.product)} onClick={close}>
                   {item.label}
+                  {item.hint ? <span className={styles.hint}>{item.hint}</span> : null}
                 </Link>
               </li>
             ))}

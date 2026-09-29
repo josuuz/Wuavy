@@ -1,0 +1,479 @@
+/* ── Hero: the promise on the left, PASSO and his bubble on the right ── */
+.hero {
+  overflow: clip;
+  padding-block: calc(var(--header-h) + var(--space-4)) var(--space-4);
+}
+
+.light {
+  --light-size: 90vmax;
+  --lx: 82vw;
+  --ly: 70svh;
+}
+
+.heroGrid {
+  position: relative;
+  z-index: 1;
+  row-gap: var(--space-4);
+}
+
+.heroText,
+.guide {
+  grid-column: 1 / -1;
+}
+
+.heroText {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+/* The product's name, marked like a channel: a short Signal stroke on the angle. */
+.labelName {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text);
+}
+
+.labelName::before {
+  content: "";
+  width: 3px;
+  height: 1.1em;
+  background: var(--wuavy-signal);
+  transform: skewX(calc(var(--wuavy-angle) * -1));
+}
+
+.title {
+  max-width: 16ch;
+  font-size: clamp(2.5rem, 1rem + 4vw, 5rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.lead {
+  max-width: 44ch;
+  font-size: var(--fs-lead);
+  line-height: 1.35;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.market {
+  margin-top: var(--space-2);
+  padding-top: 0.8rem;
+  border-top: var(--rule) solid var(--border);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.guide {
+  justify-self: start;
+}
+
+/* ── Shared ─────────────────────────────────────────────────── */
+.chapter {
+  grid-column: 1 / -1;
+  margin-bottom: var(--space-2);
+}
+
+.h2 {
+  grid-column: 1 / -1;
+  max-width: 18ch;
+  font-size: var(--fs-h2);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.index {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--wuavy-signal);
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(1.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ── The four gaps ──────────────────────────────────────────── */
+.gaps {
+  padding-block: var(--space-4);
+}
+
+.gapList {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3) var(--gutter);
+  margin-top: var(--space-3);
+}
+
+.gap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  align-items: baseline;
+  gap: 0.5rem 0.6rem;
+  padding-top: 0.8rem;
+  border-top: var(--rule) solid var(--text);
+}
+
+.gapName {
+  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.75rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.gapText,
+.gapAction {
+  grid-column: 2;
+}
+
+.gapText {
+  max-width: 32ch;
+  font-size: max(0.9375rem, var(--fs-micro));
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.gapAction {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gapAction span {
+  color: var(--wuavy-signal);
+}
+
+/* ── How it works: five stages, then one worked example ─────── */
+.how {
+  padding-block: var(--space-4);
+}
+
+.howLead {
+  grid-column: 1 / -1;
+  max-width: 40ch;
+  margin-top: var(--space-2);
+  font-size: var(--fs-lead);
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.stages {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2) var(--gutter);
+  margin-top: var(--space-4);
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.4rem 0.6rem;
+  padding-top: 0.9rem;
+  border-top: var(--rule) solid var(--border);
+}
+
+/* The stages fill with Signal one after another as the flow scrolls by. */
+.stage::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--rule) * -1);
+  height: 2px;
+  background: var(--wuavy-signal);
+  transform-origin: 0 50%;
+}
+
+.stageName {
+  font-size: clamp(1.5rem, 1rem + 1.4vw, 2.5rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.stageText {
+  grid-column: 2;
+  max-width: 28ch;
+  font-size: max(0.875rem, var(--fs-micro));
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.example {
+  grid-column: 1 / -1;
+  margin-top: var(--space-4);
+}
+
+.exampleHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.note {
+  color: var(--text-2);
+}
+
+/* A hairline sheet of five cells, each handing over to the next. */
+.chain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border-top: var(--rule) solid var(--border);
+  border-left: var(--rule) solid var(--border);
+}
+
+.link {
+  position: relative;
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding: var(--space-2);
+  border-right: var(--rule) solid var(--border);
+  border-bottom: var(--rule) solid var(--border);
+}
+
+.link:not(:last-child)::after {
+  content: "↓";
+  position: absolute;
+  z-index: 1;
+  left: var(--space-2);
+  bottom: 0;
+  padding-inline: 0.35rem;
+  translate: 0 50%;
+  background: var(--surface);
+  color: var(--wuavy-signal);
+  line-height: 1;
+}
+
+.linkLabel {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.linkText {
+  max-width: 30ch;
+  font-size: max(1rem, var(--fs-body));
+  line-height: 1.35;
+}
+
+/* The outcome carries the Signal. */
+.link:last-child {
+  background: color-mix(in srgb, var(--wuavy-signal) 9%, transparent);
+}
+
+.link:last-child .linkLabel {
+  color: var(--wuavy-signal);
+}
+
+@supports (animation-timeline: view()) {
+  .stage::before {
+    animation: fill linear both;
+    animation-timeline: view();
+    animation-range: entry calc(40% + var(--i) * 18%) cover calc(30% + var(--i) * 6%);
+  }
+
+  .gap,
+  .link {
+    animation: rise var(--wuavy-ease-soft) both;
+    animation-timeline: view();
+    animation-range: entry calc(var(--i, 0) * 12%) entry calc(70% + var(--i, 0) * 12%);
+  }
+}
+
+@keyframes fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ── The call: Carbon, running into the footer ──────────────── */
+.close {
+  overflow: clip;
+  padding-block: var(--space-4) var(--space-5);
+}
+
+.closeLight {
+  --light-size: 95vmax;
+  --lx: 24vw;
+  --ly: 95%;
+}
+
+.closeGrid {
+  position: relative;
+  z-index: 1;
+}
+
+.closeTitle {
+  grid-column: 1 / -1;
+  max-width: 14ch;
+  font-size: var(--fs-h1);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.closeAction {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  margin-top: var(--space-3);
+}
+
+.closeLead {
+  max-width: 36ch;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.soon {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+@media (min-width: 640px) {
+  .gapList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    display: grid;
+    align-content: center;
+    min-height: min(100svh, 58rem);
+  }
+
+  .heroText {
+    grid-column: 1 / span 8;
+  }
+
+  .guide {
+    grid-column: 9 / span 4;
+    align-self: end;
+    justify-self: end;
+  }
+
+  .gapList {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .h2 {
+    grid-column: 1 / span 8;
+  }
+
+  .howLead {
+    grid-column: 9 / span 4;
+    align-self: end;
+    margin-top: 0;
+  }
+
+  .stages {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stageText {
+    grid-column: 1;
+  }
+
+  /* Side by side, each stage points on to the next. */
+  .stage:not(:last-child) .stageName::after {
+    content: "→";
+    margin-left: 0.3em;
+    font-size: 0.6em;
+    font-weight: 400;
+    vertical-align: 0.2em;
+    color: var(--wuavy-signal);
+  }
+
+  .chain {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .link {
+    min-height: 11rem;
+  }
+
+  .link:not(:last-child)::after {
+    content: "→";
+    left: auto;
+    right: 0;
+    top: 50%;
+    bottom: auto;
+    padding-inline: 0;
+    padding-block: 0.35rem;
+    translate: 50% -50%;
+  }
+
+  .closeTitle {
+    grid-column: 1 / span 8;
+  }
+
+  .closeAction {
+    grid-column: 9 / span 4;
+    align-self: end;
+    margin-top: 0;
+  }
+}

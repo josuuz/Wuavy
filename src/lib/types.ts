@@ -118,6 +118,8 @@ export type ContactChannel =
 export interface NavItem {
   label: string;
   href: string;
+  /** A product link: marked with ↗ and this line on hover. */
+  hint?: string;
 }
 
 export interface SocialLink {

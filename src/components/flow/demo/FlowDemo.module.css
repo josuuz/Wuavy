@@ -1,0 +1,311 @@
+/* ── The app: Black ground, Carbon rail, hairlines, Signal only where the Flow points ── */
+.app {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+/* Phones: the rail is a sticky strip (brand, clinic, the eight screens). */
+.side {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  /* The screen strip scrolls inside the rail; it must never widen it. */
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem 0;
+  background: var(--surface);
+  border-bottom: var(--rule) solid var(--border);
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brand svg {
+  width: 5.25rem;
+  height: auto;
+}
+
+/* The product mark, as in the site's menu: outlined in Signal. */
+.product {
+  padding: 0.22rem 0.4rem;
+  border: 1px solid var(--wuavy-signal);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.org {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  font-weight: 640;
+}
+
+.org span {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  align-self: center;
+}
+
+.nav ol {
+  display: flex;
+  gap: 0.25rem;
+  margin-inline: -1rem;
+  padding-inline: 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav ol::-webkit-scrollbar {
+  display: none;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0 0.6rem;
+  white-space: nowrap;
+  color: var(--text-2);
+  transition: color var(--duration-ui) linear;
+}
+
+.navLink[aria-current] {
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--wuavy-signal);
+}
+
+.navIndex {
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.navLink[aria-current] .navIndex {
+  color: var(--wuavy-signal);
+}
+
+.badge {
+  min-width: 1.3rem;
+  padding: 0.18rem 0.35rem;
+  border-radius: 2px;
+  background: var(--wuavy-signal);
+  color: var(--wuavy-black);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.back {
+  display: none;
+}
+
+.askSmall {
+  min-height: 2.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--wuavy-signal);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 640;
+}
+
+.main {
+  min-width: 0;
+}
+
+.bar {
+  display: none;
+}
+
+.content {
+  width: 100%;
+  max-width: 92rem;
+  padding: 1.5rem 1rem 4rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .navLink:hover {
+    color: var(--text);
+  }
+
+  .ask:hover,
+  .askSmall:hover {
+    background: var(--wuavy-signal);
+    color: var(--wuavy-black);
+  }
+}
+
+:is(.navLink, .ask, .askSmall, .brand, .back):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ── Desktop: the rail stands on the left, the bar sits over the work ── */
+@media (min-width: 1024px) {
+  .app {
+    grid-template-columns: 15.5rem minmax(0, 1fr);
+  }
+
+  .side {
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.4rem 1rem 1.25rem;
+    border-bottom: 0;
+    border-right: var(--rule) solid var(--border);
+    background: var(--wuavy-carbon);
+  }
+
+  .askSmall {
+    display: none;
+  }
+
+  .org {
+    flex-direction: column;
+    padding: 0.9rem 0.6rem;
+    border-block: var(--rule) solid var(--border);
+  }
+
+  .org span {
+    align-self: start;
+  }
+
+  .nav ol {
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .navLink {
+    min-height: 2.5rem;
+    border-radius: 2px;
+  }
+
+  .navLink[aria-current] {
+    background: color-mix(in srgb, var(--wuavy-paper) 7%, transparent);
+    box-shadow: inset 2px 0 0 var(--wuavy-signal);
+  }
+
+  .badge {
+    margin-left: auto;
+  }
+
+  .back {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding: 0.6rem;
+    font-size: 0.8125rem;
+    color: var(--text-2);
+  }
+
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem clamp(1.5rem, 3vw, 2.75rem);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-bottom: var(--rule) solid var(--border);
+  }
+
+  .crumb {
+    font-size: var(--fs-micro);
+    font-weight: var(--wuavy-micro);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text);
+  }
+
+  .crumb span {
+    color: var(--text-2);
+  }
+
+  .demoChip {
+    margin-left: auto;
+    padding: 0.35rem 0.55rem;
+    border: 1px dashed var(--border);
+    border-radius: 2px;
+    font-size: var(--fs-micro);
+    font-weight: var(--wuavy-micro);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-2);
+  }
+
+  .ask {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.5rem;
+    padding: 0 0.95rem;
+    border: 1px solid var(--wuavy-signal);
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+    font-size: 0.875rem;
+    font-weight: 640;
+    transition:
+      background-color var(--duration-ui) linear,
+      color var(--duration-ui) linear;
+  }
+
+  .content {
+    padding: clamp(1.75rem, 3vw, 2.75rem) clamp(1.5rem, 3vw, 2.75rem) 5rem;
+  }
+}
+
+/* A small light that breathes: the Flow is listening. */
+.askDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--wuavy-signal);
+  animation: breathe 2.4s var(--wuavy-ease-inout) infinite;
+}
+
+.ask:hover .askDot {
+  background: var(--wuavy-black);
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .askDot {
+    animation-duration: 4.8s;
+  }
+}

@@ -35,6 +35,7 @@ export const site: SiteConfig = {
   description:
     "Agência de crescimento digital. Sites, gestão de tráfego pago e sistemas sob medida com IA, automações e CRM, no mesmo ritmo.",
   nav: [
+    { label: "Flow", href: "/flow", hint: "CRM + IA + Automações" },
     { label: "Serviços", href: "/#servicos" },
     { label: "Sistemas", href: "/#sistemas" },
     { label: "Projetos", href: "/#projetos" },

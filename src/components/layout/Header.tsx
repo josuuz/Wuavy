@@ -127,10 +127,24 @@ export function Header({ nav, cta }: HeaderProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={styles.navLink}
-                  aria-current={sections[active]?.id === item.href.split("#")[1] ? "location" : undefined}
+                  className={cn(styles.navLink, item.hint && styles.navProduct)}
+                  aria-current={
+                    pathname === item.href
+                      ? "page"
+                      : sections[active]?.id === item.href.split("#")[1]
+                        ? "location"
+                        : undefined
+                  }
                 >
                   {item.label}
+                  {item.hint ? (
+                    <>
+                      <span className={styles.navArrow} aria-hidden="true">
+                        ↗
+                      </span>
+                      <span className={styles.navHint}>{item.hint}</span>
+                    </>
+                  ) : null}
                 </Link>
               </li>
             ))}

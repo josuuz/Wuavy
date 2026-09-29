@@ -66,6 +66,22 @@
   padding-block: 0.08em;
 }
 
+/* A product link (Flow) is set in Signal, its line beside the name. */
+.product {
+  color: var(--wuavy-signal);
+}
+
+.hint {
+  display: inline-block;
+  margin-left: 0.6rem;
+  vertical-align: 0.9em;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--wuavy-signal);
+}
+
 .dialog[open] .link {
   animation: menu-in var(--duration-scene) var(--wuavy-ease-out)
     calc(80ms + var(--i) * var(--wuavy-wave-step)) both;
