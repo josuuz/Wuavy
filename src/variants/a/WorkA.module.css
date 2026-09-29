@@ -147,6 +147,10 @@
   object-position: top;
 }
 
+.single .shot {
+  grid-column: 2;
+}
+
 .shotTag {
   position: absolute;
   left: 0.35rem;

@@ -168,6 +168,56 @@
   max-width: 38ch;
 }
 
+/* Media chapters (the film) run the full width under their head. */
+.wide > .label {
+  grid-column: 1 / -1;
+}
+
+/* ── Destaques técnicos: an index, one decision per row ── */
+.tech {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.highlights {
+  border-bottom: var(--rule) solid var(--border);
+}
+
+.highlight {
+  display: grid;
+  gap: 0.45rem var(--gutter);
+  padding-block: var(--space-1) var(--space-2);
+  border-top: var(--rule) solid var(--border);
+}
+
+.highlightTitle {
+  font-size: var(--fs-lead);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.highlightText {
+  max-width: 52ch;
+  line-height: 1.42;
+  color: var(--text-2);
+}
+
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1.1rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stackLabel {
+  color: var(--text-2);
+}
+
 .result {
   grid-column: 1 / -1;
   display: grid;
@@ -239,5 +289,14 @@
 
   .text {
     grid-column: 5 / span 7;
+  }
+
+  .tech {
+    grid-column: 5 / span 8;
+  }
+
+  .highlight {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 5fr);
+    align-items: baseline;
   }
 }

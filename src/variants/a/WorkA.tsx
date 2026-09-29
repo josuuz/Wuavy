@@ -12,7 +12,8 @@ import styles from "./WorkA.module.css";
 /*
   Recent work as an index, like the services: one short row per case, the
   whole row a link to its page. A redesign shows its before → after as two
-  small frames in the row. New cases are new rows; the list keeps three.
+  small frames in the row; work built from zero shows its cover alone.
+  New cases are new rows; the list keeps three.
 */
 
 const ROWS = 3;
@@ -67,7 +68,20 @@ export function WorkA() {
                     </figure>
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                // Built from zero: no "before", the cover sits where the "after" would.
+                <div className={`${styles.compare} ${styles.single}`} aria-hidden="true">
+                  <figure className={styles.shot}>
+                    <Image
+                      src={still(item.cover)}
+                      alt=""
+                      fill
+                      sizes="(min-width: 1024px) 12vw, 45vw"
+                      className={styles.shotImage}
+                    />
+                  </figure>
+                </div>
+              )}
 
               <span className={styles.arrow} aria-hidden="true">
                 →

@@ -23,7 +23,7 @@ Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4. Nenhum
 |---|---|
 | Textos da home | `src/data/home.ts` (cada linha marcada como `approved` ou `new`) |
 | Serviços | `src/data/services.ts` (adicione um item; `status: "soon"` esconde) |
-| Cases | `src/data/cases.ts` (os três atuais são placeholders) |
+| Cases | `src/data/cases.ts` (siga o "Padrão de case" abaixo) |
 | Método | `src/data/process.ts` |
 | Contato, navegação, redes | `src/data/site.ts` (troque e-mail por WhatsApp, calendário ou formulário aqui) |
 | Tokens (cor, tipo, grid, motion) | `src/styles/tokens.css` (único lugar com os valores da marca) |
@@ -46,6 +46,43 @@ src/
   styles/              tokens.css, base.css, motion.css
   assets/photo/        fotos licenciadas (créditos em CREDITS.md)
 ```
+
+## Padrão de case
+
+Todo projeto entra do mesmo jeito: uma linha em **Projetos** na home e uma página em `/trabalho/<slug>`, sempre nesta ordem (capítulo sem conteúdo é pulado e a numeração fecha):
+
+1. **Capa**: título, resumo, link "Ver o site no ar", fatos (cliente, segmento, serviço ou combo, ano) e imagem de capa
+2. **Antes e depois**: só em redesign (`before`)
+3. **Desafio** · **O que fizemos**: `body.challenge`, `body.approach`
+4. **Em movimento**: vídeo do site no ar, 16:9 no computador e 9:16 no celular (`film`)
+5. **Destaques técnicos**: 3 a 5 decisões técnicas, cada uma verdadeira no que foi entregue, com a stack (`highlights`, `stack`)
+6. **O que mudou**: `body.outcome`, e `result` só com número verificado
+7. **Galeria**: telas 16:9 (`gallery`; use `mobileAspect: 16 / 9` em prints que não podem ser cortados)
+
+### Checklist de um case novo
+
+| Peça | Formato | Onde |
+|---|---|---|
+| Capa | print 16:9 do topo, 2400×1350 JPG | `src/assets/work/<slug>-capa.jpg` |
+| Antes (redesign) | print do site antigo, mesmo enquadramento | `src/assets/work/<slug>-antes.jpg` |
+| Vídeos + pôsteres | gerados pelo script abaixo | `public/work/<slug>/`, `src/assets/work/` |
+| Galeria | 2 a 4 prints 16:9 (detalhe, celulares, marca) | `src/assets/work/<slug>-*.jpg` |
+| Texto | resumo, desafio, o que fizemos, o que mudou, destaques, stack | `src/data/cases.ts` |
+
+O texto diz o que foi feito de verdade: redesign é redesign, imagem gerada por IA é dita como tal, e nenhum número entra sem ser verificado.
+
+### Vídeo do case
+
+`scripts/case-video.mjs` grava o site rolando do topo ao rodapé, quadro a quadro com o relógio da página congelado, então entradas, reveals e animações de scroll saem suaves em qualquer máquina. Gera `<slug>-desktop.mp4` (1600×900), `<slug>-mobile.mp4` (720×1280) e os dois pôsteres.
+
+```bash
+npm i --no-save playwright-core ffmpeg-static   # uma vez; não entra no package.json
+npx playwright-core install chromium
+node scripts/case-video.mjs --url https://site-do-cliente.com --slug cliente \
+  --stops "#sobre:1.2,#produtos+40:1.4,end:1.6"
+```
+
+`--stops` lista onde a câmera para (`seletor[+deslocamento]:segundos`, `end` = rodapé); sem ele, o vídeo rola a página inteira de uma vez. Os vídeos tocam sem som, em loop e só quando aparecem na tela; com "reduzir movimento" ativo, esperam o toque.
 
 ## Motion
 

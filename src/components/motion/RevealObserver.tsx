@@ -51,7 +51,9 @@ export function RevealObserver() {
         else video.pause();
       }
     });
-    videos.forEach((video) => videoObserver.observe(video));
+    // With reduced motion, videos never start on their own: they wait for a tap.
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) videos.forEach((video) => (video.controls = true));
+    else videos.forEach((video) => videoObserver.observe(video));
 
     const loopObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) entry.target.toggleAttribute("data-onscreen", entry.isIntersecting);

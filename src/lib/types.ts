@@ -10,6 +10,8 @@ export interface ImageMedia {
   src: StaticImageData;
   alt: string;
   treatment?: PhotoTreatment;
+  /** Frame below 768 px. Defaults to a 4:5 crop; use 16 / 9 for screenshots that must stay whole. */
+  mobileAspect?: number;
 }
 
 /** Prepared for case videos. Plays only in view, never preloads. */
@@ -19,6 +21,7 @@ export interface VideoMedia {
   poster: StaticImageData;
   alt: string;
   treatment?: PhotoTreatment;
+  mobileAspect?: number;
 }
 
 export type Media = ImageMedia | VideoMedia;
@@ -48,6 +51,22 @@ export interface CaseResult {
   label: string;
 }
 
+/** One technical decision, said plainly: what was built and why it matters. */
+export interface CaseHighlight {
+  title: string;
+  text: string;
+}
+
+/**
+ * A screen recording of the live project, made with scripts/case-video.mjs:
+ * a 16:9 desktop film and, when there is one, a 9:16 phone film.
+ */
+export interface CaseFilm {
+  desktop: { src: string; poster: StaticImageData };
+  mobile?: { src: string; poster: StaticImageData };
+  alt: string;
+}
+
 export interface CaseStudy {
   slug: string;
   client: string;
@@ -73,6 +92,12 @@ export interface CaseStudy {
     approach?: string;
     outcome?: string;
   };
+  /** The project in motion ("Em movimento"). */
+  film?: CaseFilm;
+  /** "Destaques técnicos": three to five, each one true of the shipped work. */
+  highlights?: CaseHighlight[];
+  /** Tools and platforms, listed under the highlights. */
+  stack?: string[];
   /**
    * Placeholder cases are labelled on the page, kept out of the sitemap
    * and marked noindex. Replace them with real work in src/data/cases.ts.
