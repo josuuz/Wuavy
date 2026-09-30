@@ -36,6 +36,38 @@ export function hour(iso: string): string {
   return `${d.getUTCHours()}h${m ? String(m).padStart(2, "0") : ""}`;
 }
 
+const WEEKDAY = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+const MONTH = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+/** "quarta, 30 set". */
+export function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  return `${WEEKDAY[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTH[d.getUTCMonth()]}`;
+}
+
+/** "Qua" and "30", for a week's column heads. */
+export function weekday(iso: string): [string, number] {
+  const d = new Date(iso);
+  const name = WEEKDAY[d.getUTCDay()];
+  return [name.charAt(0).toUpperCase() + name.slice(1, 3), d.getUTCDate()];
+}
+
+/** "30 set". */
+export function shortDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCDate()} ${MONTH[d.getUTCMonth()]}`;
+}
+
+/** "hoje às 14h", "amanhã às 9h", "quinta, 2 out às 10h", "12 mar". */
+export function dayAt(now: string, iso: string): string {
+  const d = daysFrom(now, iso);
+  if (d >= -1 && d <= 1) return `${relDay(now, iso)} às ${hour(iso)}`;
+  if (d < 0) return shortDate(iso);
+  return `${dayLabel(iso)} às ${hour(iso)}`;
+}
+
+export const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /** "8 seringas", "1 frasco", "13 un". */

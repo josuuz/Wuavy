@@ -26,7 +26,7 @@ interface Turn {
 }
 
 export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { data, base } = useFlow();
+  const { data, base, live } = useFlow();
   const [thread, setThread] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -58,7 +58,7 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
       <div className={styles.thread} aria-live="polite">
         {thread.length === 0 ? (
           <p className={styles.askIntro}>
-            Pergunte sobre a clínica em linguagem natural. Eu leio leads, pacientes, agenda e estoque e mostro onde agir.
+            Pergunte sobre a clínica do seu jeito. Eu leio vendas, pacientes, agenda e estoque e mostro onde agir.
           </p>
         ) : null}
         {thread.map((turn, i) => (
@@ -114,14 +114,16 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
           className={styles.input}
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Ex.: quais leads estão parados?"
+          placeholder="Ex.: quais orçamentos estão sem resposta?"
           autoComplete="off"
         />
         <button type="submit" className={styles.primary} disabled={busy || !text.trim()}>
           Perguntar
         </button>
       </form>
-      <p className={styles.fine}>Respostas demonstrativas, calculadas a partir dos dados da demo. Nenhuma IA está conectada.</p>
+      <p className={styles.fine}>
+        Respostas calculadas a partir dos dados {live ? "da clínica" : "da demo"}. Nenhuma IA está conectada.
+      </p>
     </Sheet>
   );
 }

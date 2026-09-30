@@ -128,12 +128,30 @@
   transition: transform var(--duration-element) var(--wuavy-ease-out);
 }
 
-:is(.primary, .secondary):disabled {
+:is(.primary, .secondary, .quiet):disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-:is(.primary, .secondary, .quiet, .more, .inlineAction, .textAction, .chipButton, .rowButton, .leadCard, .close, .switch, .segmented button):focus-visible {
+:is(
+    .primary,
+    .secondary,
+    .quiet,
+    .more,
+    .inlineAction,
+    .textAction,
+    .chipButton,
+    .rowButton,
+    .leadCard,
+    .close,
+    .switch,
+    .segmented button,
+    .chips button,
+    .apt,
+    .freeSlot,
+    .freeCell,
+    .stepButton
+  ):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -217,38 +235,6 @@
   color: var(--text-2);
 }
 
-.signals {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.5rem var(--gutter);
-}
-
-.signal {
-  display: grid;
-  gap: 0.45rem;
-  align-content: start;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--text);
-}
-
-.signal[data-done] {
-  opacity: 0.45;
-}
-
-.signalValue {
-  font-size: clamp(2.25rem, 1.5rem + 2vw, 3.5rem);
-  white-space: nowrap;
-  font-weight: var(--wuavy-display);
-  letter-spacing: -0.04em;
-  line-height: 0.9;
-  font-variant-numeric: tabular-nums;
-}
-
-.signalLabel {
-  max-width: 26ch;
-  color: var(--text-2);
-}
-
 .duo {
   display: grid;
   gap: 0.75rem;
@@ -288,13 +274,37 @@
 
 .miniDay li {
   display: grid;
-  grid-template-columns: 3.5rem minmax(0, 1fr);
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: baseline;
   padding: 0.45rem 0;
   border-top: var(--rule) solid var(--border);
 }
 
-.miniDay li[data-status="livre"] span:last-child,
-.miniDay li[data-status="cancelado"] span:last-child {
+.miniDay li[data-status="livre"] > span:nth-child(2) {
+  color: var(--wuavy-signal);
+}
+
+.miniDay li[data-status="concluido"] {
+  opacity: 0.55;
+}
+
+.miniMeta {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.miniStatus {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.miniDay li[data-status="agendado"] .miniStatus,
+.miniDay li[data-status="faltou"] .miniStatus {
   color: var(--wuavy-signal);
 }
 
@@ -498,6 +508,10 @@
 
 .table tr[data-status="proximo"] {
   background: color-mix(in srgb, var(--wuavy-signal) 7%, transparent);
+}
+
+.table tr[data-status="vencido"] {
+  background: color-mix(in srgb, var(--wuavy-signal) 12%, transparent);
 }
 
 .rowButton {
@@ -793,6 +807,10 @@
     animation-name: sheet-in;
   }
 
+  .sheetWide {
+    width: min(100%, 54rem);
+  }
+
   .sheetInner {
     height: 100%;
     padding: 1.5rem;
@@ -960,61 +978,6 @@
   font-weight: 700;
 }
 
-.agenda {
-  display: grid;
-  gap: 1.75rem var(--gutter);
-}
-
-.day {
-  display: grid;
-  gap: 0.6rem;
-  align-content: start;
-}
-
-.slots {
-  border-top: var(--rule) solid var(--border);
-}
-
-.slot {
-  display: grid;
-  grid-template-columns: 3.75rem minmax(0, 1fr);
-  gap: 0.2rem 0.75rem;
-  align-items: center;
-  min-height: 3.5rem;
-  padding: 0.55rem 0;
-  border-bottom: var(--rule) solid var(--border);
-}
-
-/* The simulation sits under the booking, so the name keeps its line. */
-.slot .quiet {
-  grid-column: 2;
-  justify-self: start;
-  min-height: 1.75rem;
-}
-
-.slotBody {
-  display: grid;
-  gap: 0.1rem;
-}
-
-.slotBody strong {
-  font-weight: 640;
-}
-
-.slotBody span {
-  font-size: 0.8125rem;
-  color: var(--text-2);
-}
-
-.slot[data-status="livre"] .slotBody strong {
-  color: var(--wuavy-signal);
-}
-
-.slot[data-status="cancelado"] .slotBody strong {
-  color: var(--text-2);
-  text-decoration: line-through;
-}
-
 .waitlist li {
   display: grid;
   gap: 0.35rem;
@@ -1086,45 +1049,6 @@
 }
 
 /* ── Stock ── */
-.featured {
-  display: grid;
-  gap: 0.6rem;
-  justify-items: start;
-  padding: 1.25rem;
-  border: 1px solid var(--wuavy-signal);
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--wuavy-signal) 7%, transparent);
-}
-
-.featuredName {
-  font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
-  font-weight: var(--wuavy-headline);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.featuredFacts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1.25rem;
-  font-weight: 640;
-  font-variant-numeric: tabular-nums;
-}
-
-.usedIn {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.3rem;
-}
-
-.usedIn li {
-  padding: 0.3rem 0.55rem;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  font-size: 0.8125rem;
-}
-
 .lotStatus {
   display: inline-block;
   padding: 0.2rem 0.4rem;
@@ -1135,6 +1059,11 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
+}
+
+.lotStatus[data-status="vencido"] {
+  border-color: var(--wuavy-signal);
+  color: var(--wuavy-signal);
 }
 
 .lotStatus[data-status="proximo"] {
@@ -1296,13 +1225,875 @@
   font-weight: 640;
 }
 
-/* ── Wider screens ── */
-@media (min-width: 640px) {
-  .signals {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/* ── Shared: summaries, first-use intros, filter chips, form rows ── */
+.summary {
+  color: var(--text-2);
+}
+
+.summary strong {
+  font-weight: 640;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* An empty screen says what it is for: dashed, because it is waiting to be filled. */
+.intro {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  padding: 1.25rem 1.35rem;
+  border: 1px dashed color-mix(in srgb, var(--wuavy-signal) 55%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--wuavy-signal) 5%, transparent);
+}
+
+.introText {
+  max-width: 58ch;
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chips button {
+  min-height: 2.25rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-ui) linear,
+    color var(--duration-ui) linear;
+}
+
+.chips button[aria-pressed="true"] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.twoFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.fieldset {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.9rem 0 0;
+  border: 0;
+  border-top: var(--rule) solid var(--border);
+}
+
+.fieldset legend {
+  padding: 0;
+}
+
+.useRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.flagQuiet {
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.colEmpty {
+  padding: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+/* A contact's place on the way to booking. */
+.stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.stages li {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+}
+
+.stages li[data-state="done"] {
+  border-color: color-mix(in srgb, var(--wuavy-signal) 45%, transparent);
+  color: var(--text);
+}
+
+.stages li[data-state="now"] {
+  border-color: var(--wuavy-signal);
+  background: var(--wuavy-signal);
+  color: var(--wuavy-black);
+}
+
+/* ── Overview: today, what needs attention, what the Flow found ── */
+.todayLine {
+  font-size: 1.125rem;
+  font-weight: 640;
+}
+
+.todayLine span {
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+.todo li,
+.setup li {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-top: var(--rule) solid var(--border);
+}
+
+.todoCount {
+  font-size: 1.75rem;
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--wuavy-signal);
+  font-variant-numeric: tabular-nums;
+}
+
+:is(.todo, .setup) p {
+  display: grid;
+  gap: 0.15rem;
+}
+
+:is(.todo, .setup) strong {
+  font-weight: 640;
+}
+
+:is(.todo, .setup) p span {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.setup li {
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+}
+
+.setupMark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--wuavy-signal);
+  border-radius: 50%;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--wuavy-signal);
+}
+
+.setup li[data-done] .setupMark {
+  background: var(--wuavy-signal);
+  color: var(--wuavy-black);
+}
+
+.setup li[data-done] strong {
+  color: var(--text-2);
+  text-decoration: line-through;
+}
+
+.foundBlock {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.found {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.foundItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--wuavy-signal);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--wuavy-paper) 3%, transparent);
+}
+
+.foundItem > :last-child {
+  margin-top: auto;
+}
+
+.foundItem[data-done] {
+  opacity: 0.5;
+}
+
+.foundTitle {
+  font-size: clamp(1.25rem, 1.05rem + 0.6vw, 1.625rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+/* ── Patients: the list's next step, and the record ── */
+.stepUrgent {
+  font-weight: 640;
+  color: var(--wuavy-signal);
+}
+
+.nextBox {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  padding: 1.1rem 1.2rem;
+  border-left: 2px solid var(--wuavy-signal);
+  border-radius: 0 4px 4px 0;
+  background: color-mix(in srgb, var(--wuavy-signal) 8%, transparent);
+}
+
+/* Nothing to do: the same place, quieter. */
+.nextBox[data-calm] {
+  border-left-color: var(--border);
+  background: color-mix(in srgb, var(--wuavy-paper) 4%, transparent);
+}
+
+.nextBox[data-calm] .kicker {
+  color: var(--text-2);
+}
+
+.nextText {
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  font-weight: 640;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.nextText span {
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+.factsRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+  padding: 0.9rem 0;
+  border-block: var(--rule) solid var(--border);
+}
+
+.factsRow div {
+  display: grid;
+  gap: 0.2rem;
+  align-content: start;
+}
+
+.factsRow dt {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.factsRow dd {
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+}
+
+.recordGrid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.recordCol {
+  display: grid;
+  gap: 1.5rem;
+  align-content: start;
+}
+
+.recordCol section {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.aptTag {
+  margin-left: 0.5rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.aptTag:is([data-status="agendado"], [data-status="faltou"]) {
+  color: var(--wuavy-signal);
+}
+
+.count {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Agenda: day and week, one card per booking ── */
+.calBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stepButton {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--duration-ui) linear;
+}
+
+.calTitle {
+  min-width: 11.5rem;
+  padding-inline: 0.4rem;
+  font-weight: 640;
+  text-align: center;
+}
+
+.proFilter {
+  margin-left: auto;
+}
+
+.proFilter .input {
+  min-width: 12rem;
+  color-scheme: dark;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend li::before {
+  content: "";
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.legend li[data-status="confirmado"]::before {
+  border-color: var(--text);
+  background: var(--text);
+}
+
+.legend li[data-status="agendado"]::before {
+  border-color: var(--wuavy-signal);
+  background: var(--wuavy-signal);
+}
+
+.legend li[data-status="concluido"]::before {
+  background: color-mix(in srgb, var(--wuavy-paper) 25%, transparent);
+}
+
+.legend li[data-status="faltou"]::before {
+  border: 1px dashed var(--wuavy-signal);
+}
+
+.legend li[data-status="livre"]::before {
+  border-style: dashed;
+}
+
+.calendar {
+  display: grid;
+  gap: 1.5rem var(--gutter);
+  align-items: start;
+}
+
+.calMain {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.calSummary {
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
+.dayList {
+  border-top: var(--rule) solid var(--border);
+}
+
+.dayRow {
+  display: grid;
+  grid-template-columns: 3.75rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 4.25rem;
+  padding: 0.4rem 0;
+  border-bottom: var(--rule) solid var(--border);
+}
+
+/* A booking's left edge says its status: paper confirmed, Signal waiting, dim done, dashed missed. */
+.apt {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 0.75rem;
+  align-items: baseline;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-2);
+  border-radius: 3px;
+  background: var(--wuavy-carbon);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--duration-ui) linear;
+}
+
+.aptName {
+  grid-column: 1;
+  font-weight: 640;
+}
+
+.aptMeta {
+  grid-column: 1;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.aptStatus {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.apt[data-status="confirmado"] {
+  border-left-color: var(--text);
+}
+
+.apt[data-status="agendado"] {
+  border-left-color: var(--wuavy-signal);
+}
+
+.apt:is([data-status="agendado"], [data-status="faltou"]) .aptStatus {
+  color: var(--wuavy-signal);
+}
+
+.apt[data-status="concluido"] {
+  border-left-color: color-mix(in srgb, var(--wuavy-paper) 25%, transparent);
+  background: transparent;
+}
+
+.apt[data-status="concluido"] .aptName {
+  color: var(--text-2);
+}
+
+.apt[data-status="faltou"] {
+  border-style: dashed;
+  border-left: 3px dashed var(--wuavy-signal);
+  background: transparent;
+}
+
+.apt[data-status="faltou"] .aptName {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-2);
+}
+
+.apt[data-compact] {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.05rem;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.8125rem;
+}
+
+.apt[data-compact] :is(.aptName, .aptMeta) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.apt[data-compact] .aptMeta {
+  font-size: 0.75rem;
+}
+
+.freeSlot {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-ui) linear,
+    background-color var(--duration-ui) linear;
+}
+
+.freeSlot strong {
+  font-weight: 640;
+  color: var(--wuavy-signal);
+}
+
+.freeSlot > span {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.busy {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.weekWrap {
+  margin-inline: -1rem;
+  padding-inline: 1rem;
+  overflow-x: auto;
+}
+
+.week {
+  width: 100%;
+  min-width: 46rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.week :is(th, td) {
+  padding: 0.25rem;
+  border: var(--rule) solid var(--border);
+  vertical-align: top;
+}
+
+.week thead th {
+  padding: 0.5rem 0.45rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.week thead th strong {
+  font-size: 1rem;
+  font-weight: 640;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.week thead th[aria-current] {
+  box-shadow: inset 0 2px 0 var(--wuavy-signal);
+  color: var(--text);
+}
+
+.week thead th[aria-current] strong {
+  color: var(--wuavy-signal);
+}
+
+.week :is(thead th:first-child, tbody th) {
+  width: 3.5rem;
+}
+
+.week tbody th {
+  padding: 0.55rem 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 640;
+  text-align: left;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.week td {
+  height: 3.6rem;
+}
+
+.week .busy {
+  font-size: 0.75rem;
+}
+
+.freeCell {
+  width: 100%;
+  height: 100%;
+  min-height: 2.9rem;
+  border: 1px dashed transparent;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--text-2) 55%, transparent);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-ui) linear,
+    color var(--duration-ui) linear,
+    background-color var(--duration-ui) linear;
+}
+
+.waitBox {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  justify-items: start;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--wuavy-paper) 3%, transparent);
+}
+
+.waitBox > :is(header, ol) {
+  width: 100%;
+}
+
+.boxHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.boxHead span {
+  font-size: var(--fs-micro);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.bookFor {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.bookFor strong {
+  font-size: 1.125rem;
+  font-weight: 640;
+}
+
+.bookFor > span:last-child:not(:first-of-type) {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.pickList {
+  width: 100%;
+}
+
+.pickList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.effects {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.effects li {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.effects li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--wuavy-signal);
+}
+
+/* ── Procedures: the automations each one feeds ── */
+.linked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.linked li {
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.linked li[data-active] {
+  border-color: color-mix(in srgb, var(--wuavy-signal) 55%, transparent);
+  color: var(--text);
+}
+
+/* ── Stock: what to buy, what to use before it expires ── */
+.alerts {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.alertCard {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  justify-items: start;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--wuavy-paper) 3%, transparent);
+}
+
+.alertCard[data-tone="act"] {
+  border-color: var(--wuavy-signal);
+  background: color-mix(in srgb, var(--wuavy-signal) 7%, transparent);
+}
+
+.alertList {
+  width: 100%;
+}
+
+.alertList li {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.5rem 0;
+  border-top: var(--rule) solid var(--border);
+}
+
+.alertList strong {
+  font-weight: 640;
+}
+
+.alertList span {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.alertFoot {
+  font-weight: 640;
+  color: var(--wuavy-signal);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chips button:not([aria-pressed="true"]):hover,
+  .stepButton:hover {
+    border-color: var(--text);
+    color: var(--text);
+  }
+
+  .apt:hover {
+    box-shadow: inset 0 0 0 1px var(--text-2);
+  }
+
+  .freeSlot:hover,
+  .freeCell:hover {
+    border-color: var(--wuavy-signal);
+    background: color-mix(in srgb, var(--wuavy-signal) 8%, transparent);
+    color: var(--wuavy-signal);
   }
 }
 
+@media (max-width: 639px) {
+  .stepper {
+    flex: 1 1 100%;
+  }
+
+  .calTitle {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.9375rem;
+  }
+
+  /* On a phone the status goes under the name, so the name keeps its line. */
+  .apt {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aptStatus {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .proFilter,
+  .proFilter .input {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .todo li {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+  }
+
+  .todo li > :last-child {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (min-width: 768px) {
+  .alerts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .factsRow {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .recordGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
+  }
+}
+
+
+/* ── Wider screens ── */
 @media (min-width: 768px) {
   .chain {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1328,8 +2119,21 @@
   }
 }
 
+@media (min-width: 640px) {
+  .found {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 1024px) {
+  .weekWrap {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  /* The five stages side by side on a laptop screen. */
   .board {
+    grid-auto-columns: minmax(11.5rem, 1fr);
     margin-inline: 0;
     padding-inline: 0;
   }
@@ -1352,15 +2156,15 @@
     grid-template-columns: minmax(0, 1fr) 20rem;
     align-items: start;
   }
-
-  .agenda {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 0.85fr);
-  }
 }
 
 @media (min-width: 1280px) {
-  .signals {
+  .found {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .calendar[data-mode="dia"] {
+    grid-template-columns: minmax(0, 1fr) 19rem;
   }
 }
 

@@ -9,14 +9,15 @@ import type { FlowData } from "@/lib/flow/types";
 import { createClient } from "@/lib/supabase/client";
 import { pad } from "@/lib/utils";
 import { AskFlow } from "./AskFlow";
-import { APP_BASE, BASE, VIEWS, viewHref } from "./copy";
+import { APP_BASE, BASE, MENU, VIEWS, viewHref } from "./copy";
 import { FlowProvider, useFlow } from "./store";
 import styles from "./FlowDemo.module.css";
 
 /*
-  The Flow's app shell: the clinic and its eight screens on the left (a strip
+  The Flow's app shell: the clinic and its screens on the left (a strip
   across the top on phones), the current screen's name and "Pergunte ao
-  Flow" above the work. Data comes in from the route's layout: the demo's in
+  Flow" above the work. Oportunidades is not in the menu: the overview is
+  where the Flow says what to do, and it opens the detail. Data comes in from the route's layout: the demo's in
   memory, or a real clinic's (`account` set) from Supabase.
 */
 
@@ -67,7 +68,7 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
         </p>
         <nav aria-label="Telas do Flow" className={styles.nav}>
           <ol>
-            {VIEWS.map((view, i) => {
+            {MENU.map((view, i) => {
               const href = viewHref(view.slug, base);
               const here = href === pathname;
               return (
@@ -77,8 +78,8 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
                       {pad(i + 1)}
                     </span>
                     {view.label}
-                    {view.slug === "oportunidades" && open ? (
-                      <span className={styles.badge} aria-label={`${open} abertas`}>
+                    {view.slug === "" && open ? (
+                      <span className={styles.badge} aria-label={`${open} oportunidades abertas`}>
                         {open}
                       </span>
                     ) : null}

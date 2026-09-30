@@ -218,6 +218,7 @@ export type Database = {
           name: string;
           next_action: string | null;
           organization_id: string;
+          patient_id: string | null;
           phone: string | null;
           potential_value: number;
           procedure_id: string | null;
@@ -232,6 +233,7 @@ export type Database = {
           name: string;
           next_action?: string | null;
           organization_id: string;
+          patient_id?: string | null;
           phone?: string | null;
           potential_value?: number;
           procedure_id?: string | null;
@@ -246,6 +248,7 @@ export type Database = {
           name?: string;
           next_action?: string | null;
           organization_id?: string;
+          patient_id?: string | null;
           phone?: string | null;
           potential_value?: number;
           procedure_id?: string | null;
@@ -260,6 +263,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "leads_organization_id_patient_id_fkey";
+            columns: ["organization_id", "patient_id"];
+            isOneToOne: false;
+            referencedRelation: "patients";
+            referencedColumns: ["organization_id", "id"];
           },
           {
             foreignKeyName: "leads_organization_id_procedure_id_fkey";

@@ -1,14 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 
 import type { Result } from "@/lib/flow/actions";
+import { focusHref } from "./copy";
+import { useFlow, type Focus } from "./store";
 import styles from "./ui.module.css";
 
 /*
-  The real Flow's editing pieces. A write is a Server Action: pending while it
-  and the refresh it triggers run, its error kept next to the form, the sheet
-  closed only when the database said yes.
+  Pieces the screens share. A write is a Server Action in the real Flow (or
+  a change in memory in the demo): pending while it and the refresh it
+  triggers run, its error kept next to the form, the sheet closed only when
+  the write said yes.
 */
 
 export function useWrite() {
@@ -74,3 +78,27 @@ export function DeleteButton({ confirm, pending, onDelete }: { confirm: string; 
 
 /** "1240,5" for a form field, from cents. */
 export const reais = (cents: number) => (cents / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2, useGrouping: false });
+
+/** A screen with nothing on it yet: what it is for, in a sentence or two, and the first thing to do. */
+export function Intro({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+  return (
+    <section className={styles.intro} aria-label={title}>
+      <p className={styles.kicker}>{title}</p>
+      <p className={styles.introText}>{children}</p>
+      {action ? <div className={styles.actions}>{action}</div> : null}
+    </section>
+  );
+}
+
+/** A link to another screen that opens it on a record, a filter or a day. */
+export function FocusLink({ focus, className, children }: { focus: Focus; className?: string; children: ReactNode }) {
+  const { dispatch, base } = useFlow();
+  return (
+    <Link href={focusHref(focus, base)} className={className ?? styles.textAction} onClick={() => dispatch({ type: "focus", focus })}>
+      {children}
+    </Link>
+  );
+}
+
+/** Digits only, to tell whether two phone numbers are the same. */
+export const digits = (phone: string) => phone.replace(/\D/g, "");

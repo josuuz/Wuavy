@@ -3,17 +3,28 @@
 import { useState } from "react";
 
 import { deleteProcedure, saveProcedure } from "@/lib/flow/actions";
-import { brl } from "@/lib/flow/format";
+import { brl, units } from "@/lib/flow/format";
 import { lotStatus } from "@/lib/flow/insights";
 import { PROCEDURE_CATEGORIES, type Procedure } from "@/lib/flow/types";
-import { DeleteButton, Field, FormError, reais, useWrite } from "../forms";
+import { CATEGORY_LABEL } from "../copy";
+import { DeleteButton, Field, FormError, Intro, reais, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
-/* The catalogue, and what each procedure uses: the link between the chair and the stock. */
+/*
+  The catalogue. Each procedure's price, duration and recommended return
+  feed the agenda and the automations; the products it consumes link a
+  finished visit to the stock. That is what lets the Flow connect patient,
+  agenda, stock and next return when a visit is done.
+*/
 
-const CATEGORY = { facial: "Facial", injetaveis: "Injetáveis", corporal: "Corporal" };
+/** The automations every procedure feeds, by the rule kind that runs them. */
+const LINKED = [
+  { kind: "reminder", label: () => "Lembrete na véspera" },
+  { kind: "post_visit", label: () => "Cuidado pós-atendimento" },
+  { kind: "patient_return", label: (p: Procedure) => `Convite de retorno em ${p.returnDays} dias` },
+] as const;
 
 export function Procedures() {
   const { data, live } = useFlow();
@@ -26,7 +37,8 @@ export function Procedures() {
       <header className={styles.head}>
         <h1 className={styles.title}>Procedimentos</h1>
         <p className={styles.lead}>
-          Valor, duração e o que cada procedimento consome. É essa relação que deixa o Flow ligar o estoque à agenda.
+          Preço, duração e retorno recomendado de cada procedimento alimentam a agenda e as automações. Os produtos consumidos
+          fazem o estoque baixar sozinho quando um atendimento é finalizado.
         </p>
         {live ? (
           <div className={styles.actions}>
@@ -37,8 +49,20 @@ export function Procedures() {
         ) : null}
       </header>
 
-      {live && data.procedures.length === 0 ? (
-        <p className={styles.fine}>Nenhum procedimento cadastrado. Comece pelo catálogo: leads e agenda usam ele.</p>
+      {data.procedures.length === 0 ? (
+        <Intro
+          title="Comece pelo catálogo"
+          action={
+            live ? (
+              <button type="button" className={styles.primary} onClick={() => setEditing("new")}>
+                Cadastrar o primeiro
+              </button>
+            ) : null
+          }
+        >
+          Cadastre o que a clínica oferece. O preço entra nos orçamentos, a duração ocupa a agenda e o retorno recomendado diz
+          ao Flow quando convidar o paciente de volta.
+        </Intro>
       ) : null}
 
       <ol className={styles.catalog}>
@@ -46,11 +70,11 @@ export function Procedures() {
           const uses = data.procedureProducts.filter((pp) => pp.procedureId === procedure.id);
           return (
             <li key={procedure.id} className={styles.procedure}>
-              <p className={styles.kicker}>{CATEGORY[procedure.category]}</p>
+              <p className={styles.kicker}>{CATEGORY_LABEL[procedure.category]}</p>
               <h2 className={styles.procedureName}>{procedure.name}</h2>
               <dl className={styles.facts}>
                 <div>
-                  <dt>Valor</dt>
+                  <dt>Preço</dt>
                   <dd>{brl(procedure.price)}</dd>
                 </div>
                 <div>
@@ -58,30 +82,43 @@ export function Procedures() {
                   <dd>{procedure.durationMin} min</dd>
                 </div>
                 <div>
-                  <dt>Retorno típico</dt>
+                  <dt>Retorno</dt>
                   <dd>{procedure.returnDays} dias</dd>
                 </div>
               </dl>
+              <p className={styles.label}>Consome por atendimento</p>
               {uses.length ? (
-                <>
-                  <p className={styles.label}>Produtos por sessão</p>
-                  <ul className={styles.uses}>
-                    {uses.map((use) => {
-                      const product = data.products.find((p) => p.id === use.productId)!;
-                      const near = data.lots.some((l) => l.productId === product.id && lotStatus(data, l) === "proximo");
-                      return (
-                        <li key={product.id}>
-                          <span>{product.name}</span>
-                          <span className={styles.qty}>
-                            {use.quantity.toLocaleString("pt-BR")} {product.unit}
-                          </span>
-                          {near ? <span className={styles.dot}>Lote perto da validade</span> : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </>
-              ) : null}
+                <ul className={styles.uses}>
+                  {uses.map((use) => {
+                    const product = data.products.find((p) => p.id === use.productId);
+                    if (!product) return null;
+                    const near = data.lots.some(
+                      (l) => l.productId === product.id && l.quantity > 0 && lotStatus(data, l) === "proximo",
+                    );
+                    return (
+                      <li key={product.id}>
+                        <span>{product.name}</span>
+                        <span className={styles.qty}>{units(use.quantity, product.unit)}</span>
+                        {near ? <span className={styles.dot}>Lote perto da validade</span> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className={styles.fine}>Nenhum produto ligado: finalizar não mexe no estoque.</p>
+              )}
+              <p className={styles.label}>Automações ligadas</p>
+              <ul className={styles.linked}>
+                {LINKED.map((link) => {
+                  const rule = data.automationRules.find((r) => r.kind === link.kind);
+                  return (
+                    <li key={link.kind} data-active={rule?.active ? "" : undefined}>
+                      {link.label(procedure)}
+                      <span className="sr-only">{rule ? (rule.active ? ", ativa" : ", pausada") : ", preparada"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
               {live ? (
                 <div className={styles.actions}>
                   <button type="button" className={styles.quiet} onClick={() => setEditing(procedure.id)}>
@@ -109,7 +146,16 @@ export function Procedures() {
 }
 
 function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: () => void }) {
+  const { data } = useFlow();
   const { pending, error, write, submit } = useWrite();
+  const [rows, setRows] = useState(() => {
+    const uses = procedure ? data.procedureProducts.filter((pp) => pp.procedureId === procedure.id) : [];
+    return uses.map((u, i) => ({ key: i, productId: u.productId, quantity: String(u.quantity).replace(".", ",") }));
+  });
+  const [next, setNext] = useState(rows.length);
+  const update = (key: number, change: Partial<{ productId: string; quantity: string }>) =>
+    setRows(rows.map((r) => (r.key === key ? { ...r, ...change } : r)));
+
   return (
     <form className={styles.form} onSubmit={submit((form) => saveProcedure(procedure?.id ?? null, form), onDone)}>
       <Field label="Nome">
@@ -119,12 +165,12 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
         <select className={styles.input} name="category" defaultValue={procedure?.category ?? "facial"}>
           {PROCEDURE_CATEGORIES.map((category) => (
             <option key={category} value={category}>
-              {CATEGORY[category]}
+              {CATEGORY_LABEL[category]}
             </option>
           ))}
         </select>
       </Field>
-      <Field label="Valor (R$)">
+      <Field label="Preço (R$)">
         <input
           className={styles.input}
           name="price"
@@ -133,12 +179,79 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
           defaultValue={procedure ? reais(procedure.price) : undefined}
         />
       </Field>
-      <Field label="Duração (min)">
-        <input className={styles.input} name="durationMin" type="number" required min={1} step={1} defaultValue={procedure?.durationMin} />
-      </Field>
-      <Field label="Retorno típico (dias)">
-        <input className={styles.input} name="returnDays" type="number" required min={1} step={1} defaultValue={procedure?.returnDays} />
-      </Field>
+      <div className={styles.twoFields}>
+        <Field label="Duração (min)">
+          <input className={styles.input} name="durationMin" type="number" required min={1} step={1} defaultValue={procedure?.durationMin} />
+        </Field>
+        <Field label="Retorno recomendado (dias)">
+          <input className={styles.input} name="returnDays" type="number" required min={1} step={1} defaultValue={procedure?.returnDays} />
+        </Field>
+      </div>
+
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.label}>Produtos consumidos por atendimento</legend>
+        {data.products.length ? (
+          <>
+            {rows.map((row) => {
+              const product = data.products.find((p) => p.id === row.productId);
+              return (
+                <div key={row.key} className={styles.useRow}>
+                  <label className="sr-only" htmlFor={`use-${row.key}`}>
+                    Produto
+                  </label>
+                  <select
+                    id={`use-${row.key}`}
+                    className={styles.input}
+                    name="useProduct"
+                    value={row.productId}
+                    required
+                    onChange={(event) => update(row.key, { productId: event.target.value })}
+                  >
+                    <option value="" disabled>
+                      Escolha o produto
+                    </option>
+                    {data.products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="sr-only" htmlFor={`qty-${row.key}`}>
+                    Quantidade{product ? ` em ${product.unit}` : ""}
+                  </label>
+                  <input
+                    id={`qty-${row.key}`}
+                    className={styles.input}
+                    name="useQuantity"
+                    inputMode="decimal"
+                    required
+                    placeholder={product?.unit ?? "qtd."}
+                    value={row.quantity}
+                    onChange={(event) => update(row.key, { quantity: event.target.value })}
+                  />
+                  <button type="button" className={styles.quiet} onClick={() => setRows(rows.filter((r) => r.key !== row.key))}>
+                    Tirar
+                  </button>
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => {
+                setRows([...rows, { key: next, productId: "", quantity: "" }]);
+                setNext(next + 1);
+              }}
+            >
+              Adicionar produto
+            </button>
+            <p className={styles.fine}>Quando um atendimento é finalizado, o Flow dá baixa dessas quantidades no estoque.</p>
+          </>
+        ) : (
+          <p className={styles.fine}>Nenhum produto cadastrado ainda. Faça uma entrada em Estoque para ligar produtos a este procedimento.</p>
+        )}
+      </fieldset>
+
       <FormError error={error} />
       <div className={styles.actions}>
         <button type="submit" className={styles.primary} disabled={pending}>

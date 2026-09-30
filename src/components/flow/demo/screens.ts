@@ -12,7 +12,7 @@ import { Stock } from "./views/Stock";
 
 export const SCREENS: Record<string, ComponentType> = {
   oportunidades: Opportunities,
-  crm: Pipeline,
+  vendas: Pipeline,
   pacientes: Patients,
   agenda: Schedule,
   procedimentos: Procedures,

@@ -1,3 +1,4 @@
+import { SLOT_TIMES, visitSummary } from "@/lib/flow/insights";
 import type {
   Activity,
   Appointment,
@@ -21,6 +22,10 @@ import type {
   page was built. All names and numbers are illustrative. The counts the
   landing and the brief use (23 stuck leads, 37 returns, R$ 1.240 near expiry,
   3 free slots tomorrow) come out of the data itself.
+
+  One person, one record: most patients keep the contact they started as
+  (their origin and first quote), and the contacts who just booked are
+  patients already, with their first appointment on the agenda.
 */
 
 const ORG = "org_aurora";
@@ -112,21 +117,30 @@ const lotPlan: [string, string, number, number][] = [
 
 const NEXT_ACTION: Record<LeadStage, string> = {
   novo: "Fazer o primeiro contato",
-  contato: "Marcar avaliação",
-  avaliacao: "Enviar orçamento",
+  contato: "Marcar a avaliação",
+  avaliacao: "Enviar o orçamento",
   orcamento: "Aguardar resposta",
-  agendado: "Confirmar presença",
-  procedimento: "Registrar atendimento",
-  retorno: "Agendar retorno",
+  agendado: "",
 };
 
-// Tomorrow's grid: [hour, minute, patient index, procedure]. 10h, 14h and 16h30 stay free.
-const TOMORROW: [number, number, number, string][] = [
-  [9, 0, 0, "proc_limpeza"],
-  [11, 0, 1, "proc_toxina"],
-  [13, 0, 2, "proc_skin"],
-  [15, 0, 3, "proc_micro"],
-  [17, 30, 4, "proc_peeling"],
+// Tomorrow's grid: [hour, minute, patient index, procedure, status]. 10h, 14h and 16h30 stay free;
+// two bookings still wait for the patient's confirmation.
+const TOMORROW: [number, number, number, string, Appointment["status"]][] = [
+  [9, 0, 0, "proc_limpeza", "agendado"],
+  [11, 0, 1, "proc_toxina", "confirmado"],
+  [13, 0, 2, "proc_skin", "confirmado"],
+  [15, 0, 3, "proc_micro", "confirmado"],
+  [17, 30, 4, "proc_peeling", "agendado"],
+];
+// Yesterday: done, one no-show, and one the front desk has not recorded yet. 13h and 15h stayed free.
+// Only procedures with a return of 30 days or more, so no one's return moves into the window.
+const YESTERDAY: [number, number, number, string, Appointment["status"]][] = [
+  [9, 0, 18, "proc_limpeza", "concluido"],
+  [10, 0, 19, "proc_toxina", "concluido"],
+  [11, 0, 20, "proc_peeling", "concluido"],
+  [14, 0, 21, "proc_skin", "concluido"],
+  [16, 30, 22, "proc_micro", "faltou"],
+  [17, 30, 23, "proc_limpeza", "confirmado"],
 ];
 // Today's: every slot booked except 16h30, cancelled this morning.
 const TODAY: [number, number, number, string, Appointment["status"]][] = [
@@ -159,17 +173,33 @@ export function createDemoData(clock = new Date()): FlowData {
   };
   const org = { organizationId: ORG };
   const appointments: Appointment[] = [];
-  const book = (patientId: string, procedureId: string, startsAt: string, status: Appointment["status"]) =>
+  const taken = new Set<string>();
+  // One room: a booking that lands on a taken time moves to the day's next free one.
+  // The clinic is closed on Sundays: a booking ahead that falls on one moves to Monday.
+  const book = (patientId: string, procedureId: string, when: string, status: Appointment["status"]) => {
+    let startsAt = when;
+    if (startsAt > now && new Date(startsAt).getUTCDay() === 0) startsAt = new Date(Date.parse(startsAt) + DAY).toISOString();
+    if (taken.has(startsAt)) {
+      const day = startsAt.slice(0, 10);
+      const free = SLOT_TIMES.map(([h, m]) => `${day}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00.000Z`).find(
+        (t) => !taken.has(t),
+      );
+      if (free) startsAt = free;
+    }
+    taken.add(startsAt);
+    const procedure = price.get(procedureId)!;
     appointments.push({
       id: `apt_${appointments.length + 1}`,
       ...org,
       patientId,
       procedureId,
-      professionalId: "user_helena",
+      // Injectables with the doctor, skin and body care with the aesthetician.
+      professionalId: procedure.category === "injetaveis" ? "user_helena" : "user_marina",
       startsAt,
-      durationMin: price.get(procedureId)!.durationMin,
+      durationMin: procedure.durationMin,
       status,
     });
+  };
 
   /* Patients: 37 due for a return, 40 recently seen, 15 booked ahead. */
   // A patient's last procedure always has a return of 30 days or more, so a visit is always past.
@@ -182,6 +212,7 @@ export function createDemoData(clock = new Date()): FlowData {
     ["booked", 15],
   ];
   const patients: Patient[] = [];
+  const firstProcedure = new Map<string, [number, string]>(); // patient → [day, procedure] of the first visit
   for (const [group, count] of groups) {
     for (let i = 0; i < count; i++) {
       const id = `pat_${patients.length + 1}`;
@@ -193,26 +224,21 @@ export function createDemoData(clock = new Date()): FlowData {
           ? -int(1, Math.min(returnDays - 15, 60))
           : (group === "due" ? int(-40, 12) : int(-8, 20)) - returnDays;
       const sessions = int(1, 4);
-      let spent = 0;
       let day = visit;
-      let first = visit;
       for (let s = 0; s < sessions; s++) {
         const procedureId = s === 0 ? last : pick(rand() < 0.6 ? earlier : injectable);
         book(id, procedureId, at(day, pick([9, 10, 11, 13, 14, 15])), "concluido");
-        spent += price.get(procedureId)!.price;
-        first = day;
+        firstProcedure.set(id, [day, procedureId]);
         day -= int(30, 110);
       }
       if (group === "booked") book(id, last, at(int(2, 14), pick([9, 10, 11, 14, 15])), "agendado");
+      // Visits, spend and next return are filled in from the appointments below.
       patients.push({
         id,
         ...org,
         name: name(),
         phone: phone(),
-        firstVisitAt: at(first),
-        lastVisitAt: at(visit),
-        nextReturnAt: at(visit + returnDays),
-        totalSpent: spent,
+        totalSpent: 0,
         notes: pick([
           "Prefere atendimento no fim da tarde.",
           "Responde melhor por WhatsApp.",
@@ -225,10 +251,11 @@ export function createDemoData(clock = new Date()): FlowData {
     }
   }
 
-  // Today and tomorrow are booked by recently seen patients (group "recent" starts at 37).
+  // Yesterday, today and tomorrow are booked by recently seen patients (group "recent" starts at 37).
   const recent = (i: number) => patients[37 + i].id;
   for (const [h, m, i, procedureId, status] of TODAY) book(recent(i), procedureId, at(0, h, m), status);
-  for (const [h, m, i, procedureId] of TOMORROW) book(recent(i + 13), procedureId, at(1, h, m), "confirmado");
+  for (const [h, m, i, procedureId, status] of TOMORROW) book(recent(i + 13), procedureId, at(1, h, m), status);
+  for (const [h, m, i, procedureId, status] of YESTERDAY) book(recent(i), procedureId, at(-1, h, m), status);
 
   /* Leads: 23 quotes unanswered for 3 days or more, the rest moving. */
   const leads: Lead[] = [];
@@ -237,9 +264,7 @@ export function createDemoData(clock = new Date()): FlowData {
     ["contato", 7],
     ["avaliacao", 5],
     ["orcamento", 27],
-    ["agendado", 4],
-    ["procedimento", 2],
-    ["retorno", 3],
+    ["agendado", 9],
   ];
   let stuck = 0;
   for (const [stage, count] of plan) {
@@ -267,6 +292,47 @@ export function createDemoData(clock = new Date()): FlowData {
     }
   }
 
+  // The contacts who just booked are patients now: same name, same phone, first appointment ahead.
+  const FIRST_AT: [number, number][] = [[10, 0], [14, 0], [9, 0], [15, 0], [11, 0], [13, 0], [16, 30], [10, 0], [14, 0]];
+  leads
+    .filter((l) => l.stage === "agendado")
+    .forEach((lead, j) => {
+      const id = `pat_${patients.length + 1}`;
+      patients.push({ id, ...org, name: lead.name, phone: lead.phone, totalSpent: 0, notes: "" });
+      const [h, m] = FIRST_AT[j % FIRST_AT.length];
+      book(id, lead.procedureId, at(2 + j, h, m), "agendado");
+      lead.patientId = id;
+    });
+
+  // Most earlier patients started as a contact too: that is where their origin comes from.
+  // Every third one came before the Flow and was registered straight as a patient.
+  patients.forEach((patient, i) => {
+    const first = firstProcedure.get(patient.id);
+    if (!first || i % 3 === 2) return;
+    const [day, procedureId] = first;
+    leads.push({
+      id: `lead_${leads.length + 1}`,
+      ...org,
+      name: patient.name,
+      phone: patient.phone,
+      source: SOURCES[i % SOURCES.length],
+      procedureId,
+      potentialValue: price.get(procedureId)!.price,
+      stage: "agendado",
+      createdAt: at(day - 3 - (i % 9)),
+      lastContactAt: at(day - 1 - (i % 3), 10 + (i % 8)),
+      nextAction: "",
+      patientId: patient.id,
+    });
+  });
+
+  for (const patient of patients) {
+    const visits = appointments
+      .filter((a) => a.patientId === patient.id && a.status === "concluido")
+      .map((a) => ({ startsAt: a.startsAt, price: price.get(a.procedureId)!.price, returnDays: price.get(a.procedureId)!.returnDays }));
+    Object.assign(patient, visitSummary(visits));
+  }
+
   const waitlist: WaitlistEntry[] = [
     { id: "wait_1", ...org, patientId: patients[3].id, procedureId: "proc_limpeza", period: "tarde", createdAt: at(-9) },
     { id: "wait_2", ...org, patientId: patients[8].id, procedureId: "proc_toxina", period: "manha", createdAt: at(-5) },
@@ -285,11 +351,21 @@ export function createDemoData(clock = new Date()): FlowData {
 
   const automationRules: AutomationRule[] = [
     {
+      id: "rule_reminder",
+      ...org,
+      kind: "reminder",
+      name: "Lembrete de atendimento",
+      when: "Falta 1 dia para o atendimento",
+      conditions: ["Aguardando confirmação"],
+      actions: ["Preparar mensagem de confirmação", "Avisar a recepção se não houver resposta"],
+      active: true,
+    },
+    {
       id: "rule_lead",
       ...org,
       kind: "lead_followup",
-      name: "Recuperação de lead",
-      when: "Lead recebeu orçamento",
+      name: "Orçamento sem resposta",
+      when: "Um contato recebeu orçamento",
       conditions: ["Não respondeu", "Esperar 3 dias"],
       actions: ["Preparar follow-up com o procedimento de interesse", "Avisar a recepção"],
       active: true,
@@ -358,12 +434,12 @@ export function createDemoData(clock = new Date()): FlowData {
 
   const activities: Activity[] = (
     [
-      [0, 8, "O Flow encontrou 23 leads com orçamento sem resposta."],
+      [0, 8, "O Flow encontrou 23 orçamentos sem resposta."],
       [0, 8, "O lote SB-2407 de skinbooster entrou nos 30 dias finais de validade."],
       [0, 8, "Cancelamento de hoje às 16h30: o horário está livre."],
-      [-1, 18, "A recepção confirmou 5 atendimentos de amanhã."],
+      [-1, 18, "A recepção confirmou 3 atendimentos de amanhã."],
       [-1, 11, "O horário das 14h foi ocupado pela lista de espera."],
-      [-2, 9, "5 follow-ups preparados pela automação de recuperação de lead."],
+      [-2, 9, "5 follow-ups de orçamento preparados pela automação."],
     ] as const
   ).map(([day, h, text], i) => ({ id: `act_${i + 1}`, ...org, at: at(day, h), text }));
 
@@ -372,6 +448,7 @@ export function createDemoData(clock = new Date()): FlowData {
     organization: { id: ORG, name: "Clínica Aurora", segment: "estetica", city: "Campinas" },
     users: [
       { id: "user_helena", ...org, name: "Dra. Helena Prado", role: "owner" },
+      { id: "user_marina", ...org, name: "Marina Costa", role: "professional" },
       { id: "user_julia", ...org, name: "Júlia", role: "reception" },
     ],
     leads,

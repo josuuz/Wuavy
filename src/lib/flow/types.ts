@@ -21,7 +21,8 @@ export interface User {
   role: "owner" | "reception" | "professional";
 }
 
-export const LEAD_STAGES = ["novo", "contato", "avaliacao", "orcamento", "agendado", "procedimento", "retorno"] as const;
+/** The sales funnel, first contact to booked. Once booked, the person is a patient. */
+export const LEAD_STAGES = ["novo", "contato", "avaliacao", "orcamento", "agendado"] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
 export const LEAD_SOURCES = ["instagram", "google", "indicacao", "whatsapp", "site"] as const;
 export type LeadSource = (typeof LEAD_SOURCES)[number];
@@ -40,6 +41,8 @@ export interface Lead {
   /** Set when a quote was sent and not answered yet. */
   quoteSentAt?: string;
   nextAction: string;
+  /** The patient this person became when they booked: the same person, never registered twice. */
+  patientId?: ID;
 }
 
 export interface Patient {
@@ -56,7 +59,8 @@ export interface Patient {
   notes: string;
 }
 
-export const APPOINTMENT_STATUSES = ["agendado", "confirmado", "cancelado", "concluido"] as const;
+/** "agendado" is waiting for confirmation; "concluido" is done; "faltou" is a no-show. */
+export const APPOINTMENT_STATUSES = ["agendado", "confirmado", "concluido", "faltou", "cancelado"] as const;
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
 export interface Appointment {
@@ -134,7 +138,7 @@ export interface Opportunity {
 export interface AutomationRule {
   id: ID;
   organizationId: ID;
-  kind: OpportunityKind | "post_visit";
+  kind: OpportunityKind | "post_visit" | "reminder";
   name: string;
   when: string;
   conditions: string[];

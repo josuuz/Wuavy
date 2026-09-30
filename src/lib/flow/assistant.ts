@@ -32,7 +32,7 @@ export const SUGGESTED = [
   "Como está minha clínica?",
   "Quais oportunidades tenho hoje?",
   "Tenho produtos próximos da validade?",
-  "Quais leads estão parados?",
+  "Quais orçamentos estão sem resposta?",
 ];
 
 const plain = (s: string) =>
@@ -48,7 +48,7 @@ function status(d: FlowData): FlowAnswer {
   return {
     text: `Hoje o Flow vê ${plural(open.length, "frente de oportunidade", "frentes de oportunidade")}, somando cerca de ${brl(potential)} em receita possível. A maior está nos orçamentos sem resposta.`,
     items: [
-      { label: "Leads parados", value: String(stuckLeads(d).length) },
+      { label: "Orçamentos sem resposta", value: String(stuckLeads(d).length) },
       { label: "Retornos a convidar", value: String(dueReturns(d).length) },
       { label: "Horários livres amanhã", value: String(slots.length) },
       { label: "Recuperado em 30 dias", value: brl(recovered(d).total) },
@@ -59,7 +59,7 @@ function status(d: FlowData): FlowAnswer {
 
 function today(d: FlowData): FlowAnswer {
   const labels = {
-    lead_followup: "Follow-up de orçamentos",
+    lead_followup: "Orçamentos sem resposta",
     patient_return: "Convites de retorno",
     stock_expiry: "Estoque perto da validade",
     open_slot: "Horários vagos amanhã",
@@ -70,7 +70,7 @@ function today(d: FlowData): FlowAnswer {
       .filter((o) => o.count > 0)
       .sort((a, b) => b.value - a.value)
       .map((o) => ({ label: `${labels[o.kind]} (${o.count})`, value: brl(o.value) })),
-    link: { label: "Ver oportunidades", view: "oportunidades" },
+    link: { label: "Abrir a visão geral", view: "" },
   };
 }
 
@@ -97,12 +97,12 @@ function stock(d: FlowData): FlowAnswer {
 function leads(d: FlowData): FlowAnswer {
   const stuck = stuckLeads(d);
   return {
-    text: `${plural(stuck.length, "lead recebeu", "leads receberam")} orçamento e não ${stuck.length === 1 ? "respondeu" : "responderam"} há 3 dias ou mais, cerca de ${brl(stuck.reduce((s, l) => s + l.potentialValue, 0))} em aberto. Os de maior valor:`,
+    text: `${plural(stuck.length, "pessoa recebeu", "pessoas receberam")} orçamento e não ${stuck.length === 1 ? "respondeu" : "responderam"} há 3 dias ou mais, cerca de ${brl(stuck.reduce((s, l) => s + l.potentialValue, 0))} em aberto. Os de maior valor:`,
     items: stuck.slice(0, 5).map((l) => ({
-      label: `${l.name} · ${procedureOf(d, l.procedureId)?.name}`,
+      label: `${l.name} · ${procedureOf(d, l.procedureId)?.name ?? "interesse a definir"}`,
       value: `${brl(l.potentialValue)} · ${-daysFrom(d.now, l.lastContactAt)} dias`,
     })),
-    link: { label: "Abrir o CRM", view: "crm" },
+    link: { label: "Abrir Vendas", view: "vendas" },
   };
 }
 
@@ -120,7 +120,7 @@ function schedule(d: FlowData): FlowAnswer {
 function returns(d: FlowData): FlowAnswer {
   const due = dueReturns(d);
   return {
-    text: `${plural(due.length, "paciente pode", "pacientes podem")} estar entrando no período de retorno, sem nada marcado. Os mais próximos:`,
+    text: `${plural(due.length, "paciente está", "pacientes estão")} no período de retorno, sem nada marcado. Os mais próximos:`,
     items: due.slice(0, 5).map((p) => {
       const days = daysFrom(d.now, p.nextReturnAt!);
       return { label: p.name, value: days < 0 ? `retorno passou há ${-days} dias` : `retorno em ${days} dias` };
@@ -133,13 +133,13 @@ export const localAssistant: FlowAssistant = {
   async ask(question, d) {
     const q = plain(question);
     if (/validade|venc|estoque|produto|lote/.test(q)) return stock(d);
-    if (/lead|parad|orcamento|follow/.test(q)) return leads(d);
+    if (/lead|parad|orcamento|follow|venda|contato|resposta/.test(q)) return leads(d);
     if (/agenda|horario|amanha|vag|cancel/.test(q)) return schedule(d);
     if (/retorno|paciente|voltar|reativ/.test(q)) return returns(d);
     if (/oportunidade|hoje|agir|fazer/.test(q)) return today(d);
     if (/como est|clinica|resumo|visao|geral|tudo/.test(q)) return status(d);
     return {
-      text: "Nesta demo eu respondo sobre a clínica, as oportunidades, os leads, os retornos, a agenda e o estoque. Tente uma destas:",
+      text: "Por enquanto eu respondo sobre a clínica, as oportunidades, os orçamentos, os retornos, a agenda e o estoque. Tente uma destas:",
       items: SUGGESTED.map((s) => ({ label: s, value: "" })),
     };
   },

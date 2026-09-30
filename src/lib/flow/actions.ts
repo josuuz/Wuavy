@@ -5,14 +5,17 @@ import { refresh } from "next/cache";
 
 import type { Database } from "@/lib/supabase/database.types";
 import { clinicNow } from "./clock";
+import { dayAt } from "./format";
+import { drawDown, restock, visitSummary } from "./insights";
 import { getSession } from "./session";
-import { APPOINTMENT_STATUSES, LEAD_SOURCES, LEAD_STAGES, PROCEDURE_CATEGORIES } from "./types";
+import { APPOINTMENT_STATUSES, LEAD_SOURCES, LEAD_STAGES, PROCEDURE_CATEGORIES, type InventoryLot } from "./types";
 
 /*
-  The real Flow's writes: leads, patients, procedures, appointments. Each one
-  takes the clinic from the verified session, never from the browser, checks
-  its input, scopes every query to that clinic (row-level security enforces
-  it again) and refreshes the route, so the screen shows the database.
+  The real Flow's writes: contacts, patients, procedures, the agenda and the
+  stock. Each one takes the clinic from the verified session, never from the
+  browser, checks its input, scopes every query to that clinic (row-level
+  security enforces it again) and refreshes the route, so the screen shows
+  the database.
 */
 
 export interface Result {
@@ -21,8 +24,9 @@ export interface Result {
 
 type Db = SupabaseClient<Database>;
 
-const DAY = 86_400_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** The stages a contact can be in before booking: "agendado" is reached by booking. */
+const OPEN_STAGES = LEAD_STAGES.filter((stage) => stage !== "agendado");
 
 /** Input the person can fix: its message goes back to the form. */
 class Invalid extends Error {}
@@ -45,6 +49,8 @@ function describe(error: PostgrestError) {
   if (error.code === "23514") return "Algum valor está fora do permitido.";
   if (error.code === "23503") return "Há outros registros ligados a este.";
   if (error.code === "42501") return "Sem permissão para esta clínica.";
+  // A column the database does not have yet: the schema is behind the app.
+  if (error.code === "PGRST204" || error.code === "42703") return "Falta atualizar o banco de dados do Flow (migration 0002).";
   console.error("Flow write failed", error);
   return "Não foi possível salvar. Tente de novo.";
 }
@@ -77,6 +83,8 @@ function id(value: string) {
   return value;
 }
 
+const optionalId = (value: string) => (value ? id(value) : null);
+
 function oneOf<T extends string>(value: string, options: readonly T[], what: string): T {
   if (!(options as readonly string[]).includes(value)) throw new Invalid(`Escolha ${what}.`);
   return value as T;
@@ -95,7 +103,19 @@ function whole(value: string, what: string) {
   return n;
 }
 
-/* ── Leads ─────────────────────────────────────────────────── */
+/** "0,5" or "2" to a quantity of stock, to the thousandth. */
+function amount(value: string, what: string, { zero = false } = {}) {
+  const n = Number(value.replace(",", "."));
+  if (!value || !Number.isFinite(n) || n < 0 || (!zero && n === 0)) throw new Invalid(`Informe ${what}.`);
+  return Math.round(n * 1000) / 1000;
+}
+
+function isoDate(value: string, what: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value))) throw new Invalid(`Informe ${what}.`);
+  return value;
+}
+
+/* ── Contacts (sales) ──────────────────────────────────────── */
 
 export async function saveLead(leadId: string | null, form: FormData): Promise<Result> {
   return write(async (db, org) => {
@@ -106,29 +126,42 @@ export async function saveLead(leadId: string | null, form: FormData): Promise<R
       phone: text(form, "phone", 40) || null,
       source: oneOf(text(form, "source"), LEAD_SOURCES, "a origem"),
       procedure_id: procedure ? id(procedure) : null,
-      potential_value: value ? cents(value, "o valor potencial") : 0,
+      potential_value: value ? cents(value, "o valor do orçamento") : 0,
       next_action: text(form, "nextAction", 300) || null,
     };
     if (leadId) {
       return affected(await db.from("leads").update(lead).eq("id", id(leadId)).eq("organization_id", org).select("id"));
     }
     const now = clinicNow();
-    return (await db.from("leads").insert({ ...lead, organization_id: org, created_at: now, last_contact_at: now })).error;
+    const stage = oneOf(text(form, "stage") || "novo", OPEN_STAGES, "a etapa");
+    // Someone who is a patient already: the new sale is theirs, not a second person.
+    const patientId = optionalId(text(form, "patientId"));
+    return (
+      await db.from("leads").insert({
+        ...lead,
+        organization_id: org,
+        stage,
+        created_at: now,
+        last_contact_at: now,
+        quote_sent_at: stage === "orcamento" ? now : null,
+        ...(patientId ? { patient_id: patientId } : {}),
+      })
+    ).error;
   });
 }
 
-/** Any move counts as contact; a lead moved into "Orçamento" has just had its quote sent. */
+/** Any move counts as contact; a contact moved into "Orçamento" has just had their quote sent. */
 export async function moveLead(leadId: string, stage: string): Promise<Result> {
   return write(async (db, org) => {
-    const next = oneOf(stage, LEAD_STAGES, "a etapa");
+    const next = oneOf(stage, OPEN_STAGES, "a etapa");
     const now = clinicNow();
     const result = await db
       .from("leads")
-      .update({ stage: next, last_contact_at: now, quote_sent_at: next === "orcamento" ? now : null })
+      .update({ stage: next, last_contact_at: now, quote_sent_at: next === "orcamento" ? now : null, next_action: null })
       .eq("id", id(leadId))
       .eq("organization_id", org)
       .select("name");
-    return affected(result) ?? log(db, org, `${result.data![0].name} avançou no funil.`);
+    return affected(result) ?? log(db, org, `${result.data![0].name} passou para a etapa seguinte em Vendas.`);
   });
 }
 
@@ -182,21 +215,42 @@ export async function deletePatient(patientId: string): Promise<Result> {
 
 /* ── Procedures ────────────────────────────────────────────── */
 
+/** A procedure and what one session of it consumes: the link from the agenda to the stock. */
 export async function saveProcedure(procedureId: string | null, form: FormData): Promise<Result> {
   return write(async (db, org) => {
     const procedure = {
       name: required(text(form, "name"), "o nome"),
       category: oneOf(text(form, "category"), PROCEDURE_CATEGORIES, "a categoria"),
-      price: cents(text(form, "price"), "o valor"),
+      price: cents(text(form, "price"), "o preço"),
       duration_min: whole(text(form, "durationMin"), "a duração em minutos"),
-      return_days: whole(text(form, "returnDays"), "o retorno típico em dias"),
+      return_days: whole(text(form, "returnDays"), "o retorno recomendado em dias"),
     };
+    const products = form.getAll("useProduct").map(String);
+    const quantities = form.getAll("useQuantity").map(String);
+    const uses = new Map<string, number>();
+    products.forEach((product, i) => {
+      if (product) uses.set(id(product), amount(quantities[i] ?? "", "a quantidade de cada produto"));
+    });
+
+    let saved = procedureId;
     if (procedureId) {
-      return affected(
+      const error = affected(
         await db.from("procedures").update(procedure).eq("id", id(procedureId)).eq("organization_id", org).select("id"),
       );
+      if (error) return error;
+    } else {
+      const { data, error } = await db.from("procedures").insert({ ...procedure, organization_id: org }).select("id").single();
+      if (error) return error;
+      saved = data.id;
     }
-    return (await db.from("procedures").insert({ ...procedure, organization_id: org })).error;
+
+    const cleared = await db.from("procedure_products").delete().eq("procedure_id", saved!).eq("organization_id", org);
+    if (cleared.error || !uses.size) return cleared.error;
+    return (
+      await db.from("procedure_products").insert(
+        [...uses].map(([product, quantity]) => ({ organization_id: org, procedure_id: saved!, product_id: product, quantity })),
+      )
+    ).error;
   });
 }
 
@@ -210,58 +264,179 @@ export async function deleteProcedure(procedureId: string): Promise<Result> {
   });
 }
 
-/* ── Appointments ──────────────────────────────────────────── */
+/* ── Agenda ────────────────────────────────────────────────── */
 
-export async function createAppointment(form: FormData): Promise<Result> {
+/**
+ * One booking, for whoever it is: a patient, a contact from Vendas (who
+ * becomes a patient here, keeping their origin and quote), or someone new
+ * (a patient and the contact that records how they arrived). The same
+ * person is never created twice: a contact already linked books as their
+ * patient. Optionally it replaces an earlier booking (rescheduling) and
+ * takes the person off the waiting list.
+ */
+export async function book(form: FormData): Promise<Result> {
   return write(async (db, org) => {
-    const patientId = id(required(text(form, "patientId"), "o paciente"));
     const procedureId = id(required(text(form, "procedureId"), "o procedimento"));
-    const at = new Date(text(form, "startsAt"));
-    if (Number.isNaN(at.getTime())) throw new Invalid("Horário inválido.");
-    const startsAt = at.toISOString();
+    const date = isoDate(text(form, "date"), "o dia");
+    const time = text(form, "time");
+    if (!/^\d{2}:\d{2}$/.test(time)) throw new Invalid("Escolha o horário.");
+    const startsAt = new Date(`${date}T${time}:00.000Z`).toISOString();
+    const now = clinicNow();
+    if (startsAt.slice(0, 10) < now.slice(0, 10)) throw new Invalid("Escolha um dia a partir de hoje.");
+    const professionalId = optionalId(text(form, "professionalId"));
+    const leadId = optionalId(text(form, "leadId"));
+    const replaces = optionalId(text(form, "replaces"));
+    const waitlistId = optionalId(text(form, "waitlistId"));
+    const who = text(form, "patientId");
 
-    const { data: procedure, error } = await db
+    const { data: procedure, error: procedureError } = await db
       .from("procedures")
-      .select("duration_min")
+      .select("name, price, duration_min")
       .eq("id", procedureId)
       .eq("organization_id", org)
       .maybeSingle();
-    if (error) return error;
+    if (procedureError) return procedureError;
     if (!procedure) throw new Invalid("Escolha o procedimento.");
 
-    const { count, error: taken } = await db
+    let busy = db
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .eq("organization_id", org)
       .eq("starts_at", startsAt)
       .neq("status", "cancelado");
-    if (taken) return taken;
+    if (replaces) busy = busy.neq("id", replaces);
+    const { count, error: busyError } = await busy;
+    if (busyError) return busyError;
     if (count) throw new Invalid("Este horário já está ocupado.");
 
-    return (
-      await db.from("appointments").insert({
+    // Who is booking, and whether a patient is created here (undone if the booking fails).
+    let patientId: string | null = null;
+    let name = "";
+    let created: string | null = null;
+    let lead: { id: string; patient_id: string | null } | null = null;
+
+    if (leadId) {
+      const { data, error } = await db
+        .from("leads")
+        .select("id, name, phone, patient_id")
+        .eq("id", leadId)
+        .eq("organization_id", org)
+        .maybeSingle();
+      if (error) return error;
+      if (!data) throw new Invalid("Contato não encontrado.");
+      lead = data;
+      name = data.name;
+      patientId = data.patient_id;
+      if (!patientId) {
+        const made = await db.from("patients").insert({ organization_id: org, name: data.name, phone: data.phone }).select("id").single();
+        if (made.error) return made.error;
+        patientId = created = made.data.id;
+      }
+    } else if (who && who !== "novo") {
+      const { data, error } = await db.from("patients").select("id, name").eq("id", id(who)).eq("organization_id", org).maybeSingle();
+      if (error) return error;
+      if (!data) throw new Invalid("Paciente não encontrado.");
+      patientId = data.id;
+      name = data.name;
+    } else {
+      name = required(text(form, "name"), "o nome");
+      const phone = text(form, "phone", 40) || null;
+      const made = await db.from("patients").insert({ organization_id: org, name, phone }).select("id").single();
+      if (made.error) return made.error;
+      patientId = created = made.data.id;
+      // Their origin lives on the contact, as for anyone who came through Vendas.
+      const origin = await db.from("leads").insert({
         organization_id: org,
-        patient_id: patientId,
+        name,
+        phone,
+        source: oneOf(text(form, "source") || "whatsapp", LEAD_SOURCES, "a origem"),
         procedure_id: procedureId,
-        starts_at: startsAt,
-        duration_min: procedure.duration_min,
-      })
-    ).error;
+        potential_value: procedure.price,
+        stage: "agendado",
+        created_at: now,
+        last_contact_at: now,
+        patient_id: patientId,
+      });
+      if (origin.error) return undo(db, org, created, origin.error);
+    }
+
+    const appointment = await db.from("appointments").insert({
+      organization_id: org,
+      patient_id: patientId!,
+      procedure_id: procedureId,
+      professional_id: professionalId,
+      starts_at: startsAt,
+      duration_min: procedure.duration_min,
+    });
+    if (appointment.error) return undo(db, org, created, appointment.error);
+
+    if (lead) {
+      const linked = await db
+        .from("leads")
+        .update({ stage: "agendado", patient_id: patientId, last_contact_at: now, quote_sent_at: null, next_action: null })
+        .eq("id", lead.id)
+        .eq("organization_id", org);
+      // Deleting the new patient takes their appointment with it (the schema cascades).
+      if (linked.error) return undo(db, org, created, linked.error);
+    }
+    if (replaces) {
+      const moved = await db
+        .from("appointments")
+        .update({ status: "cancelado" })
+        .eq("id", replaces)
+        .eq("organization_id", org)
+        .in("status", ["agendado", "confirmado"]);
+      if (moved.error) return moved.error;
+    }
+    if (waitlistId) {
+      const off = await db.from("waitlist_entries").delete().eq("id", waitlistId).eq("organization_id", org);
+      if (off.error) return off.error;
+    }
+    const becomes = created ? " e agora é paciente" : "";
+    return log(db, org, `${name} agendou ${procedure.name} para ${dayAt(now, startsAt)}${becomes}.`);
   });
 }
 
+async function undo(db: Db, org: string, created: string | null, error: PostgrestError) {
+  if (created) await db.from("patients").delete().eq("id", created).eq("organization_id", org);
+  return error;
+}
+
+const DONE_TEXT: Record<string, (name: string, procedure: string) => string> = {
+  confirmado: (name) => `${name} confirmou presença.`,
+  concluido: (name, procedure) => `${name}: ${procedure} finalizado. Estoque e próximo retorno atualizados.`,
+  faltou: (name, procedure) => `${name} faltou ao atendimento de ${procedure}.`,
+  cancelado: () => "Um cancelamento abriu um horário na agenda.",
+};
+
+/**
+ * The outcome of a booking. Finishing one is where the modules meet: the
+ * procedure's products leave the stock and the patient's next return is set.
+ * Undoing it puts both back.
+ */
 export async function setAppointmentStatus(appointmentId: string, status: string): Promise<Result> {
   return write(async (db, org) => {
     const next = oneOf(status, APPOINTMENT_STATUSES, "o status");
-    const result = await db
+    const { data: before, error } = await db
       .from("appointments")
-      .update({ status: next })
+      .select("status, patient_id, procedure_id, patients(name), procedures(name)")
       .eq("id", id(appointmentId))
       .eq("organization_id", org)
-      .select("patient_id");
-    const error = affected(result) ?? (await syncPatient(db, org, result.data![0].patient_id));
-    if (error || next !== "cancelado") return error;
-    return log(db, org, "Um cancelamento abriu um horário na agenda.");
+      .maybeSingle();
+    if (error) return error;
+    if (!before) throw new Invalid("Registro não encontrado.");
+    if (before.status === next) return null;
+
+    const changed = await db.from("appointments").update({ status: next }).eq("id", appointmentId).eq("organization_id", org);
+    if (changed.error) return changed.error;
+    if (next === "concluido" || before.status === "concluido") {
+      const stock = await spendStock(db, org, before.procedure_id, next === "concluido" ? -1 : 1);
+      if (stock) return stock;
+    }
+    const synced = await syncPatient(db, org, before.patient_id);
+    if (synced) return synced;
+    const say = DONE_TEXT[next];
+    return say ? log(db, org, say(before.patients?.name ?? "Paciente", before.procedures?.name ?? "procedimento")) : null;
   });
 }
 
@@ -272,40 +447,164 @@ export async function deleteAppointment(appointmentId: string): Promise<Result> 
       .delete()
       .eq("id", id(appointmentId))
       .eq("organization_id", org)
-      .select("patient_id");
-    return affected(result) ?? syncPatient(db, org, result.data![0].patient_id);
+      .select("patient_id, procedure_id, status");
+    const error = affected(result);
+    if (error) return error;
+    const gone = result.data![0];
+    if (gone.status === "concluido") {
+      const stock = await spendStock(db, org, gone.procedure_id, 1);
+      if (stock) return stock;
+    }
+    return syncPatient(db, org, gone.patient_id);
   });
 }
 
-/**
- * A patient's visits, spend and next return follow from their completed
- * appointments: recomputed whenever one changes, so they never drift.
- */
+/** Takes one session's products from the stock (-1) or gives them back (+1). */
+async function spendStock(db: Db, org: string, procedureId: string, sign: 1 | -1) {
+  const { data: uses, error } = await db
+    .from("procedure_products")
+    .select("product_id, quantity")
+    .eq("organization_id", org)
+    .eq("procedure_id", procedureId);
+  if (error || !uses.length) return error;
+  const { data: rows, error: lotsError } = await db
+    .from("inventory_lots")
+    .select("id, product_id, lot_code, quantity, expires_at")
+    .eq("organization_id", org)
+    .in(
+      "product_id",
+      uses.map((u) => u.product_id),
+    );
+  if (lotsError) return lotsError;
+
+  const lots = rows.map(
+    (l): InventoryLot => ({
+      id: l.id,
+      organizationId: org,
+      productId: l.product_id,
+      lotCode: l.lot_code,
+      quantity: Number(l.quantity),
+      expiresAt: new Date(l.expires_at).toISOString(),
+    }),
+  );
+  const need = uses.map((u) => ({ productId: u.product_id, quantity: Number(u.quantity) }));
+  const today = clinicNow();
+  const moves = sign < 0 ? drawDown(lots, need, today) : restock(lots, need, today);
+  for (const move of moves) {
+    const lot = lots.find((l) => l.id === move.lotId)!;
+    const quantity = Math.max(0, Math.round((lot.quantity + sign * move.quantity) * 1000) / 1000);
+    lot.quantity = quantity;
+    const saved = await db.from("inventory_lots").update({ quantity }).eq("id", lot.id).eq("organization_id", org);
+    if (saved.error) return saved.error;
+  }
+  return null;
+}
+
+/** A patient's visits, spend and next return, recomputed from their completed appointments. */
 async function syncPatient(db: Db, org: string, patientId: string) {
   const { data, error } = await db
     .from("appointments")
     .select("starts_at, procedures(price, return_days)")
     .eq("organization_id", org)
     .eq("patient_id", patientId)
-    .eq("status", "concluido")
-    .order("starts_at");
+    .eq("status", "concluido");
   if (error) return error;
 
-  const first = data[0];
-  const last = data.at(-1);
-  const nextReturn = last?.procedures
-    ? new Date(Date.parse(last.starts_at) + last.procedures.return_days * DAY).toISOString()
-    : null;
+  const summary = visitSummary(
+    data.map((visit) => ({
+      startsAt: new Date(visit.starts_at).toISOString(),
+      price: visit.procedures?.price ?? 0,
+      returnDays: visit.procedures?.return_days ?? 0,
+    })),
+  );
   return (
     await db
       .from("patients")
       .update({
-        first_visit_at: first?.starts_at ?? null,
-        last_visit_at: last?.starts_at ?? null,
-        next_return_at: nextReturn,
-        total_spent: data.reduce((sum, visit) => sum + (visit.procedures?.price ?? 0), 0),
+        first_visit_at: summary.firstVisitAt ?? null,
+        last_visit_at: summary.lastVisitAt ?? null,
+        next_return_at: summary.nextReturnAt ?? null,
+        total_spent: summary.totalSpent,
       })
       .eq("id", patientId)
       .eq("organization_id", org)
   ).error;
+}
+
+/* ── Waiting list ──────────────────────────────────────────── */
+
+export async function addToWaitlist(form: FormData): Promise<Result> {
+  return write(async (db, org) => {
+    const entry = {
+      organization_id: org,
+      patient_id: id(required(text(form, "patientId"), "o paciente")),
+      procedure_id: id(required(text(form, "procedureId"), "o procedimento")),
+      period: oneOf(text(form, "period"), ["manha", "tarde"] as const, "o período"),
+      created_at: clinicNow(),
+    };
+    return (await db.from("waitlist_entries").insert(entry)).error;
+  });
+}
+
+export async function removeFromWaitlist(entryId: string): Promise<Result> {
+  return write(async (db, org) =>
+    affected(await db.from("waitlist_entries").delete().eq("id", id(entryId)).eq("organization_id", org).select("id")),
+  );
+}
+
+/* ── Stock ─────────────────────────────────────────────────── */
+
+/** A delivery: a lot of a product the clinic has, or of one it registers now. */
+export async function stockIn(form: FormData): Promise<Result> {
+  return write(async (db, org) => {
+    const lot = {
+      lot_code: required(text(form, "lotCode", 60), "o lote"),
+      quantity: amount(text(form, "quantity"), "a quantidade"),
+      expires_at: isoDate(text(form, "expiresAt"), "a validade"),
+    };
+    let productId = text(form, "productId");
+    let name = "";
+    if (productId && productId !== "novo") {
+      const { data, error } = await db.from("products").select("id, name").eq("id", id(productId)).eq("organization_id", org).maybeSingle();
+      if (error) return error;
+      if (!data) throw new Invalid("Produto não encontrado.");
+      name = data.name;
+    } else {
+      name = required(text(form, "name"), "o nome do produto");
+      const { data, error } = await db
+        .from("products")
+        .insert({
+          organization_id: org,
+          name,
+          unit: required(text(form, "unit", 30), "a unidade"),
+          unit_cost: cents(text(form, "unitCost"), "o custo por unidade"),
+        })
+        .select("id")
+        .single();
+      if (error) return error;
+      productId = data.id;
+    }
+    const inserted = await db.from("inventory_lots").insert({ ...lot, organization_id: org, product_id: productId });
+    return inserted.error ?? log(db, org, `Entrada no estoque: ${name}, lote ${lot.lot_code}.`);
+  });
+}
+
+const REASONS = { uso: "uso fora da agenda", perda: "perda ou vencimento", contagem: "contagem" } as const;
+
+/** Sets a lot to what is really on the shelf, and says why. */
+export async function adjustLot(lotId: string, form: FormData): Promise<Result> {
+  return write(async (db, org) => {
+    const quantity = amount(text(form, "quantity"), "a quantidade atual", { zero: true });
+    const reason = oneOf(text(form, "reason"), Object.keys(REASONS) as (keyof typeof REASONS)[], "o motivo");
+    const result = await db
+      .from("inventory_lots")
+      .update({ quantity })
+      .eq("id", id(lotId))
+      .eq("organization_id", org)
+      .select("lot_code, products(name)");
+    const error = affected(result);
+    if (error) return error;
+    const lot = result.data![0];
+    return log(db, org, `Estoque ajustado (${REASONS[reason]}): ${lot.products?.name ?? "produto"}, lote ${lot.lot_code}.`);
+  });
 }

@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { clinicNow } from "./clock";
 import type { FlowSource } from "./source";
+import { LEAD_STAGES } from "./types";
 import type {
   Activity,
   Appointment,
@@ -78,11 +79,14 @@ export function supabaseSource(db: Db): FlowSource {
             source: l.source as Lead["source"],
             procedureId: l.procedure_id ?? "",
             potentialValue: l.potential_value,
-            stage: l.stage as Lead["stage"],
+            // A stage from before the funnel ended at "agendado" reads as booked.
+            stage: (LEAD_STAGES as readonly string[]).includes(l.stage) ? (l.stage as Lead["stage"]) : "agendado",
             createdAt: iso(l.created_at),
             lastContactAt: iso(l.last_contact_at),
             quoteSentAt: isoOrUndefined(l.quote_sent_at),
             nextAction: l.next_action ?? "",
+            // Absent until migration 0002 adds the column.
+            patientId: l.patient_id ?? undefined,
           }),
         ),
         patients: patients.data!.map(

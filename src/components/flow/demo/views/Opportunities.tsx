@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { brl, daysFrom, hour, plural, relDay, units } from "@/lib/flow/format";
+import { brl, capital, daysFrom, hour, plural, relDay, units } from "@/lib/flow/format";
 import {
   dueReturns,
   expiringLots,
@@ -18,27 +18,31 @@ import {
   stuckLeads,
 } from "@/lib/flow/insights";
 import type { FlowData, OpportunityKind } from "@/lib/flow/types";
-import { KIND, SOURCE_LABEL, STATUS_LABEL, viewHref } from "../copy";
-import { useFlow } from "../store";
+import { KIND, SOURCE_LABEL, STATUS_LABEL, VIEWS, viewHref } from "../copy";
+import { useFlow, useFocus } from "../store";
 import styles from "../ui.module.css";
 
-/* The four fronts the Flow found. Each opens onto the records behind it and one suggested action. */
+/*
+  How the Flow found each opportunity the overview shows: the records behind
+  it and one suggested action. Opened from the overview, not from the menu.
+*/
 
 const SHOWN = 8;
 
 export function Opportunities() {
-  const { data, ops, focus, dispatch, base } = useFlow();
-  // Opened from another screen: start on that one, then the request is spent.
-  const [opened, setOpened] = useState<OpportunityKind | null>(focus);
-  useEffect(() => {
-    if (focus) dispatch({ type: "focus", kind: null });
-  }, [focus, dispatch]);
+  const { data, ops, dispatch, base } = useFlow();
+  // Opened from another screen: start on that one.
+  const focus = useFocus("opportunity");
+  const [opened, setOpened] = useState<OpportunityKind | null>(focus?.kind ?? null);
 
   return (
     <div className={styles.page}>
       <header className={styles.head}>
         <h1 className={styles.title}>Oportunidades</h1>
-        <p className={styles.lead}>O que o Flow encontrou cruzando leads, pacientes, agenda e estoque, e o que sugere fazer.</p>
+        <p className={styles.lead}>
+          O que o Flow encontrou cruzando vendas, pacientes, agenda e estoque, e o que sugere fazer.{" "}
+          <Link href={viewHref("", base)}>Voltar à visão geral</Link>
+        </p>
       </header>
 
       <ol className={styles.opps}>
@@ -64,7 +68,7 @@ export function Opportunities() {
                   onClick={() => setOpened(isOpen ? null : o.kind)}
                   disabled={o.count === 0}
                 >
-                  {isOpen ? "Fechar" : copy.action}
+                  {isOpen ? "Fechar" : "Ver detalhes"}
                 </button>
               </div>
 
@@ -97,7 +101,7 @@ export function Opportunities() {
                       </>
                     )}
                     <Link href={viewHref(copy.view, base)} className={styles.textAction}>
-                      Ver na tela de {copy.tag.toLowerCase()} <span aria-hidden="true">→</span>
+                      Abrir {VIEWS.find((v) => v.slug === copy.view)?.label} <span aria-hidden="true">→</span>
                     </Link>
                   </div>
                 </div>
@@ -116,7 +120,7 @@ function Detail({ kind, data }: { kind: OpportunityKind; data: FlowData }) {
       const leads = stuckLeads(data);
       return (
         <Records
-          head={["Lead", "Interesse", "Valor", "Sem resposta"]}
+          head={["Contato", "Interesse", "Orçamento", "Sem resposta"]}
           rows={leads.map((l) => [
             `${l.name} · ${SOURCE_LABEL[l.source]}`,
             procedureOf(data, l.procedureId)?.name ?? "",
@@ -130,11 +134,11 @@ function Detail({ kind, data }: { kind: OpportunityKind; data: FlowData }) {
       const due = dueReturns(data);
       return (
         <Records
-          head={["Paciente", "Último procedimento", "Retorno típico", "Valor provável"]}
+          head={["Paciente", "Último procedimento", "Retorno recomendado", "Valor provável"]}
           rows={due.map((p) => [
             p.name,
             procedureOf(data, history(data, p.id)[0]?.procedureId ?? "")?.name ?? "",
-            relDay(data.now, p.nextReturnAt!),
+            capital(relDay(data.now, p.nextReturnAt!)),
             brl(returnValue(data, p)),
           ])}
         />
