@@ -3,17 +3,38 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 
-import { brl, dayLabel, daysFrom, hour, plural, relDay } from "@/lib/flow/format";
-import { awaiting, daySlots, lowStock, missed, procedureOf, recovered, unrecorded, valueDelivered } from "@/lib/flow/insights";
-import { APPOINTMENT_LABEL, KIND, STATUS_LABEL, viewHref } from "../copy";
+import { PRICE } from "@/lib/flow/access";
+import { brl, capital, dayLabel, daysFrom, hour, plural, relDay } from "@/lib/flow/format";
+import {
+  averageTicket,
+  awaiting,
+  daySlots,
+  expiryOpportunities,
+  finance,
+  lowStock,
+  missed,
+  openSlots,
+  overdueReturns,
+  procedureOf,
+  recovered,
+  returnsThisWeek,
+  returnValue,
+  stuckLeads,
+  unrecorded,
+  valueDelivered,
+} from "@/lib/flow/insights";
+import { APPOINTMENT_LABEL, KIND, RECOVERED_FRONTS, STATUS_LABEL, viewHref } from "../copy";
 import { FocusLink } from "../forms";
 import { useFlow, type Focus } from "../store";
 import styles from "../ui.module.css";
+import { selection } from "./Opportunities";
 
 /*
-  The first screen: not a dashboard of charts, the answer to "what do I do
-  now?". Today's agenda, what needs attention, and the opportunities the
-  Pulse found, each with the action that settles it.
+  The first screen answers one question: what needs attention now? The
+  queue of things to do today, each with the action that settles it; where
+  the money is waiting; what the Pulse already brought back, against what it
+  costs; and the clinic's numbers in broad strokes. No chart without an
+  action next to it.
 */
 
 const noSubscribe = () => () => {};
@@ -22,12 +43,8 @@ const greeting = () => {
   return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
 };
 
-const RECOVERED_LABEL: Record<string, string> = {
-  lead_followup: "Orçamentos retomados",
-  patient_return: "Retornos",
-  open_slot: "Horários preenchidos",
-  stock_expiry: "Estoque usado antes de vencer",
-};
+/** Questions the overview hands straight to "Pergunte ao Pulse". */
+const QUICK = ["O que preciso fazer hoje?", "Onde estou perdendo dinheiro?", "Quanto o Pulse recuperou este mês?"];
 
 interface Todo {
   count: number;
@@ -41,7 +58,7 @@ interface Todo {
 const names = (list: string[]) => (list.length > 3 ? `${list.slice(0, 3).join(", ")} e mais ${list.length - 3}` : list.join(", "));
 
 export function Overview() {
-  const { data, ops, base, live } = useFlow();
+  const { data, ops, base, live, ask } = useFlow();
   const hello = useSyncExternalStore(noSubscribe, greeting, () => "Bom dia");
   const today = daySlots(data, 0);
   const booked = today.filter((s) => s.status === "ocupado").map((s) => s.appointment!);
@@ -76,11 +93,17 @@ export function Overview() {
   ];
   const starting = live && setup.slice(0, 3).some((s) => !s.done);
 
+  // What to do now, in the order a front desk would do it: today's agenda first, then the money left waiting.
   const confirmToday = awaiting(data, 0);
   const confirmTomorrow = awaiting(data, 1);
   const late = unrecorded(data);
-  const noShows = missed(data);
+  const slots = openSlots(data);
   const fresh = data.leads.filter((l) => l.stage === "novo");
+  const stuck = stuckLeads(data);
+  const noShows = missed(data);
+  const overdue = overdueReturns(data);
+  const week = returnsThisWeek(data);
+  const expiring = expiryOpportunities(data);
   const low = lowStock(data);
   const todos: Todo[] = [];
   if (confirmToday.length + confirmTomorrow.length) {
@@ -104,6 +127,42 @@ export function Overview() {
       focus: { to: "agenda", day: daysFrom(data.now, late[0].startsAt) },
     });
   }
+  if (slots.length) {
+    const byDay = [0, 1]
+      .map((day) => {
+        const own = slots.filter((s) => daysFrom(data.now, s.startsAt) === day);
+        const cancelled = own.some((s) => s.status === "cancelado");
+        return own.length
+          ? `${capital(relDay(data.now, own[0].startsAt))} ${own.map((s) => hour(s.startsAt)).join(", ")}${cancelled ? " (cancelamento)" : ""}`
+          : "";
+      })
+      .filter(Boolean);
+    todos.push({
+      count: slots.length,
+      text: slots.length === 1 ? "horário vazio até amanhã" : "horários vazios até amanhã",
+      detail: `${byDay.join(" · ")} · cerca de ${brl(slots.length * averageTicket(data))}`,
+      action: "Preencher",
+      focus: { to: "agenda", day: daysFrom(data.now, slots[0].startsAt) },
+    });
+  }
+  if (fresh.length) {
+    todos.push({
+      count: fresh.length,
+      text: fresh.length === 1 ? "lead esperando resposta" : "leads esperando resposta",
+      detail: names(fresh.map((l) => l.name)),
+      action: "Responder",
+      focus: { to: "sales", filter: "novo" },
+    });
+  }
+  if (stuck.length) {
+    todos.push({
+      count: stuck.length,
+      text: stuck.length === 1 ? "orçamento sem resposta" : "orçamentos sem resposta",
+      detail: `${brl(stuck.reduce((s, l) => s + l.potentialValue, 0))} em aberto · ${names(stuck.map((l) => l.name))}`,
+      action: "Fazer follow-up",
+      focus: { to: "opportunity", kind: "lead_followup" },
+    });
+  }
   if (noShows.length) {
     todos.push({
       count: noShows.length,
@@ -113,13 +172,32 @@ export function Overview() {
       focus: noShows.length === 1 ? { to: "patient", id: noShows[0].patient.id } : { to: "patients", filter: "faltou" },
     });
   }
-  if (fresh.length) {
+  if (overdue.length) {
     todos.push({
-      count: fresh.length,
-      text: fresh.length === 1 ? "novo contato esperando resposta" : "novos contatos esperando resposta",
-      detail: names(fresh.map((l) => l.name)),
-      action: "Responder",
-      focus: { to: "sales", filter: "novo" },
+      count: overdue.length,
+      text: overdue.length === 1 ? "paciente com retorno atrasado" : "pacientes com retorno atrasado",
+      detail: `${brl(overdue.reduce((s, p) => s + returnValue(data, p), 0))} em retornos prováveis, sem nada marcado`,
+      action: "Ver pacientes",
+      focus: { to: "patients", filter: "retorno" },
+    });
+  }
+  if (week.length) {
+    todos.push({
+      count: week.length,
+      text: week.length === 1 ? "paciente deveria retornar esta semana" : "pacientes deveriam retornar esta semana",
+      detail: names(week.map((p) => p.name)),
+      action: "Ver pacientes",
+      focus: { to: "patients", filter: "semana" },
+    });
+  }
+  if (expiring.length) {
+    const people = new Set(expiring.flatMap((x) => x.patients.map((p) => p.id))).size;
+    todos.push({
+      count: expiring.length,
+      text: expiring.length === 1 ? "lote vence em até 45 dias" : "lotes vencem em até 45 dias",
+      detail: `${names(expiring.map((x) => x.product?.name ?? "produto"))} · ${plural(people, "paciente compatível", "pacientes compatíveis")}`,
+      action: "Ver oportunidade",
+      focus: { to: "opportunity", kind: "stock_expiry" },
     });
   }
   if (low.length) {
@@ -132,51 +210,32 @@ export function Overview() {
     });
   }
 
-  const found = ops.filter((o) => o.count > 0);
+  const found = ops.filter((o) => o.count > 0).sort((a, b) => b.value - a.value);
+  const potential = found.filter((o) => o.status !== "resolvida").reduce((s, o) => s + o.value, 0);
   const back = recovered(data);
   const value = valueDelivered(data, ops);
+  const money = finance(data);
+  const multiple = Math.floor(value.revenue / PRICE);
   const feed = [...data.activities].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6);
 
   return (
     <div className={styles.page}>
       <h1 className={styles.greet}>
-        {hello}. <span>{starting ? "Vamos deixar a clínica pronta no Pulse." : "Aqui está o que fazer agora."}</span>
+        {hello}. <span>{starting ? "Vamos deixar a clínica pronta no Pulse." : "O que precisa da sua atenção agora?"}</span>
       </h1>
 
       {starting ? null : (
-        <section className={styles.value} aria-labelledby="valor">
-          <h2 id="valor" className={styles.valueTitle}>
+        <div className={styles.askStrip}>
+          <p className={styles.askStripLabel}>
             <span className="pulse-dot" aria-hidden="true" />
-            Valor gerado pelo Pulse
-          </h2>
-          <dl className={styles.valueGrid}>
-            <div>
-              <dt>Oportunidades encontradas</dt>
-              <dd>{value.found}</dd>
-            </div>
-            <div>
-              <dt>Leads recuperados</dt>
-              <dd>{value.leads}</dd>
-            </div>
-            <div>
-              <dt>Pacientes reativados</dt>
-              <dd>{value.patients}</dd>
-            </div>
-            <div>
-              <dt>Horários preenchidos</dt>
-              <dd>{value.slots}</dd>
-            </div>
-            <div data-main="">
-              <dt>Receita recuperada pelo Pulse</dt>
-              <dd>{brl(value.revenue)}</dd>
-            </div>
-          </dl>
-          <p className={styles.fine}>
-            {live
-              ? "Oportunidades abertas agora; recuperações dos últimos 30 dias, da operação da clínica."
-              : "Ilustrativo: calculado sobre os dados fictícios da demo. Oportunidades abertas agora; recuperações dos últimos 30 dias."}
+            Pergunte ao Pulse
           </p>
-        </section>
+          {QUICK.map((q) => (
+            <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)}>
+              {q}
+            </button>
+          ))}
+        </div>
       )}
 
       {starting ? (
@@ -208,6 +267,36 @@ export function Overview() {
       ) : null}
 
       <div className={styles.duo}>
+        <section className={styles.panel} aria-labelledby="atencao">
+          <h2 id="atencao" className={styles.label}>
+            Precisa da sua atenção <span>{todos.length ? plural(todos.length, "item", "itens") : ""}</span>
+          </h2>
+          {todos.length ? (
+            <ol className={styles.todo}>
+              {todos.map((item) => (
+                <li key={item.text}>
+                  <span className={styles.todoCount}>{item.count}</span>
+                  <p>
+                    <strong>{item.text}</strong>
+                    <span>{item.detail}</span>
+                  </p>
+                  {item.focus ? (
+                    <FocusLink focus={item.focus} className={styles.secondary}>
+                      {item.action}
+                    </FocusLink>
+                  ) : (
+                    <Link href={viewHref(item.view ?? "", base)} className={styles.secondary}>
+                      {item.action}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className={styles.done}>Nada pendente. A operação está em dia.</p>
+          )}
+        </section>
+
         <section className={styles.panel} aria-labelledby="hoje">
           <h2 id="hoje" className={styles.label}>
             Hoje <span>{dayLabel(data.now)}</span>
@@ -250,41 +339,11 @@ export function Overview() {
             Abrir a agenda <span aria-hidden="true">→</span>
           </FocusLink>
         </section>
-
-        <section className={styles.panel} aria-labelledby="atencao">
-          <h2 id="atencao" className={styles.label}>
-            Precisa da sua atenção
-          </h2>
-          {todos.length ? (
-            <ol className={styles.todo}>
-              {todos.map((item) => (
-                <li key={item.text}>
-                  <span className={styles.todoCount}>{item.count}</span>
-                  <p>
-                    <strong>{item.text}</strong>
-                    <span>{item.detail}</span>
-                  </p>
-                  {item.focus ? (
-                    <FocusLink focus={item.focus} className={styles.secondary}>
-                      {item.action}
-                    </FocusLink>
-                  ) : (
-                    <Link href={viewHref(item.view ?? "", base)} className={styles.secondary}>
-                      {item.action}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className={styles.done}>Nada pendente. A operação está em dia.</p>
-          )}
-        </section>
       </div>
 
       <section className={styles.foundBlock} aria-labelledby="encontradas">
         <h2 id="encontradas" className={styles.label}>
-          Oportunidades encontradas pelo Pulse
+          Oportunidades encontradas pelo Pulse {potential ? <span>{brl(potential)} em potencial</span> : null}
         </h2>
         {found.length ? (
           <ol className={styles.found}>
@@ -294,17 +353,16 @@ export function Overview() {
                 <li key={o.kind} className={styles.foundItem} data-done={o.status === "resolvida" ? "" : undefined}>
                   <span className={styles.tag}>{copy.tag}</span>
                   <p className={styles.foundTitle}>{copy.headline(o)}</p>
-                  <p className={styles.fine}>
-                    {o.kind === "stock_expiry"
-                      ? `${plural(o.count, "lote vence", "lotes vencem")} em até 45 dias`
-                      : `${brl(o.value)} ${copy.valueLabel}`}
+                  <p className={styles.foundValue}>
+                    <span>Potencial</span> {brl(o.value)}
                   </p>
+                  <p className={styles.fine}>{copy.picked(selection(data, o.kind).length)}</p>
                   {o.status !== "nova" ? (
                     <span className={styles.status} data-status={o.status}>
                       {STATUS_LABEL[o.status]}
                     </span>
                   ) : null}
-                  <FocusLink focus={copy.focus} className={styles.primary}>
+                  <FocusLink focus={{ to: "opportunity", kind: o.kind }} className={styles.primary}>
                     {copy.action}
                   </FocusLink>
                 </li>
@@ -318,51 +376,132 @@ export function Overview() {
               : "Nenhuma oportunidade aberta agora."}
           </p>
         )}
-        {found.length ? (
-          <Link href={viewHref("oportunidades", base)} className={styles.textAction}>
-            Ver como o Pulse encontrou cada uma <span aria-hidden="true">→</span>
-          </Link>
-        ) : null}
       </section>
 
-      <div className={styles.duo}>
-        {live && !back.total ? null : (
-          <section className={styles.panel} aria-labelledby="recuperada">
-            <h2 id="recuperada" className={styles.label}>
-              Receita recuperada, por frente <span>últimos 30 dias</span>
+      {starting ? null : (
+        <section id="valor" className={styles.value} aria-labelledby="valor-titulo">
+          <h2 id="valor-titulo" className={styles.valueTitle}>
+            <span className="pulse-dot" aria-hidden="true" />
+            Receita recuperada pelo Pulse
+          </h2>
+          <dl className={styles.valueGrid}>
+            <div data-main="">
+              <dt>Últimos 30 dias</dt>
+              <dd>{brl(value.revenue)}</dd>
+            </div>
+            <div>
+              <dt>Oportunidades encontradas</dt>
+              <dd>{value.found}</dd>
+            </div>
+            <div>
+              <dt>Orçamentos recuperados</dt>
+              <dd>{value.quotes}</dd>
+            </div>
+            <div>
+              <dt>Leads convertidos</dt>
+              <dd>{value.leads}</dd>
+            </div>
+            <div>
+              <dt>Pacientes reativados</dt>
+              <dd>{value.patients}</dd>
+            </div>
+            <div>
+              <dt>Horários preenchidos</dt>
+              <dd>{value.slots}</dd>
+            </div>
+          </dl>
+          {value.revenue ? (
+            <p className={styles.roi}>
+              O Pulse custa {brl(PRICE)} por mês e ajudou a recuperar {brl(value.revenue)}
+              {multiple >= 1 ? (
+                <>
+                  : <strong>{multiple}× o valor da mensalidade</strong>.
+                </>
+              ) : (
+                "."
+              )}
+            </p>
+          ) : null}
+          <p className={styles.fine}>
+            {live
+              ? "Oportunidades abertas agora; recuperações dos últimos 30 dias, da operação da clínica."
+              : "Ilustrativo: calculado sobre os dados fictícios da demo. Oportunidades abertas agora; recuperações dos últimos 30 dias."}
+          </p>
+        </section>
+      )}
+
+      {starting ? null : (
+        <div className={styles.duo}>
+          {live && !back.total ? null : (
+            <section className={styles.panel} aria-labelledby="recuperada">
+              <h2 id="recuperada" className={styles.label}>
+                De onde veio <span>últimos 30 dias</span>
+              </h2>
+              <ul className={styles.rows}>
+                {RECOVERED_FRONTS.map((front) => (
+                  <li key={front.label}>
+                    <span>{front.label}</span>
+                    <strong>{brl(front.kinds.reduce((s, kind) => s + (back.byKind.get(kind) ?? 0), 0))}</strong>
+                  </li>
+                ))}
+              </ul>
+              {live ? null : (
+                <p className={styles.fine}>Soma do que as automações ajudaram a trazer de volta, sobre dados ilustrativos.</p>
+              )}
+            </section>
+          )}
+
+          <section className={styles.panel} aria-labelledby="resultado">
+            <h2 id="resultado" className={styles.label}>
+              Resultado da clínica
             </h2>
             <ul className={styles.rows}>
-              {Object.entries(RECOVERED_LABEL).map(([kind, label]) => (
-                <li key={kind}>
-                  <span>{label}</span>
-                  <strong>{brl(back.byKind.get(kind) ?? 0)}</strong>
-                </li>
-              ))}
+              <li>
+                <span>
+                  Receita realizada <span className={styles.miniMeta}>últimos 30 dias · {plural(money.visits, "atendimento", "atendimentos")}</span>
+                </span>
+                <strong>{brl(money.realized)}</strong>
+              </li>
+              <li>
+                <span>
+                  Receita prevista <span className={styles.miniMeta}>agenda dos próximos 30 dias · {money.booked} marcados</span>
+                </span>
+                <strong>{brl(money.forecast)}</strong>
+              </li>
+              <li>
+                <span>Ticket médio</span>
+                <strong>{brl(money.ticket)}</strong>
+              </li>
+              <li>
+                <span>Recuperada pelo Pulse</span>
+                <strong className={styles.accentNumber}>{brl(back.total)}</strong>
+              </li>
             </ul>
-            {live ? null : (
-              <p className={styles.fine}>Métrica conceitual: soma do que as automações ajudaram a trazer de volta, sobre dados ilustrativos.</p>
-            )}
+            <p className={styles.fine}>
+              Calculado pela agenda e pelo preço de cada procedimento. Contas a receber e inadimplência entram quando os
+              pagamentos forem registrados no Pulse.
+            </p>
           </section>
-        )}
+        </div>
+      )}
 
-        <section className={styles.feedBlock} aria-labelledby="atividade">
-          <h2 id="atividade" className={styles.label}>
-            Atividade recente
-          </h2>
-          {feed.length ? (
-            <ol className={styles.feed}>
-              {feed.map((a) => (
-                <li key={a.id}>
-                  <span className={styles.when}>{relDay(data.now, a.at)}</span>
-                  <span>{a.text}</span>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className={styles.fine}>O que acontecer na clínica aparece aqui: agendamentos, confirmações, entradas no estoque.</p>
-          )}
-        </section>
-      </div>
+      <section className={styles.feedBlock} aria-labelledby="atividade">
+        <h2 id="atividade" className={styles.label}>
+          Atividade recente
+        </h2>
+        {feed.length ? (
+          <ol className={styles.feed}>
+            {feed.map((a) => (
+              <li key={a.id}>
+                <span className={styles.when}>{relDay(data.now, a.at)}</span>
+                <span>{a.text}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className={styles.fine}>O que acontecer na clínica aparece aqui: agendamentos, confirmações, entradas no estoque.</p>
+        )}
+      </section>
     </div>
   );
 }

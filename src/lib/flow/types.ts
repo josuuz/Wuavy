@@ -121,7 +121,7 @@ export interface ProcedureProduct {
   quantity: number;
 }
 
-export type OpportunityKind = "lead_followup" | "patient_return" | "stock_expiry" | "open_slot";
+export type OpportunityKind = "lead_followup" | "lead_idle" | "patient_return" | "no_show" | "stock_expiry" | "open_slot";
 export type OpportunityStatus = "nova" | "em_andamento" | "resolvida";
 
 /** What the Pulse found. Derived from the data today; stored and tracked once it is real. */

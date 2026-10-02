@@ -19,6 +19,15 @@ import styles from "../ui.module.css";
   agenda, stock and next return when a visit is done.
 */
 
+/** What finishing one visit sets off, and which part of the procedure drives each step. */
+const CHAIN = [
+  { what: "Atendimento concluído", from: "finalizado na agenda" },
+  { what: "Baixa o estoque", from: "pelos produtos consumidos, do lote que vence primeiro" },
+  { what: "Calcula o próximo retorno", from: "pelo retorno recomendado do procedimento" },
+  { what: "Inicia o pós-atendimento", from: "mensagem de cuidado, pela automação" },
+  { what: "Cria a futura oportunidade", from: "convite de retorno quando a data se aproxima" },
+];
+
 /** The automations every procedure feeds, by the rule kind that runs them. */
 const LINKED = [
   { kind: "reminder", label: () => "Lembrete na véspera" },
@@ -49,6 +58,22 @@ export function Procedures() {
         ) : null}
       </header>
 
+      {data.procedures.length ? (
+        <section aria-labelledby="cadeia" className={styles.chainBlock}>
+          <h2 id="cadeia" className={styles.label}>
+            O que um atendimento finalizado põe em movimento
+          </h2>
+          <ol className={styles.chain} data-steps="5">
+            {CHAIN.map((step) => (
+              <li key={step.what}>
+                <strong>{step.what}</strong>
+                <span>{step.from}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
       {data.procedures.length === 0 ? (
         <Intro
           title="Comece pelo catálogo"
@@ -68,6 +93,9 @@ export function Procedures() {
       <ol className={styles.catalog}>
         {data.procedures.map((procedure) => {
           const uses = data.procedureProducts.filter((pp) => pp.procedureId === procedure.id);
+          const cost = Math.round(
+            uses.reduce((s, u) => s + u.quantity * (data.products.find((p) => p.id === u.productId)?.unitCost ?? 0), 0),
+          );
           return (
             <li key={procedure.id} className={styles.procedure}>
               <p className={styles.kicker}>{CATEGORY_LABEL[procedure.category]}</p>
@@ -107,6 +135,11 @@ export function Procedures() {
               ) : (
                 <p className={styles.fine}>Nenhum produto ligado: finalizar não mexe no estoque.</p>
               )}
+              {cost ? (
+                <p className={styles.fine}>
+                  Custo em produtos ≈ {brl(cost)} por atendimento · margem ≈ {brl(procedure.price - cost)}
+                </p>
+              ) : null}
               <p className={styles.label}>Automações ligadas</p>
               <ul className={styles.linked}>
                 {LINKED.map((link) => {

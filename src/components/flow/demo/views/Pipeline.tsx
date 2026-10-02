@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { contactLead, deleteLead, moveLead, saveLead, type Result } from "@/lib/flow/actions";
 import { brl, capital, dayAt, daysFrom, hour, plural, relDay, shortDate } from "@/lib/flow/format";
-import { CLOSED_DAYS, onBoard, openLeads, procedureOf, staleQuote, upcomingFor } from "@/lib/flow/insights";
+import { CLOSED_DAYS, idleLeads, onBoard, openLeads, procedureOf, staleQuote, upcomingFor } from "@/lib/flow/insights";
 import { LEAD_SOURCES, LEAD_STAGES, type Lead, type LeadSource, type LeadStage, type Patient } from "@/lib/flow/types";
 import { NEXT_STEP, SOURCE_LABEL, STAGE_LABEL } from "../copy";
 import { DeleteButton, digits, Field, FocusLink, FormError, Intro, reais, useWrite } from "../forms";
@@ -28,7 +28,7 @@ export function Pipeline() {
   const { data } = useFlow();
   const focus = useFocus("sales");
   const opened = useFocus("lead");
-  const [only, setOnly] = useState<"novo" | "sem_resposta" | null>(focus?.filter ?? null);
+  const [only, setOnly] = useState<"novo" | "sem_resposta" | "parados" | null>(focus?.filter ?? null);
   const [selected, setSelected] = useState<string | null>(opened?.id ?? null);
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<LeadStage[]>([]);
@@ -37,7 +37,18 @@ export function Pipeline() {
   const stale = open.filter((l) => staleQuote(data, l));
   const won = data.leads.filter((l) => l.stage === "agendado" && daysFrom(data.now, l.lastContactAt) >= -CLOSED_DAYS);
   const fresh = open.filter((l) => l.stage === "novo");
-  const stages = LEAD_STAGES.filter((stage) => !only || stage === (only === "novo" ? "novo" : "orcamento"));
+  const idle = new Set(idleLeads(data).map((l) => l.id));
+  const stages = LEAD_STAGES.filter((stage) =>
+    only === "novo"
+      ? stage === "novo"
+      : only === "sem_resposta"
+        ? stage === "orcamento"
+        : only === "parados"
+          ? stage === "novo" || stage === "contato" || stage === "avaliacao"
+          : true,
+  );
+  const shows = (l: Lead) =>
+    only === "sem_resposta" ? staleQuote(data, l) : only === "parados" ? idle.has(l.id) : true;
 
   return (
     <div className={styles.page}>
@@ -76,13 +87,16 @@ export function Pipeline() {
               <button type="button" aria-pressed={only === "sem_resposta"} onClick={() => setOnly("sem_resposta")}>
                 Sem resposta ({stale.length})
               </button>
+              <button type="button" aria-pressed={only === "parados"} onClick={() => setOnly("parados")}>
+                Parados ({idle.size})
+              </button>
             </div>
           </div>
 
           <div className={styles.board}>
             {stages.map((stage) => {
               const leads = data.leads
-                .filter((l) => l.stage === stage && onBoard(data, l) && (only !== "sem_resposta" || staleQuote(data, l)))
+                .filter((l) => l.stage === stage && onBoard(data, l) && shows(l))
                 .sort((a, b) =>
                   stage === "agendado"
                     ? b.lastContactAt.localeCompare(a.lastContactAt)

@@ -8,6 +8,8 @@ interface SheetProps {
   open: boolean;
   /** A whole record on one page (a patient): wider on large screens. */
   wide?: boolean;
+  /** A short decision in the middle of the screen instead of a side panel. Its content stays mounted, so it can fade out. */
+  centered?: boolean;
   onClose: () => void;
   title: string;
   kicker?: string;
@@ -18,9 +20,10 @@ interface SheetProps {
 /**
  * A side panel for one record (a lead, a patient) or for the assistant: a
  * native modal <dialog>, so focus, Escape and the page behind come for free.
- * From the right on wide screens, from the bottom on phones.
+ * From the right on wide screens, from the bottom on phones; `centered`
+ * makes it a compact dialog that comes in and goes out with a short fade.
  */
-export function Sheet({ open, wide, onClose, title, kicker, icon, children }: SheetProps) {
+export function Sheet({ open, wide, centered, onClose, title, kicker, icon, children }: SheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -33,7 +36,7 @@ export function Sheet({ open, wide, onClose, title, kicker, icon, children }: Sh
   return (
     <dialog
       ref={ref}
-      className={wide ? `${styles.sheet} ${styles.sheetWide}` : styles.sheet}
+      className={centered ? styles.modal : wide ? `${styles.sheet} ${styles.sheetWide}` : styles.sheet}
       data-pulse-surface="sheet"
       aria-label={title}
       onClose={onClose}
@@ -52,7 +55,7 @@ export function Sheet({ open, wide, onClose, title, kicker, icon, children }: Sh
             Fechar
           </button>
         </header>
-        {open ? children : null}
+        {open || centered ? children : null}
       </div>
     </dialog>
   );

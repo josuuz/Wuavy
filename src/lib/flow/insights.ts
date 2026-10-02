@@ -1,4 +1,4 @@
-import { daysFrom } from "./format";
+import { daysFrom, plural } from "./format";
 import type {
   Appointment,
   FlowData,
@@ -19,7 +19,9 @@ import type {
 */
 
 export const STALE_DAYS = 3; // a quote without an answer for this long is a stuck lead
+export const IDLE_DAYS = 2; // a contact not quoted yet, silent this long, is a stalled lead
 export const CLOSED_DAYS = 30; // a contact who booked stays on the sales board this long
+export const WEEK_AHEAD = 7; // "this week", counted from today
 export const RETURN_WINDOW = [-45, 14] as const; // days around the typical return date
 export const EXPIRY_DAYS = 45; // a lot this close to its date is near expiry
 export const LOW_SESSIONS = 5; // stock for fewer sessions than this is running low
@@ -36,6 +38,7 @@ export const SLOT_TIMES = [
   [17, 30],
 ] as const;
 export const WEEK_DAYS = 6; // the week on the agenda: Monday to Saturday
+const DAY_END = "19:00"; // the last hour of the grid ends here
 
 const DAY = 86_400_000;
 const byId = <T extends { id: ID }>(list: T[]) => new Map(list.map((x) => [x.id, x]));
@@ -57,6 +60,17 @@ export function staleQuote(d: FlowData, l: Lead) {
 
 export function stuckLeads(d: FlowData) {
   return d.leads.filter((l) => staleQuote(d, l)).sort((a, b) => b.potentialValue - a.potentialValue);
+}
+
+/** Contacts not quoted yet (new, in conversation, evaluation) with no contact for IDLE_DAYS or more. */
+export function idleLeads(d: FlowData) {
+  return d.leads
+    .filter(
+      (l) =>
+        (l.stage === "novo" || l.stage === "contato" || l.stage === "avaliacao") &&
+        daysFrom(d.now, l.lastContactAt) <= -IDLE_DAYS,
+    )
+    .sort((a, b) => b.potentialValue - a.potentialValue);
 }
 
 /** People still being won: every stage before the booking. */
@@ -109,6 +123,29 @@ export function dueReturns(d: FlowData) {
   return d.patients
     .filter((p) => inReturnWindow(d, p) && !hasUpcoming(d, p.id))
     .sort((a, b) => (a.nextReturnAt ?? "").localeCompare(b.nextReturnAt ?? ""));
+}
+
+/** Due returns whose date has passed: the oldest first. */
+export function overdueReturns(d: FlowData) {
+  return dueReturns(d).filter((p) => daysFrom(d.now, p.nextReturnAt!) < 0);
+}
+
+/** Due returns that fall between today and WEEK_AHEAD days from now. */
+export function returnsThisWeek(d: FlowData) {
+  return dueReturns(d).filter((p) => {
+    const days = daysFrom(d.now, p.nextReturnAt!);
+    return days >= 0 && days <= WEEK_AHEAD;
+  });
+}
+
+/** The top quarter of patients by spend, with nothing booked: the ones most worth bringing back. */
+export function highValueIdle(d: FlowData) {
+  const spent = d.patients
+    .filter((p) => p.totalSpent > 0)
+    .map((p) => p.totalSpent)
+    .sort((a, b) => a - b);
+  const bar = spent[Math.floor(spent.length * 0.75)] ?? Infinity;
+  return d.patients.filter((p) => p.totalSpent >= bar && !hasUpcoming(d, p.id)).sort((a, b) => b.totalSpent - a.totalSpent);
 }
 
 /** The price of the patient's last procedure: what a return is likely worth. */
@@ -273,6 +310,45 @@ export function patientsFor(d: FlowData, procedureIds: ID[]) {
     .sort((a, b) => (a.nextReturnAt ?? "").localeCompare(b.nextReturnAt ?? ""));
 }
 
+export interface ExpiryOpportunity {
+  lot: InventoryLot;
+  product?: Product;
+  /** The procedures that use the product. */
+  procedures: Procedure[];
+  /** Everyone who already did one of them and has nothing booked. */
+  patients: Patient[];
+  /** Sessions the lot still covers, at the lightest use. */
+  sessions: number;
+  /** Revenue if the lot is used before its date, at the cheapest of those procedures. */
+  potential: number;
+}
+
+/**
+ * Each lot near its date as an opportunity: who could use it and what that
+ * would bring. A patient counts toward one lot only, the one that expires
+ * first, and a lot reaches no more people than it has sessions for.
+ */
+export function expiryOpportunities(d: FlowData): ExpiryOpportunity[] {
+  const taken = new Set<ID>();
+  return expiringLots(d).map((lot) => {
+    const uses = proceduresUsing(d, lot.productId);
+    const procedures = uses.map((u) => u.procedure);
+    const patients = patientsFor(d, procedures.map((p) => p.id));
+    const sessions = uses.length ? Math.floor(lot.quantity / Math.min(...uses.map((u) => u.quantity)) + 1e-9) : 0;
+    const price = procedures.length ? Math.min(...procedures.map((p) => p.price)) : 0;
+    const reach = patients.filter((p) => !taken.has(p.id)).slice(0, sessions);
+    reach.forEach((p) => taken.add(p.id));
+    return {
+      lot,
+      product: d.products.find((p) => p.id === lot.productId),
+      procedures,
+      patients,
+      sessions,
+      potential: reach.length * price,
+    };
+  });
+}
+
 /* ── Schedule ──────────────────────────────────────────────── */
 
 export type SlotStatus = "ocupado" | "livre" | "cancelado";
@@ -305,8 +381,20 @@ export function daySlots(d: FlowData, dayOffset: number): Slot[] {
   });
 }
 
+/** Free hours still ahead, today and tomorrow (Sundays closed): what a gap or a cancellation leaves to fill. */
 export function openSlots(d: FlowData) {
-  return daySlots(d, 1).filter((s) => s.status !== "ocupado");
+  return [0, 1].flatMap((day) =>
+    daySlots(d, day).filter((s) => s.status !== "ocupado" && s.startsAt > d.now && new Date(s.startsAt).getUTCDay() !== 0),
+  );
+}
+
+/** Minutes from a free slot to the next booking that day, or to the end of the clinic's day. */
+export function slotRoom(d: FlowData, startsAt: string) {
+  const date = startsAt.slice(0, 10);
+  const next = d.appointments
+    .filter((a) => a.status !== "cancelado" && a.startsAt.startsWith(date) && a.startsAt > startsAt)
+    .reduce((min, a) => (a.startsAt < min ? a.startsAt : min), `${date}T${DAY_END}:00.000Z`);
+  return Math.round((Date.parse(next) - Date.parse(startsAt)) / 60_000);
 }
 
 /** The day offset of this week's Monday, `week` weeks away. On a Sunday the week ahead. */
@@ -336,14 +424,78 @@ export function unrecorded(d: FlowData) {
   );
 }
 
-/** Who could take a free slot: the waiting list for that part of the day first. */
-export function slotCandidates(d: FlowData, startsAt: string) {
-  const period = new Date(startsAt).getUTCHours() < 12 ? "manha" : "tarde";
+export interface SlotMatch {
+  patient: Patient;
+  procedure: Procedure;
+  /** How well the person fits the hour, 5 to 98: an order of who to call first, not a promise. */
+  score: number;
+  /** Why, in a few words each. */
+  reasons: string[];
+  waitlistId?: ID;
+}
+
+const PERIOD_WORD = { manha: "manhã", tarde: "tarde" } as const;
+const periodOf = (iso: string) => (new Date(iso).getUTCHours() < 12 ? "manha" : "tarde");
+
+/** The part of the day a patient's notes say they like, if they say. */
+function prefers(p: Patient): "manha" | "tarde" | undefined {
+  const notes = p.notes.toLowerCase();
+  if (/tarde|fim do dia/.test(notes)) return "tarde";
+  if (/manh[ãa]|cedo/.test(notes)) return "manha";
+  return undefined;
+}
+
+/**
+ * Who could take a free hour, best first: the waiting list (preferred part
+ * of the day, how long they have waited), then patients due for a return.
+ * Either way the procedure has to fit before the next booking.
+ */
+export function slotMatches(d: FlowData, startsAt: string, limit = 3): SlotMatch[] {
+  const period = periodOf(startsAt);
+  const room = slotRoom(d, startsAt);
   const patients = byId(d.patients);
-  return d.waitlist
-    .filter((w) => w.period === period && !hasUpcoming(d, w.patientId))
-    .map((w) => ({ entry: w, patient: patients.get(w.patientId)!, procedure: procedureOf(d, w.procedureId)! }))
-    .filter((c) => c.patient && c.procedure);
+  const fits = (p: Procedure) => p.durationMin <= room;
+  const fitReason = (p: Procedure) => (fits(p) ? "procedimento compatível" : `precisa de ${p.durationMin} min`);
+  const seen = new Set<ID>();
+  const matches: SlotMatch[] = [];
+
+  for (const w of d.waitlist) {
+    const patient = patients.get(w.patientId);
+    const procedure = procedureOf(d, w.procedureId);
+    if (!patient || !procedure || hasUpcoming(d, patient.id)) continue;
+    seen.add(patient.id);
+    const waited = Math.max(0, -daysFrom(d.now, w.createdAt));
+    matches.push({
+      patient,
+      procedure,
+      waitlistId: w.id,
+      score: 46 + (w.period === period ? 26 : 0) + (fits(procedure) ? 12 : -24) + Math.min(waited, 10),
+      reasons: [`Prefere ${PERIOD_WORD[w.period]}`, fitReason(procedure), `aguardando há ${plural(waited, "dia", "dias")}`],
+    });
+  }
+
+  for (const patient of dueReturns(d)) {
+    if (seen.has(patient.id)) continue;
+    const procedure = procedureOf(d, history(d, patient.id)[0]?.procedureId ?? "");
+    if (!procedure) continue;
+    const days = daysFrom(d.now, patient.nextReturnAt!);
+    const likes = prefers(patient) === period;
+    matches.push({
+      patient,
+      procedure,
+      score: 36 + (likes ? 22 : 0) + (fits(procedure) ? 12 : -24) + (days >= -14 ? 14 : 6),
+      reasons: [
+        ...(likes ? [`Prefere ${PERIOD_WORD[period]}`] : []),
+        fitReason(procedure),
+        days < 0 ? `retorno atrasado há ${plural(-days, "dia", "dias")}` : days === 0 ? "retorno hoje" : `retorno em ${plural(days, "dia", "dias")}`,
+      ],
+    });
+  }
+
+  return matches
+    .map((m) => ({ ...m, score: Math.max(5, Math.min(98, m.score)) }))
+    .sort((a, b) => b.score - a.score || b.patient.totalSpent - a.patient.totalSpent)
+    .slice(0, limit);
 }
 
 /** The average ticket of the last 90 days: what an empty hour is likely worth. */
@@ -357,8 +509,10 @@ export function averageTicket(d: FlowData) {
 
 export function opportunities(d: FlowData, statuses: Partial<Record<OpportunityKind, OpportunityStatus>> = {}) {
   const leads = stuckLeads(d);
+  const idle = idleLeads(d);
   const returns = dueReturns(d);
-  const lots = expiringLots(d);
+  const noShows = missed(d);
+  const lots = expiryOpportunities(d);
   const slots = openSlots(d);
   const make = (kind: OpportunityKind, refs: ID[], value: number): Opportunity => ({
     id: `opp_${kind}`,
@@ -370,11 +524,36 @@ export function opportunities(d: FlowData, statuses: Partial<Record<OpportunityK
     status: statuses[kind] ?? "nova",
   });
   return [
-    make("patient_return", returns.map((p) => p.id), returns.reduce((s, p) => s + returnValue(d, p), 0)),
     make("lead_followup", leads.map((l) => l.id), leads.reduce((s, l) => s + l.potentialValue, 0)),
+    make("patient_return", returns.map((p) => p.id), returns.reduce((s, p) => s + returnValue(d, p), 0)),
+    make("lead_idle", idle.map((l) => l.id), idle.reduce((s, l) => s + l.potentialValue, 0)),
     make("open_slot", slots.map((s) => s.startsAt), slots.length * averageTicket(d)),
-    make("stock_expiry", lots.map((l) => l.id), lots.reduce((s, l) => s + lotValue(d, l), 0)),
+    make("stock_expiry", lots.map((x) => x.lot.id), lots.reduce((s, x) => s + x.potential, 0)),
+    make(
+      "no_show",
+      noShows.map((x) => x.patient.id),
+      noShows.reduce((s, x) => s + (procedureOf(d, x.step.appointment.procedureId)?.price ?? 0), 0),
+    ),
   ];
+}
+
+/**
+ * The clinic's money in broad strokes, read from the agenda: what was done
+ * in the last 30 days and what is booked for the next 30. Payments are not
+ * recorded yet, so nothing here is receivable or overdue.
+ */
+export function finance(d: FlowData) {
+  const price = (a: Appointment) => procedureOf(d, a.procedureId)?.price ?? 0;
+  const done = d.appointments.filter((a) => a.status === "concluido" && daysFrom(d.now, a.startsAt) >= -30);
+  const ahead = d.appointments.filter((a) => upcoming(a, d.now) && daysFrom(d.now, a.startsAt) <= 30);
+  const realized = done.reduce((s, a) => s + price(a), 0);
+  return {
+    realized,
+    visits: done.length,
+    forecast: ahead.reduce((s, a) => s + price(a), 0),
+    booked: ahead.length,
+    ticket: done.length ? Math.round(realized / done.length) : 0,
+  };
 }
 
 /** Revenue the automations helped bring back in the last 30 days, by kind. */
@@ -405,8 +584,9 @@ export function valueDelivered(d: FlowData, ops: Opportunity[]) {
   }
   return {
     found: ops.reduce((n, o) => n + o.count, 0),
-    leads: back.get("lead_followup") ?? 0,
-    patients: back.get("patient_return") ?? 0,
+    quotes: back.get("lead_followup") ?? 0,
+    leads: back.get("lead_idle") ?? 0,
+    patients: (back.get("patient_return") ?? 0) + (back.get("no_show") ?? 0),
     slots: back.get("open_slot") ?? 0,
     revenue: recovered(d).total,
   };

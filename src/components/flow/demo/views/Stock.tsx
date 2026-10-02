@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { adjustLot, stockIn, type Result } from "@/lib/flow/actions";
 import { brl, daysFrom, plural, units } from "@/lib/flow/format";
-import { expiringLots, lotStatus, lotValue, lowStock, proceduresUsing, type LotStatus } from "@/lib/flow/insights";
+import { expiryOpportunities, lotStatus, lotValue, lowStock, proceduresUsing, type LotStatus } from "@/lib/flow/insights";
 import type { ID, InventoryLot } from "@/lib/flow/types";
 import { ADJUST_REASONS, UNITS } from "../copy";
 import { Field, FocusLink, FormError, Intro, useWrite } from "../forms";
@@ -13,9 +13,11 @@ import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
 /*
-  Stock, answered first as two questions: what to buy, and what to use
-  before it expires. Then every lot, with a way to receive a delivery and to
-  set a lot to what is really on the shelf.
+  Stock, read as money. A lot near its date is not a number to watch: the
+  Pulse finds the procedures that use it and the patients who already did
+  them, and says what using it in time would bring. Then what to buy, what
+  needs a look, and every lot, with a way to receive a delivery and to set a
+  lot to what is really on the shelf.
 */
 
 const STATUS: Record<LotStatus, string> = {
@@ -35,7 +37,7 @@ export function Stock() {
   const { data } = useFlow();
   const [entering, setEntering] = useState(false);
   const [adjusting, setAdjusting] = useState<ID | null>(null);
-  const near = expiringLots(data);
+  const near = expiryOpportunities(data);
   const low = lowStock(data);
   const watch = data.lots.filter((l) => l.quantity > 0 && (lotStatus(data, l) === "vencido" || lotStatus(data, l) === "atencao"));
   const lots = data.lots
@@ -63,7 +65,52 @@ export function Stock() {
         </Intro>
       ) : (
         <>
-          <div className={styles.alerts}>
+          {near.length ? (
+            <section className={styles.expiryBlock} aria-labelledby="validade">
+              <h2 id="validade" className={styles.label}>
+                Produto próximo da validade <span>{near.length}</span>
+              </h2>
+              <ol className={styles.expiryList}>
+                {near.map((x) => {
+                  const days = daysFrom(data.now, x.lot.expiresAt);
+                  return (
+                    <li key={x.lot.id} className={styles.alertCard} data-tone="act">
+                      <p className={styles.expiryHead}>
+                        <strong>{x.product?.name}</strong>
+                        <span className={styles.lotStatus} data-status="proximo">
+                          {expiry(days)}
+                        </span>
+                      </p>
+                      <p className={styles.fine}>
+                        {units(x.lot.quantity, x.product?.unit ?? "un")} · lote {x.lot.lotCode} · {brl(lotValue(data, x.lot))} em
+                        produto · usado em {x.procedures.map((p) => p.name).join(", ") || "nenhum procedimento"}
+                      </p>
+                      <p className={styles.expiryText}>
+                        {x.patients.length ? (
+                          <>
+                            Existem <strong>{plural(x.patients.length, "paciente compatível", "pacientes compatíveis")}</strong> com
+                            procedimentos que utilizam este produto.
+                          </>
+                        ) : (
+                          "Nenhum paciente fez os procedimentos que usam este produto ainda."
+                        )}
+                      </p>
+                      {x.potential ? (
+                        <p className={styles.oppValue}>
+                          {brl(x.potential)} <span>de receita possível antes do vencimento</span>
+                        </p>
+                      ) : null}
+                      <FocusLink focus={{ to: "opportunity", kind: "stock_expiry" }} className={styles.primary}>
+                        Ver oportunidade
+                      </FocusLink>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ) : null}
+
+          <div className={styles.alerts} data-count="2">
             <section className={styles.alertCard} data-tone={low.length ? "act" : undefined} aria-labelledby="comprar">
               <h2 id="comprar" className={styles.label}>
                 Estoque baixo <span>{low.length}</span>
@@ -86,35 +133,6 @@ export function Stock() {
                 <p className={styles.fine}>Nada acabando.</p>
               )}
               {low.length ? <p className={styles.alertFoot}>Hora de comprar.</p> : null}
-            </section>
-
-            <section className={styles.alertCard} data-tone={near.length ? "act" : undefined} aria-labelledby="vencendo">
-              <h2 id="vencendo" className={styles.label}>
-                Vence em até 45 dias <span>{near.length}</span>
-              </h2>
-              {near.length ? (
-                <ul className={styles.alertList}>
-                  {near.map((lot) => {
-                    const product = productOf(lot);
-                    return (
-                      <li key={lot.id}>
-                        <strong>{product?.name}</strong>
-                        <span>
-                          {units(lot.quantity, product?.unit ?? "un")} · {expiry(daysFrom(data.now, lot.expiresAt))} ·{" "}
-                          {brl(lotValue(data, lot))}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className={styles.fine}>Nada vencendo.</p>
-              )}
-              {near.length ? (
-                <FocusLink focus={{ to: "opportunity", kind: "stock_expiry" }}>
-                  Ver quem pode usar <span aria-hidden="true">→</span>
-                </FocusLink>
-              ) : null}
             </section>
 
             <section className={styles.alertCard} aria-labelledby="atencao">

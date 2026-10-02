@@ -7,18 +7,18 @@
 
 export const flow = {
   name: "Wuavy Pulse",
-  pitch: "CRM + IA + Automações",
+  pitch: "Sistema operacional de crescimento para clínicas",
   meta: {
     title: "Wuavy Pulse",
     description:
-      "Wuavy Pulse identifica os sinais da operação e transforma dados em próximas ações. CRM, IA e automações, começando por clínicas de estética.",
+      "Wuavy Pulse é o sistema operacional de crescimento para clínicas: agenda, pacientes, vendas e estoque trabalhando juntos para encontrar oportunidades antes que elas virem prejuízo.",
   },
 
   hero: {
     label: "Wuavy Pulse",
     market: "Começando por clínicas de estética",
-    title: "Transforme os sinais da sua operação em crescimento.",
-    lead: "Leads esquecidos, pacientes que não retornaram, horários vazios e estoque próximo da validade. O Pulse identifica oportunidades e mostra onde agir.",
+    title: "O Pulse observa a operação e mostra o que merece atenção agora.",
+    lead: "Agenda, pacientes, vendas e estoque trabalhando juntos para encontrar oportunidades antes que elas virem prejuízo.",
     cta: "Quero testar o Pulse",
     secondary: { label: "Ver a demo", href: "/pulse/demo" },
   },
@@ -79,13 +79,13 @@ export const flow = {
 
   how: {
     chapter: "Como funciona",
-    title: "Não é só um CRM. É o pulso da operação inteira.",
-    lead: "Wuavy Pulse identifica os sinais da operação e transforma dados em próximas ações.",
+    title: "Observa a operação, identifica oportunidades e mostra onde agir.",
+    lead: "Cada parte alimenta a próxima: um atendimento finalizado baixa o estoque, calcula o retorno, inicia o pós-atendimento e deixa a próxima oportunidade pronta.",
     stages: [
       { name: "Atrair", text: "Cada lead chega com origem e interesse registrados." },
       { name: "Organizar", text: "Pacientes, agenda, procedimentos e estoque conectados." },
       { name: "Identificar", text: "Silêncio, retorno vencido, horário vago, validade: o Pulse lê os sinais." },
-      { name: "Agir", text: "A próxima ação chega pronta para a equipe revisar." },
+      { name: "Agir", text: "A próxima ação chega pronta. A equipe revisa e aprova." },
       { name: "Recuperar", text: "O que ficou para trás volta como oportunidade." },
       { name: "Reter", text: "Retornos no tempo certo e pós-atendimento." },
     ],

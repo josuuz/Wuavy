@@ -38,11 +38,13 @@ import { ADJUST_REASONS, BASE } from "./copy";
 */
 
 /** What one screen asks the next to open with: a record, a filter, a day. */
+export type PatientFilter = "retorno" | "faltou" | "sem_horario" | "alto_valor" | "semana" | "todos";
+
 export type Focus =
   | { to: "opportunity"; kind: OpportunityKind }
   | { to: "patient"; id: ID }
-  | { to: "patients"; filter: "retorno" | "faltou" }
-  | { to: "sales"; filter: "novo" | "sem_resposta" }
+  | { to: "patients"; filter: PatientFilter }
+  | { to: "sales"; filter: "novo" | "sem_resposta" | "parados" }
   | { to: "lead"; id: ID }
   | { to: "agenda"; day: number };
 
@@ -109,7 +111,8 @@ function summary(data: FlowData, appointments: Appointment[], patientId: ID) {
 
 const DONE_TEXT: Partial<Record<AppointmentStatus, (name: string, procedure: string) => string>> = {
   confirmado: (name) => `${name} confirmou presença.`,
-  concluido: (name, procedure) => `${name}: ${procedure} finalizado. Estoque e próximo retorno atualizados.`,
+  concluido: (name, procedure) =>
+    `${name}: ${procedure} finalizado. Estoque baixado, próximo retorno calculado e pós-atendimento iniciado.`,
   faltou: (name, procedure) => `${name} faltou ao atendimento de ${procedure}.`,
   cancelado: () => "Um cancelamento abriu um horário na agenda.",
 };
@@ -285,6 +288,11 @@ interface FlowContext {
   access: Access;
   /** Records can be created, edited and deleted in the database: a real clinic that isn't read-only. */
   editable: boolean;
+  /** "Pergunte ao Pulse" from any screen: open it, with a question already asked if one is given. */
+  ask: (question?: string) => void;
+  /** Whether it is open, and the question it was opened with: each new question starts a new conversation (`session`). */
+  asking: { open: boolean; question: string; session: number };
+  closeAsk: () => void;
 }
 
 const Context = createContext<FlowContext | null>(null);
@@ -298,6 +306,13 @@ interface ProviderProps {
 
 export function FlowProvider({ initial, base = BASE, access, children }: ProviderProps) {
   const [state, send] = useReducer(reducer, { data: initial, statuses: {}, focus: null, seq: 0 });
+  const [asking, setAsking] = useState({ open: false, question: "", session: 0 });
+  const ask = useCallback(
+    (question?: string) =>
+      setAsking((s) => (question ? { open: true, question, session: s.session + 1 } : { ...s, open: true })),
+    [],
+  );
+  const closeAsk = useCallback(() => setAsking((s) => ({ ...s, open: false })), []);
   const live = !access.isDemoMode;
   const data = live ? initial : state.data;
   // Read-only changes nothing, not even in memory: only moving between screens passes.
@@ -318,8 +333,11 @@ export function FlowProvider({ initial, base = BASE, access, children }: Provide
       live,
       access,
       editable: live && canEdit,
+      ask,
+      asking,
+      closeAsk,
     }),
-    [data, state.statuses, state.focus, dispatch, base, live, access, canEdit],
+    [data, state.statuses, state.focus, dispatch, base, live, access, canEdit, ask, asking, closeAsk],
   );
   return <Context value={value}>{children}</Context>;
 }

@@ -11,13 +11,13 @@ import {
   setAppointmentStatus,
   type Result,
 } from "@/lib/flow/actions";
-import { capital, dayAt, dayLabel, daysFrom, hour, plural, shortDate, units, weekday } from "@/lib/flow/format";
+import { capital, dayAt, dayLabel, daysFrom, hour, plural, relDay, shortDate, units, weekday } from "@/lib/flow/format";
 import {
   daySlots,
   procedureOf,
   professionals,
   SLOT_TIMES,
-  slotCandidates,
+  slotMatches,
   slotTime,
   WEEK_DAYS,
   weekStart,
@@ -25,7 +25,7 @@ import {
 } from "@/lib/flow/insights";
 import { LEAD_SOURCES, type Appointment, type AppointmentStatus, type FlowData, type ID, type LeadSource } from "@/lib/flow/types";
 import { APPOINTMENT_LABEL, PERIOD_LABEL, SOURCE_LABEL, viewHref } from "../copy";
-import { DeleteButton, Field, FocusLink, FormError, Intro, useWrite } from "../forms";
+import { DeleteButton, Field, FocusLink, FormError, Intro, Prepared, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow, useFocus, type Booking } from "../store";
 import styles from "../ui.module.css";
@@ -34,7 +34,9 @@ import styles from "../ui.module.css";
   The clinic's agenda: a day or a week, hours down the side, one card per
   booking with its status, a filter by professional. A free hour books in
   two taps; a booking is confirmed, finished, marked as a no-show or
-  rescheduled from its card. The waiting list sits beside it.
+  rescheduled from its card. When a cancellation opens an hour, the Pulse
+  ranks who could take it and prepares the invite. The waiting list sits
+  beside it.
 */
 
 /** What the booking form opens with: a time, a person, a procedure, a booking to replace. */
@@ -71,8 +73,10 @@ export function Schedule() {
   const [waiting, setWaiting] = useState(false);
   const appointment = data.appointments.find((a) => a.id === managing);
   const pros = professionals(data);
-  // Cancellations tomorrow: each one is an hour the Pulse can fill.
-  const freed = daySlots(data, 1).filter((s) => s.status === "cancelado");
+  // Cancellations still ahead, today and tomorrow: each one is an hour the Pulse can fill.
+  const freed = [0, 1].flatMap((offset) =>
+    daySlots(data, offset).filter((s) => s.status === "cancelado" && s.startsAt > data.now),
+  );
 
   const dayIso = slotTime(data, day, 0, 0);
   const start = weekStart(data, week);
@@ -107,24 +111,30 @@ export function Schedule() {
       ) : null}
 
       {freed.map((slot) => {
-        const candidates = slotCandidates(data, slot.startsAt);
+        const who = data.patients.find((p) => p.id === slot.appointment?.patientId);
+        const matches = slotMatches(data, slot.startsAt);
         return (
-          <div key={slot.startsAt} className={styles.alert} role="status">
-            <p className={styles.alertTitle}>Horário disponível amanhã às {hour(slot.startsAt)}.</p>
-            <p>
-              {candidates.length
-                ? `Da lista de espera, quem pode ocupar: ${candidates.map((c) => `${c.patient.name} (${c.procedure.name})`).join(", ")}.`
-                : "Ninguém da lista de espera prefere este período; o Pulse sugere pacientes com retorno próximo."}
+          <section key={slot.startsAt} className={styles.alert} aria-label={`Horário livre ${relDay(data.now, slot.startsAt)} às ${hour(slot.startsAt)}`}>
+            <p className={styles.alertTitle}>
+              {capital(relDay(data.now, slot.startsAt))} às {hour(slot.startsAt)}: {who ? `${firstName(who.name)} cancelou` : "houve um cancelamento"} e
+              o horário está livre.
             </p>
+            <p className={styles.matchLead}>
+              <span className="pulse-dot" aria-hidden="true" />
+              {matches.length
+                ? `Pulse encontrou ${plural(matches.length, "paciente compatível", "pacientes compatíveis")}`
+                : "Ninguém da lista de espera ou com retorno próximo combina com este horário."}
+            </p>
+            <SlotInvites startsAt={slot.startsAt} onBook={setDraft} />
             <div className={styles.actions}>
-              <button type="button" className={styles.primary} onClick={() => setDraft({ startsAt: slot.startsAt })}>
-                Agendar neste horário
+              <button type="button" className={styles.quiet} onClick={() => setDraft({ startsAt: slot.startsAt })}>
+                Agendar outra pessoa
               </button>
               <FocusLink focus={{ to: "opportunity", kind: "open_slot" }}>
-                Ver a oportunidade <span aria-hidden="true">→</span>
+                Ver todos os horários livres <span aria-hidden="true">→</span>
               </FocusLink>
             </div>
-          </div>
+          </section>
         );
       })}
 
@@ -266,6 +276,10 @@ function DayView({ offset, pro, onBook, onOpen }: CalendarProps & { offset: numb
   const booked = shown.filter((s) => s.view.kind === "atendimento").map((s) => s.view.appointment!);
   const count = (status: AppointmentStatus) => booked.filter((a) => a.status === status).length;
   const free = shown.filter((s) => s.view.kind === "livre").length;
+  const suggested = (startsAt: string) => {
+    const n = slotMatches(data, startsAt).length;
+    return n ? `Pulse sugere ${plural(n, "paciente", "pacientes")} · ` : "";
+  };
 
   return (
     <>
@@ -293,7 +307,8 @@ function DayView({ offset, pro, onBook, onOpen }: CalendarProps & { offset: numb
                 <button type="button" className={styles.freeSlot} onClick={() => onBook(slot.startsAt)}>
                   <strong>Horário livre</strong>
                   <span>
-                    {cancelled ? `${firstName(cancelled.name)} cancelou · ` : ""}Agendar <span aria-hidden="true">+</span>
+                    {cancelled ? `${firstName(cancelled.name)} cancelou · ` : ""}
+                    {suggested(slot.startsAt)}Agendar <span aria-hidden="true">+</span>
                   </span>
                 </button>
               ) : (
@@ -396,6 +411,68 @@ function AppointmentCard({ appointment: a, compact, onOpen }: { appointment: App
   );
 }
 
+/**
+ * Who could take a free hour, best first, and why. Preparing writes the
+ * invite; sending it waits for the WhatsApp connection and a person's go.
+ */
+export function SlotInvites({ startsAt, onBook }: { startsAt: string; onBook?: (draft: Draft) => void }) {
+  const { data, dispatch, access } = useFlow();
+  const [prepared, setPrepared] = useState<ID[]>([]);
+  const matches = slotMatches(data, startsAt);
+  const when = `${relDay(data.now, startsAt)} às ${hour(startsAt)}`;
+  if (!matches.length) return null;
+  return (
+    <ol className={styles.matches}>
+      {matches.map((m) => {
+        const done = prepared.includes(m.patient.id);
+        return (
+          <li key={m.patient.id} className={styles.match}>
+            <p className={styles.matchName}>
+              <strong>{m.patient.name}</strong>
+              <span className={styles.matchScore}>{m.score}% compatível</span>
+            </p>
+            <p className={styles.matchWhy}>
+              {m.procedure.name} · {m.reasons.join(" · ")}
+            </p>
+            {done ? (
+              <Prepared
+                send="Enviar convite"
+                text={`Oi ${firstName(m.patient.name)}! Abriu um horário ${when} para ${m.procedure.name}. Quer que eu reserve para você?`}
+              />
+            ) : (
+              <div className={styles.actions}>
+                {access.canEdit ? (
+                  <button
+                    type="button"
+                    className={styles.secondary}
+                    onClick={() => {
+                      setPrepared((list) => [...list, m.patient.id]);
+                      dispatch({ type: "note", text: `Convite para ${when} preparado para ${m.patient.name}. Não enviado.` });
+                    }}
+                  >
+                    Preparar convite
+                  </button>
+                ) : null}
+                {onBook ? (
+                  <button
+                    type="button"
+                    className={styles.quiet}
+                    onClick={() =>
+                      onBook({ startsAt, patientId: m.patient.id, procedureId: m.procedure.id, waitlistId: m.waitlistId })
+                    }
+                  >
+                    Agendar
+                  </button>
+                ) : null}
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: () => void }) {
   const { data, dispatch, editable, access } = useFlow();
   const { pending, error, write } = useWrite();
@@ -495,7 +572,7 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
     slots.some((s) => s.status === "ocupado" && time(s.startsAt) === t && s.appointment?.id !== draft.replaces);
   const gone = (t: string) => date === today && `${date}T${t}:00.000Z` < data.now;
   const times = [...new Set([...SLOT_TIMES.map(([h, m]) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`), at])].sort();
-  const candidates = !lead && !fixed && who === "" && valid ? slotCandidates(data, startsAt) : [];
+  const candidates = !lead && !fixed && who === "" && valid && startsAt > data.now ? slotMatches(data, startsAt) : [];
 
   if (!data.procedures.length) {
     return (
@@ -606,12 +683,12 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
 
       {candidates.length ? (
         <div className={styles.suggestion}>
-          <p className={styles.label}>Lista de espera para este período</p>
+          <p className={styles.label}>Pulse sugere para este horário</p>
           <ul className={styles.pickList}>
             {candidates.map((c) => (
-              <li key={c.entry.id}>
+              <li key={c.patient.id}>
                 <span>
-                  {c.patient.name} · {c.procedure.name}
+                  {c.patient.name} · {c.procedure.name} <span className={styles.matchScore}>{c.score}%</span>
                 </span>
                 <button
                   type="button"
@@ -619,7 +696,7 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
                   onClick={() => {
                     setWho(c.patient.id);
                     setProcedureId(c.procedure.id);
-                    setWaitlistId(c.entry.id);
+                    setWaitlistId(c.waitlistId ?? "");
                   }}
                 >
                   Usar
@@ -724,6 +801,8 @@ function AppointmentDetail({
   const procedure = procedureOf(data, a.procedureId);
   const professional = data.users.find((u) => u.id === a.professionalId);
   const uses = data.procedureProducts.filter((pp) => pp.procedureId === a.procedureId);
+  const postVisit = data.automationRules.find((r) => r.kind === "post_visit");
+  const nextReturn = procedure ? new Date(Date.parse(a.startsAt) + procedure.returnDays * 86_400_000).toISOString() : "";
   const open = a.status === "agendado" || a.status === "confirmado";
   // Done or missed can only be said on the day or after it.
   const due = a.startsAt.slice(0, 10) <= data.now.slice(0, 10);
@@ -759,7 +838,7 @@ function AppointmentDetail({
       {open && procedure ? (
         <div className={styles.suggestion}>
           <p className={styles.label}>Ao finalizar, o Pulse</p>
-          <ul className={styles.effects}>
+          <ol className={styles.effects}>
             {uses.length ? (
               uses.map((use) => {
                 const product = data.products.find((p) => p.id === use.productId);
@@ -772,9 +851,17 @@ function AppointmentDetail({
             ) : (
               <li>Não mexe no estoque: nenhum produto ligado a este procedimento</li>
             )}
-            <li>Sugere o retorno para {procedure.returnDays} dias depois</li>
+            <li>
+              Calcula o próximo retorno: {shortDate(nextReturn)}, {procedure.returnDays} dias depois
+            </li>
+            <li>
+              {postVisit?.active
+                ? "Inicia o pós-atendimento: mensagem de cuidado em 2 dias"
+                : "Pós-atendimento pausado em Automações"}
+            </li>
+            <li>Cria a oportunidade de retorno, com convite 14 dias antes</li>
             <li>Registra o atendimento na ficha de {firstName(patient?.name)}</li>
-          </ul>
+          </ol>
         </div>
       ) : null}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { localAssistant, SUGGESTED, type FlowAnswer, type FlowAssistant } from "@/lib/flow/assistant";
 import { PassoFigure } from "@/variants/a/PassoFigure";
@@ -12,9 +12,10 @@ import { useFlow } from "./store";
 import styles from "./ui.module.css";
 
 /*
-  "Pergunte ao Pulse": suggested questions or free text, answered from the
-  clinic's live demo data. The assistant is swappable: point `assistant` at
-  an API-backed FlowAssistant and nothing else changes.
+  "Pergunte ao Pulse": the operation's assistant. Suggested questions or free
+  text, answered from the clinic's data. Any screen can open it with a
+  question already asked (the overview does). The assistant is swappable:
+  point `assistant` at an API-backed FlowAssistant and nothing else changes.
 */
 
 const assistant: FlowAssistant = localAssistant;
@@ -25,22 +26,38 @@ interface Turn {
   a?: FlowAnswer;
 }
 
-export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AskFlow({ open, question, onClose }: { open: boolean; question: string; onClose: () => void }) {
   const { data, base, live } = useFlow();
-  const [thread, setThread] = useState<Turn[]>([]);
+  const [thread, setThread] = useState<Turn[]>(() => (question ? [{ q: question }] : []));
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(Boolean(question));
   const end = useRef<HTMLDivElement>(null);
+  const arrival = useRef(question);
 
-  const ask = async (q: string) => {
+  const answer = useCallback(
+    async (q: string) => {
+      const [a] = await Promise.all([assistant.ask(q, data), new Promise((r) => setTimeout(r, THINK_MS))]);
+      setThread((t) => t.map((turn, i) => (i === t.length - 1 ? { ...turn, a } : turn)));
+      setBusy(false);
+      requestAnimationFrame(() => end.current?.scrollIntoView({ block: "end", behavior: "smooth" }));
+    },
+    [data],
+  );
+
+  // Opened with a question from another screen: answer it once, on arrival.
+  useEffect(() => {
+    const q = arrival.current;
+    if (!q) return;
+    arrival.current = "";
+    void answer(q);
+  }, [answer]);
+
+  const ask = (q: string) => {
     if (!q.trim() || busy) return;
     setBusy(true);
     setText("");
     setThread((t) => [...t, { q }]);
-    const [a] = await Promise.all([assistant.ask(q, data), new Promise((r) => setTimeout(r, THINK_MS))]);
-    setThread((t) => t.map((turn, i) => (i === t.length - 1 ? { ...turn, a } : turn)));
-    setBusy(false);
-    requestAnimationFrame(() => end.current?.scrollIntoView({ block: "end", behavior: "smooth" }));
+    void answer(q);
   };
 
   return (
@@ -57,9 +74,21 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
     >
       <div className={styles.thread} aria-live="polite">
         {thread.length === 0 ? (
-          <p className={styles.askIntro}>
-            Pergunte sobre a clínica do seu jeito. Eu leio vendas, pacientes, agenda e estoque e mostro onde agir.
-          </p>
+          <div className={styles.askStart}>
+            <p className={styles.askIntro}>
+              Pergunte sobre a clínica do seu jeito. Eu leio vendas, pacientes, agenda e estoque e mostro onde agir.
+            </p>
+            <ul className={styles.askList} aria-label="Perguntas que o Pulse responde">
+              {SUGGESTED.map((q) => (
+                <li key={q}>
+                  <button type="button" className={styles.askOption} onClick={() => ask(q)} disabled={busy}>
+                    {q}
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
         {thread.map((turn, i) => (
           <div key={i} className={styles.turn}>
@@ -94,19 +123,21 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
         <div ref={end} />
       </div>
 
-      <div className={styles.suggest}>
-        {SUGGESTED.map((q) => (
-          <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)} disabled={busy}>
-            {q}
-          </button>
-        ))}
-      </div>
+      {thread.length ? (
+        <div className={styles.suggest}>
+          {SUGGESTED.map((q) => (
+            <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)} disabled={busy}>
+              {q}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <form
         className={styles.askForm}
         onSubmit={(event) => {
           event.preventDefault();
-          void ask(text);
+          ask(text);
         }}
       >
         <label className="sr-only" htmlFor="flow-ask">
@@ -117,7 +148,7 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
           className={styles.input}
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Ex.: quais orçamentos estão sem resposta?"
+          placeholder="Ex.: quem posso chamar para preencher 14h?"
           autoComplete="off"
         />
         <button type="submit" className={styles.primary} disabled={busy || !text.trim()}>
@@ -125,7 +156,7 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
         </button>
       </form>
       <p className={styles.fine}>
-        Respostas calculadas a partir dos dados {live ? "da clínica" : "da demo"}. Nenhuma IA está conectada.
+        Respostas calculadas a partir dos dados {live ? "da clínica" : "da demo"}. Nenhuma IA está conectada ainda.
       </p>
     </Sheet>
   );

@@ -20,6 +20,9 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 /** How long an ended trial's data is kept before it may be removed. */
 export const RETENTION_DAYS = 30;
 
+/** The monthly price, in cents: what the revenue the Pulse brings back is measured against. */
+export const PRICE = 29_700;
+
 /** The clinic's commercial record (organizations: subscription_status, trial_*). */
 export interface Subscription {
   status: SubscriptionStatus;

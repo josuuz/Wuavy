@@ -213,6 +213,7 @@
     flex-direction: column;
     gap: 1.25rem;
     padding: 1.4rem 1rem 1.25rem;
+    overflow-y: auto;
     border-bottom: 0;
     border-right: var(--rule) solid var(--border);
     background: var(--surface);
@@ -410,12 +411,45 @@
   background: var(--pulse-accent);
   color: var(--pulse-on-accent);
   font-weight: 640;
+  cursor: pointer;
   transition:
     background-color var(--duration-ui) linear,
     color var(--duration-ui) linear;
 }
 
-:is(.noticeCta, .noticeAction):focus-visible {
+/* ── Assinar: the one solid Signal button in the chrome, next to the plan it changes ── */
+.planGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subscribe {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  border-radius: 2px;
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
+  font-size: 0.8125rem;
+  font-weight: 640;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-ui) linear,
+    color var(--duration-ui) linear;
+}
+
+/* On a phone the bar is hidden: the demo's notice carries Assinar instead. */
+.noticeSubscribe {
+  min-height: 2.5rem;
+}
+
+.orgSubscribe {
+  color: var(--pulse-accent-text);
+}
+
+:is(.noticeCta, .noticeAction, .subscribe, .railValue):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -425,14 +459,66 @@
     text-decoration-color: currentColor;
   }
 
-  .noticeAction:hover {
+  .noticeAction:hover,
+  .subscribe:hover {
     background: var(--pulse-fg);
     color: var(--pulse-bg);
   }
 }
 
+/* ── The rail's running total: what the Pulse brought back, on every screen ── */
+.railValue {
+  display: none;
+}
+
 @media (min-width: 1024px) {
   .notice {
     margin: 1.25rem clamp(1.5rem, 3vw, 2.75rem) 0;
+  }
+
+  .noticeSubscribe,
+  .orgSubscribe {
+    display: none;
+  }
+
+  .railValue {
+    display: grid;
+    gap: 0.25rem;
+    margin-top: auto;
+    padding: 0.9rem 0.6rem;
+    border-top: var(--rule) solid var(--border);
+    transition: background-color var(--duration-ui) linear;
+  }
+
+  .railValue + .back {
+    margin-top: 0;
+  }
+
+  .railLabel {
+    font-size: var(--fs-micro);
+    font-weight: var(--wuavy-micro);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-2);
+  }
+
+  .railAmount {
+    font-size: 1.625rem;
+    font-weight: var(--wuavy-headline);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: var(--pulse-accent-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .railNote {
+    font-size: 0.8125rem;
+    color: var(--text-2);
+  }
+}
+
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .railValue:hover {
+    background: color-mix(in srgb, var(--pulse-ink) 5%, transparent);
   }
 }

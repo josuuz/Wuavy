@@ -21,7 +21,8 @@ import type {
   to `now`, so "vence em 28 dias" and "amanhã às 15h" stay true whenever the
   page was built. All names and numbers are illustrative. The counts the
   landing and the brief use (23 stuck leads, 37 returns, R$ 1.240 near expiry,
-  3 free slots tomorrow) come out of the data itself.
+  today's 16h30 cancellation and 3 free slots tomorrow) come out of the data
+  itself.
 
   One person, one record: most patients keep the contact they started as
   (their origin and first quote), and the contacts who just booked are
@@ -365,9 +366,19 @@ export function createDemoData(clock = new Date()): FlowData {
       ...org,
       kind: "lead_followup",
       name: "Orçamento sem resposta",
-      when: "Um contato recebeu orçamento",
-      conditions: ["Não respondeu", "Esperar 3 dias"],
+      when: "Orçamento sem resposta por 3 dias",
+      conditions: ["O orçamento continua aberto"],
       actions: ["Preparar follow-up com o procedimento de interesse", "Avisar a recepção"],
+      active: true,
+    },
+    {
+      id: "rule_idle",
+      ...org,
+      kind: "lead_idle",
+      name: "Lead parado",
+      when: "Um contato fica 2 dias sem conversa",
+      conditions: ["Ainda não recebeu orçamento"],
+      actions: ["Preparar mensagem retomando a conversa", "Avisar a recepção"],
       active: true,
     },
     {
@@ -375,9 +386,19 @@ export function createDemoData(clock = new Date()): FlowData {
       ...org,
       kind: "patient_return",
       name: "Retorno de paciente",
-      when: "O intervalo do procedimento se aproxima",
-      conditions: ["Sem retorno marcado", "Faltam 14 dias ou menos"],
-      actions: ["Preparar convite de retorno", "Sugerir horários livres"],
+      when: "O retorno do procedimento chegou",
+      conditions: ["Sem retorno marcado"],
+      actions: ["Criar a oportunidade de retorno", "Avisar o responsável", "Preparar convite com horários livres"],
+      active: true,
+    },
+    {
+      id: "rule_noshow",
+      ...org,
+      kind: "no_show",
+      name: "Falta sem remarcação",
+      when: "Um paciente faltou",
+      conditions: ["Nada remarcado no dia seguinte"],
+      actions: ["Preparar convite para remarcar", "Avisar a recepção"],
       active: true,
     },
     {
@@ -396,8 +417,8 @@ export function createDemoData(clock = new Date()): FlowData {
       kind: "open_slot",
       name: "Horário vago",
       when: "Um cancelamento abre um horário",
-      conditions: ["Horário nas próximas 48 horas", "Há lista de espera compatível"],
-      actions: ["Sugerir quem pode ocupar", "Preparar convite"],
+      conditions: ["Horário nas próximas 48 horas"],
+      actions: ["Procurar na lista de espera", "Encontrar pacientes compatíveis", "Preparar convite"],
       active: true,
     },
     {
@@ -408,7 +429,7 @@ export function createDemoData(clock = new Date()): FlowData {
       when: "Um atendimento é concluído",
       conditions: ["Esperar 2 dias"],
       actions: ["Preparar mensagem de cuidado", "Registrar o próximo retorno"],
-      active: false,
+      active: true,
     },
   ];
 
@@ -418,7 +439,9 @@ export function createDemoData(clock = new Date()): FlowData {
       ["rule_slot", -1, "Horário das 14h sugerido à lista de espera e ocupado", 22000, 1],
       ["rule_return", -3, "8 convites de retorno preparados, 3 retornos marcados", 156000, 3],
       ["rule_post", -4, "6 mensagens de cuidado preparadas", 0, 0],
+      ["rule_idle", -5, "4 conversas retomadas, 2 avaliações marcadas", 76000, 2],
       ["rule_stock", -6, "Campanha de peeling sugerida para 11 pacientes, 4 agendaram", 152000, 4],
+      ["rule_noshow", -8, "2 faltas remarcadas", 60000, 2],
       ["rule_lead", -9, "3 follow-ups preparados, 1 agendamento", 110000, 1],
       ["rule_slot", -12, "2 horários vagos preenchidos", 60000, 2],
       ["rule_return", -20, "5 convites preparados, 2 retornos marcados", 96000, 2],

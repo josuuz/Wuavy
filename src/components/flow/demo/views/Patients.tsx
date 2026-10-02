@@ -6,20 +6,25 @@ import { deletePatient, savePatient } from "@/lib/flow/actions";
 import { brl, capital, dayAt, daysFrom, plural, relDay, shortDate } from "@/lib/flow/format";
 import {
   dueReturns,
+  hasUpcoming,
+  highValueIdle,
   history,
   leadsOf,
+  MISSED_DAYS,
   nextStep,
   pastFor,
   procedureOf,
+  returnValue,
   staleQuote,
   upcomingFor,
+  WEEK_AHEAD,
   type NextStep,
 } from "@/lib/flow/insights";
 import type { FlowData, Patient } from "@/lib/flow/types";
 import { APPOINTMENT_LABEL, SOURCE_LABEL, STAGE_LABEL } from "../copy";
-import { DeleteButton, digits, Field, FocusLink, FormError, Intro, useWrite } from "../forms";
+import { DeleteButton, digits, Field, FocusLink, FormError, Intro, Prepared, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
-import { useFlow, useFocus } from "../store";
+import { useFlow, useFocus, type PatientFilter } from "../store";
 import styles from "../ui.module.css";
 import { LeadForm } from "./Pipeline";
 import { BookingForm } from "./Schedule";
@@ -27,17 +32,18 @@ import { BookingForm } from "./Schedule";
 /*
   Pacientes, the center of the Pulse: one record per person, from how they
   arrived to their next return. Commercial and operational only, never a
-  medical record. The list says what to do next for each one.
+  medical record. The list opens already sorted by what to do: the Pulse's
+  filters say who needs a call and why, so nobody has to search for them.
 */
 
-const FILTERS = [
-  { id: "todos", label: "Todos" },
+const FILTERS: { id: PatientFilter; label: string }[] = [
   { id: "retorno", label: "Precisam retornar" },
-  { id: "agendados", label: "Com horário marcado" },
   { id: "faltou", label: "Faltaram" },
-  { id: "novos", label: "Sem atendimento ainda" },
-] as const;
-type Filter = (typeof FILTERS)[number]["id"];
+  { id: "sem_horario", label: "Sem próximo horário" },
+  { id: "alto_valor", label: "Alto valor sem retorno" },
+  { id: "semana", label: "Oportunidades da semana" },
+  { id: "todos", label: "Todos" },
+];
 
 const DAY = 86_400_000;
 const firstName = (name: string) => name.split(" ")[0];
@@ -62,35 +68,62 @@ function stepLine(d: FlowData, p: Patient, step: NextStep): { text: string; urge
   }
 }
 
+/** What a patient is worth acting on now: their likely return, the visit they missed, the quote they left open. */
+function stakeOf(d: FlowData, p: Patient, step: NextStep) {
+  if (step.kind === "faltou") return procedureOf(d, step.appointment.procedureId)?.price ?? 0;
+  if (step.kind === "orcamento") return step.lead.potentialValue;
+  return returnValue(d, p);
+}
+
+/** The Pulse's lists, each already in the order to work through it. */
+function groupsOf(d: FlowData, steps: Map<string, NextStep>): Record<PatientFilter, Patient[]> {
+  const step = (p: Patient) => steps.get(p.id)!;
+  const missedAt = (p: Patient) => {
+    const s = step(p);
+    return s.kind === "faltou" ? s.appointment.startsAt : "";
+  };
+  const thisWeek = (p: Patient) => {
+    const s = step(p);
+    if (s.kind === "retorno") return Math.abs(s.days) <= WEEK_AHEAD;
+    if (s.kind === "faltou") return daysFrom(d.now, s.appointment.startsAt) >= -MISSED_DAYS;
+    return s.kind === "orcamento" && staleQuote(d, s.lead);
+  };
+  return {
+    retorno: dueReturns(d),
+    faltou: d.patients.filter((p) => step(p).kind === "faltou").sort((a, b) => missedAt(b).localeCompare(missedAt(a))),
+    sem_horario: d.patients.filter((p) => p.lastVisitAt && !hasUpcoming(d, p.id)).sort((a, b) => b.totalSpent - a.totalSpent),
+    alto_valor: highValueIdle(d),
+    semana: d.patients.filter(thisWeek).sort((a, b) => stakeOf(d, b, step(b)) - stakeOf(d, a, step(a))),
+    todos: [...d.patients].sort((a, b) => (b.lastVisitAt ?? "9999").localeCompare(a.lastVisitAt ?? "9999")),
+  };
+}
+
 export function Patients() {
   const { data, editable } = useFlow();
   const opened = useFocus("patient");
   const filtered = useFocus("patients");
-  const [filter, setFilter] = useState<Filter>(filtered?.filter ?? "todos");
+  const steps = new Map(data.patients.map((p) => [p.id, nextStep(data, p)]));
+  const groups = groupsOf(data, steps);
+  const [filter, setFilter] = useState<PatientFilter>(filtered?.filter ?? (groups.retorno.length ? "retorno" : "todos"));
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(opened?.id ?? null);
   const [creating, setCreating] = useState(false);
-  const due = new Set(dueReturns(data).map((p) => p.id));
-  const steps = new Map(data.patients.map((p) => [p.id, nextStep(data, p)]));
   const q = query.trim().toLowerCase();
   const qDigits = digits(q);
-  const keep = (p: Patient) => {
-    const step = steps.get(p.id)!.kind;
-    if (filter === "retorno" && !due.has(p.id)) return false;
-    if (filter === "agendados" && step !== "agendado") return false;
-    if (filter === "faltou" && step !== "faltou") return false;
-    if (filter === "novos" && (p.lastVisitAt || step === "agendado")) return false;
-    return !q || p.name.toLowerCase().includes(q) || (qDigits.length >= 4 && digits(p.phone).includes(qDigits));
+  const list = groups[filter].filter(
+    (p) => !q || p.name.toLowerCase().includes(q) || (qDigits.length >= 4 && digits(p.phone).includes(qDigits)),
+  );
+  const shown = groups[filter];
+  const stake = shown.reduce((s, p) => s + stakeOf(data, p, steps.get(p.id)!), 0);
+  const why: Record<PatientFilter, string> = {
+    retorno: `${plural(shown.length, "paciente no período de retorno", "pacientes no período de retorno")}, sem nada marcado · ${brl(stake)} em retornos prováveis · os mais atrasados primeiro.`,
+    faltou: `${plural(shown.length, "paciente faltou", "pacientes faltaram")} e não ${shown.length === 1 ? "remarcou" : "remarcaram"} · ${brl(stake)} em atendimentos a remarcar · as faltas mais recentes primeiro.`,
+    sem_horario: `${plural(shown.length, "paciente já atendido", "pacientes já atendidos")} sem nada marcado · de quem mais gastou para quem menos.`,
+    alto_valor: `O quarto de pacientes que mais gastou na clínica, sem nada marcado · ${brl(shown.reduce((s, p) => s + p.totalSpent, 0))} em histórico.`,
+    semana: `${plural(shown.length, "pessoa para chamar", "pessoas para chamar")} esta semana: retornos de até 7 dias, faltas recentes e orçamentos parados · ${brl(stake)} em jogo.`,
+    todos: `${plural(data.patients.length, "paciente", "pacientes")} · ${groups.retorno.length} ${groups.retorno.length === 1 ? "precisa" : "precisam"} retornar · ${[...steps.values()].filter((s) => s.kind === "agendado").length} com horário marcado.`,
   };
-  const list = data.patients
-    .filter(keep)
-    .sort((a, b) =>
-      filter === "retorno"
-        ? (a.nextReturnAt ?? "").localeCompare(b.nextReturnAt ?? "")
-        : (b.lastVisitAt ?? "9999").localeCompare(a.lastVisitAt ?? "9999"),
-    );
   const patient = data.patients.find((p) => p.id === selected);
-  const booked = [...steps.values()].filter((s) => s.kind === "agendado").length;
 
   return (
     <div className={styles.page}>
@@ -114,18 +147,18 @@ export function Patients() {
         </Intro>
       ) : (
         <>
-          <p className={styles.summary}>
-            <strong>{plural(data.patients.length, "paciente", "pacientes")}</strong> · <strong>{due.size}</strong>{" "}
-            {due.size === 1 ? "precisa" : "precisam"} retornar · <strong>{booked}</strong> com horário marcado
-          </p>
+          <div className={styles.chips} role="group" aria-label="Listas do Pulse">
+            {FILTERS.map((f) => (
+              <button key={f.id} type="button" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
+                {f.label}
+                <span className={styles.chipCount}>{groups[f.id].length}</span>
+              </button>
+            ))}
+          </div>
           <div className={styles.toolbar}>
-            <div className={styles.chips} role="group" aria-label="Filtrar pacientes">
-              {FILTERS.map((f) => (
-                <button key={f.id} type="button" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            <p className={styles.summary} aria-live="polite">
+              {why[filter]}
+            </p>
             <label className="sr-only" htmlFor="patient-search">
               Buscar paciente
             </label>
@@ -168,7 +201,9 @@ export function Patients() {
               })}
             </tbody>
           </table>
-          {list.length === 0 ? <p className={styles.fine}>Nenhum paciente encontrado.</p> : null}
+          {list.length === 0 ? (
+            <p className={styles.fine}>{q ? "Nenhum paciente encontrado nesta lista." : "Ninguém nesta lista agora."}</p>
+          ) : null}
         </>
       )}
 
@@ -282,14 +317,18 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
               <button type="button" className={styles.primary} onClick={() => setMode("agendar")}>
                 Agendar retorno
               </button>
-              {invited ? (
-                <span className={styles.done}>Convite preparado. Nada foi enviado.</span>
-              ) : access.canEdit ? (
+              {!invited && access.canEdit ? (
                 <button type="button" className={styles.secondary} onClick={invite}>
                   Preparar convite
                 </button>
               ) : null}
             </div>
+            {invited ? (
+              <Prepared
+                send="Enviar convite"
+                text={`Oi ${name}! Já está na época do seu retorno${lastProcedure ? ` de ${lastProcedure.name}` : ""}. Quer que eu veja um horário para você esta semana?`}
+              />
+            ) : null}
           </>
         ) : step.kind === "orcamento" ? (
           <>

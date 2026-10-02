@@ -22,6 +22,12 @@ alter table organizations
 -- How many people or hours an automation run brought back (insights.valueDelivered).
 alter table automation_runs add column converted integer not null default 0 check (converted >= 0);
 
+-- Two more fronts the opportunity engine reads (types.ts OpportunityKind): leads
+-- stalled before a quote, and no-shows not rebooked.
+alter table opportunities drop constraint if exists opportunities_kind_check;
+alter table opportunities add constraint opportunities_kind_check
+  check (kind in ('lead_followup', 'lead_idle', 'patient_return', 'no_show', 'stock_expiry', 'open_slot'));
+
 -- Later, when the database should enforce read-only on its own (not only the app):
 -- a security-definer function such as
 --   can_write(org uuid) = is_member(org) and status/trial allow it

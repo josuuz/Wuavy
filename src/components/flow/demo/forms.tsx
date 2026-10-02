@@ -109,3 +109,40 @@ export function FocusLink({ focus, className, children }: { focus: Focus; classN
 
 /** Digits only, to tell whether two phone numbers are the same. */
 export const digits = (phone: string) => phone.replace(/\D/g, "");
+
+const APPROVAL = ["Pulse identifica", "Recomenda", "Prepara", "Você aprova"] as const;
+
+/** Where an action stands (0 to 3; 4 when it is all done). The Pulse identifies, recommends and prepares; sending always waits for a person. */
+export function Approval({ step }: { step: number }) {
+  return (
+    <ol className={styles.stages} aria-label="Etapas da ação">
+      {APPROVAL.map((label, i) => (
+        <li
+          key={label}
+          data-state={i < step ? "done" : i === step ? "now" : undefined}
+          aria-current={i === step ? "step" : undefined}
+        >
+          {label}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * A message the Pulse wrote and nobody sent: its text, and the send button,
+ * which waits for the WhatsApp connection. Approving is a person's call.
+ */
+export function Prepared({ text, send = "Aprovar e enviar" }: { text: string; send?: string }) {
+  return (
+    <div className={styles.prepared}>
+      <p className={styles.preparedText}>{text}</p>
+      <div className={styles.actions}>
+        <button type="button" className={styles.secondary} disabled>
+          {send}
+        </button>
+        <span className={styles.fine}>Disponível quando o WhatsApp estiver conectado.</span>
+      </div>
+    </div>
+  );
+}

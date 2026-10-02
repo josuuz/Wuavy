@@ -1,4 +1,4 @@
-import { brl, plural } from "@/lib/flow/format";
+import { plural } from "@/lib/flow/format";
 import type {
   AppointmentStatus,
   LeadSource,
@@ -18,19 +18,19 @@ import type { Focus } from "./store";
 export const BASE = "/pulse/demo";
 export const APP_BASE = "/pulse/app";
 
+/** The screens, in the menu's order: what needs attention, where the money is, then the operation. */
 export const VIEWS = [
   { slug: "", label: "Visão geral" },
+  { slug: "oportunidades", label: "Oportunidades" },
   { slug: "vendas", label: "Vendas" },
   { slug: "pacientes", label: "Pacientes" },
   { slug: "agenda", label: "Agenda" },
   { slug: "procedimentos", label: "Procedimentos" },
   { slug: "estoque", label: "Estoque" },
   { slug: "automacoes", label: "Automações" },
-  { slug: "oportunidades", label: "Oportunidades" },
 ] as const;
 
-/** The menu: every screen but Oportunidades, which the overview opens. */
-export const MENU = VIEWS.filter((v) => v.slug !== "oportunidades");
+export const MENU = VIEWS;
 
 export const viewHref = (slug: string, base = BASE) => (slug ? `${base}/${slug}` : base);
 
@@ -53,6 +53,25 @@ export const PLAN = {
     text: "Você está vendo dados fictícios. Nenhuma mensagem, automação ou integração real é executada.",
     cta: "Quero ver o Pulse com meus dados",
     topic: "Wuavy Pulse com os dados da minha clínica",
+  },
+  subscribe: {
+    open: "Assinar",
+    title: "Wuavy Pulse",
+    text: "Transforme dados da sua clínica em oportunidades de crescimento.",
+    includes: [
+      "Gestão de pacientes e leads",
+      "Agenda e retornos",
+      "Procedimentos",
+      "Estoque",
+      "Indicadores",
+      "Motor de oportunidades",
+      "Automações",
+    ],
+    cta: "Assinar Pulse — R$ 297/mês",
+    back: { demo: "Continuar explorando a demo", trial: "Agora não" },
+    topic: "assinar o Wuavy Pulse",
+    /** Where checkout will live. Until it is set, subscribing goes through the Wuavy contact. */
+    checkoutUrl: process.env.NEXT_PUBLIC_PULSE_CHECKOUT_URL,
   },
   trial: (daysLeft: number | null) =>
     daysLeft === null ? "Em teste" : daysLeft <= 1 ? "Teste · último dia" : `Teste · ${daysLeft} dias restantes`,
@@ -115,69 +134,115 @@ export const STATUS_LABEL: Record<OpportunityStatus, string> = {
 
 interface KindCopy {
   tag: string;
-  /** The overview's line: what the Pulse found, in a few words. */
+  /** What the Pulse found, in a few words. */
   headline: (o: Opportunity) => string;
-  /** The longer sentence on the Opportunities screen. */
+  /** The longer sentence: how it was found. */
   sentence: (o: Opportunity) => string;
   valueLabel: string;
-  /** The overview's direct action, and what it opens. */
+  /** The recommended action: what the overview's button says, and what opens the approval on Oportunidades. */
   action: string;
-  focus: Focus;
+  /** Who the Pulse picked to start with, by count. */
+  picked: (n: number) => string;
   /** The screen where the records behind it live. */
   view: string;
   suggestion: string;
+  /** The approval's three buttons: look at who, prepare, then (later) send. */
+  review: string;
   prepare: string;
-  prepared: (o: Opportunity) => string;
+  prepared: (n: number) => string;
 }
 
+const top = (n: number, one: string, many: string) => (n === 1 ? `o ${one} mais relevante` : `os ${n} ${many} mais relevantes`);
+
 export const KIND: Record<OpportunityKind, KindCopy> = {
-  patient_return: {
-    tag: "Retorno",
-    headline: (o) => `${plural(o.count, "paciente precisa", "pacientes precisam")} retornar`,
-    sentence: (o) => `${plural(o.count, "paciente está", "pacientes estão")} no período de retorno, sem nada marcado.`,
-    valueLabel: "em retornos prováveis",
-    action: "Ver pacientes",
-    focus: { to: "patients", filter: "retorno" },
-    view: "pacientes",
-    suggestion: "Um convite de retorno com os horários livres da semana, no intervalo recomendado de cada procedimento.",
-    prepare: "Preparar convites",
-    prepared: (o) => `${plural(o.count, "convite de retorno preparado", "convites de retorno preparados")}. Nenhuma mensagem foi enviada.`,
-  },
   lead_followup: {
-    tag: "Vendas",
+    tag: "Orçamentos",
     headline: (o) => `${plural(o.count, "orçamento", "orçamentos")} sem resposta`,
     sentence: (o) =>
       `${plural(o.count, "pessoa recebeu", "pessoas receberam")} orçamento e não ${o.count === 1 ? "respondeu" : "responderam"} há 3 dias ou mais.`,
     valueLabel: "em orçamentos abertos",
-    action: "Fazer follow-up",
-    focus: { to: "sales", filter: "sem_resposta" },
+    action: "Preparar follow-up",
+    picked: (n) => `Pulse selecionou ${top(n, "contato", "contatos")}.`,
     view: "vendas",
-    suggestion: "Uma mensagem retomando o procedimento de interesse de cada pessoa, começando pelos orçamentos maiores.",
+    suggestion: "Retomar o procedimento de interesse de cada pessoa, começando pelos orçamentos maiores e mais recentes.",
+    review: "Revisar contatos",
     prepare: "Preparar mensagens",
-    prepared: (o) => `${plural(o.count, "mensagem preparada", "mensagens preparadas")} para a equipe revisar. Nada foi enviado.`,
+    prepared: (n) => `${plural(n, "mensagem de follow-up preparada", "mensagens de follow-up preparadas")}. Nada foi enviado.`,
+  },
+  patient_return: {
+    tag: "Retornos",
+    headline: (o) => `${plural(o.count, "paciente precisa", "pacientes precisam")} retornar`,
+    sentence: (o) => `${plural(o.count, "paciente está", "pacientes estão")} no período de retorno, sem nada marcado.`,
+    valueLabel: "em retornos prováveis",
+    action: "Preparar convites",
+    picked: (n) => `Pulse selecionou ${top(n, "paciente", "pacientes")}, pela chance de retorno.`,
+    view: "pacientes",
+    suggestion: "Um convite de retorno com os horários livres da semana, no intervalo recomendado de cada procedimento.",
+    review: "Revisar pacientes",
+    prepare: "Preparar convites",
+    prepared: (n) => `${plural(n, "convite de retorno preparado", "convites de retorno preparados")}. Nada foi enviado.`,
+  },
+  lead_idle: {
+    tag: "Leads",
+    headline: (o) => `${plural(o.count, "lead parado", "leads parados")}`,
+    sentence: (o) =>
+      `${plural(o.count, "contato ainda sem orçamento está", "contatos ainda sem orçamento estão")} sem conversa há 2 dias ou mais.`,
+    valueLabel: "em interesse declarado",
+    action: "Retomar conversas",
+    picked: (n) => `Pulse selecionou ${top(n, "contato", "contatos")}.`,
+    view: "vendas",
+    suggestion: "Uma mensagem curta retomando a conversa no ponto em que parou, com a avaliação como próximo passo.",
+    review: "Revisar contatos",
+    prepare: "Preparar mensagens",
+    prepared: (n) => `${plural(n, "mensagem preparada", "mensagens preparadas")} para retomar a conversa. Nada foi enviado.`,
   },
   open_slot: {
     tag: "Agenda",
-    headline: (o) => `${plural(o.count, "horário livre", "horários livres")} amanhã`,
-    sentence: (o) => `${plural(o.count, "horário ficou disponível", "horários ficaram disponíveis")} amanhã.`,
+    headline: (o) => `${plural(o.count, "horário livre", "horários livres")} até amanhã`,
+    sentence: (o) => `${plural(o.count, "horário está livre", "horários estão livres")} entre hoje e amanhã.`,
     valueLabel: "em horários a preencher",
-    action: "Preencher agenda",
-    focus: { to: "agenda", day: 1 },
+    action: "Preencher horários",
+    picked: (n) => `Pulse encontrou ${plural(n, "paciente compatível", "pacientes compatíveis")}, um por horário.`,
     view: "agenda",
-    suggestion: "Oferecer os horários primeiro à lista de espera do mesmo período, depois a pacientes com retorno próximo.",
+    suggestion: "Oferecer cada horário a quem mais combina: a lista de espera do mesmo período primeiro, depois quem tem retorno próximo.",
+    review: "Revisar sugestões",
     prepare: "Preparar convites",
-    prepared: () => "Convites preparados para a lista de espera. Nenhuma mensagem foi enviada.",
+    prepared: (n) => `${plural(n, "convite de horário preparado", "convites de horário preparados")}. Nada foi enviado.`,
   },
   stock_expiry: {
     tag: "Estoque",
-    headline: (o) => `${brl(o.value)} em produtos perto da validade`,
-    sentence: (o) => `${brl(o.value)} em produtos ${o.count === 1 ? "está próximo" : "estão próximos"} da validade.`,
-    valueLabel: "em estoque a usar",
-    action: "Ver quem pode usar",
-    focus: { to: "opportunity", kind: "stock_expiry" },
+    headline: (o) => `${plural(o.count, "lote perto", "lotes perto")} da validade`,
+    sentence: (o) =>
+      `${plural(o.count, "lote vence", "lotes vencem")} em até 45 dias. Usados nos procedimentos certos, viram receita em vez de prejuízo.`,
+    valueLabel: "em procedimentos possíveis",
+    action: "Ver oportunidade",
+    picked: (n) => `Pulse selecionou ${top(n, "paciente", "pacientes")} para usar esses produtos antes de vencer.`,
     view: "estoque",
     suggestion: "Uma campanha para quem já fez os procedimentos que usam esses produtos, antes do vencimento.",
+    review: "Revisar pacientes",
     prepare: "Preparar campanha",
-    prepared: () => "Campanha preparada para revisão, com a lista de pacientes compatíveis. Nada foi enviado.",
+    prepared: (n) => `Campanha preparada para ${plural(n, "paciente compatível", "pacientes compatíveis")}. Nada foi enviado.`,
+  },
+  no_show: {
+    tag: "Faltas",
+    headline: (o) => `${plural(o.count, "paciente faltou", "pacientes faltaram")} e não remarcou`,
+    sentence: (o) => `${plural(o.count, "paciente faltou", "pacientes faltaram")} nos últimos 14 dias e não ${o.count === 1 ? "tem" : "têm"} nada marcado.`,
+    valueLabel: "em atendimentos a remarcar",
+    action: "Remarcar",
+    picked: (n) => `Pulse separou ${plural(n, "paciente", "pacientes")} para remarcar enquanto o interesse está vivo.`,
+    view: "pacientes",
+    suggestion: "Um convite para remarcar o mesmo procedimento, com os próximos horários livres.",
+    review: "Revisar pacientes",
+    prepare: "Preparar convites",
+    prepared: (n) => `${plural(n, "convite para remarcar preparado", "convites para remarcar preparados")}. Nada foi enviado.`,
   },
 };
+
+/** What the automations brought back, by the front that found it. Faltas remarcadas count as returns. */
+export const RECOVERED_FRONTS = [
+  { label: "Retornos recuperados", kinds: ["patient_return", "no_show"] },
+  { label: "Orçamentos recuperados", kinds: ["lead_followup"] },
+  { label: "Horários preenchidos", kinds: ["open_slot"] },
+  { label: "Leads convertidos", kinds: ["lead_idle"] },
+  { label: "Oportunidades vindas de estoque", kinds: ["stock_expiry"] },
+] as const;
