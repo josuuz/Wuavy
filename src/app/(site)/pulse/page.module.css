@@ -182,7 +182,7 @@
   color: var(--wuavy-signal);
 }
 
-/* ── How it works: five stages, then one worked example ─────── */
+/* ── How it works: six stages, then one worked example ─────── */
 .how {
   padding-block: var(--space-4);
 }
@@ -426,8 +426,9 @@
     margin-top: 0;
   }
 
+  /* Six stages: two rows of three, until the width holds all six in one. */
   .stages {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .stage {
@@ -475,5 +476,22 @@
     grid-column: 9 / span 4;
     align-self: end;
     margin-top: 0;
+  }
+}
+
+/* Each row ends on its own: the third stage points nowhere. */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .stage:nth-child(3) .stageName::after {
+    content: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .stages {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .stageName {
+    font-size: clamp(1.375rem, 0.45rem + 1.2vw, 2.25rem);
   }
 }

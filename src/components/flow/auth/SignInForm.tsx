@@ -12,9 +12,17 @@ import { authMessage } from "./messages";
   Sign in, create the account that will own a clinic, or ask for a link to
   reset the password. Supabase Auth runs in the browser with the publishable
   key; the session lands in cookies, and the server takes it from there. A
-  new account, once confirmed, goes on to create its clinic (/flow/comecar);
-  a reset link opens /flow/redefinir-senha.
+  new account, once confirmed, goes on to create its clinic (/pulse/comecar);
+  a reset link opens /pulse/redefinir-senha.
 */
+
+/*
+  Where the emails send people back. Still the /flow addresses: they are the
+  ones on Supabase's list of allowed redirects, and next.config sends each to
+  its /pulse twin with the code intact. Once /pulse/** is on that list, these
+  can name /pulse directly.
+*/
+const EMAIL_RETURN = { confirm: "/flow/auth/callback", reset: "/flow/redefinir-senha" };
 
 export type SignInMode = "entrar" | "criar" | "recuperar";
 
@@ -52,7 +60,7 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice }: SignI
 
     if (mode === "recuperar") {
       const { error } = await auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/flow/redefinir-senha`,
+        redirectTo: `${window.location.origin}${EMAIL_RETURN.reset}`,
       });
       setPending(false);
       if (error) return setError(authMessage(error, "Não foi possível enviar o link. Tente de novo."));
@@ -66,7 +74,7 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice }: SignI
         setPending(false);
         return;
       }
-      router.replace("/flow/app");
+      router.replace("/pulse/app");
       router.refresh();
       return;
     }
@@ -74,7 +82,7 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice }: SignI
     const { data, error } = await auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/flow/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}${EMAIL_RETURN.confirm}` },
     });
     if (error) {
       setError(authMessage(error));
@@ -82,7 +90,7 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice }: SignI
       return;
     }
     if (data.session) {
-      router.replace("/flow/comecar");
+      router.replace("/pulse/comecar");
       router.refresh();
       return;
     }

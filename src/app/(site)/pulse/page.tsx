@@ -13,7 +13,7 @@ import { pad } from "@/lib/utils";
 import styles from "./page.module.css";
 
 /*
-  Wuavy Flow: the product inside "Sistemas de crescimento", first for
+  Wuavy Pulse: the product inside "Sistemas de crescimento", first for
   aesthetic clinics. Black hero with PASSO as the guide, the four gaps on
   Paper, how it works on Black (the five stages and one worked example), and
   the call on Carbon running into the footer. The demo link waits on
@@ -23,8 +23,8 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: flow.meta.title,
   description: flow.meta.description,
-  alternates: { canonical: "/flow" },
-  openGraph: { title: flow.meta.title, description: flow.meta.description, url: "/flow" },
+  alternates: { canonical: "/pulse" },
+  openGraph: { title: flow.meta.title, description: flow.meta.description, url: "/pulse" },
 };
 
 export default function FlowPage() {
@@ -33,7 +33,7 @@ export default function FlowPage() {
 
   return (
     <>
-      <Section id="flow" surface="black" label={flow.name} className={`tx-grain ${styles.hero}`}>
+      <Section id="pulse" surface="black" label={flow.name} className={`tx-grain ${styles.hero}`}>
         <div className={`tx-light ${styles.light}`} data-tone="signal" aria-hidden="true" />
         <div className={`frame ${styles.heroGrid}`}>
           <div className={styles.heroText}>

@@ -1,4 +1,4 @@
-/* ── The Flow's doors: one column on the black surface, the form in the middle ── */
+/* ── The Pulse's doors: one column on the Pulse ground, the form in the middle ── */
 .frame {
   min-height: 100svh;
   display: grid;
@@ -15,11 +15,17 @@
   gap: 1.75rem;
 }
 
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  justify-self: start;
 }
 
 .brand svg {
@@ -35,9 +41,9 @@
 /* The product mark, as in the app's rail: outlined in Signal. */
 .product {
   padding: 0.22rem 0.4rem;
-  border: 1px solid var(--wuavy-signal);
+  border: 1px solid var(--pulse-accent);
   border-radius: 2px;
-  background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+  background: color-mix(in srgb, var(--pulse-accent) 14%, transparent);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
   text-transform: uppercase;

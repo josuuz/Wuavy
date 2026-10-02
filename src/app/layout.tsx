@@ -55,8 +55,11 @@ export const viewport: Viewport = {
   for touch screens, machines with few cores or little memory, Save-Data,
   or a machine the intro measured as slow on an earlier visit. The light
   tier keeps every signature animation and drops the costly extras.
+
+  And it puts back the Pulse's light theme, when that was the choice
+  (components/flow/ThemeToggle), so the app never flashes dark first.
 */
-const bootScript = `document.documentElement.classList.add('js');try{if(sessionStorage.getItem('wuavy-intro'))document.documentElement.setAttribute('data-intro-done','')}catch(e){}try{var n=navigator,c=n.hardwareConcurrency||8,d=n.deviceMemory||8,s=n.connection&&n.connection.saveData;if(matchMedia('(pointer: coarse)').matches||c<=2||d<=2||(c<=4&&d<=4)||s||localStorage.getItem('wuavy-perf')==='lite')document.documentElement.setAttribute('data-perf','lite')}catch(e){}setTimeout(function(){if(!window.__wuavyReveal)document.documentElement.classList.remove('js')},4000);`;
+const bootScript = `document.documentElement.classList.add('js');try{if(localStorage.getItem('wuavy-pulse-theme')==='light')document.documentElement.setAttribute('data-pulse-theme','light')}catch(e){}try{if(sessionStorage.getItem('wuavy-intro'))document.documentElement.setAttribute('data-intro-done','')}catch(e){}try{var n=navigator,c=n.hardwareConcurrency||8,d=n.deviceMemory||8,s=n.connection&&n.connection.saveData;if(matchMedia('(pointer: coarse)').matches||c<=2||d<=2||(c<=4&&d<=4)||s||localStorage.getItem('wuavy-perf')==='lite')document.documentElement.setAttribute('data-perf','lite')}catch(e){}setTimeout(function(){if(!window.__wuavyReveal)document.documentElement.classList.remove('js')},4000);`;
 
 /*
   The document only. Page chrome lives in route groups: (site) renders the

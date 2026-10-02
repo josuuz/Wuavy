@@ -1,4 +1,4 @@
-/* ── The app: Black ground, Carbon rail, hairlines, Signal only where the Flow points ── */
+/* ── The app: Black ground, Carbon rail, hairlines, Signal only where the Pulse points ── */
 .app {
   min-height: 100svh;
   display: grid;
@@ -44,9 +44,9 @@
 /* The product mark, as in the site's menu: outlined in Signal. */
 .product {
   padding: 0.22rem 0.4rem;
-  border: 1px solid var(--wuavy-signal);
+  border: 1px solid var(--pulse-accent);
   border-radius: 2px;
-  background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+  background: color-mix(in srgb, var(--pulse-accent) 14%, transparent);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
   text-transform: uppercase;
@@ -68,6 +68,17 @@
   letter-spacing: 0.06em;
   color: var(--text-2);
   align-self: center;
+}
+
+.org .plan[data-tone="ended"] {
+  color: var(--pulse-accent-text);
+}
+
+/* Phones: the theme switch and Pergunte share the brand's row. */
+.rowTools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .nav ol {
@@ -96,7 +107,7 @@
 
 .navLink[aria-current] {
   color: var(--text);
-  box-shadow: inset 0 -2px 0 var(--wuavy-signal);
+  box-shadow: inset 0 -2px 0 var(--pulse-accent);
 }
 
 .navIndex {
@@ -106,15 +117,15 @@
 }
 
 .navLink[aria-current] .navIndex {
-  color: var(--wuavy-signal);
+  color: var(--pulse-accent-text);
 }
 
 .badge {
   min-width: 1.3rem;
   padding: 0.18rem 0.35rem;
   border-radius: 2px;
-  background: var(--wuavy-signal);
-  color: var(--wuavy-black);
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
   font-size: var(--fs-micro);
   font-weight: 700;
   line-height: 1;
@@ -152,9 +163,9 @@
 .askSmall {
   min-height: 2.5rem;
   padding: 0 0.75rem;
-  border: 1px solid var(--wuavy-signal);
+  border: 1px solid var(--pulse-accent);
   border-radius: 2px;
-  background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+  background: color-mix(in srgb, var(--pulse-accent) 14%, transparent);
   font-size: 0.8125rem;
   font-weight: 640;
 }
@@ -180,8 +191,8 @@
 
   .ask:hover,
   .askSmall:hover {
-    background: var(--wuavy-signal);
-    color: var(--wuavy-black);
+    background: var(--pulse-accent);
+    color: var(--pulse-on-accent);
   }
 }
 
@@ -204,7 +215,7 @@
     padding: 1.4rem 1rem 1.25rem;
     border-bottom: 0;
     border-right: var(--rule) solid var(--border);
-    background: var(--wuavy-carbon);
+    background: var(--surface);
   }
 
   .askSmall {
@@ -234,8 +245,8 @@
   }
 
   .navLink[aria-current] {
-    background: color-mix(in srgb, var(--wuavy-paper) 7%, transparent);
-    box-shadow: inset 2px 0 0 var(--wuavy-signal);
+    background: color-mix(in srgb, var(--pulse-ink) 7%, transparent);
+    box-shadow: inset 2px 0 0 var(--pulse-accent);
   }
 
   .badge {
@@ -264,6 +275,7 @@
   }
 
   .crumb {
+    margin-right: auto;
     font-size: var(--fs-micro);
     font-weight: var(--wuavy-micro);
     text-transform: uppercase;
@@ -275,8 +287,9 @@
     color: var(--text-2);
   }
 
-  .demoChip {
-    margin-left: auto;
+  /* The demo's watermark: one word in Signal, where the work is named. */
+  .demoChip,
+  .planChip {
     padding: 0.35rem 0.55rem;
     border: 1px dashed var(--border);
     border-radius: 2px;
@@ -287,15 +300,26 @@
     color: var(--text-2);
   }
 
+  .demoChip,
+  .planChip[data-tone="ended"] {
+    border: 1px solid var(--pulse-accent);
+    color: var(--pulse-accent-text);
+  }
+
+  /* On the rail the theme switch and Pergunte live in the bar instead. */
+  .rowTools {
+    display: none;
+  }
+
   .ask {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
     min-height: 2.5rem;
     padding: 0 0.95rem;
-    border: 1px solid var(--wuavy-signal);
+    border: 1px solid var(--pulse-accent);
     border-radius: 2px;
-    background: color-mix(in srgb, var(--wuavy-signal) 14%, transparent);
+    background: color-mix(in srgb, var(--pulse-accent) 14%, transparent);
     font-size: 0.875rem;
     font-weight: 640;
     transition:
@@ -308,27 +332,107 @@
   }
 }
 
-/* A small light that breathes: the Flow is listening. */
-.askDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--wuavy-signal);
-  animation: breathe 2.4s var(--wuavy-ease-inout) infinite;
-}
+/* The Pulse's sign beside "Pergunte ao Pulse": it is listening. On the
+   hovered Signal button the point and its ring turn Black. */
+@media (hover: hover) and (pointer: fine) {
+  .ask:hover :global(.pulse-dot) {
+    background: var(--pulse-on-accent);
+  }
 
-.ask:hover .askDot {
-  background: var(--wuavy-black);
-}
-
-@keyframes breathe {
-  50% {
-    opacity: 0.35;
+  .ask:hover :global(.pulse-dot)::after {
+    border-color: var(--pulse-on-accent);
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .askDot {
-    animation-duration: 4.8s;
+/* ── The plan, above the work: the demo's notice, an ended trial's ── */
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin: 1rem 1rem 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.noticeBadge {
+  padding: 0.22rem 0.45rem;
+  border: 1px solid var(--pulse-accent);
+  border-radius: 2px;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--pulse-accent-text);
+}
+
+.noticeText {
+  flex: 1 1 18rem;
+  color: var(--text-2);
+}
+
+.noticeCta {
+  font-weight: 640;
+  text-decoration: underline;
+  text-decoration-color: var(--pulse-accent);
+  text-underline-offset: 0.3em;
+}
+
+.notice[data-tone="ended"] {
+  gap: 1rem 1.5rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--pulse-accent);
+  background: var(--pulse-card);
+  box-shadow: var(--pulse-shadow);
+}
+
+.noticeBody {
+  flex: 1 1 22rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.noticeTitle {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.noticeAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.1rem;
+  border-radius: 2px;
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
+  font-weight: 640;
+  transition:
+    background-color var(--duration-ui) linear,
+    color var(--duration-ui) linear;
+}
+
+:is(.noticeCta, .noticeAction):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .noticeCta:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .noticeAction:hover {
+    background: var(--pulse-fg);
+    color: var(--pulse-bg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .notice {
+    margin: 1.25rem clamp(1.5rem, 3vw, 2.75rem) 0;
   }
 }

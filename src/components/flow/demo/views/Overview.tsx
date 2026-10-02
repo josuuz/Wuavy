@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 
 import { brl, dayLabel, daysFrom, hour, plural, relDay } from "@/lib/flow/format";
-import { awaiting, daySlots, lowStock, missed, procedureOf, recovered, unrecorded } from "@/lib/flow/insights";
+import { awaiting, daySlots, lowStock, missed, procedureOf, recovered, unrecorded, valueDelivered } from "@/lib/flow/insights";
 import { APPOINTMENT_LABEL, KIND, STATUS_LABEL, viewHref } from "../copy";
 import { FocusLink } from "../forms";
 import { useFlow, type Focus } from "../store";
@@ -13,7 +13,7 @@ import styles from "../ui.module.css";
 /*
   The first screen: not a dashboard of charts, the answer to "what do I do
   now?". Today's agenda, what needs attention, and the opportunities the
-  Flow found, each with the action that settles it.
+  Pulse found, each with the action that settles it.
 */
 
 const noSubscribe = () => () => {};
@@ -47,7 +47,7 @@ export function Overview() {
   const booked = today.filter((s) => s.status === "ocupado").map((s) => s.appointment!);
   const patientName = (id: string) => data.patients.find((p) => p.id === id)?.name ?? "";
 
-  // A new clinic: the few steps that make the Flow useful, until they are done.
+  // A new clinic: the few steps that make the Pulse useful, until they are done.
   const setup = [
     {
       done: data.procedures.length > 0,
@@ -70,7 +70,7 @@ export function Overview() {
     {
       done: data.products.length > 0,
       text: "Registre os produtos em estoque",
-      why: "Opcional: o Flow avisa o que está acabando e o que vence.",
+      why: "Opcional: o Pulse avisa o que está acabando e o que vence.",
       view: "estoque",
     },
   ];
@@ -134,13 +134,50 @@ export function Overview() {
 
   const found = ops.filter((o) => o.count > 0);
   const back = recovered(data);
+  const value = valueDelivered(data, ops);
   const feed = [...data.activities].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6);
 
   return (
     <div className={styles.page}>
       <h1 className={styles.greet}>
-        {hello}. <span>{starting ? "Vamos deixar a clínica pronta no Flow." : "Aqui está o que fazer agora."}</span>
+        {hello}. <span>{starting ? "Vamos deixar a clínica pronta no Pulse." : "Aqui está o que fazer agora."}</span>
       </h1>
+
+      {starting ? null : (
+        <section className={styles.value} aria-labelledby="valor">
+          <h2 id="valor" className={styles.valueTitle}>
+            <span className="pulse-dot" aria-hidden="true" />
+            Valor gerado pelo Pulse
+          </h2>
+          <dl className={styles.valueGrid}>
+            <div>
+              <dt>Oportunidades encontradas</dt>
+              <dd>{value.found}</dd>
+            </div>
+            <div>
+              <dt>Leads recuperados</dt>
+              <dd>{value.leads}</dd>
+            </div>
+            <div>
+              <dt>Pacientes reativados</dt>
+              <dd>{value.patients}</dd>
+            </div>
+            <div>
+              <dt>Horários preenchidos</dt>
+              <dd>{value.slots}</dd>
+            </div>
+            <div data-main="">
+              <dt>Receita recuperada pelo Pulse</dt>
+              <dd>{brl(value.revenue)}</dd>
+            </div>
+          </dl>
+          <p className={styles.fine}>
+            {live
+              ? "Oportunidades abertas agora; recuperações dos últimos 30 dias, da operação da clínica."
+              : "Ilustrativo: calculado sobre os dados fictícios da demo. Oportunidades abertas agora; recuperações dos últimos 30 dias."}
+          </p>
+        </section>
+      )}
 
       {starting ? (
         <section className={styles.panel} aria-labelledby="comece">
@@ -247,7 +284,7 @@ export function Overview() {
 
       <section className={styles.foundBlock} aria-labelledby="encontradas">
         <h2 id="encontradas" className={styles.label}>
-          Oportunidades encontradas pelo Flow
+          Oportunidades encontradas pelo Pulse
         </h2>
         {found.length ? (
           <ol className={styles.found}>
@@ -277,13 +314,13 @@ export function Overview() {
         ) : (
           <p className={styles.fine}>
             {live && data.patients.length === 0
-              ? "Conforme a clínica usa o Flow, aparecem aqui os retornos, orçamentos parados, horários vagos e produtos perto da validade."
+              ? "Conforme a clínica usa o Pulse, aparecem aqui os retornos, orçamentos parados, horários vagos e produtos perto da validade."
               : "Nenhuma oportunidade aberta agora."}
           </p>
         )}
         {found.length ? (
           <Link href={viewHref("oportunidades", base)} className={styles.textAction}>
-            Ver como o Flow encontrou cada uma <span aria-hidden="true">→</span>
+            Ver como o Pulse encontrou cada uma <span aria-hidden="true">→</span>
           </Link>
         ) : null}
       </section>
@@ -292,9 +329,8 @@ export function Overview() {
         {live && !back.total ? null : (
           <section className={styles.panel} aria-labelledby="recuperada">
             <h2 id="recuperada" className={styles.label}>
-              Receita recuperada pelo Flow <span>últimos 30 dias</span>
+              Receita recuperada, por frente <span>últimos 30 dias</span>
             </h2>
-            <p className={styles.big}>{brl(back.total)}</p>
             <ul className={styles.rows}>
               {Object.entries(RECOVERED_LABEL).map(([kind, label]) => (
                 <li key={kind}>

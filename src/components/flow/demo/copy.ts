@@ -10,13 +10,13 @@ import type {
 import type { Focus } from "./store";
 
 /*
-  The Flow's words: its screens, and how each thing is said. Plain words for
+  The Pulse's words: its screens, and how each thing is said. Plain words for
   a front desk that never used a CRM: contact, sale, patient, return.
 */
 
-/** The demo's address. The real Flow runs the same screens under APP_BASE. */
-export const BASE = "/flow/demo";
-export const APP_BASE = "/flow/app";
+/** The demo's address. The real Pulse runs the same screens under APP_BASE. */
+export const BASE = "/pulse/demo";
+export const APP_BASE = "/pulse/app";
 
 export const VIEWS = [
   { slug: "", label: "Visão geral" },
@@ -45,6 +45,25 @@ const FOCUS_VIEW: Record<Focus["to"], string> = {
 
 /** The screen a focus opens. */
 export const focusHref = (focus: Focus, base = BASE) => viewHref(FOCUS_VIEW[focus.to], base);
+
+/** What the Pulse says about the clinic's plan: the demo, the trial, its end. CTAs go to the Wuavy contact. */
+export const PLAN = {
+  demo: {
+    badge: "Demo",
+    text: "Você está vendo dados fictícios. Nenhuma mensagem, automação ou integração real é executada.",
+    cta: "Quero ver o Pulse com meus dados",
+    topic: "Wuavy Pulse com os dados da minha clínica",
+  },
+  trial: (daysLeft: number | null) =>
+    daysLeft === null ? "Em teste" : daysLeft <= 1 ? "Teste · último dia" : `Teste · ${daysLeft} dias restantes`,
+  ended: {
+    badge: "Somente leitura",
+    title: "Seu período de teste terminou.",
+    text: "Seus dados continuam seguros por enquanto. Ative o Pulse para continuar usando todas as funções.",
+    cta: "Ativar Pulse",
+    topic: "ativar o Wuavy Pulse",
+  },
+};
 
 export const STAGE_LABEL: Record<LeadStage, string> = {
   novo: "Novo contato",
@@ -96,7 +115,7 @@ export const STATUS_LABEL: Record<OpportunityStatus, string> = {
 
 interface KindCopy {
   tag: string;
-  /** The overview's line: what the Flow found, in a few words. */
+  /** The overview's line: what the Pulse found, in a few words. */
   headline: (o: Opportunity) => string;
   /** The longer sentence on the Opportunities screen. */
   sentence: (o: Opportunity) => string;

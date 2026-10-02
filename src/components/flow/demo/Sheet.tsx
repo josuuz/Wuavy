@@ -34,7 +34,7 @@ export function Sheet({ open, wide, onClose, title, kicker, icon, children }: Sh
     <dialog
       ref={ref}
       className={wide ? `${styles.sheet} ${styles.sheetWide}` : styles.sheet}
-      data-surface="graphite"
+      data-pulse-surface="sheet"
       aria-label={title}
       onClose={onClose}
       onClick={(event) => {

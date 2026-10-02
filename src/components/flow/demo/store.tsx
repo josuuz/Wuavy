@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -11,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 
+import type { Access } from "@/lib/flow/access";
 import { dayAt } from "@/lib/flow/format";
 import { drawDown, moveStock, opportunities, procedureOf, restock, visitSummary } from "@/lib/flow/insights";
 import type {
@@ -29,7 +31,7 @@ import { ADJUST_REASONS, BASE } from "./copy";
 /*
   The demo's state: the clinic's data plus what the visitor did to it (a
   contact moved, a patient booked, a visit finished, stock received). It
-  lives in memory only; a reload starts the demo over. In the real Flow
+  lives in memory only; a reload starts the demo over. In the real Pulse
   (`live`) the data is the server's: screens write through Server Actions,
   the route refreshes and the new data arrives as `initial`. The shape of the
   screens stays the same.
@@ -275,10 +277,14 @@ interface FlowContext {
   ops: Opportunity[];
   focus: Focus | null;
   dispatch: Dispatch<Action>;
-  /** Where the screens live: the demo's or the real Flow's address. */
+  /** Where the screens live: the demo's or the real Pulse's address. */
   base: string;
-  /** A real clinic: records can be created, edited and deleted. */
+  /** A real clinic's data (not the demo's): records live in the database. */
   live: boolean;
+  /** What this clinic may do now: demo, trial, read-only (lib/flow/access.ts). */
+  access: Access;
+  /** Records can be created, edited and deleted in the database: a real clinic that isn't read-only. */
+  editable: boolean;
 }
 
 const Context = createContext<FlowContext | null>(null);
@@ -286,16 +292,34 @@ const Context = createContext<FlowContext | null>(null);
 interface ProviderProps {
   initial: FlowData;
   base?: string;
-  live?: boolean;
+  access: Access;
   children: ReactNode;
 }
 
-export function FlowProvider({ initial, base = BASE, live = false, children }: ProviderProps) {
-  const [state, dispatch] = useReducer(reducer, { data: initial, statuses: {}, focus: null, seq: 0 });
+export function FlowProvider({ initial, base = BASE, access, children }: ProviderProps) {
+  const [state, send] = useReducer(reducer, { data: initial, statuses: {}, focus: null, seq: 0 });
+  const live = !access.isDemoMode;
   const data = live ? initial : state.data;
+  // Read-only changes nothing, not even in memory: only moving between screens passes.
+  const { canEdit } = access;
+  const dispatch = useCallback<Dispatch<Action>>(
+    (action) => {
+      if (canEdit || action.type === "focus") send(action);
+    },
+    [canEdit],
+  );
   const value = useMemo(
-    () => ({ data, ops: opportunities(data, state.statuses), focus: state.focus, dispatch, base, live }),
-    [data, state.statuses, state.focus, base, live],
+    () => ({
+      data,
+      ops: opportunities(data, state.statuses),
+      focus: state.focus,
+      dispatch,
+      base,
+      live,
+      access,
+      editable: live && canEdit,
+    }),
+    [data, state.statuses, state.focus, dispatch, base, live, access, canEdit],
   );
   return <Context value={value}>{children}</Context>;
 }

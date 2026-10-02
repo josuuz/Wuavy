@@ -48,7 +48,7 @@ export function Stock() {
     <div className={styles.page}>
       <header className={styles.head}>
         <h1 className={styles.title}>Estoque</h1>
-        <p className={styles.lead}>O que comprar e o que usar antes de vencer. A cada atendimento finalizado, o Flow dá baixa sozinho.</p>
+        <p className={styles.lead}>O que comprar e o que usar antes de vencer. A cada atendimento finalizado, o Pulse dá baixa sozinho.</p>
         <div className={styles.actions}>
           <button type="button" className={styles.primary} onClick={() => setEntering(true)}>
             Entrada de produto
@@ -58,7 +58,7 @@ export function Stock() {
 
       {data.products.length === 0 ? (
         <Intro title="Como funciona">
-          Registre os produtos que a clínica usa, lote por lote. O Flow avisa o que está acabando e o que precisa ser usado
+          Registre os produtos que a clínica usa, lote por lote. O Pulse avisa o que está acabando e o que precisa ser usado
           antes de vencer.
         </Intro>
       ) : (
@@ -308,7 +308,7 @@ function AdjustForm({ lot, onDone }: { lot: InventoryLot; onDone: () => void }) 
   return (
     <form className={styles.form} onSubmit={submit(live ? (form) => adjustLot(lot.id, form) : demoAdjust, onDone)}>
       <p className={styles.note}>
-        Lote {lot.lotCode}: o Flow conta {units(lot.quantity, product?.unit ?? "un")}. Se na prateleira há outra quantidade,
+        Lote {lot.lotCode}: o Pulse conta {units(lot.quantity, product?.unit ?? "un")}. Se na prateleira há outra quantidade,
         corrija aqui.
       </p>
       <Field label={`Quantidade real${product ? ` (${product.unit})` : ""}`}>

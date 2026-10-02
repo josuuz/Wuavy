@@ -15,7 +15,7 @@ import styles from "../ui.module.css";
 /*
   The catalogue. Each procedure's price, duration and recommended return
   feed the agenda and the automations; the products it consumes link a
-  finished visit to the stock. That is what lets the Flow connect patient,
+  finished visit to the stock. That is what lets the Pulse connect patient,
   agenda, stock and next return when a visit is done.
 */
 
@@ -27,7 +27,7 @@ const LINKED = [
 ] as const;
 
 export function Procedures() {
-  const { data, live } = useFlow();
+  const { data, editable } = useFlow();
   // null: closed; "new": a new procedure; otherwise the id being edited.
   const [editing, setEditing] = useState<string | null>(null);
   const current = data.procedures.find((p) => p.id === editing);
@@ -40,7 +40,7 @@ export function Procedures() {
           Preço, duração e retorno recomendado de cada procedimento alimentam a agenda e as automações. Os produtos consumidos
           fazem o estoque baixar sozinho quando um atendimento é finalizado.
         </p>
-        {live ? (
+        {editable ? (
           <div className={styles.actions}>
             <button type="button" className={styles.primary} onClick={() => setEditing("new")}>
               Novo procedimento
@@ -53,7 +53,7 @@ export function Procedures() {
         <Intro
           title="Comece pelo catálogo"
           action={
-            live ? (
+            editable ? (
               <button type="button" className={styles.primary} onClick={() => setEditing("new")}>
                 Cadastrar o primeiro
               </button>
@@ -61,7 +61,7 @@ export function Procedures() {
           }
         >
           Cadastre o que a clínica oferece. O preço entra nos orçamentos, a duração ocupa a agenda e o retorno recomendado diz
-          ao Flow quando convidar o paciente de volta.
+          ao Pulse quando convidar o paciente de volta.
         </Intro>
       ) : null}
 
@@ -119,7 +119,7 @@ export function Procedures() {
                   );
                 })}
               </ul>
-              {live ? (
+              {editable ? (
                 <div className={styles.actions}>
                   <button type="button" className={styles.quiet} onClick={() => setEditing(procedure.id)}>
                     Editar
@@ -131,7 +131,7 @@ export function Procedures() {
         })}
       </ol>
 
-      {live ? (
+      {editable ? (
         <Sheet
           open={editing !== null}
           onClose={() => setEditing(null)}
@@ -245,7 +245,7 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
             >
               Adicionar produto
             </button>
-            <p className={styles.fine}>Quando um atendimento é finalizado, o Flow dá baixa dessas quantidades no estoque.</p>
+            <p className={styles.fine}>Quando um atendimento é finalizado, o Pulse dá baixa dessas quantidades no estoque.</p>
           </>
         ) : (
           <p className={styles.fine}>Nenhum produto cadastrado ainda. Faça uma entrada em Estoque para ligar produtos a este procedimento.</p>

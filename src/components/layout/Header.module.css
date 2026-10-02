@@ -180,7 +180,7 @@
   background: var(--wuavy-signal);
 }
 
-/* A product link (Flow): outlined in Signal on a faint Signal tint, which
+/* A product link (Pulse): outlined in Signal on a faint Signal tint, which
    reads on every surface; on hover it fills. Its line drops in under it. */
 .navProduct {
   margin-block: -0.4rem;

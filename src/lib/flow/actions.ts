@@ -7,11 +7,12 @@ import type { Database } from "@/lib/supabase/database.types";
 import { clinicNow } from "./clock";
 import { dayAt } from "./format";
 import { drawDown, restock, visitSummary } from "./insights";
-import { getSession } from "./session";
+import { READ_ONLY_MESSAGE } from "./access";
+import { getClinicAccess, getSession } from "./session";
 import { APPOINTMENT_STATUSES, LEAD_SOURCES, LEAD_STAGES, PROCEDURE_CATEGORIES, type InventoryLot } from "./types";
 
 /*
-  The real Flow's writes: contacts, patients, procedures, the agenda and the
+  The real Pulse's writes: contacts, patients, procedures, the agenda and the
   stock. Each one takes the clinic from the verified session, never from the
   browser, checks its input, scopes every query to that clinic (row-level
   security enforces it again) and refreshes the route, so the screen shows
@@ -34,6 +35,8 @@ class Invalid extends Error {}
 async function write(step: (db: Db, org: string) => Promise<PostgrestError | null>): Promise<Result> {
   const session = await getSession();
   if (!session?.member) return { error: "Sua sessão expirou. Entre de novo." };
+  // A trial that ended reads, never writes: checked here, whatever the screen showed.
+  if (!(await getClinicAccess())?.canEdit) return { error: READ_ONLY_MESSAGE };
   try {
     const error = await step(session.supabase, session.member.organization_id);
     if (error) return { error: describe(error) };
@@ -50,8 +53,8 @@ function describe(error: PostgrestError) {
   if (error.code === "23503") return "Há outros registros ligados a este.";
   if (error.code === "42501") return "Sem permissão para esta clínica.";
   // A column the database does not have yet: the schema is behind the app.
-  if (error.code === "PGRST204" || error.code === "42703") return "Falta atualizar o banco de dados do Flow (migration 0002).";
-  console.error("Flow write failed", error);
+  if (error.code === "PGRST204" || error.code === "42703") return "Falta atualizar o banco de dados do Pulse (migration 0002).";
+  console.error("Pulse write failed", error);
   return "Não foi possível salvar. Tente de novo.";
 }
 

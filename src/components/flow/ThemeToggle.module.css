@@ -1,0 +1,32 @@
+/* The theme switch: a quiet square in the Pulse's top bar, the icon of the theme it turns on. */
+.toggle {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    color var(--duration-ui) linear,
+    border-color var(--duration-ui) linear;
+}
+
+.toggle svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .toggle:hover {
+    color: var(--text);
+    border-color: var(--text-2);
+  }
+}

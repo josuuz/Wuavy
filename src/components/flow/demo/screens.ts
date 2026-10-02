@@ -8,7 +8,7 @@ import { Procedures } from "./views/Procedures";
 import { Schedule } from "./views/Schedule";
 import { Stock } from "./views/Stock";
 
-/* Every screen of the Flow but the overview, by slug: the demo and the real Flow route the same ones. */
+/* Every screen of the Pulse but the overview, by slug: the demo and the real Pulse route the same ones. */
 
 export const SCREENS: Record<string, ComponentType> = {
   oportunidades: Opportunities,

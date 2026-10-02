@@ -26,7 +26,7 @@ import type {
 /*
   The real FlowSource: one select per table, through the signed-in user's
   client, so row-level security holds even if a filter were missing. Rows go
-  from snake_case to the Flow's types; times are normalised to the same ISO
+  from snake_case to the Pulse's types; times are normalised to the same ISO
   form the demo uses, because the schedule compares them as strings.
 */
 
@@ -59,7 +59,7 @@ export function supabaseSource(db: Db): FlowSource {
       const failed = [org, members, leads, patients, appointments, waitlist, procedures, products, lots, uses, rules, runs, activities].find(
         (result) => result.error,
       );
-      if (failed?.error) throw new Error(`Flow: could not load the clinic (${failed.error.message})`);
+      if (failed?.error) throw new Error(`Pulse: could not load the clinic (${failed.error.message})`);
 
       const o = org.data!;
       const organization: Organization = { id: o.id, name: o.name, segment: "estetica", city: o.city ?? "" };
@@ -176,6 +176,8 @@ export function supabaseSource(db: Db): FlowSource {
             ranAt: iso(r.ran_at),
             summary: r.summary,
             recovered: r.recovered,
+            // A column of migration 0003: absent before it runs.
+            converted: "converted" in r ? Number(r.converted) : undefined,
           }),
         ),
         activities: activities.data!.map(

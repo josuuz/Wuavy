@@ -165,7 +165,7 @@ function LeadCard({ lead: l, onOpen }: { lead: Lead; onOpen: () => void }) {
 }
 
 function LeadDetail({ lead, onDone }: { lead: Lead; onDone: () => void }) {
-  const { data, dispatch, live } = useFlow();
+  const { data, dispatch, live, editable } = useFlow();
   const { pending, error, write } = useWrite();
   const [mode, setMode] = useState<"ver" | "agendar" | "editar">("ver");
   const stale = staleQuote(data, lead);
@@ -285,7 +285,7 @@ function LeadDetail({ lead, onDone }: { lead: Lead; onDone: () => void }) {
       )}
       <FormError error={error} />
 
-      {live ? (
+      {editable ? (
         <div className={styles.actions}>
           <button type="button" className={styles.quiet} onClick={() => setMode("editar")}>
             Editar

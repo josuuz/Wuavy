@@ -3,28 +3,33 @@
 import Link from "next/link";
 import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 
+import { READ_ONLY_MESSAGE } from "@/lib/flow/access";
 import type { Result } from "@/lib/flow/actions";
 import { focusHref } from "./copy";
 import { useFlow, type Focus } from "./store";
 import styles from "./ui.module.css";
 
 /*
-  Pieces the screens share. A write is a Server Action in the real Flow (or
+  Pieces the screens share. A write is a Server Action in the real Pulse (or
   a change in memory in the demo): pending while it and the refresh it
   triggers run, its error kept next to the form, the sheet closed only when
   the write said yes.
 */
 
 export function useWrite() {
+  const { access } = useFlow();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const write = (action: () => Promise<Result>, onDone?: () => void) =>
+  const write = (action: () => Promise<Result>, onDone?: () => void) => {
+    // Read-only: say why next to the form, without a round trip (the server refuses too).
+    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
     start(async () => {
       const result = await action();
       setError(result.error ?? null);
       if (!result.error) onDone?.();
     });
+  };
 
   // onSubmit rather than <form action>: a failed save keeps what was typed.
   const submit = (action: (form: FormData) => Promise<Result>, onDone?: () => void) =>
@@ -56,7 +61,9 @@ export function FormError({ error }: { error: string | null }) {
 
 /** Deleting takes two presses: the first asks, the second deletes. */
 export function DeleteButton({ confirm, pending, onDelete }: { confirm: string; pending: boolean; onDelete: () => void }) {
+  const { access } = useFlow();
   const [asking, setAsking] = useState(false);
+  if (!access.canEdit) return null;
   if (!asking) {
     return (
       <button type="button" className={styles.quiet} onClick={() => setAsking(true)}>

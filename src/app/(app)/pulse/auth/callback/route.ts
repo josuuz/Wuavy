@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(new URL("/flow/comecar", request.url));
+    if (!error) return NextResponse.redirect(new URL("/pulse/comecar", request.url));
   }
-  return NextResponse.redirect(new URL("/flow/entrar?erro=link", request.url));
+  return NextResponse.redirect(new URL("/pulse/entrar?erro=link", request.url));
 }

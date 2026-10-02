@@ -23,14 +23,14 @@ import { useFlow, useFocus } from "../store";
 import styles from "../ui.module.css";
 
 /*
-  How the Flow found each opportunity the overview shows: the records behind
+  How the Pulse found each opportunity the overview shows: the records behind
   it and one suggested action. Opened from the overview, not from the menu.
 */
 
 const SHOWN = 8;
 
 export function Opportunities() {
-  const { data, ops, dispatch, base } = useFlow();
+  const { data, ops, dispatch, base, access } = useFlow();
   // Opened from another screen: start on that one.
   const focus = useFocus("opportunity");
   const [opened, setOpened] = useState<OpportunityKind | null>(focus?.kind ?? null);
@@ -40,7 +40,7 @@ export function Opportunities() {
       <header className={styles.head}>
         <h1 className={styles.title}>Oportunidades</h1>
         <p className={styles.lead}>
-          O que o Flow encontrou cruzando vendas, pacientes, agenda e estoque, e o que sugere fazer.{" "}
+          O que o Pulse encontrou cruzando vendas, pacientes, agenda e estoque, e o que sugere fazer.{" "}
           <Link href={viewHref("", base)}>Voltar à visão geral</Link>
         </p>
       </header>
@@ -76,9 +76,9 @@ export function Opportunities() {
                 <div id={`opp-${o.kind}`} className={styles.oppBody}>
                   <Detail kind={o.kind} data={data} />
                   <div className={styles.suggestion}>
-                    <p className={styles.label}>Sugestão do Flow</p>
+                    <p className={styles.label}>Sugestão do Pulse</p>
                     <p>{copy.suggestion}</p>
-                    {o.status === "nova" ? (
+                    {!access.canEdit ? null : o.status === "nova" ? (
                       <button
                         type="button"
                         className={styles.primary}
@@ -161,11 +161,11 @@ function Detail({ kind, data }: { kind: OpportunityKind; data: FlowData }) {
                   </span>
                 </li>
                 <li>
-                  <span className={styles.label}>Flow identifica</span>
+                  <span className={styles.label}>Pulse identifica</span>
                   <strong>{used.map((p) => p.name).join(", ")}</strong>
                 </li>
                 <li>
-                  <span className={styles.label}>Flow cruza</span>
+                  <span className={styles.label}>Pulse cruza</span>
                   <strong>{plural(people.length, "paciente compatível", "pacientes compatíveis")}</strong>
                   <span>{people.slice(0, 3).map((p) => p.name).join(", ")}</span>
                 </li>

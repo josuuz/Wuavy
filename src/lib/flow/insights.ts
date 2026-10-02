@@ -14,7 +14,7 @@ import type {
 } from "./types";
 
 /*
-  How the Flow finds opportunities. Plain functions over FlowData: the same
+  How the Pulse finds opportunities. Plain functions over FlowData: the same
   rules run on the demo's data today and on a clinic's real data later.
 */
 
@@ -389,4 +389,25 @@ export function recovered(d: FlowData) {
     total += run.recovered;
   }
   return { total, byKind };
+}
+
+/**
+ * What the Pulse found and brought back in the last 30 days: the case a trial
+ * makes for itself. The same count over the demo's data or a real clinic's.
+ */
+export function valueDelivered(d: FlowData, ops: Opportunity[]) {
+  const rules = byId(d.automationRules);
+  const back = new Map<string, number>();
+  for (const run of d.automationRuns) {
+    if (daysFrom(d.now, run.ranAt) < -30 || !run.recovered) continue;
+    const kind = rules.get(run.ruleId)?.kind ?? "post_visit";
+    back.set(kind, (back.get(kind) ?? 0) + (run.converted ?? 1));
+  }
+  return {
+    found: ops.reduce((n, o) => n + o.count, 0),
+    leads: back.get("lead_followup") ?? 0,
+    patients: back.get("patient_return") ?? 0,
+    slots: back.get("open_slot") ?? 0,
+    revenue: recovered(d).total,
+  };
 }

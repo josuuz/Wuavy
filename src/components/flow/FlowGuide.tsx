@@ -9,7 +9,7 @@ import { STAND } from "@/variants/a/passoRig";
 import styles from "./FlowGuide.module.css";
 
 /*
-  PASSO as the Flow's guide: he stands beside the hero and offers to show one
+  PASSO as the Pulse's guide: he stands beside the hero and offers to show one
   forgotten opportunity. Nothing plays on its own: each step waits for a
   press, and he hops once as it changes. One button carries the whole walk
   (its label changes), so focus never drops.

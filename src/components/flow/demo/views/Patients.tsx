@@ -25,7 +25,7 @@ import { LeadForm } from "./Pipeline";
 import { BookingForm } from "./Schedule";
 
 /*
-  Pacientes, the center of the Flow: one record per person, from how they
+  Pacientes, the center of the Pulse: one record per person, from how they
   arrived to their next return. Commercial and operational only, never a
   medical record. The list says what to do next for each one.
 */
@@ -63,7 +63,7 @@ function stepLine(d: FlowData, p: Patient, step: NextStep): { text: string; urge
 }
 
 export function Patients() {
-  const { data, live } = useFlow();
+  const { data, editable } = useFlow();
   const opened = useFocus("patient");
   const filtered = useFocus("patients");
   const [filter, setFilter] = useState<Filter>(filtered?.filter ?? "todos");
@@ -99,7 +99,7 @@ export function Patients() {
         <p className={styles.lead}>
           Cada pessoa que agendou, numa ficha só: atendimentos, gastos, orçamentos e o próximo retorno.
         </p>
-        {live ? (
+        {editable ? (
           <div className={styles.actions}>
             <button type="button" className={styles.primary} onClick={() => setCreating(true)}>
               Novo paciente
@@ -176,7 +176,7 @@ export function Patients() {
         {patient ? <Record key={patient.id} patient={patient} onDone={() => setSelected(null)} /> : null}
       </Sheet>
 
-      {live ? (
+      {editable ? (
         <Sheet open={creating} onClose={() => setCreating(false)} title="Novo paciente" kicker="Pacientes">
           <PatientForm onDone={() => setCreating(false)} />
         </Sheet>
@@ -212,7 +212,7 @@ function automationsFor(d: FlowData, p: Patient) {
 
 /** The whole person on one page, what to do next first. */
 function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
-  const { data, dispatch, live } = useFlow();
+  const { data, dispatch, editable, access } = useFlow();
   const { pending, error, write } = useWrite();
   const [mode, setMode] = useState<"ver" | "agendar" | "venda" | "editar">("ver");
   const [invited, setInvited] = useState(false);
@@ -284,11 +284,11 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
               </button>
               {invited ? (
                 <span className={styles.done}>Convite preparado. Nada foi enviado.</span>
-              ) : (
+              ) : access.canEdit ? (
                 <button type="button" className={styles.secondary} onClick={invite}>
                   Preparar convite
                 </button>
-              )}
+              ) : null}
             </div>
           </>
         ) : step.kind === "orcamento" ? (
@@ -313,7 +313,7 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
           <p className={styles.nextText}>
             Em dia.{" "}
             {patient.nextReturnAt
-              ? `Próximo retorno previsto ${relDay(data.now, patient.nextReturnAt)}: o Flow avisa quando chegar a hora.`
+              ? `Próximo retorno previsto ${relDay(data.now, patient.nextReturnAt)}: o Pulse avisa quando chegar a hora.`
               : "Nada pendente."}
           </p>
         )}
@@ -493,12 +493,12 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
         <button type="button" className={styles.secondary} onClick={() => setMode("venda")}>
           Novo orçamento
         </button>
-        {live ? (
+        {editable ? (
           <button type="button" className={styles.quiet} onClick={() => setMode("editar")}>
             Editar
           </button>
         ) : null}
-        {live ? (
+        {editable ? (
           <DeleteButton
             confirm="Excluir paciente e seus agendamentos"
             pending={pending}

@@ -60,7 +60,7 @@ function firstFree(data: FlowData, period?: "manha" | "tarde") {
 }
 
 export function Schedule() {
-  const { data, live } = useFlow();
+  const { data, live, editable } = useFlow();
   const focus = useFocus("agenda");
   const [mode, setMode] = useState<"dia" | "semana">("dia");
   const [day, setDay] = useState(focus?.day ?? 0);
@@ -71,7 +71,7 @@ export function Schedule() {
   const [waiting, setWaiting] = useState(false);
   const appointment = data.appointments.find((a) => a.id === managing);
   const pros = professionals(data);
-  // Cancellations tomorrow: each one is an hour the Flow can fill.
+  // Cancellations tomorrow: each one is an hour the Pulse can fill.
   const freed = daySlots(data, 1).filter((s) => s.status === "cancelado");
 
   const dayIso = slotTime(data, day, 0, 0);
@@ -114,7 +114,7 @@ export function Schedule() {
             <p>
               {candidates.length
                 ? `Da lista de espera, quem pode ocupar: ${candidates.map((c) => `${c.patient.name} (${c.procedure.name})`).join(", ")}.`
-                : "Ninguém da lista de espera prefere este período; o Flow sugere pacientes com retorno próximo."}
+                : "Ninguém da lista de espera prefere este período; o Pulse sugere pacientes com retorno próximo."}
             </p>
             <div className={styles.actions}>
               <button type="button" className={styles.primary} onClick={() => setDraft({ startsAt: slot.startsAt })}>
@@ -201,7 +201,7 @@ export function Schedule() {
             <WeekView start={start} pro={pro} onBook={(startsAt) => setDraft({ startsAt })} onOpen={setManaging} />
           )}
         </div>
-        <Waitlist onBook={setDraft} onAdd={live ? () => setWaiting(true) : undefined} />
+        <Waitlist onBook={setDraft} onAdd={editable ? () => setWaiting(true) : undefined} />
       </div>
 
       <Sheet
@@ -397,7 +397,7 @@ function AppointmentCard({ appointment: a, compact, onOpen }: { appointment: App
 }
 
 function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: () => void }) {
-  const { data, dispatch, live } = useFlow();
+  const { data, dispatch, editable, access } = useFlow();
   const { pending, error, write } = useWrite();
   const [invited, setInvited] = useState<ID[]>([]);
 
@@ -409,7 +409,7 @@ function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: (
         </h2>
         <span>{data.waitlist.length}</span>
       </header>
-      <p className={styles.fine}>Quem quer um horário antes. Quando um horário abre, o Flow sugere quem pode ocupar.</p>
+      <p className={styles.fine}>Quem quer um horário antes. Quando um horário abre, o Pulse sugere quem pode ocupar.</p>
       {data.waitlist.length ? (
         <ol className={styles.waitlist}>
           {data.waitlist.map((w) => {
@@ -432,7 +432,7 @@ function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: (
                   </button>
                   {done ? (
                     <span className={styles.done}>Convite preparado</span>
-                  ) : (
+                  ) : access.canEdit ? (
                     <button
                       type="button"
                       className={styles.quiet}
@@ -443,8 +443,8 @@ function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: (
                     >
                       Preparar convite
                     </button>
-                  )}
-                  {live ? (
+                  ) : null}
+                  {editable ? (
                     <button type="button" className={styles.quiet} disabled={pending} onClick={() => write(() => removeFromWaitlist(w.id))}>
                       Tirar da lista
                     </button>
@@ -758,7 +758,7 @@ function AppointmentDetail({
 
       {open && procedure ? (
         <div className={styles.suggestion}>
-          <p className={styles.label}>Ao finalizar, o Flow</p>
+          <p className={styles.label}>Ao finalizar, o Pulse</p>
           <ul className={styles.effects}>
             {uses.length ? (
               uses.map((use) => {

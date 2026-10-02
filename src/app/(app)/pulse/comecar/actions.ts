@@ -20,8 +20,8 @@ const field = (form: FormData, key: string, max: number) => String(form.get(key)
 
 export async function createClinic(_: ClinicState | null, form: FormData): Promise<ClinicState> {
   const session = await getSession();
-  if (!session) redirect("/flow/entrar");
-  if (session.member) redirect("/flow/app");
+  if (!session) redirect("/pulse/entrar");
+  if (session.member) redirect("/pulse/app");
 
   const clinic = field(form, "clinic", 120);
   const city = field(form, "city", 80);
@@ -52,5 +52,5 @@ export async function createClinic(_: ClinicState | null, form: FormData): Promi
     return { error: "Não foi possível criar a clínica. Tente de novo." };
   }
 
-  redirect("/flow/app");
+  redirect("/pulse/app");
 }

@@ -13,7 +13,7 @@ import {
 import type { FlowData } from "./types";
 
 /*
-  "Pergunte ao Flow". The contract a real model will implement later (an API
+  "Pergunte ao Pulse". The contract a real model will implement later (an API
   route calling it with the clinic's data as context); today a local version
   answers from the same insights the screens use. No AI is called.
 */
@@ -21,7 +21,7 @@ import type { FlowData } from "./types";
 export interface FlowAnswer {
   text: string;
   items?: { label: string; value: string }[];
-  link?: { label: string; /** A screen of the Flow, as in VIEWS. */ view: string };
+  link?: { label: string; /** A screen of the Pulse, as in VIEWS. */ view: string };
 }
 
 export interface FlowAssistant {
@@ -46,7 +46,7 @@ function status(d: FlowData): FlowAnswer {
   const potential = open.reduce((s, o) => s + o.value, 0);
   const slots = openSlots(d);
   return {
-    text: `Hoje o Flow vê ${plural(open.length, "frente de oportunidade", "frentes de oportunidade")}, somando cerca de ${brl(potential)} em receita possível. A maior está nos orçamentos sem resposta.`,
+    text: `Hoje o Pulse vê ${plural(open.length, "frente de oportunidade", "frentes de oportunidade")}, somando cerca de ${brl(potential)} em receita possível. A maior está nos orçamentos sem resposta.`,
     items: [
       { label: "Orçamentos sem resposta", value: String(stuckLeads(d).length) },
       { label: "Retornos a convidar", value: String(dueReturns(d).length) },

@@ -1,25 +1,26 @@
 /*
-  Wuavy Flow: the landing's copy. The product lives inside "Sistemas de
+  Wuavy Pulse: the landing's copy. The product lives inside "Sistemas de
   crescimento"; its first market is aesthetic clinics. Every example here is
-  illustrative and is labelled so on the page: no promised numbers.
+  illustrative and is labelled so on the page: no promised numbers. (The
+  product was called Wuavy Flow; the code keeps that name inside.)
 */
 
 export const flow = {
-  name: "Wuavy Flow",
+  name: "Wuavy Pulse",
   pitch: "CRM + IA + Automações",
   meta: {
-    title: "Wuavy Flow",
+    title: "Wuavy Pulse",
     description:
-      "CRM, automações, operação e inteligência para encontrar a receita que passa despercebida. Começando por clínicas de estética.",
+      "Wuavy Pulse identifica os sinais da operação e transforma dados em próximas ações. CRM, IA e automações, começando por clínicas de estética.",
   },
 
   hero: {
-    label: "Wuavy Flow",
+    label: "Wuavy Pulse",
     market: "Começando por clínicas de estética",
-    title: "Transforme oportunidades esquecidas em crescimento.",
-    lead: "Leads que sumiram, pacientes que não voltaram, horários vazios e estoque próximo da validade. O Flow conecta os dados da sua operação e mostra onde agir.",
-    cta: "Quero conhecer o Flow",
-    secondary: { label: "Ver como funciona", href: "#como-funciona" },
+    title: "Transforme os sinais da sua operação em crescimento.",
+    lead: "Leads esquecidos, pacientes que não retornaram, horários vazios e estoque próximo da validade. O Pulse identifica oportunidades e mostra onde agir.",
+    cta: "Quero testar o Pulse",
+    secondary: { label: "Ver a demo", href: "/pulse/demo" },
   },
 
   // What PASSO walks through in the hero: one forgotten lead, three steps.
@@ -36,8 +37,8 @@ export const flow = {
         detail: ["Carla M.", "Harmonização facial", "Orçamento há 6 dias", "Sem resposta"],
       },
       {
-        tag: "O Flow identifica",
-        text: "O Flow percebe o silêncio antes que o lead esfrie e cruza o interesse com a agenda.",
+        tag: "O Pulse identifica",
+        text: "O Pulse percebe o silêncio antes que o lead esfrie e cruza o interesse com a agenda.",
         detail: ["Interesse alto", "Instagram", "Quinta, 10h livre"],
       },
       {
@@ -46,12 +47,12 @@ export const flow = {
         detail: ["Follow-up com horário sugerido"],
       },
     ],
-    done: "Isso é o Flow: ver o que ficou para trás e sugerir o próximo passo.",
+    done: "Isso é o Pulse: ler os sinais do que ficou para trás e sugerir o próximo passo.",
   },
 
   gaps: {
-    chapter: "O que passa despercebido",
-    title: "A receita já estava na clínica. Só ficou para trás.",
+    chapter: "Os sinais que passam despercebidos",
+    title: "Seu negócio já dá os sinais. O Pulse mostra onde agir.",
     items: [
       {
         name: "Leads que sumiram",
@@ -78,12 +79,13 @@ export const flow = {
 
   how: {
     chapter: "Como funciona",
-    title: "Não é mais um CRM. É o fluxo inteiro da clínica.",
-    lead: "CRM, automações, operação e inteligência no mesmo lugar, conectados para mostrar onde agir.",
+    title: "Não é só um CRM. É o pulso da operação inteira.",
+    lead: "Wuavy Pulse identifica os sinais da operação e transforma dados em próximas ações.",
     stages: [
       { name: "Atrair", text: "Cada lead chega com origem e interesse registrados." },
       { name: "Organizar", text: "Pacientes, agenda, procedimentos e estoque conectados." },
-      { name: "Converter", text: "Do orçamento ao agendamento, sem lead parado." },
+      { name: "Identificar", text: "Silêncio, retorno vencido, horário vago, validade: o Pulse lê os sinais." },
+      { name: "Agir", text: "A próxima ação chega pronta para a equipe revisar." },
       { name: "Recuperar", text: "O que ficou para trás volta como oportunidade." },
       { name: "Reter", text: "Retornos no tempo certo e pós-atendimento." },
     ],
@@ -91,9 +93,9 @@ export const flow = {
       title: "Um exemplo",
       note: "Exemplo ilustrativo",
       steps: [
-        { label: "Problema", text: "Um lote de produto vence em 30 dias." },
-        { label: "Flow identifica", text: "Os procedimentos que usam esse produto." },
-        { label: "Flow cruza", text: "Pacientes com histórico compatível e retorno próximo." },
+        { label: "Sinal", text: "Um lote de produto vence em 30 dias." },
+        { label: "Pulse identifica", text: "Os procedimentos que usam esse produto." },
+        { label: "Pulse cruza", text: "Pacientes com histórico compatível e retorno próximo." },
         { label: "Ação", text: "Uma campanha para esse grupo, pronta para revisar." },
         { label: "Resultado", text: "A oportunidade é recuperada antes do prejuízo." },
       ],
@@ -101,11 +103,10 @@ export const flow = {
   },
 
   close: {
-    chapter: "Conhecer o Flow",
-    title: "Veja onde sua clínica pode crescer.",
-    lead: "Uma conversa curta para entender a sua operação e mostrar como o Flow encontra oportunidades nela.",
-    cta: "Quero conhecer o Flow",
-    // The navigable demo lives at /flow/demo; set `ready` once it exists.
-    demo: { href: "/flow/demo", ready: true, label: "Ver a demo", soon: "Demo interativa em breve" },
+    chapter: "Conhecer o Pulse",
+    title: "Veja o Pulse com os dados da sua clínica.",
+    lead: "Explore a demo com dados fictícios. Depois, a sua clínica testa o Pulse com os próprios dados, com o acompanhamento da Wuavy.",
+    cta: "Quero testar o Pulse",
+    demo: { href: "/pulse/demo", ready: true, label: "Conhecer o Pulse na demo", soon: "Demo interativa em breve" },
   },
 };

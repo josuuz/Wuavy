@@ -305,7 +305,7 @@ export function createDemoData(clock = new Date()): FlowData {
     });
 
   // Most earlier patients started as a contact too: that is where their origin comes from.
-  // Every third one came before the Flow and was registered straight as a patient.
+  // Every third one came before the Pulse and was registered straight as a patient.
   patients.forEach((patient, i) => {
     const first = firstProcedure.get(patient.id);
     if (!first || i % 3 === 2) return;
@@ -414,27 +414,28 @@ export function createDemoData(clock = new Date()): FlowData {
 
   const automationRuns: AutomationRun[] = (
     [
-      ["rule_lead", -2, "5 follow-ups preparados, 2 orçamentos retomados", 250000],
-      ["rule_slot", -1, "Horário das 14h sugerido à lista de espera e ocupado", 22000],
-      ["rule_return", -3, "8 convites de retorno preparados, 3 retornos marcados", 156000],
-      ["rule_post", -4, "6 mensagens de cuidado preparadas", 0],
-      ["rule_stock", -6, "Campanha de peeling sugerida para 11 pacientes, 4 agendaram", 152000],
-      ["rule_lead", -9, "3 follow-ups preparados, 1 agendamento", 110000],
-      ["rule_slot", -12, "2 horários vagos preenchidos", 60000],
-      ["rule_return", -20, "5 convites preparados, 2 retornos marcados", 96000],
+      ["rule_lead", -2, "5 follow-ups preparados, 2 orçamentos retomados", 250000, 2],
+      ["rule_slot", -1, "Horário das 14h sugerido à lista de espera e ocupado", 22000, 1],
+      ["rule_return", -3, "8 convites de retorno preparados, 3 retornos marcados", 156000, 3],
+      ["rule_post", -4, "6 mensagens de cuidado preparadas", 0, 0],
+      ["rule_stock", -6, "Campanha de peeling sugerida para 11 pacientes, 4 agendaram", 152000, 4],
+      ["rule_lead", -9, "3 follow-ups preparados, 1 agendamento", 110000, 1],
+      ["rule_slot", -12, "2 horários vagos preenchidos", 60000, 2],
+      ["rule_return", -20, "5 convites preparados, 2 retornos marcados", 96000, 2],
     ] as const
-  ).map(([ruleId, day, summary, value], i) => ({
+  ).map(([ruleId, day, summary, value, converted], i) => ({
     id: `run_${i + 1}`,
     ...org,
     ruleId,
     ranAt: at(day, 9),
     summary,
     recovered: value,
+    converted,
   }));
 
   const activities: Activity[] = (
     [
-      [0, 8, "O Flow encontrou 23 orçamentos sem resposta."],
+      [0, 8, "O Pulse encontrou 23 orçamentos sem resposta."],
       [0, 8, "O lote SB-2407 de skinbooster entrou nos 30 dias finais de validade."],
       [0, 8, "Cancelamento de hoje às 16h30: o horário está livre."],
       [-1, 18, "A recepção confirmou 3 atendimentos de amanhã."],

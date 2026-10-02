@@ -12,7 +12,7 @@ import { useFlow } from "./store";
 import styles from "./ui.module.css";
 
 /*
-  "Pergunte ao Flow": suggested questions or free text, answered from the
+  "Pergunte ao Pulse": suggested questions or free text, answered from the
   clinic's live demo data. The assistant is swappable: point `assistant` at
   an API-backed FlowAssistant and nothing else changes.
 */
@@ -47,7 +47,7 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
     <Sheet
       open={open}
       onClose={onClose}
-      title="Pergunte ao Flow"
+      title="Pergunte ao Pulse"
       kicker="Assistente da operação"
       icon={
         <svg className={styles.askPasso} viewBox="24 40 192 252" aria-hidden="true" focusable="false">
@@ -84,7 +84,10 @@ export function AskFlow({ open, onClose }: { open: boolean; onClose: () => void 
                 ) : null}
               </div>
             ) : (
-              <p className={styles.thinking}>O Flow está cruzando os dados…</p>
+              <p className={styles.thinking}>
+                <span className="pulse-dot" aria-hidden="true" />
+                Pulse analisando…
+              </p>
             )}
           </div>
         ))}

@@ -5,32 +5,39 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { Wordmark } from "@/components/brand/Wordmark";
+import { site } from "@/data/site";
+import { contactHref } from "@/lib/contact";
+import type { Access } from "@/lib/flow/access";
 import type { FlowData } from "@/lib/flow/types";
 import { createClient } from "@/lib/supabase/client";
 import { pad } from "@/lib/utils";
+import "../pulse-theme.css";
+import { ThemeToggle } from "../ThemeToggle";
 import { AskFlow } from "./AskFlow";
-import { APP_BASE, BASE, MENU, VIEWS, viewHref } from "./copy";
+import { APP_BASE, BASE, MENU, PLAN, VIEWS, viewHref } from "./copy";
 import { FlowProvider, useFlow } from "./store";
 import styles from "./FlowDemo.module.css";
 
 /*
-  The Flow's app shell: the clinic and its screens on the left (a strip
-  across the top on phones), the current screen's name and "Pergunte ao
-  Flow" above the work. Oportunidades is not in the menu: the overview is
-  where the Flow says what to do, and it opens the detail. Data comes in from the route's layout: the demo's in
-  memory, or a real clinic's (`account` set) from Supabase.
+  The Pulse's app shell: the clinic and its screens on the left (a strip
+  across the top on phones), the current screen's name, the theme switch and
+  "Pergunte ao Pulse" above the work. Oportunidades is not in the menu: the
+  overview is where the Pulse says what to do, and it opens the detail. Data
+  comes in from the route's layout, with what the clinic may do (`access`):
+  the demo's in memory, or a real clinic's from Supabase, in trial or not.
 */
 
 interface FlowDemoProps {
   initial: FlowData;
-  /** The signed-in member, in the real Flow. */
+  access: Access;
+  /** The signed-in member, in the real Pulse. */
   account?: { name: string };
   children: ReactNode;
 }
 
-export function FlowDemo({ initial, account, children }: FlowDemoProps) {
+export function FlowDemo({ initial, access, account, children }: FlowDemoProps) {
   return (
-    <FlowProvider initial={initial} base={account ? APP_BASE : BASE} live={Boolean(account)}>
+    <FlowProvider initial={initial} base={access.isDemoMode ? BASE : APP_BASE} access={access}>
       <Shell account={account}>{children}</Shell>
     </FlowProvider>
   );
@@ -38,35 +45,44 @@ export function FlowDemo({ initial, account, children }: FlowDemoProps) {
 
 function Shell({ account, children }: { account?: { name: string }; children: ReactNode }) {
   const pathname = usePathname();
-  const { data, ops, base } = useFlow();
+  const { data, ops, base, access } = useFlow();
   const [asking, setAsking] = useState(false);
   const current = VIEWS.find((v) => viewHref(v.slug, base) === pathname) ?? VIEWS[0];
   const open = ops.filter((o) => o.count > 0 && o.status !== "resolvida").length;
+  const plan = access.isDemoMode
+    ? "Demo · dados fictícios"
+    : access.isReadOnly
+      ? PLAN.ended.badge
+      : access.isTrial
+        ? PLAN.trial(access.trialDaysLeft)
+        : null;
 
   return (
-    <div className={styles.app} data-surface="black">
-      <aside className={styles.side} data-surface="carbon">
+    <div className={styles.app} data-pulse="">
+      <aside className={styles.side} data-pulse-surface="rail">
         <div className={styles.brandRow}>
-          <Link href="/flow" className={styles.brand} aria-label="Wuavy Flow: voltar à página do produto">
+          <Link href="/pulse" className={styles.brand} aria-label="Wuavy Pulse: voltar à página do produto">
             <Wordmark size="small" decorative />
-            <span className={styles.product}>Flow</span>
+            <span className={styles.product}>Pulse</span>
           </Link>
-          <button type="button" className={styles.askSmall} onClick={() => setAsking(true)}>
-            Pergunte
-          </button>
+          <div className={styles.rowTools}>
+            <ThemeToggle />
+            <button type="button" className={styles.askSmall} onClick={() => setAsking(true)}>
+              Pergunte
+            </button>
+          </div>
         </div>
         <p className={styles.org}>
           {data.organization.name}
-          {account ? (
-            <>
-              <span>{account.name}</span>
-              <SignOut />
-            </>
-          ) : (
-            <span>Demo · dados ilustrativos</span>
-          )}
+          {account ? <span>{account.name}</span> : null}
+          {plan ? (
+            <span className={styles.plan} data-tone={access.isReadOnly ? "ended" : undefined}>
+              {plan}
+            </span>
+          ) : null}
+          {account ? <SignOut /> : null}
         </p>
-        <nav aria-label="Telas do Flow" className={styles.nav}>
+        <nav aria-label="Telas do Pulse" className={styles.nav}>
           <ol>
             {MENU.map((view, i) => {
               const href = viewHref(view.slug, base);
@@ -90,8 +106,8 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
           </ol>
         </nav>
         {account ? null : (
-          <Link href="/flow" className={styles.back}>
-            <span aria-hidden="true">←</span> Voltar ao Wuavy Flow
+          <Link href="/pulse" className={styles.back}>
+            <span aria-hidden="true">←</span> Voltar ao Wuavy Pulse
           </Link>
         )}
       </aside>
@@ -99,14 +115,22 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
       <div className={styles.main}>
         <header className={styles.bar}>
           <p className={styles.crumb}>
-            <span>Flow</span> / {current.label}
+            <span>Pulse</span> / {current.label}
           </p>
-          {account ? null : <span className={styles.demoChip}>Dados ilustrativos</span>}
+          {access.isDemoMode ? (
+            <span className={styles.demoChip}>{PLAN.demo.badge}</span>
+          ) : plan ? (
+            <span className={styles.planChip} data-tone={access.isReadOnly ? "ended" : undefined}>
+              {plan}
+            </span>
+          ) : null}
+          <ThemeToggle className={styles.barToggle} />
           <button type="button" className={styles.ask} onClick={() => setAsking(true)} data-cursor="action">
-            <span className={styles.askDot} aria-hidden="true" />
-            Pergunte ao Flow
+            <span className="pulse-dot" aria-hidden="true" />
+            Pergunte ao Pulse
           </button>
         </header>
+        <PlanNotice />
         <main id="conteudo" className={styles.content}>
           {children}
         </main>
@@ -115,6 +139,40 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
       <AskFlow open={asking} onClose={() => setAsking(false)} />
     </div>
   );
+}
+
+/** Above the work: the demo says it is one; an ended trial says what happens now. A trial in course stays quiet. */
+function PlanNotice() {
+  const { access } = useFlow();
+  if (access.isDemoMode) {
+    const href = contactHref(site.contact.primary, PLAN.demo.topic);
+    return (
+      <aside className={styles.notice} aria-label="Demonstração">
+        <span className={styles.noticeBadge}>{PLAN.demo.badge}</span>
+        <p className={styles.noticeText}>{PLAN.demo.text}</p>
+        <a href={href} className={styles.noticeCta} target="_blank" rel="noopener noreferrer">
+          {PLAN.demo.cta} <span aria-hidden="true">→</span>
+        </a>
+      </aside>
+    );
+  }
+  if (access.isReadOnly) {
+    const href = contactHref(site.contact.primary, PLAN.ended.topic);
+    return (
+      <aside className={styles.notice} data-tone="ended" aria-labelledby="fim-do-teste">
+        <div className={styles.noticeBody}>
+          <p id="fim-do-teste" className={styles.noticeTitle}>
+            {PLAN.ended.title}
+          </p>
+          <p className={styles.noticeText}>{PLAN.ended.text}</p>
+        </div>
+        <a href={href} className={styles.noticeAction} target="_blank" rel="noopener noreferrer">
+          {PLAN.ended.cta}
+        </a>
+      </aside>
+    );
+  }
+  return null;
 }
 
 function SignOut() {
@@ -128,7 +186,7 @@ function SignOut() {
       onClick={async () => {
         setLeaving(true);
         await createClient().auth.signOut();
-        router.replace("/flow/entrar");
+        router.replace("/pulse/entrar");
         router.refresh();
       }}
     >

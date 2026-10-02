@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 
-import { createClinic } from "@/app/(app)/flow/comecar/actions";
+import { createClinic } from "@/app/(app)/pulse/comecar/actions";
 import { Field, FormError } from "../demo/forms";
 import ui from "../demo/ui.module.css";
 

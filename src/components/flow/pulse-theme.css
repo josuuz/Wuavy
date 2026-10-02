@@ -1,0 +1,125 @@
+/*
+  Wuavy Pulse: the product's colours, in one place. Every Pulse root carries
+  data-pulse (the app shell, the sign-in frame); its surfaces inside carry
+  data-pulse-surface. Dark is the default; html[data-pulse-theme="light"]
+  (set before first paint by the boot script in app/layout.tsx, then by the
+  theme switch) turns the same tokens light. The site's semantic tokens
+  (--surface, --text, --text-2, --border, --mark, --focus) are mapped onto
+  these, so the screens' CSS never names a raw colour.
+*/
+
+[data-pulse] {
+  --pulse-bg: var(--wuavy-black);
+  --pulse-rail: var(--wuavy-carbon); /* the screens' rail */
+  --pulse-raised: var(--wuavy-carbon); /* fields, blocks on the agenda */
+  --pulse-card: color-mix(in srgb, var(--wuavy-paper) 3%, transparent);
+  --pulse-sheet: var(--wuavy-graphite); /* side panels and dialogs */
+  --pulse-ink: var(--wuavy-paper); /* what tints and hairlines are mixed from */
+  --pulse-fg: var(--wuavy-paper);
+  --pulse-muted: var(--wuavy-stone);
+  --pulse-border: color-mix(in srgb, var(--pulse-ink) 20%, transparent);
+  --pulse-border-soft: color-mix(in srgb, var(--pulse-ink) 16%, transparent);
+  --pulse-accent: var(--wuavy-signal);
+  --pulse-accent-text: var(--wuavy-signal); /* Signal as words, not as a field */
+  --pulse-on-accent: var(--wuavy-black);
+  --pulse-success: #4fbf7f;
+  --pulse-warning: #f2b13c;
+  --pulse-danger: #ff5a4e;
+  --pulse-shadow: none;
+  --pulse-backdrop: rgb(0 0 0 / 0.55);
+
+  --surface: var(--pulse-bg);
+  --text: var(--pulse-fg);
+  --text-2: var(--pulse-muted);
+  --border: var(--pulse-border);
+  --mark: var(--pulse-accent);
+  --on-mark: var(--pulse-on-accent);
+  --focus: var(--pulse-accent);
+  color-scheme: dark;
+}
+
+/* Light: off-white ground, white cards that sit apart from it, near-black
+   words. Signal stays the accent; as text it darkens enough to be read. */
+:root[data-pulse-theme="light"] [data-pulse] {
+  --pulse-bg: #f3f3f0;
+  --pulse-rail: #ebebe7;
+  --pulse-raised: #ffffff;
+  --pulse-card: #ffffff;
+  --pulse-sheet: #fbfbf9;
+  --pulse-ink: #121312;
+  --pulse-fg: #121312;
+  --pulse-muted: #5b5d58;
+  --pulse-border: color-mix(in srgb, var(--pulse-ink) 13%, transparent);
+  --pulse-border-soft: color-mix(in srgb, var(--pulse-ink) 10%, transparent);
+  --pulse-accent-text: #c4300a;
+  --pulse-success: #1d8a52;
+  --pulse-warning: #a86a00;
+  --pulse-danger: #c8281c;
+  --pulse-shadow: 0 1px 2px rgb(18 19 18 / 0.04), 0 8px 24px -14px rgb(18 19 18 / 0.16);
+  --pulse-backdrop: rgb(18 19 18 / 0.3);
+  --focus: var(--pulse-ink);
+  color-scheme: light;
+}
+
+[data-pulse-surface="rail"] {
+  --surface: var(--pulse-rail);
+  --border: var(--pulse-border-soft);
+}
+
+[data-pulse-surface="sheet"] {
+  --surface: var(--pulse-sheet);
+  --border: var(--pulse-border-soft);
+}
+
+/* The Pulse's sign: a point and the ring it sends out, a signal being read.
+   Used where the Pulse is listening or working, never as decoration. */
+.pulse-dot {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pulse-accent);
+}
+
+.pulse-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--pulse-accent);
+  animation: pulse-ring 2.4s var(--wuavy-ease-out) infinite;
+}
+
+@keyframes pulse-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  70%,
+  to {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the ring still goes out, slower and shorter. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot::after {
+    animation-name: pulse-ring-soft;
+    animation-duration: 4.8s;
+  }
+}
+
+@keyframes pulse-ring-soft {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70%,
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}

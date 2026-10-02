@@ -32,7 +32,7 @@ export function Automations() {
       ) : null}
 
       <p className={styles.preview} role="note">
-        <strong>Preview.</strong> As automações mostram o que o Flow faria: nenhuma mensagem é enviada e nenhuma integração com
+        <strong>Preview.</strong> As automações mostram o que o Pulse faria: nenhuma mensagem é enviada e nenhuma integração com
         WhatsApp está ativa {live ? "ainda" : "nesta demo"}.
       </p>
 
@@ -46,7 +46,7 @@ export function Automations() {
 }
 
 function Rule({ rule }: { rule: AutomationRule }) {
-  const { data, dispatch } = useFlow();
+  const { data, dispatch, access } = useFlow();
   const runs = data.automationRuns.filter((r) => r.ruleId === rule.id).slice(0, 2);
   const steps: [string, string[]][] = [
     ["Quando", [rule.when]],
@@ -64,6 +64,7 @@ function Rule({ rule }: { rule: AutomationRule }) {
           aria-checked={rule.active}
           aria-label={`${rule.name}: ${rule.active ? "ativa" : "pausada"}`}
           className={styles.switch}
+          disabled={!access.canEdit}
           onClick={() => dispatch({ type: "toggleRule", id: rule.id })}
         >
           <span aria-hidden="true" />
