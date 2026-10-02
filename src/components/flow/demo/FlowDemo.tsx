@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -16,7 +17,8 @@ import { pad } from "@/lib/utils";
 import "../pulse-theme.css";
 import { ThemeToggle } from "../ThemeToggle";
 import { AskFlow } from "./AskFlow";
-import { APP_BASE, BASE, MENU, PLAN, VIEWS, viewHref } from "./copy";
+import { APP_BASE, BASE, CHECKOUT, MENU, PLAN, VIEWS, viewHref } from "./copy";
+import { PaymentMethod } from "./forms";
 import { Sheet } from "./Sheet";
 import { FlowProvider, useFlow } from "./store";
 import ui from "./ui.module.css";
@@ -54,15 +56,12 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
   const current = VIEWS.find((v) => viewHref(v.slug, base) === pathname) ?? VIEWS[0];
   const open = ops.filter((o) => o.count > 0 && o.status !== "resolvida").length;
   const back = recovered(data).total;
-  // Whoever is not paying yet: the demo, a trial, an ended trial.
-  const canSubscribe = access.isDemoMode || access.isTrial || access.isReadOnly;
-  const plan = access.isDemoMode
-    ? "Demo · dados fictícios"
-    : access.isReadOnly
-      ? PLAN.ended.badge
-      : access.isTrial
-        ? PLAN.trial(access.trialDaysLeft)
-        : null;
+  const status = access.subscriptionStatus;
+  // Whoever is not paying: the demo's visitor, a clinic whose subscription was cancelled.
+  const canSubscribe = access.isDemoMode || status === "cancelled";
+  const plan = access.isDemoMode ? "Demo · dados fictícios" : status ? PLAN.chip[status] : null;
+  // The chip draws the eye only when the subscription asks for something.
+  const tone = status && status !== "active" ? "ended" : undefined;
   const subscribe = () => setSubscribing(true);
 
   return (
@@ -81,17 +80,15 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
           </div>
         </div>
         <p className={styles.org}>
+          {data.organization.logoUrl ? (
+            <Image className={styles.logo} src={data.organization.logoUrl} alt="" width={28} height={28} unoptimized />
+          ) : null}
           {data.organization.name}
           {account ? <span>{account.name}</span> : null}
           {plan ? (
-            <span className={styles.plan} data-tone={access.isReadOnly ? "ended" : undefined}>
+            <span className={styles.plan} data-tone={tone}>
               {plan}
             </span>
-          ) : null}
-          {access.isTrial ? (
-            <button type="button" className={`${styles.signOut} ${styles.orgSubscribe}`} onClick={subscribe}>
-              {PLAN.subscribe.open}
-            </button>
           ) : null}
           {account ? <SignOut /> : null}
         </p>
@@ -143,7 +140,7 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
             {access.isDemoMode ? (
               <span className={styles.demoChip}>{PLAN.demo.badge}</span>
             ) : plan ? (
-              <span className={styles.planChip} data-tone={access.isReadOnly ? "ended" : undefined}>
+              <span className={styles.planChip} data-tone={tone}>
                 {plan}
               </span>
             ) : null}
@@ -171,9 +168,10 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
   );
 }
 
-/** Above the work: the demo says it is one; an ended trial says what happens now. A trial in course stays quiet. */
+/** Above the work: the demo says it is one; a subscription that needs something says what. An active one stays quiet. */
 function PlanNotice({ onSubscribe }: { onSubscribe: () => void }) {
   const { access } = useFlow();
+  const status = access.subscriptionStatus;
   if (access.isDemoMode) {
     const href = contactHref(site.contact.primary, PLAN.demo.topic);
     return (
@@ -189,18 +187,21 @@ function PlanNotice({ onSubscribe }: { onSubscribe: () => void }) {
       </aside>
     );
   }
-  if (access.isReadOnly) {
+  if (status === "past_due" || status === "pending" || status === "cancelled") {
+    const notice = PLAN.notice[status];
     return (
-      <aside className={styles.notice} data-tone="ended" aria-labelledby="fim-do-teste">
+      <aside className={styles.notice} data-tone="ended" aria-labelledby="aviso-do-plano">
         <div className={styles.noticeBody}>
-          <p id="fim-do-teste" className={styles.noticeTitle}>
-            {PLAN.ended.title}
+          <p id="aviso-do-plano" className={styles.noticeTitle}>
+            {notice.title}
           </p>
-          <p className={styles.noticeText}>{PLAN.ended.text}</p>
+          <p className={styles.noticeText}>{notice.text}</p>
         </div>
-        <button type="button" className={styles.noticeAction} onClick={onSubscribe} aria-haspopup="dialog">
-          {PLAN.ended.cta}
-        </button>
+        {status === "cancelled" ? (
+          <button type="button" className={styles.noticeAction} onClick={onSubscribe} aria-haspopup="dialog">
+            {PLAN.notice.cancelled.cta}
+          </button>
+        ) : null}
       </aside>
     );
   }
@@ -208,14 +209,13 @@ function PlanNotice({ onSubscribe }: { onSubscribe: () => void }) {
 }
 
 /**
- * The subscription, in one compact dialog. Checkout is not connected yet:
- * with PLAN.subscribe.checkoutUrl set the button goes there; until then it
- * opens the Wuavy contact with the subject filled in.
+ * The subscription, in one compact dialog: the plan, how it is paid, and the
+ * way to the checkout, which signs the person in first when needed. Nothing
+ * here charges anything; the checkout and the server do.
  */
 function Subscribe({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { access } = useFlow();
   const offer = PLAN.subscribe;
-  const checkout = offer.checkoutUrl ?? contactHref(site.contact.primary, offer.topic);
   return (
     <Sheet centered open={open} onClose={onClose} title={offer.title}>
       <p className={ui.price}>
@@ -228,12 +228,13 @@ function Subscribe({ open, onClose }: { open: boolean; onClose: () => void }) {
           <li key={item}>{item}</li>
         ))}
       </ul>
+      <PaymentMethod />
       <div className={ui.modalActions}>
-        <a href={checkout} className={ui.primary} target="_blank" rel="noopener noreferrer" data-checkout="">
+        <Link href={CHECKOUT} className={ui.primary} data-checkout="">
           {offer.cta}
-        </a>
+        </Link>
         <button type="button" className={ui.quiet} onClick={onClose}>
-          {access.isDemoMode ? offer.back.demo : offer.back.trial}
+          {access.isDemoMode ? offer.back.demo : offer.back.other}
         </button>
       </div>
     </Sheet>

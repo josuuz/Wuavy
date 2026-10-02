@@ -445,8 +445,13 @@
   min-height: 2.5rem;
 }
 
-.orgSubscribe {
-  color: var(--pulse-accent-text);
+/* The clinic's own logo, from onboarding, beside its name. */
+.logo {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 3px;
+  object-fit: contain;
+  background: var(--pulse-raised);
 }
 
 :is(.noticeCta, .noticeAction, .subscribe, .railValue):focus-visible {
@@ -476,8 +481,7 @@
     margin: 1.25rem clamp(1.5rem, 3vw, 2.75rem) 0;
   }
 
-  .noticeSubscribe,
-  .orgSubscribe {
+  .noticeSubscribe {
     display: none;
   }
 

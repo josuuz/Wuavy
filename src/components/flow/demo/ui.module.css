@@ -1082,6 +1082,58 @@
   }
 }
 
+/* ── How the subscription is paid: one method, shown as the chosen one ── */
+.method {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.methodOption {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--pulse-accent-text);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--pulse-accent) 8%, transparent);
+}
+
+.methodName {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 640;
+}
+
+/* A chosen radio, drawn: Signal ring, the surface inside. */
+.methodName::before {
+  content: "";
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 0.27rem solid var(--pulse-accent);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.methodBadge {
+  margin-left: auto;
+  padding: 0.18rem 0.4rem;
+  border-radius: 2px;
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+
+.methodNote {
+  padding-left: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
 /* ── A message the Pulse prepared and nobody sent ── */
 .prepared {
   display: grid;

@@ -38,6 +38,341 @@
   outline-offset: 2px;
 }
 
+/* ── Onboarding: one step at a time, choices as the app's chips ── */
+.step {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.step[hidden] {
+  display: none;
+}
+
+.group {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.choice {
+  position: relative;
+}
+
+/* The real input covers its chip, invisible: it takes the click and the keyboard. */
+.choice input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.choice span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  color: var(--text-2);
+  transition:
+    background-color var(--duration-ui) linear,
+    border-color var(--duration-ui) linear,
+    color var(--duration-ui) linear;
+}
+
+.choice input:checked + span {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.choice input:focus-visible + span {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.8rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color var(--duration-ui) linear;
+}
+
+.logo:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.logoMark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 3.5rem;
+  height: 3.5rem;
+  overflow: hidden;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--pulse-ink) 6%, transparent);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.logoMark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logoText {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.logoText strong {
+  font-weight: 640;
+}
+
+.logoText span {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .choice:hover input:not(:checked) + span,
+  .logo:hover {
+    border-color: var(--text);
+    color: var(--text);
+  }
+}
+
+.ready,
+.state {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+}
+
+/* ── Checkout: the card form from Mercado Pago, in the Pulse's frame ── */
+.brick {
+  display: grid;
+  min-height: 12rem;
+  align-content: start;
+}
+
+.brickLoading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
+.processing {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: center;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.processingText {
+  font-size: 1.0625rem;
+  font-weight: 640;
+}
+
+/* The Pulse's sign at work: a point and the rings it sends out. */
+.signal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.signal[data-size="small"] {
+  width: 3rem;
+  height: 3rem;
+}
+
+.signal::before {
+  content: "";
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--pulse-accent);
+  box-shadow: 0 0 0 0.35rem color-mix(in srgb, var(--pulse-accent) 18%, transparent);
+  animation: signal-core 520ms var(--wuavy-ease-out) both;
+}
+
+.signal > span {
+  position: absolute;
+  inset: 0;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin: auto;
+  border: 1px solid var(--pulse-accent);
+  border-radius: 50%;
+  opacity: 0;
+  animation: signal-ring 1500ms var(--wuavy-ease-out) both;
+}
+
+.signal > span:nth-child(2) {
+  animation-delay: 260ms;
+}
+
+.signal > span:nth-child(3) {
+  animation-delay: 520ms;
+}
+
+.signal[data-loop] > span {
+  animation-duration: 1800ms;
+  animation-iteration-count: infinite;
+}
+
+/* ── Payment confirmed: the screen dims, the sign sends its rings, the sentence lands ── */
+.activated {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--pulse-backdrop, rgb(0 0 0 / 0.55));
+  animation: dim 420ms var(--wuavy-ease-out) both;
+}
+
+.activatedPanel {
+  width: min(100%, 26rem);
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 2.25rem 1.75rem 2rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--pulse-sheet);
+  color: var(--text);
+  text-align: center;
+  box-shadow: 0 28px 70px -30px rgb(0 0 0 / 0.6);
+  animation: settle 560ms var(--wuavy-ease-out) 80ms both;
+}
+
+.confirmed {
+  margin-top: 0.35rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pulse-accent-text);
+  animation: appear 420ms var(--wuavy-ease-out) 350ms both;
+}
+
+.activatedTitle {
+  font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  text-wrap: balance;
+  outline: none;
+  animation: rise 520ms var(--wuavy-ease-out) 700ms both;
+}
+
+.activatedText {
+  color: var(--text-2);
+  animation: rise 520ms var(--wuavy-ease-out) 850ms both;
+}
+
+.activatedAction {
+  margin-top: 0.9rem;
+  animation: rise 520ms var(--wuavy-ease-out) 1000ms both;
+}
+
+@keyframes signal-core {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+@keyframes signal-ring {
+  from {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(6.5);
+  }
+}
+
+@keyframes signal-ring-soft {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3);
+  }
+}
+
+@keyframes dim {
+  from {
+    background-color: transparent;
+  }
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the same sequence, without travel; the rings go out shorter. */
+@media (prefers-reduced-motion: reduce) {
+  .signal > span {
+    animation-name: signal-ring-soft;
+  }
+
+  .activatedPanel,
+  .activatedTitle,
+  .activatedText,
+  .activatedAction {
+    animation-name: appear;
+  }
+}
+
 /* The product mark, as in the app's rail: outlined in Signal. */
 .product {
   padding: 0.22rem 0.4rem;

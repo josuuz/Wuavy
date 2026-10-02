@@ -1,0 +1,35 @@
+name: Disable Vercel SSO
+
+on:
+  deployment_status:
+  workflow_dispatch:
+
+jobs:
+  disable-sso:
+    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Get project name
+        id: project
+        run: |
+          PROJECT_NAME=$(node -e "console.log(require('./vercel.json').name || require('./package.json').name.replace(/[^a-z0-9.-]/g, ''))")
+          echo "name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+
+      - name: Disable SSO Protection
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          npx -y vercel@latest project protection disable "${{ steps.project.outputs.name }}" --sso 2>&1 | tee /tmp/disable-sso.log
+          if grep -q "ssoProtection.*false\|ssoProtection.*null" /tmp/disable-sso.log; then
+            echo "✓ SSO desativado com sucesso"
+          else
+            echo "⚠ Verificar resultado do comando acima"
+          fi

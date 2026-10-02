@@ -611,3 +611,19 @@ export async function adjustLot(lotId: string, form: FormData): Promise<Result> 
     return log(db, org, `Estoque ajustado (${REASONS[reason]}): ${lot.products?.name ?? "produto"}, lote ${lot.lot_code}.`);
   });
 }
+
+/* ── Automations ───────────────────────────────────────────── */
+
+/** Switches one of the clinic's automations on or off. */
+export async function setRuleActive(ruleId: string, active: boolean): Promise<Result> {
+  return write(async (db, org) =>
+    affected(
+      await db
+        .from("automation_rules")
+        .update({ active: active === true })
+        .eq("id", id(ruleId))
+        .eq("organization_id", org)
+        .select("id"),
+    ),
+  );
+}

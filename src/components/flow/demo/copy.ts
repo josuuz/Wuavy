@@ -1,3 +1,4 @@
+import type { SubscriptionStatus } from "@/lib/flow/access";
 import { plural } from "@/lib/flow/format";
 import type {
   AppointmentStatus,
@@ -46,7 +47,10 @@ const FOCUS_VIEW: Record<Focus["to"], string> = {
 /** The screen a focus opens. */
 export const focusHref = (focus: Focus, base = BASE) => viewHref(FOCUS_VIEW[focus.to], base);
 
-/** What the Pulse says about the clinic's plan: the demo, the trial, its end. CTAs go to the Wuavy contact. */
+/** Where subscribing happens: the checkout, after signing in or creating the account. */
+export const CHECKOUT = "/pulse/assinar";
+
+/** What the Pulse says about the clinic's plan: the demo, the subscription and how it stands. */
 export const PLAN = {
   demo: {
     badge: "Demo",
@@ -68,19 +72,31 @@ export const PLAN = {
       "Automações",
     ],
     cta: "Assinar Pulse — R$ 297/mês",
-    back: { demo: "Continuar explorando a demo", trial: "Agora não" },
+    back: { demo: "Continuar explorando a demo", other: "Agora não" },
     topic: "assinar o Wuavy Pulse",
-    /** Where checkout will live. Until it is set, subscribing goes through the Wuavy contact. */
-    checkoutUrl: process.env.NEXT_PUBLIC_PULSE_CHECKOUT_URL,
   },
-  trial: (daysLeft: number | null) =>
-    daysLeft === null ? "Em teste" : daysLeft <= 1 ? "Teste · último dia" : `Teste · ${daysLeft} dias restantes`,
-  ended: {
-    badge: "Somente leitura",
-    title: "Seu período de teste terminou.",
-    text: "Seus dados continuam seguros por enquanto. Ative o Pulse para continuar usando todas as funções.",
-    cta: "Ativar Pulse",
-    topic: "ativar o Wuavy Pulse",
+  /** The plan's chip, by status: discreet once the clinic pays. */
+  chip: {
+    active: "Plano Pulse",
+    past_due: "Pagamento em atraso",
+    pending: "Pagamento em processamento",
+    cancelled: "Assinatura cancelada",
+  } satisfies Record<SubscriptionStatus, string>,
+  /** Above the work, when the subscription asks for attention. Active says nothing. */
+  notice: {
+    past_due: {
+      title: "Não conseguimos cobrar a mensalidade.",
+      text: "O Mercado Pago vai tentar de novo nos próximos dias. Confira se o cartão está válido e com limite. Tudo continua funcionando.",
+    },
+    pending: {
+      title: "Seu pagamento está sendo processado.",
+      text: "Assim que o Mercado Pago confirmar, o Pulse volta a liberar tudo. Seus dados continuam aqui.",
+    },
+    cancelled: {
+      title: "Sua assinatura do Pulse foi cancelada.",
+      text: "Seus dados continuam aqui, só para consulta. Assine de novo para voltar a criar e editar.",
+      cta: "Assinar de novo",
+    },
   },
 };
 

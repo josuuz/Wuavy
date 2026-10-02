@@ -7,9 +7,13 @@ import "../pulse-theme.css";
 import { ThemeToggle } from "../ThemeToggle";
 import styles from "./AuthFrame.module.css";
 
-/* The frame of the Pulse's doors (sign in, create the clinic): the product mark, a title, one form. */
+/*
+  The frame of the Pulse's doors (sign in, subscribe, set up the clinic): the
+  product mark, a title, one form. Steps that change their own title (the
+  checkout, onboarding) leave it out and draw their header inside.
+*/
 
-export function AuthFrame({ title, lead, children }: { title: string; lead: string; children: ReactNode }) {
+export function AuthFrame({ title, lead, children }: { title?: string; lead?: string; children: ReactNode }) {
   return (
     <main id="conteudo" className={styles.frame} data-pulse="">
       <div className={styles.card}>
@@ -20,10 +24,12 @@ export function AuthFrame({ title, lead, children }: { title: string; lead: stri
           </Link>
           <ThemeToggle />
         </div>
-        <header className={ui.head}>
-          <h1 className={ui.title}>{title}</h1>
-          <p className={ui.lead}>{lead}</p>
-        </header>
+        {title ? (
+          <header className={ui.head}>
+            <h1 className={ui.title}>{title}</h1>
+            {lead ? <p className={ui.lead}>{lead}</p> : null}
+          </header>
+        ) : null}
         {children}
       </div>
     </main>

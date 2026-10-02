@@ -110,6 +110,27 @@ export function FocusLink({ focus, className, children }: { focus: Focus; classN
 /** Digits only, to tell whether two phone numbers are the same. */
 export const digits = (phone: string) => phone.replace(/\D/g, "");
 
+/**
+ * How the subscription is paid: the card, charged every month on its own.
+ * Pix and boleto are not offered because neither charges by itself each month.
+ */
+export function PaymentMethod() {
+  return (
+    <section className={styles.method} aria-labelledby="forma-de-pagamento">
+      <h3 id="forma-de-pagamento" className={styles.label}>
+        Forma de pagamento
+      </h3>
+      <div className={styles.methodOption}>
+        <p className={styles.methodName}>
+          Cartão de crédito <span className={styles.methodBadge}>Recomendado</span>
+        </p>
+        <p className={styles.methodNote}>Cobrança automática de R$ 297/mês.</p>
+      </div>
+      <p className={styles.fine}>Pix e boleto não fazem a cobrança automática de cada mês; por isso a assinatura é no cartão.</p>
+    </section>
+  );
+}
+
 const APPROVAL = ["Pulse identifica", "Recomenda", "Prepara", "Você aprova"] as const;
 
 /** Where an action stands (0 to 3; 4 when it is all done). The Pulse identifies, recommends and prepares; sending always waits for a person. */

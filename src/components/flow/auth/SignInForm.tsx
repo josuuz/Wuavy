@@ -33,9 +33,11 @@ interface SignInFormProps {
   initialMode?: SignInMode;
   /** A confirmation to show above the form, such as a password just reset. */
   notice?: string;
+  /** Where to go once in, when the person came to do something (the checkout). */
+  then?: string;
 }
 
-export function SignInForm({ linkFailed, initialMode = "entrar", notice }: SignInFormProps) {
+export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }: SignInFormProps) {
   const router = useRouter();
   const [mode, setMode] = useState<SignInMode>(initialMode);
   const [pending, setPending] = useState(false);
@@ -74,7 +76,7 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice }: SignI
         setPending(false);
         return;
       }
-      router.replace("/pulse/app");
+      router.replace(then ?? "/pulse/app");
       router.refresh();
       return;
     }
@@ -90,11 +92,12 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice }: SignI
       return;
     }
     if (data.session) {
-      router.replace("/pulse/comecar");
+      router.replace(then ?? "/pulse/comecar");
       router.refresh();
       return;
     }
-    // Email confirmation is on: the link brings the person back, signed in.
+    // Email confirmation is on: the link brings the person back, signed in, to onboarding,
+    // which sends anyone who hasn't paid yet on to the checkout.
     setSent({ to: email, reset: false });
     setPending(false);
   }
@@ -110,7 +113,8 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice }: SignI
           </p>
         ) : (
           <p>
-            Enviamos um link para <strong>{sent.to}</strong>. Abra-o neste navegador para continuar e criar a sua clínica.
+            Enviamos um link para <strong>{sent.to}</strong>. Abra-o neste navegador para continuar{" "}
+            {then ? "a assinatura" : "e criar a sua clínica"}.
           </p>
         )}
       </div>

@@ -155,6 +155,77 @@ const TODAY: [number, number, number, string, Appointment["status"]][] = [
   [17, 30, 12, "proc_toxina", "agendado"],
 ];
 
+/**
+ * The automations every clinic starts from: all running in the demo, and
+ * given to a real clinic at onboarding switched off, for it to choose.
+ */
+export const RULE_TEMPLATES: Omit<AutomationRule, "organizationId" | "active">[] = [
+  {
+    id: "rule_reminder",
+    kind: "reminder",
+    name: "Lembrete de atendimento",
+    when: "Falta 1 dia para o atendimento",
+    conditions: ["Aguardando confirmação"],
+    actions: ["Preparar mensagem de confirmação", "Avisar a recepção se não houver resposta"],
+  },
+  {
+    id: "rule_lead",
+    kind: "lead_followup",
+    name: "Orçamento sem resposta",
+    when: "Orçamento sem resposta por 3 dias",
+    conditions: ["O orçamento continua aberto"],
+    actions: ["Preparar follow-up com o procedimento de interesse", "Avisar a recepção"],
+  },
+  {
+    id: "rule_idle",
+    kind: "lead_idle",
+    name: "Lead parado",
+    when: "Um contato fica 2 dias sem conversa",
+    conditions: ["Ainda não recebeu orçamento"],
+    actions: ["Preparar mensagem retomando a conversa", "Avisar a recepção"],
+  },
+  {
+    id: "rule_return",
+    kind: "patient_return",
+    name: "Retorno de paciente",
+    when: "O retorno do procedimento chegou",
+    conditions: ["Sem retorno marcado"],
+    actions: ["Criar a oportunidade de retorno", "Avisar o responsável", "Preparar convite com horários livres"],
+  },
+  {
+    id: "rule_noshow",
+    kind: "no_show",
+    name: "Falta sem remarcação",
+    when: "Um paciente faltou",
+    conditions: ["Nada remarcado no dia seguinte"],
+    actions: ["Preparar convite para remarcar", "Avisar a recepção"],
+  },
+  {
+    id: "rule_stock",
+    kind: "stock_expiry",
+    name: "Estoque próximo da validade",
+    when: "Um lote chega a 45 dias da validade",
+    conditions: ["Produto usado em procedimentos ativos"],
+    actions: ["Cruzar pacientes com histórico compatível", "Sugerir campanha para revisão"],
+  },
+  {
+    id: "rule_slot",
+    kind: "open_slot",
+    name: "Horário vago",
+    when: "Um cancelamento abre um horário",
+    conditions: ["Horário nas próximas 48 horas"],
+    actions: ["Procurar na lista de espera", "Encontrar pacientes compatíveis", "Preparar convite"],
+  },
+  {
+    id: "rule_post",
+    kind: "post_visit",
+    name: "Pós-atendimento",
+    when: "Um atendimento é concluído",
+    conditions: ["Esperar 2 dias"],
+    actions: ["Preparar mensagem de cuidado", "Registrar o próximo retorno"],
+  },
+];
+
 export function createDemoData(clock = new Date()): FlowData {
   const rand = seeded(20260929);
   const int = (min: number, max: number) => min + Math.floor(rand() * (max - min + 1));
@@ -350,88 +421,7 @@ export function createDemoData(clock = new Date()): FlowData {
     expiresAt: at(days),
   }));
 
-  const automationRules: AutomationRule[] = [
-    {
-      id: "rule_reminder",
-      ...org,
-      kind: "reminder",
-      name: "Lembrete de atendimento",
-      when: "Falta 1 dia para o atendimento",
-      conditions: ["Aguardando confirmação"],
-      actions: ["Preparar mensagem de confirmação", "Avisar a recepção se não houver resposta"],
-      active: true,
-    },
-    {
-      id: "rule_lead",
-      ...org,
-      kind: "lead_followup",
-      name: "Orçamento sem resposta",
-      when: "Orçamento sem resposta por 3 dias",
-      conditions: ["O orçamento continua aberto"],
-      actions: ["Preparar follow-up com o procedimento de interesse", "Avisar a recepção"],
-      active: true,
-    },
-    {
-      id: "rule_idle",
-      ...org,
-      kind: "lead_idle",
-      name: "Lead parado",
-      when: "Um contato fica 2 dias sem conversa",
-      conditions: ["Ainda não recebeu orçamento"],
-      actions: ["Preparar mensagem retomando a conversa", "Avisar a recepção"],
-      active: true,
-    },
-    {
-      id: "rule_return",
-      ...org,
-      kind: "patient_return",
-      name: "Retorno de paciente",
-      when: "O retorno do procedimento chegou",
-      conditions: ["Sem retorno marcado"],
-      actions: ["Criar a oportunidade de retorno", "Avisar o responsável", "Preparar convite com horários livres"],
-      active: true,
-    },
-    {
-      id: "rule_noshow",
-      ...org,
-      kind: "no_show",
-      name: "Falta sem remarcação",
-      when: "Um paciente faltou",
-      conditions: ["Nada remarcado no dia seguinte"],
-      actions: ["Preparar convite para remarcar", "Avisar a recepção"],
-      active: true,
-    },
-    {
-      id: "rule_stock",
-      ...org,
-      kind: "stock_expiry",
-      name: "Estoque próximo da validade",
-      when: "Um lote chega a 45 dias da validade",
-      conditions: ["Produto usado em procedimentos ativos"],
-      actions: ["Cruzar pacientes com histórico compatível", "Sugerir campanha para revisão"],
-      active: true,
-    },
-    {
-      id: "rule_slot",
-      ...org,
-      kind: "open_slot",
-      name: "Horário vago",
-      when: "Um cancelamento abre um horário",
-      conditions: ["Horário nas próximas 48 horas"],
-      actions: ["Procurar na lista de espera", "Encontrar pacientes compatíveis", "Preparar convite"],
-      active: true,
-    },
-    {
-      id: "rule_post",
-      ...org,
-      kind: "post_visit",
-      name: "Pós-atendimento",
-      when: "Um atendimento é concluído",
-      conditions: ["Esperar 2 dias"],
-      actions: ["Preparar mensagem de cuidado", "Registrar o próximo retorno"],
-      active: true,
-    },
-  ];
+  const automationRules: AutomationRule[] = RULE_TEMPLATES.map((rule) => ({ ...rule, ...org, active: true }));
 
   const automationRuns: AutomationRun[] = (
     [

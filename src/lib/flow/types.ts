@@ -7,11 +7,20 @@
 
 export type ID = string;
 
+/* The clinic's profile, from onboarding (organizations, migration 0003). */
+export const SEGMENTS = ["estetica", "odontologia", "dermatologia", "harmonizacao", "multidisciplinar", "outro"] as const;
+/** About how many professionals see patients. */
+export const TEAM_SIZES = ["1", "2-3", "4-6", "7+"] as const;
+/** The logo's largest size: under the Server Actions' 1 MB body, with room for the rest of the form. */
+export const LOGO_MAX = 800 * 1024;
+
 export interface Organization {
   id: ID;
   name: string;
-  segment: "estetica";
+  /** The kind of clinic, chosen at onboarding. */
+  segment: (typeof SEGMENTS)[number];
   city: string;
+  logoUrl?: string;
 }
 
 export interface User {

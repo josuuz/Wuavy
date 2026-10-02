@@ -1,9 +1,10 @@
 "use client";
 
+import { setRuleActive } from "@/lib/flow/actions";
 import { brl, daysFrom, plural, relDay } from "@/lib/flow/format";
 import { valueDelivered } from "@/lib/flow/insights";
 import type { AutomationRule } from "@/lib/flow/types";
-import { Intro } from "../forms";
+import { FormError, Intro, useWrite } from "../forms";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
@@ -33,6 +34,8 @@ export function Automations() {
           As automações preparam o próximo passo sozinhas: lembrete na véspera, cuidado depois do atendimento, convite de
           retorno e follow-up de orçamento. Elas usam o retorno e a duração de cada procedimento.
         </Intro>
+      ) : live && !value.revenue ? (
+        <p className={styles.lead}>Escolha um modelo e ative. O impacto de cada automação aparece aqui conforme ela trabalha.</p>
       ) : (
         <section className={styles.value} aria-labelledby="impacto">
           <h2 id="impacto" className={styles.valueTitle}>
@@ -76,7 +79,10 @@ export function Automations() {
 }
 
 function Rule({ rule }: { rule: AutomationRule }) {
-  const { data, dispatch, access } = useFlow();
+  const { data, dispatch, access, live } = useFlow();
+  const { pending, error, write } = useWrite();
+  // A real clinic's switch is saved; the demo's lives in memory.
+  const toggle = () => (live ? write(() => setRuleActive(rule.id, !rule.active)) : dispatch({ type: "toggleRule", id: rule.id }));
   const runs = data.automationRuns.filter((r) => r.ruleId === rule.id);
   const month = runs.filter((r) => daysFrom(data.now, r.ranAt) >= -30);
   const brought = month.reduce((s, r) => s + r.recovered, 0);
@@ -97,13 +103,14 @@ function Rule({ rule }: { rule: AutomationRule }) {
           aria-checked={rule.active}
           aria-label={`${rule.name}: ${rule.active ? "ativa" : "pausada"}`}
           className={styles.switch}
-          disabled={!access.canEdit}
-          onClick={() => dispatch({ type: "toggleRule", id: rule.id })}
+          disabled={!access.canEdit || pending}
+          onClick={toggle}
         >
           <span aria-hidden="true" />
           {rule.active ? "Ativa" : "Pausada"}
         </button>
       </header>
+      <FormError error={error} />
 
       <ol className={styles.flowSteps}>
         {steps.map(([label, items]) => (

@@ -333,9 +333,45 @@ export type Database = {
         ];
       };
       organizations: {
-        Row: { city: string | null; created_at: string; id: string; name: string; segment: string };
-        Insert: { city?: string | null; created_at?: string; id?: string; name: string; segment?: string };
-        Update: { city?: string | null; created_at?: string; id?: string; name?: string; segment?: string };
+        Row: {
+          city: string | null;
+          closing_time: string | null;
+          created_at: string;
+          id: string;
+          logo_url: string | null;
+          name: string;
+          opening_time: string | null;
+          segment: string;
+          team_size: string | null;
+          whatsapp: string | null;
+          work_days: number[];
+        };
+        Insert: {
+          city?: string | null;
+          closing_time?: string | null;
+          created_at?: string;
+          id?: string;
+          logo_url?: string | null;
+          name: string;
+          opening_time?: string | null;
+          segment?: string;
+          team_size?: string | null;
+          whatsapp?: string | null;
+          work_days?: number[];
+        };
+        Update: {
+          city?: string | null;
+          closing_time?: string | null;
+          created_at?: string;
+          id?: string;
+          logo_url?: string | null;
+          name?: string;
+          opening_time?: string | null;
+          segment?: string;
+          team_size?: string | null;
+          whatsapp?: string | null;
+          work_days?: number[];
+        };
         Relationships: [];
       };
       patients: {
@@ -455,6 +491,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "products_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      subscriptions: {
+        Row: {
+          created_at: string;
+          current_period_end: string | null;
+          id: string;
+          organization_id: string | null;
+          provider: string;
+          provider_subscription_id: string | null;
+          started_at: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          current_period_end?: string | null;
+          id?: string;
+          organization_id?: string | null;
+          provider?: string;
+          provider_subscription_id?: string | null;
+          started_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          current_period_end?: string | null;
+          id?: string;
+          organization_id?: string | null;
+          provider?: string;
+          provider_subscription_id?: string | null;
+          started_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_organization_id_fkey";
             columns: ["organization_id"];
             isOneToOne: false;
             referencedRelation: "organizations";

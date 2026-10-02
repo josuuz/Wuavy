@@ -64,34 +64,43 @@ export function Overview() {
   const booked = today.filter((s) => s.status === "ocupado").map((s) => s.appointment!);
   const patientName = (id: string) => data.patients.find((p) => p.id === id)?.name ?? "";
 
-  // A new clinic: the few steps that make the Pulse useful, until they are done.
+  // A real clinic's first steps, checked off as they happen. Until there is real data, they are the screen.
   const setup = [
+    { done: true, text: "Clínica criada", why: "A conta, a assinatura e o perfil da clínica estão prontos.", view: "" },
+    {
+      done: data.patients.length > 0,
+      text: "Adicionar o primeiro paciente",
+      why: "Quem já é cliente entra em Pacientes; quem está chegando, em Vendas.",
+      view: "pacientes",
+    },
     {
       done: data.procedures.length > 0,
-      text: "Cadastre os procedimentos",
-      why: "Preço, duração e retorno de cada um alimentam a agenda e as automações.",
+      text: "Configurar os procedimentos",
+      why: "Preço, duração e retorno de cada um alimentam a agenda e as oportunidades.",
       view: "procedimentos",
     },
     {
-      done: data.leads.length > 0 || data.patients.length > 0,
-      text: "Registre quem está conversando com a clínica",
-      why: "Cada contato fica em Vendas até agendar.",
-      view: "vendas",
-    },
-    {
       done: data.appointments.length > 0,
-      text: "Agende o primeiro atendimento",
-      why: "Quem agenda vira paciente, com histórico e próximo retorno.",
+      text: "Configurar a agenda",
+      why: "Marque o primeiro atendimento: é dele que vêm os retornos e os horários a preencher.",
       view: "agenda",
     },
     {
       done: data.products.length > 0,
-      text: "Registre os produtos em estoque",
-      why: "Opcional: o Pulse avisa o que está acabando e o que vence.",
+      text: "Cadastrar o estoque",
+      why: "O Pulse avisa o que está acabando e o que vence, e dá baixa sozinho.",
       view: "estoque",
     },
+    {
+      done: data.automationRules.some((r) => r.active),
+      text: "Criar a primeira automação",
+      why: "Escolha um modelo e ative: o Pulse prepara o próximo passo para a equipe aprovar.",
+      view: "automacoes",
+    },
   ];
-  const starting = live && setup.slice(0, 3).some((s) => !s.done);
+  const preparing = live && setup.some((s) => !s.done);
+  // Nothing real to read yet: no empty dashboards, only the checklist.
+  const starting = live && !data.patients.length && !data.leads.length && !data.appointments.length;
 
   // What to do now, in the order a front desk would do it: today's agenda first, then the money left waiting.
   const confirmToday = awaiting(data, 0);
@@ -218,53 +227,68 @@ export function Overview() {
   const multiple = Math.floor(value.revenue / PRICE);
   const feed = [...data.activities].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6);
 
+  const checklist = (
+    <section className={styles.panel} aria-labelledby="prepare">
+      <h2 id="prepare" className={styles.label}>
+        Prepare seu Pulse <span>{setup.filter((s) => s.done).length} de {setup.length}</span>
+      </h2>
+      <ol className={styles.setup}>
+        {setup.map((step) => (
+          <li key={step.text} data-done={step.done ? "" : undefined}>
+            <span className={styles.setupMark} aria-hidden="true">
+              {step.done ? "✓" : ""}
+            </span>
+            <p>
+              <strong>{step.text}</strong>
+              <span>{step.why}</span>
+            </p>
+            {step.done ? (
+              <span className={styles.when}>Feito</span>
+            ) : (
+              <Link href={viewHref(step.view, base)} className={styles.textAction}>
+                Fazer agora <span aria-hidden="true">→</span>
+              </Link>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+
+  if (starting) {
+    return (
+      <div className={styles.page}>
+        <h1 className={styles.greet}>
+          {hello}. <span>Seu Pulse está ativo. Vamos prepará-lo para a clínica.</span>
+        </h1>
+        {checklist}
+        <p className={styles.fine}>
+          Conforme a clínica usa o Pulse, esta tela passa a mostrar o que precisa de atenção, as oportunidades e a receita
+          recuperada.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       <h1 className={styles.greet}>
-        {hello}. <span>{starting ? "Vamos deixar a clínica pronta no Pulse." : "O que precisa da sua atenção agora?"}</span>
+        {hello}. <span>O que precisa da sua atenção agora?</span>
       </h1>
 
-      {starting ? null : (
-        <div className={styles.askStrip}>
-          <p className={styles.askStripLabel}>
-            <span className="pulse-dot" aria-hidden="true" />
-            Pergunte ao Pulse
-          </p>
-          {QUICK.map((q) => (
-            <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)}>
-              {q}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className={styles.askStrip}>
+        <p className={styles.askStripLabel}>
+          <span className="pulse-dot" aria-hidden="true" />
+          Pergunte ao Pulse
+        </p>
+        {QUICK.map((q) => (
+          <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)}>
+            {q}
+          </button>
+        ))}
+      </div>
 
-      {starting ? (
-        <section className={styles.panel} aria-labelledby="comece">
-          <h2 id="comece" className={styles.label}>
-            Comece por aqui
-          </h2>
-          <ol className={styles.setup}>
-            {setup.map((step, i) => (
-              <li key={step.view} data-done={step.done ? "" : undefined}>
-                <span className={styles.setupMark} aria-hidden="true">
-                  {step.done ? "✓" : i + 1}
-                </span>
-                <p>
-                  <strong>{step.text}</strong>
-                  <span>{step.why}</span>
-                </p>
-                {step.done ? (
-                  <span className={styles.when}>Feito</span>
-                ) : (
-                  <Link href={viewHref(step.view, base)} className={styles.textAction}>
-                    Abrir <span aria-hidden="true">→</span>
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
+      {preparing ? checklist : null}
 
       <div className={styles.duo}>
         <section className={styles.panel} aria-labelledby="atencao">
@@ -378,112 +402,108 @@ export function Overview() {
         )}
       </section>
 
-      {starting ? null : (
-        <section id="valor" className={styles.value} aria-labelledby="valor-titulo">
-          <h2 id="valor-titulo" className={styles.valueTitle}>
-            <span className="pulse-dot" aria-hidden="true" />
-            Receita recuperada pelo Pulse
-          </h2>
-          <dl className={styles.valueGrid}>
-            <div data-main="">
-              <dt>Últimos 30 dias</dt>
-              <dd>{brl(value.revenue)}</dd>
-            </div>
-            <div>
-              <dt>Oportunidades encontradas</dt>
-              <dd>{value.found}</dd>
-            </div>
-            <div>
-              <dt>Orçamentos recuperados</dt>
-              <dd>{value.quotes}</dd>
-            </div>
-            <div>
-              <dt>Leads convertidos</dt>
-              <dd>{value.leads}</dd>
-            </div>
-            <div>
-              <dt>Pacientes reativados</dt>
-              <dd>{value.patients}</dd>
-            </div>
-            <div>
-              <dt>Horários preenchidos</dt>
-              <dd>{value.slots}</dd>
-            </div>
-          </dl>
-          {value.revenue ? (
-            <p className={styles.roi}>
-              O Pulse custa {brl(PRICE)} por mês e ajudou a recuperar {brl(value.revenue)}
-              {multiple >= 1 ? (
-                <>
-                  : <strong>{multiple}× o valor da mensalidade</strong>.
-                </>
-              ) : (
-                "."
-              )}
-            </p>
-          ) : null}
-          <p className={styles.fine}>
-            {live
-              ? "Oportunidades abertas agora; recuperações dos últimos 30 dias, da operação da clínica."
-              : "Ilustrativo: calculado sobre os dados fictícios da demo. Oportunidades abertas agora; recuperações dos últimos 30 dias."}
+      <section id="valor" className={styles.value} aria-labelledby="valor-titulo">
+        <h2 id="valor-titulo" className={styles.valueTitle}>
+          <span className="pulse-dot" aria-hidden="true" />
+          Receita recuperada pelo Pulse
+        </h2>
+        <dl className={styles.valueGrid}>
+          <div data-main="">
+            <dt>Últimos 30 dias</dt>
+            <dd>{brl(value.revenue)}</dd>
+          </div>
+          <div>
+            <dt>Oportunidades encontradas</dt>
+            <dd>{value.found}</dd>
+          </div>
+          <div>
+            <dt>Orçamentos recuperados</dt>
+            <dd>{value.quotes}</dd>
+          </div>
+          <div>
+            <dt>Leads convertidos</dt>
+            <dd>{value.leads}</dd>
+          </div>
+          <div>
+            <dt>Pacientes reativados</dt>
+            <dd>{value.patients}</dd>
+          </div>
+          <div>
+            <dt>Horários preenchidos</dt>
+            <dd>{value.slots}</dd>
+          </div>
+        </dl>
+        {value.revenue ? (
+          <p className={styles.roi}>
+            O Pulse custa {brl(PRICE)} por mês e ajudou a recuperar {brl(value.revenue)}
+            {multiple >= 1 ? (
+              <>
+                : <strong>{multiple}× o valor da mensalidade</strong>.
+              </>
+            ) : (
+              "."
+            )}
           </p>
-        </section>
-      )}
+        ) : null}
+        <p className={styles.fine}>
+          {live
+            ? "Oportunidades abertas agora; recuperações dos últimos 30 dias, da operação da clínica."
+            : "Ilustrativo: calculado sobre os dados fictícios da demo. Oportunidades abertas agora; recuperações dos últimos 30 dias."}
+        </p>
+      </section>
 
-      {starting ? null : (
-        <div className={styles.duo}>
-          {live && !back.total ? null : (
-            <section className={styles.panel} aria-labelledby="recuperada">
-              <h2 id="recuperada" className={styles.label}>
-                De onde veio <span>últimos 30 dias</span>
-              </h2>
-              <ul className={styles.rows}>
-                {RECOVERED_FRONTS.map((front) => (
-                  <li key={front.label}>
-                    <span>{front.label}</span>
-                    <strong>{brl(front.kinds.reduce((s, kind) => s + (back.byKind.get(kind) ?? 0), 0))}</strong>
-                  </li>
-                ))}
-              </ul>
-              {live ? null : (
-                <p className={styles.fine}>Soma do que as automações ajudaram a trazer de volta, sobre dados ilustrativos.</p>
-              )}
-            </section>
-          )}
-
-          <section className={styles.panel} aria-labelledby="resultado">
-            <h2 id="resultado" className={styles.label}>
-              Resultado da clínica
+      <div className={styles.duo}>
+        {live && !back.total ? null : (
+          <section className={styles.panel} aria-labelledby="recuperada">
+            <h2 id="recuperada" className={styles.label}>
+              De onde veio <span>últimos 30 dias</span>
             </h2>
             <ul className={styles.rows}>
-              <li>
-                <span>
-                  Receita realizada <span className={styles.miniMeta}>últimos 30 dias · {plural(money.visits, "atendimento", "atendimentos")}</span>
-                </span>
-                <strong>{brl(money.realized)}</strong>
-              </li>
-              <li>
-                <span>
-                  Receita prevista <span className={styles.miniMeta}>agenda dos próximos 30 dias · {money.booked} marcados</span>
-                </span>
-                <strong>{brl(money.forecast)}</strong>
-              </li>
-              <li>
-                <span>Ticket médio</span>
-                <strong>{brl(money.ticket)}</strong>
-              </li>
-              <li>
-                <span>Recuperada pelo Pulse</span>
-                <strong className={styles.accentNumber}>{brl(back.total)}</strong>
-              </li>
+              {RECOVERED_FRONTS.map((front) => (
+                <li key={front.label}>
+                  <span>{front.label}</span>
+                  <strong>{brl(front.kinds.reduce((s, kind) => s + (back.byKind.get(kind) ?? 0), 0))}</strong>
+                </li>
+              ))}
             </ul>
-            <p className={styles.fine}>
-              Calculado pela agenda e pelo preço de cada procedimento. Contas a receber e inadimplência entram quando os
-              pagamentos forem registrados no Pulse.
-            </p>
+            {live ? null : (
+              <p className={styles.fine}>Soma do que as automações ajudaram a trazer de volta, sobre dados ilustrativos.</p>
+            )}
           </section>
-        </div>
-      )}
+        )}
+
+        <section className={styles.panel} aria-labelledby="resultado">
+          <h2 id="resultado" className={styles.label}>
+            Resultado da clínica
+          </h2>
+          <ul className={styles.rows}>
+            <li>
+              <span>
+                Receita realizada <span className={styles.miniMeta}>últimos 30 dias · {plural(money.visits, "atendimento", "atendimentos")}</span>
+              </span>
+              <strong>{brl(money.realized)}</strong>
+            </li>
+            <li>
+              <span>
+                Receita prevista <span className={styles.miniMeta}>agenda dos próximos 30 dias · {money.booked} marcados</span>
+              </span>
+              <strong>{brl(money.forecast)}</strong>
+            </li>
+            <li>
+              <span>Ticket médio</span>
+              <strong>{brl(money.ticket)}</strong>
+            </li>
+            <li>
+              <span>Recuperada pelo Pulse</span>
+              <strong className={styles.accentNumber}>{brl(back.total)}</strong>
+            </li>
+          </ul>
+          <p className={styles.fine}>
+            Calculado pela agenda e pelo preço de cada procedimento. Contas a receber e inadimplência entram quando os
+            pagamentos forem registrados no Pulse.
+          </p>
+        </section>
+      </div>
 
       <section className={styles.feedBlock} aria-labelledby="atividade">
         <h2 id="atividade" className={styles.label}>

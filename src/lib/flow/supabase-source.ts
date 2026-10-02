@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { clinicNow } from "./clock";
 import type { FlowSource } from "./source";
-import { LEAD_STAGES } from "./types";
+import { LEAD_STAGES, SEGMENTS } from "./types";
 import type {
   Activity,
   Appointment,
@@ -62,7 +62,14 @@ export function supabaseSource(db: Db): FlowSource {
       if (failed?.error) throw new Error(`Pulse: could not load the clinic (${failed.error.message})`);
 
       const o = org.data!;
-      const organization: Organization = { id: o.id, name: o.name, segment: "estetica", city: o.city ?? "" };
+      const organization: Organization = {
+        id: o.id,
+        name: o.name,
+        segment: (SEGMENTS as readonly string[]).includes(o.segment) ? (o.segment as Organization["segment"]) : "estetica",
+        city: o.city ?? "",
+        // Before migration 0003 the column is not there: no logo.
+        logoUrl: o.logo_url ?? undefined,
+      };
 
       return {
         now: clinicNow(),

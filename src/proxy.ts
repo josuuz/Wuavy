@@ -34,5 +34,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/pulse/app/:path*", "/pulse/entrar", "/pulse/comecar"],
+  matcher: ["/pulse/app/:path*", "/pulse/entrar", "/pulse/comecar", "/pulse/assinar"],
 };
