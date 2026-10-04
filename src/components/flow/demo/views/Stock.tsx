@@ -2,12 +2,20 @@
 
 import { useState } from "react";
 
-import { adjustLot, stockIn, type Result } from "@/lib/flow/actions";
+import { adjustLot, saveProduct, stockIn, type Result } from "@/lib/flow/actions";
 import { brl, daysFrom, plural, units } from "@/lib/flow/format";
-import { expiryOpportunities, lotStatus, lotValue, lowStock, proceduresUsing, type LotStatus } from "@/lib/flow/insights";
-import type { ID, InventoryLot } from "@/lib/flow/types";
+import {
+  expiryOpportunities,
+  lotStatus,
+  lotValue,
+  lowStock,
+  proceduresUsing,
+  stockLevels,
+  type LotStatus,
+} from "@/lib/flow/insights";
+import type { ID, InventoryLot, Product } from "@/lib/flow/types";
 import { ADJUST_REASONS, UNITS } from "../copy";
-import { Field, FocusLink, FormError, Intro, useWrite } from "../forms";
+import { Field, FocusLink, FormError, Intro, reais, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
@@ -16,8 +24,9 @@ import styles from "../ui.module.css";
   Stock, read as money. A lot near its date is not a number to watch: the
   Pulse finds the procedures that use it and the patients who already did
   them, and says what using it in time would bring. Then what to buy, what
-  needs a look, and every lot, with a way to receive a delivery and to set a
-  lot to what is really on the shelf.
+  needs a look (below the clinic's own minimum, when it set one), every
+  product and every lot, with a way to receive a delivery, to set a lot to
+  what is really on the shelf, and to edit a product.
 */
 
 const STATUS: Record<LotStatus, string> = {
@@ -32,11 +41,16 @@ const expiry = (days: number) => (days < 0 ? `venceu há ${plural(-days, "dia", 
 
 /** "12,5" or "3" to a number; NaN when it is not one. */
 const toNumber = (value: string) => Number(value.trim().replace(",", "."));
+/** "2,5" for a form field. */
+const decimal = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 3, useGrouping: false });
 
 export function Stock() {
-  const { data } = useFlow();
+  const { data, editable } = useFlow();
   const [entering, setEntering] = useState(false);
   const [adjusting, setAdjusting] = useState<ID | null>(null);
+  const [editing, setEditing] = useState<ID | null>(null);
+  const levels = stockLevels(data);
+  const edited = data.products.find((p) => p.id === editing);
   const near = expiryOpportunities(data);
   const low = lowStock(data);
   const watch = data.lots.filter((l) => l.quantity > 0 && (lotStatus(data, l) === "vencido" || lotStatus(data, l) === "atencao"));
@@ -122,9 +136,11 @@ export function Stock() {
                       <strong>{s.product.name}</strong>
                       <span>
                         {s.quantity > 0 ? units(s.quantity, s.product.unit) : "Sem estoque"}
-                        {s.sessions !== null && s.quantity > 0
-                          ? ` · dá para ${plural(s.sessions, "atendimento", "atendimentos")}`
-                          : ""}
+                        {s.product.minQuantity !== undefined
+                          ? ` · mínimo ${units(s.product.minQuantity, s.product.unit)}`
+                          : s.sessions !== null && s.quantity > 0
+                            ? ` · dá para ${plural(s.sessions, "atendimento", "atendimentos")}`
+                            : ""}
                       </span>
                     </li>
                   ))}
@@ -164,6 +180,49 @@ export function Stock() {
             </section>
           </div>
 
+          <section aria-labelledby="produtos">
+            <h2 id="produtos" className={styles.label}>
+              Produtos <span>{data.products.length}</span>
+            </h2>
+            <table className={styles.table} data-rows="">
+              <thead>
+                <tr>
+                  <th scope="col">Produto</th>
+                  <th scope="col">Em estoque</th>
+                  <th scope="col">Mínimo</th>
+                  <th scope="col">Custo por unidade</th>
+                  <th scope="col">Usado em</th>
+                </tr>
+              </thead>
+              <tbody>
+                {levels.map((level) => (
+                  <tr key={level.product.id} data-status={level.status === "ok" ? undefined : "atencao"}>
+                    <td data-label="Produto">
+                      {editable ? (
+                        <button type="button" className={styles.rowButton} onClick={() => setEditing(level.product.id)}>
+                          {level.product.name}
+                        </button>
+                      ) : (
+                        <strong>{level.product.name}</strong>
+                      )}
+                    </td>
+                    <td data-label="Em estoque">{level.quantity > 0 ? units(level.quantity, level.product.unit) : "Sem estoque"}</td>
+                    <td data-label="Mínimo">
+                      {level.product.minQuantity !== undefined ? units(level.product.minQuantity, level.product.unit) : "—"}
+                    </td>
+                    <td data-label="Custo por unidade">{brl(level.product.unitCost)}</td>
+                    <td data-label="Usado em">
+                      {proceduresUsing(data, level.product.id)
+                        .map((u) => u.procedure.name)
+                        .join(", ") || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          <h2 className={styles.label}>Lotes</h2>
           <table className={styles.table} data-rows="">
             <thead>
               <tr>
@@ -214,6 +273,11 @@ export function Stock() {
       <Sheet open={entering} onClose={() => setEntering(false)} title="Entrada de produto" kicker="Estoque">
         <StockInForm onDone={() => setEntering(false)} />
       </Sheet>
+      {editable ? (
+        <Sheet open={Boolean(edited)} onClose={() => setEditing(null)} title={edited?.name ?? ""} kicker="Produto">
+          {edited ? <ProductForm key={edited.id} product={edited} onDone={() => setEditing(null)} /> : null}
+        </Sheet>
+      ) : null}
       <Sheet
         open={Boolean(adjusted)}
         onClose={() => setAdjusting(null)}
@@ -284,6 +348,9 @@ function StockInForm({ onDone }: { onDone: () => void }) {
               <input className={styles.input} name="unitCost" required inputMode="decimal" placeholder="0" />
             </Field>
           </div>
+          <Field label="Estoque mínimo (opcional)">
+            <input className={styles.input} name="minQuantity" inputMode="decimal" placeholder="Ex.: 2" />
+          </Field>
         </>
       ) : null}
       <div className={styles.twoFields}>
@@ -335,7 +402,7 @@ function AdjustForm({ lot, onDone }: { lot: InventoryLot; onDone: () => void }) 
           name="quantity"
           required
           inputMode="decimal"
-          defaultValue={lot.quantity.toLocaleString("pt-BR", { maximumFractionDigits: 3, useGrouping: false })}
+          defaultValue={decimal(lot.quantity)}
         />
       </Field>
       <Field label="Motivo">
@@ -351,6 +418,54 @@ function AdjustForm({ lot, onDone }: { lot: InventoryLot; onDone: () => void }) 
       <div className={styles.actions}>
         <button type="submit" className={styles.primary} disabled={pending}>
           Salvar ajuste
+        </button>
+        <button type="button" className={styles.quiet} onClick={onDone}>
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** A product's details and its minimum: at or below it, the Pulse says to buy. */
+function ProductForm({ product, onDone }: { product: Product; onDone: () => void }) {
+  const { pending, error, submit } = useWrite();
+  const options = UNITS.includes(product.unit) ? UNITS : [product.unit, ...UNITS];
+  return (
+    <form className={styles.form} onSubmit={submit((form) => saveProduct(product.id, form), onDone)}>
+      <Field label="Nome do produto">
+        <input className={styles.input} name="name" required maxLength={200} defaultValue={product.name} autoComplete="off" />
+      </Field>
+      <div className={styles.twoFields}>
+        <Field label="Unidade">
+          <select className={styles.input} name="unit" defaultValue={product.unit}>
+            {options.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Custo por unidade (R$)">
+          <input className={styles.input} name="unitCost" required inputMode="decimal" defaultValue={reais(product.unitCost)} />
+        </Field>
+      </div>
+      <Field label={`Estoque mínimo (${product.unit})`}>
+        <input
+          className={styles.input}
+          name="minQuantity"
+          inputMode="decimal"
+          placeholder="Sem mínimo"
+          defaultValue={product.minQuantity !== undefined ? decimal(product.minQuantity) : undefined}
+        />
+      </Field>
+      <p className={styles.fine}>
+        Sem mínimo, o Pulse avisa quando o produto dá para menos de 5 atendimentos. A quantidade de cada lote muda em Ajustar.
+      </p>
+      <FormError error={error} />
+      <div className={styles.actions}>
+        <button type="submit" className={styles.primary} disabled={pending}>
+          Salvar
         </button>
         <button type="button" className={styles.quiet} onClick={onDone}>
           Cancelar

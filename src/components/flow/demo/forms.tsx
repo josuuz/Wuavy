@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useId, useState, useTransition, type FormEvent, type ReactNode } from "react";
 
+import { whatsappHref } from "@/lib/contact";
 import { READ_ONLY_MESSAGE } from "@/lib/flow/access";
 import type { Result } from "@/lib/flow/actions";
+import { createClient } from "@/lib/supabase/client";
 import { focusHref } from "./copy";
 import { useFlow, type Focus } from "./store";
 import styles from "./ui.module.css";
@@ -111,6 +114,42 @@ export function FocusLink({ focus, className, children }: { focus: Focus; classN
 export const digits = (phone: string) => phone.replace(/\D/g, "");
 
 /**
+ * A Brazilian phone as WhatsApp dials it (55, area code, number), or null
+ * when it is too short to be one: "(19) 99448-7967" becomes "5519994487967".
+ */
+export function waNumber(phone: string) {
+  const n = digits(phone).replace(/^0+/, "");
+  if (n.length === 10 || n.length === 11) return `55${n}`;
+  if (n.startsWith("55") && (n.length === 12 || n.length === 13)) return n;
+  return null;
+}
+
+/** A phone on a record, with a way to the WhatsApp chat when the clinic can reach out (never in the demo). */
+export function Phone({ phone }: { phone: string }) {
+  const { access } = useFlow();
+  const number = access.canReachOut ? waNumber(phone) : null;
+  if (!phone) return <>—</>;
+  return (
+    <>
+      {phone}
+      {number ? (
+        <>
+          {" · "}
+          <a href={whatsappHref(number)} target="_blank" rel="noopener noreferrer">
+            WhatsApp
+          </a>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+/** Something shown that is not built yet. Small and plain, so it never reads as an error. */
+export function Soon({ children = "Em breve" }: { children?: ReactNode }) {
+  return <span className={styles.soon}>{children}</span>;
+}
+
+/**
  * How the subscription is paid: the card, charged every month on its own.
  * Pix and boleto are not offered because neither charges by itself each month.
  */
@@ -151,19 +190,99 @@ export function Approval({ step }: { step: number }) {
 }
 
 /**
- * A message the Pulse wrote and nobody sent: its text, and the send button,
- * which waits for the WhatsApp connection. Approving is a person's call.
+ * A message the Pulse wrote for one person. It can be read and adjusted
+ * here; sending is a person's call, from the clinic's own WhatsApp: the
+ * button opens it with the number and the text already filled in. Nothing is
+ * sent by the Pulse itself, and in the demo the button stays off (its phone
+ * numbers are made up).
  */
-export function Prepared({ text, send = "Aprovar e enviar" }: { text: string; send?: string }) {
+export function Prepared({
+  text,
+  phone,
+  inList,
+  children,
+}: {
+  text: string;
+  phone?: string;
+  /** One of several in a list that says how sending works once (SendNote): only this person's own problem is said here. */
+  inList?: boolean;
+  children?: ReactNode;
+}) {
+  const { access } = useFlow();
+  const [message, setMessage] = useState(text);
+  const field = useId();
+  const number = waNumber(phone ?? "");
+  const open = access.canReachOut && number;
+  const general = useSendNote();
+  const note =
+    !access.isDemoMode && !number
+      ? "Sem telefone com DDD na ficha: cadastre o número para enviar pelo WhatsApp."
+      : inList
+        ? null
+        : general;
+
   return (
     <div className={styles.prepared}>
-      <p className={styles.preparedText}>{text}</p>
+      <label className="sr-only" htmlFor={field}>
+        Mensagem
+      </label>
+      <textarea
+        id={field}
+        className={styles.preparedText}
+        value={message}
+        rows={3}
+        maxLength={1000}
+        onChange={(event) => setMessage(event.target.value)}
+      />
       <div className={styles.actions}>
-        <button type="button" className={styles.secondary} disabled>
-          {send}
-        </button>
-        <span className={styles.fine}>Disponível quando o WhatsApp estiver conectado.</span>
+        {open ? (
+          <a className={styles.primary} href={whatsappHref(open, message.trim())} target="_blank" rel="noopener noreferrer">
+            Abrir no WhatsApp
+          </a>
+        ) : (
+          <button type="button" className={styles.secondary} disabled>
+            Abrir no WhatsApp
+          </button>
+        )}
+        {children}
       </div>
+      {note ? <p className={styles.fine}>{note}</p> : null}
     </div>
+  );
+}
+
+/** How sending works here, in a sentence: the demo sends nothing; a clinic sends from its own WhatsApp. */
+function useSendNote() {
+  const { access } = useFlow();
+  if (access.isDemoMode) {
+    return "Na demo, nada é enviado. No Pulse da clínica, o botão abre o WhatsApp com o número e a mensagem prontos.";
+  }
+  if (!access.canReachOut) return READ_ONLY_MESSAGE;
+  return "O botão abre o WhatsApp da clínica com o número e a mensagem prontos: você revisa e envia. Envio automático: em breve.";
+}
+
+/** The sentence above a list of prepared messages. */
+export function SendNote() {
+  return <p className={styles.fine}>{useSendNote()}</p>;
+}
+
+/** Ends the session here and goes back to the sign-in. */
+export function SignOut({ className }: { className?: string }) {
+  const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
+  return (
+    <button
+      type="button"
+      className={className ?? styles.quiet}
+      disabled={leaving}
+      onClick={async () => {
+        setLeaving(true);
+        await createClient().auth.signOut();
+        router.replace("/pulse/entrar");
+        router.refresh();
+      }}
+    >
+      Sair
+    </button>
   );
 }

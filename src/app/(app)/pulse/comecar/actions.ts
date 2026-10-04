@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 
 import { RULE_TEMPLATES } from "@/data/flow-demo";
 import { releases } from "@/lib/flow/access";
+import { LOGO_ERROR, logoFormat, logoFrom, saveLogo } from "@/lib/flow/logo";
 import { getSession, getSubscription } from "@/lib/flow/session";
-import { LOGO_MAX, SEGMENTS, TEAM_SIZES } from "@/lib/flow/types";
+import { SEGMENTS, TEAM_SIZES } from "@/lib/flow/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /*
@@ -14,8 +15,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
   with the service role, on the server only, for exactly one person: the one
   Supabase Auth says is signed in, who belongs to no clinic yet and whose
   subscription Mercado Pago confirmed (checked here again, whatever the
-  browser showed). The clinic starts with the automation templates switched
-  off, for the owner to choose from.
+  browser showed). The clinic gets the automation templates switched off,
+  ready for the engine to come; nothing runs them yet.
 */
 
 export interface ClinicState {
@@ -23,7 +24,6 @@ export interface ClinicState {
   done?: boolean;
 }
 
-const LOGO_TYPES = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" } as const;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const field = (form: FormData, key: string, max: number) => String(form.get(key) ?? "").trim().slice(0, max);
@@ -52,11 +52,8 @@ export async function createClinic(_: ClinicState | null, form: FormData): Promi
   if (!(TEAM_SIZES as readonly string[]).includes(teamSize)) return { error: "Escolha quantos profissionais atendem." };
   if (!TIME.test(opens) || !TIME.test(closes) || opens >= closes) return { error: "Confira o horário de funcionamento." };
   if (!days.length) return { error: "Escolha ao menos um dia de atendimento." };
-  const logo = form.get("logo");
-  const hasLogo = logo instanceof File && logo.size > 0;
-  if (hasLogo && (!(logo.type in LOGO_TYPES) || logo.size > LOGO_MAX)) {
-    return { error: "O logo precisa ser PNG, JPG ou WebP de até 800 KB." };
-  }
+  const logo = logoFrom(form);
+  if (logo && !(await logoFormat(logo))) return { error: LOGO_ERROR };
 
   let admin;
   try {
@@ -118,15 +115,8 @@ export async function createClinic(_: ClinicState | null, form: FormData): Promi
   // The templates help, they are not the clinic: without them it still works.
   if (rulesError) console.error("createClinic: automation templates", rulesError);
 
-  if (hasLogo) {
-    const path = `${org.id}/logo.${LOGO_TYPES[logo.type as keyof typeof LOGO_TYPES]}`;
-    const upload = await admin.storage.from("clinic-logos").upload(path, logo, { contentType: logo.type, upsert: true });
-    if (upload.error) console.error("createClinic: logo", upload.error);
-    else {
-      const { data } = admin.storage.from("clinic-logos").getPublicUrl(path);
-      await admin.from("organizations").update({ logo_url: data.publicUrl }).eq("id", org.id);
-    }
-  }
+  // The logo is a nicety: the clinic exists without it, and Configurações can add it later.
+  if (logo) await saveLogo(admin, org.id, logo);
 
   return { done: true };
 }

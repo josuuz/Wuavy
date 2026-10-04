@@ -9,12 +9,15 @@ import {
   averageTicket,
   awaiting,
   daySlots,
+  dueReturns,
   expiryOpportunities,
   finance,
   lowStock,
   missed,
+  openLeads,
   openSlots,
   overdueReturns,
+  potentialOf,
   procedureOf,
   recovered,
   returnsThisWeek,
@@ -24,16 +27,17 @@ import {
   valueDelivered,
 } from "@/lib/flow/insights";
 import { APPOINTMENT_LABEL, KIND, RECOVERED_FRONTS, STATUS_LABEL, viewHref } from "../copy";
-import { FocusLink } from "../forms";
+import { FocusLink, Soon } from "../forms";
 import { useFlow, type Focus } from "../store";
 import styles from "../ui.module.css";
 import { selection } from "./Opportunities";
 
 /*
   The first screen answers one question: what needs attention now? The
-  queue of things to do today, each with the action that settles it; where
-  the money is waiting; what the Pulse already brought back, against what it
-  costs; and the clinic's numbers in broad strokes. No chart without an
+  clinic's numbers that ask for action, each opening where it is acted on;
+  the queue of things to do today, each with the action that settles it;
+  where the money is waiting. Revenue the Pulse recovered is not tracked yet:
+  it says so, and the demo shows it only as a preview. No chart without an
   action next to it.
 */
 
@@ -44,7 +48,13 @@ const greeting = () => {
 };
 
 /** Questions the overview hands straight to "Pergunte ao Pulse". */
-const QUICK = ["O que preciso fazer hoje?", "Onde estou perdendo dinheiro?", "Quanto o Pulse recuperou este mês?"];
+const QUICK = ["O que preciso fazer hoje?", "Onde estou perdendo dinheiro?", "Quanto tenho de receita potencial?"];
+
+/** Coming, and part of the plan: listed under the first steps, never as one of them. */
+const COMING = [
+  { name: "Automações inteligentes", text: "o Pulse prepara cada contato na hora certa, sozinho" },
+  { name: "Pulse AI", text: "perguntas livres sobre a clínica" },
+];
 
 interface Todo {
   count: number;
@@ -70,12 +80,12 @@ export function Overview() {
     {
       done: data.patients.length > 0,
       text: "Adicionar o primeiro paciente",
-      why: "Quem já é cliente entra em Pacientes; quem está chegando, em Vendas.",
+      why: "Com o último atendimento de cada um, o Pulse já calcula quem precisa retornar.",
       view: "pacientes",
     },
     {
       done: data.procedures.length > 0,
-      text: "Configurar os procedimentos",
+      text: "Criar os procedimentos",
       why: "Preço, duração e retorno de cada um alimentam a agenda e as oportunidades.",
       view: "procedimentos",
     },
@@ -88,14 +98,8 @@ export function Overview() {
     {
       done: data.products.length > 0,
       text: "Cadastrar o estoque",
-      why: "O Pulse avisa o que está acabando e o que vence, e dá baixa sozinho.",
+      why: "O Pulse avisa o que está acabando e o que vence, e dá baixa a cada atendimento finalizado.",
       view: "estoque",
-    },
-    {
-      done: data.automationRules.some((r) => r.active),
-      text: "Criar a primeira automação",
-      why: "Escolha um modelo e ative: o Pulse prepara o próximo passo para a equipe aprovar.",
-      view: "automacoes",
     },
   ];
   const preparing = live && setup.some((s) => !s.done);
@@ -220,12 +224,23 @@ export function Overview() {
   }
 
   const found = ops.filter((o) => o.count > 0).sort((a, b) => b.value - a.value);
-  const potential = found.filter((o) => o.status !== "resolvida").reduce((s, o) => s + o.value, 0);
+  const potential = potentialOf(ops);
   const back = recovered(data);
   const value = valueDelivered(data, ops);
   const money = finance(data);
   const multiple = Math.floor(value.revenue / PRICE);
   const feed = [...data.activities].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6);
+  const alerts = low.length + expiring.length;
+
+  // The numbers of now, each one a door to where it is acted on.
+  const stats: { value: string; label: string; focus?: Focus; view?: string; main?: boolean }[] = [
+    { value: brl(potential), label: "Receita potencial em oportunidades", view: "oportunidades", main: true },
+    { value: String(dueReturns(data).length), label: "Pacientes para retornar", focus: { to: "patients", filter: "retorno" } },
+    { value: String(slots.length), label: "Horários vagos até amanhã", focus: { to: "agenda", day: 0 } },
+    { value: String(openLeads(data).length), label: "Leads em aberto", view: "vendas" },
+    { value: String(stuck.length), label: "Orçamentos sem resposta", focus: { to: "sales", filter: "sem_resposta" } },
+    { value: String(alerts), label: alerts === 1 ? "Alerta de estoque" : "Alertas de estoque", view: "estoque" },
+  ];
 
   const checklist = (
     <section className={styles.panel} aria-labelledby="prepare">
@@ -252,6 +267,14 @@ export function Overview() {
           </li>
         ))}
       </ol>
+      <ul className={styles.soonList} aria-label="Em breve no Pulse">
+        {COMING.map((item) => (
+          <li key={item.name}>
+            <Soon />
+            <strong>{item.name}</strong> · {item.text}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 
@@ -263,8 +286,8 @@ export function Overview() {
         </h1>
         {checklist}
         <p className={styles.fine}>
-          Conforme a clínica usa o Pulse, esta tela passa a mostrar o que precisa de atenção, as oportunidades e a receita
-          recuperada.
+          Conforme a clínica usa o Pulse, esta tela passa a mostrar o que precisa de atenção, as oportunidades e quanto cada
+          uma vale.
         </p>
       </div>
     );
@@ -289,6 +312,28 @@ export function Overview() {
       </div>
 
       {preparing ? checklist : null}
+
+      <ul className={styles.stats} aria-label="Números de agora">
+        {stats.map((stat) => {
+          const body = (
+            <>
+              <span className={styles.statValue}>{stat.value}</span>
+              <span className={styles.statLabel}>{stat.label}</span>
+            </>
+          );
+          return (
+            <li key={stat.label} data-main={stat.main ? "" : undefined}>
+              {stat.focus ? (
+                <FocusLink focus={stat.focus} className="">
+                  {body}
+                </FocusLink>
+              ) : (
+                <Link href={viewHref(stat.view ?? "", base)}>{body}</Link>
+              )}
+            </li>
+          );
+        })}
+      </ul>
 
       <div className={styles.duo}>
         <section className={styles.panel} aria-labelledby="atencao">
@@ -405,58 +450,67 @@ export function Overview() {
       <section id="valor" className={styles.value} aria-labelledby="valor-titulo">
         <h2 id="valor-titulo" className={styles.valueTitle}>
           <span className="pulse-dot" aria-hidden="true" />
-          Receita recuperada pelo Pulse
+          Receita recuperada pelo Pulse <Soon />
         </h2>
-        <dl className={styles.valueGrid}>
-          <div data-main="">
-            <dt>Últimos 30 dias</dt>
-            <dd>{brl(value.revenue)}</dd>
-          </div>
-          <div>
-            <dt>Oportunidades encontradas</dt>
-            <dd>{value.found}</dd>
-          </div>
-          <div>
-            <dt>Orçamentos recuperados</dt>
-            <dd>{value.quotes}</dd>
-          </div>
-          <div>
-            <dt>Leads convertidos</dt>
-            <dd>{value.leads}</dd>
-          </div>
-          <div>
-            <dt>Pacientes reativados</dt>
-            <dd>{value.patients}</dd>
-          </div>
-          <div>
-            <dt>Horários preenchidos</dt>
-            <dd>{value.slots}</dd>
-          </div>
-        </dl>
-        {value.revenue ? (
-          <p className={styles.roi}>
-            O Pulse custa {brl(PRICE)} por mês e ajudou a recuperar {brl(value.revenue)}
-            {multiple >= 1 ? (
-              <>
-                : <strong>{multiple}× o valor da mensalidade</strong>.
-              </>
-            ) : (
-              "."
-            )}
+        {live ? (
+          <p className={styles.lead}>
+            O rastreamento de receita recuperada está em desenvolvimento: ele vai mostrar quanto voltou de cada oportunidade
+            trabalhada. Até lá, o Pulse mostra só a receita potencial, o que está ao alcance:{" "}
+            <strong>{brl(potential)}</strong> nas oportunidades abertas agora.
           </p>
-        ) : null}
-        <p className={styles.fine}>
-          {live
-            ? "Oportunidades abertas agora; recuperações dos últimos 30 dias, da operação da clínica."
-            : "Ilustrativo: calculado sobre os dados fictícios da demo. Oportunidades abertas agora; recuperações dos últimos 30 dias."}
-        </p>
+        ) : (
+          <>
+            <dl className={styles.valueGrid}>
+              <div data-main="">
+                <dt>Últimos 30 dias</dt>
+                <dd>{brl(value.revenue)}</dd>
+              </div>
+              <div>
+                <dt>Oportunidades encontradas</dt>
+                <dd>{value.found}</dd>
+              </div>
+              <div>
+                <dt>Orçamentos recuperados</dt>
+                <dd>{value.quotes}</dd>
+              </div>
+              <div>
+                <dt>Leads convertidos</dt>
+                <dd>{value.leads}</dd>
+              </div>
+              <div>
+                <dt>Pacientes reativados</dt>
+                <dd>{value.patients}</dd>
+              </div>
+              <div>
+                <dt>Horários preenchidos</dt>
+                <dd>{value.slots}</dd>
+              </div>
+            </dl>
+            {value.revenue ? (
+              <p className={styles.roi}>
+                O Pulse custa {brl(PRICE)} por mês e, neste exemplo, ajudou a recuperar {brl(value.revenue)}
+                {multiple >= 1 ? (
+                  <>
+                    : <strong>{multiple}× o valor da mensalidade</strong>.
+                  </>
+                ) : (
+                  "."
+                )}
+              </p>
+            ) : null}
+            <p className={styles.fine}>
+              Prévia com dados fictícios: é assim que o Pulse vai mostrar a receita recuperada quando o rastreamento estiver
+              disponível.
+            </p>
+          </>
+        )}
       </section>
 
       <div className={styles.duo}>
-        {live && !back.total ? null : (
+        {live ? null : (
           <section className={styles.panel} aria-labelledby="recuperada">
             <h2 id="recuperada" className={styles.label}>
-              De onde veio <span>últimos 30 dias</span>
+              De onde veio <span>prévia · últimos 30 dias</span>
             </h2>
             <ul className={styles.rows}>
               {RECOVERED_FRONTS.map((front) => (
@@ -466,9 +520,7 @@ export function Overview() {
                 </li>
               ))}
             </ul>
-            {live ? null : (
-              <p className={styles.fine}>Soma do que as automações ajudaram a trazer de volta, sobre dados ilustrativos.</p>
-            )}
+            <p className={styles.fine}>Ilustrativo, sobre os dados fictícios da demo.</p>
           </section>
         )}
 
@@ -494,8 +546,10 @@ export function Overview() {
               <strong>{brl(money.ticket)}</strong>
             </li>
             <li>
-              <span>Recuperada pelo Pulse</span>
-              <strong className={styles.accentNumber}>{brl(back.total)}</strong>
+              <span>
+                Receita potencial <span className={styles.miniMeta}>oportunidades abertas</span>
+              </span>
+              <strong className={styles.accentNumber}>{brl(potential)}</strong>
             </li>
           </ul>
           <p className={styles.fine}>

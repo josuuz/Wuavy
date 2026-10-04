@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
@@ -146,6 +147,12 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }:
           />
         </Field>
       )}
+      {mode === "criar" ? (
+        <p className={ui.fine}>
+          Ao criar a conta, você concorda com os <Link href="/termos">Termos de Uso</Link> e a{" "}
+          <Link href="/privacidade">Política de Privacidade</Link>.
+        </p>
+      ) : null}
       <FormError error={error} />
       <div className={ui.actions}>
         <button type="submit" className={ui.primary} disabled={pending}>

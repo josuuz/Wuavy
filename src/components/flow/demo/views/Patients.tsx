@@ -22,7 +22,7 @@ import {
 } from "@/lib/flow/insights";
 import type { FlowData, Patient } from "@/lib/flow/types";
 import { APPOINTMENT_LABEL, SOURCE_LABEL, STAGE_LABEL } from "../copy";
-import { DeleteButton, digits, Field, FocusLink, FormError, Intro, Prepared, useWrite } from "../forms";
+import { DeleteButton, digits, Field, FocusLink, FormError, Intro, Phone, Prepared, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow, useFocus, type PatientFilter } from "../store";
 import styles from "../ui.module.css";
@@ -41,11 +41,10 @@ const FILTERS: { id: PatientFilter; label: string }[] = [
   { id: "faltou", label: "Faltaram" },
   { id: "sem_horario", label: "Sem próximo horário" },
   { id: "alto_valor", label: "Alto valor sem retorno" },
-  { id: "semana", label: "Oportunidades da semana" },
+  { id: "semana", label: "Oportunidades" },
   { id: "todos", label: "Todos" },
 ];
 
-const DAY = 86_400_000;
 const firstName = (name: string) => name.split(" ")[0];
 
 /** The next step in a few words, for the list; `urgent` when it asks for action now. */
@@ -142,8 +141,18 @@ export function Patients() {
       </header>
 
       {data.patients.length === 0 ? (
-        <Intro title="Como funciona">
-          Quem agenda vira paciente aqui, com a origem que veio de Vendas. Para quem já é cliente da clínica, use Novo paciente.
+        <Intro
+          title="Como funciona"
+          action={
+            editable ? (
+              <button type="button" className={styles.primary} onClick={() => setCreating(true)}>
+                Cadastrar o primeiro
+              </button>
+            ) : null
+          }
+        >
+          Quem agenda vira paciente aqui, com a origem que veio de Vendas. Para quem já é cliente da clínica, use Novo paciente
+          e informe o último atendimento: o Pulse calcula o retorno e avisa quando chegar a hora.
         </Intro>
       ) : (
         <>
@@ -178,6 +187,7 @@ export function Patients() {
                 <th scope="col">Paciente</th>
                 <th scope="col">Próximo passo</th>
                 <th scope="col">Último atendimento</th>
+                <th scope="col">Próximo retorno</th>
                 <th scope="col">Valor gasto</th>
               </tr>
             </thead>
@@ -195,6 +205,7 @@ export function Patients() {
                       <span className={line.urgent ? styles.stepUrgent : undefined}>{line.text}</span>
                     </td>
                     <td data-label="Último atendimento">{p.lastVisitAt ? relDay(data.now, p.lastVisitAt) : "—"}</td>
+                    <td data-label="Próximo retorno">{p.nextReturnAt ? shortDate(p.nextReturnAt) : "—"}</td>
                     <td data-label="Valor gasto">{brl(p.totalSpent)}</td>
                   </tr>
                 );
@@ -220,34 +231,9 @@ export function Patients() {
   );
 }
 
-/** Which of the clinic's automations touch this patient now, and how. */
-function automationsFor(d: FlowData, p: Patient) {
-  const rule = (kind: string) => d.automationRules.find((r) => r.kind === kind);
-  const next = upcomingFor(d, p.id)[0];
-  const lines: { name: string; text: string; active: boolean }[] = [];
-  const add = (kind: string, when: boolean, text: string) => {
-    const r = rule(kind);
-    if (r && when) lines.push({ name: r.name, text, active: r.active });
-  };
-  add("reminder", Boolean(next), next ? `Lembrete de confirmação · atendimento ${dayAt(d.now, next.startsAt)}` : "");
-  add(
-    "post_visit",
-    Boolean(p.lastVisitAt && daysFrom(d.now, p.lastVisitAt) >= -7),
-    "Mensagem de cuidado depois do último atendimento",
-  );
-  add(
-    "patient_return",
-    Boolean(p.nextReturnAt && !next),
-    p.nextReturnAt ? `Convite de retorno a partir de ${shortDate(new Date(Date.parse(p.nextReturnAt) - 14 * DAY).toISOString())}` : "",
-  );
-  add("lead_followup", leadsOf(d, p.id).some((l) => staleQuote(d, l)), "Follow-up do orçamento sem resposta");
-  add("open_slot", d.waitlist.some((w) => w.patientId === p.id), "Na lista de espera: recebe convite quando abrir um horário");
-  return lines;
-}
-
 /** The whole person on one page, what to do next first. */
 function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
-  const { data, dispatch, editable, access } = useFlow();
+  const { data, editable, access } = useFlow();
   const { pending, error, write } = useWrite();
   const [mode, setMode] = useState<"ver" | "agendar" | "venda" | "editar">("ver");
   const [invited, setInvited] = useState(false);
@@ -265,7 +251,6 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
     count: done.filter((a) => a.procedureId === id).length,
     last: done.find((a) => a.procedureId === id)!.startsAt,
   }));
-  const automations = automationsFor(data, patient);
   const name = firstName(patient.name);
 
   if (mode === "agendar") {
@@ -275,10 +260,6 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
   if (mode === "venda") return <LeadForm patient={patient} onDone={() => setMode("ver")} />;
   if (mode === "editar") return <PatientForm patient={patient} onDone={() => setMode("ver")} />;
 
-  const invite = () => {
-    dispatch({ type: "note", text: `Convite de retorno preparado para ${patient.name}. Não enviado.` });
-    setInvited(true);
-  };
 
   return (
     <>
@@ -318,14 +299,14 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
                 Agendar retorno
               </button>
               {!invited && access.canEdit ? (
-                <button type="button" className={styles.secondary} onClick={invite}>
+                <button type="button" className={styles.secondary} onClick={() => setInvited(true)}>
                   Preparar convite
                 </button>
               ) : null}
             </div>
             {invited ? (
               <Prepared
-                send="Enviar convite"
+                phone={patient.phone}
                 text={`Oi ${name}! Já está na época do seu retorno${lastProcedure ? ` de ${lastProcedure.name}` : ""}. Quer que eu veja um horário para você esta semana?`}
               />
             ) : null}
@@ -361,7 +342,9 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
       <dl className={styles.factsRow}>
         <div>
           <dt>Telefone</dt>
-          <dd>{patient.phone || "—"}</dd>
+          <dd>
+            <Phone phone={patient.phone} />
+          </dd>
         </div>
         <div>
           <dt>Paciente desde</dt>
@@ -496,24 +479,6 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
             )}
           </section>
 
-          <section aria-labelledby="automacoes">
-            <h3 id="automacoes" className={styles.label}>
-              Automações
-            </h3>
-            {automations.length ? (
-              <ul className={styles.history}>
-                {automations.map((a) => (
-                  <li key={a.name}>
-                    <span>{a.text}</span>
-                    <span className={styles.when}>{a.active ? "ativa" : "pausada"}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.fine}>Nenhuma automação para {name} agora.</p>
-            )}
-          </section>
-
           <section aria-labelledby="observacoes">
             <h3 id="observacoes" className={styles.label}>
               Observações
@@ -550,8 +515,15 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
   );
 }
 
+/**
+ * A patient's details. A visit from before the Pulse can come with them (or
+ * be added later): with it, the last visit and the next return are known from
+ * day one, and the return engine starts working at once.
+ */
 function PatientForm({ patient, onDone }: { patient?: Patient; onDone: () => void }) {
+  const { data } = useFlow();
   const { pending, error, submit } = useWrite();
+  const yesterday = new Date(Date.parse(data.now) - 86_400_000).toISOString().slice(0, 10);
   return (
     <form className={styles.form} onSubmit={submit((form) => savePatient(patient?.id ?? null, form), onDone)}>
       <Field label="Nome">
@@ -564,6 +536,32 @@ function PatientForm({ patient, onDone }: { patient?: Patient; onDone: () => voi
         <textarea className={styles.input} name="notes" maxLength={1000} defaultValue={patient?.notes} />
       </Field>
       <p className={styles.fine}>Só observações comerciais e de atendimento. Nada de prontuário ou dado clínico.</p>
+      {data.procedures.length ? (
+        <fieldset className={styles.fieldset}>
+          <legend className={styles.label}>{patient ? "Adicionar atendimento anterior" : "Último atendimento"} (opcional)</legend>
+          <div className={styles.twoFields}>
+            <Field label="Dia">
+              <input className={styles.input} type="date" name="visitDate" max={yesterday} />
+            </Field>
+            <Field label="Procedimento">
+              <select className={styles.input} name="visitProcedureId" defaultValue="">
+                <option value="">—</option>
+                {data.procedures.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <p className={styles.fine}>
+            Um atendimento de antes do Pulse. Entra no histórico e o próximo retorno é calculado pelo intervalo do procedimento.
+            Não mexe no estoque.
+          </p>
+        </fieldset>
+      ) : (
+        <p className={styles.fine}>Cadastre os procedimentos para registrar também o último atendimento de cada paciente.</p>
+      )}
       <FormError error={error} />
       <div className={styles.actions}>
         <button type="submit" className={styles.primary} disabled={pending}>

@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
-import { check, subscribe, type CheckoutOutcome } from "@/app/(app)/pulse/assinar/actions";
+import { check, subscribe, type CheckoutOutcome, type Subscribed } from "@/app/(app)/pulse/assinar/actions";
 import { site } from "@/data/site";
 import { contactHref } from "@/lib/contact";
 import { PRICE } from "@/lib/flow/access";
 import { brl } from "@/lib/flow/format";
 import { PLAN } from "../demo/copy";
-import { PaymentMethod } from "../demo/forms";
+import { PaymentMethod, Soon } from "../demo/forms";
 import ui from "../demo/ui.module.css";
 import styles from "./AuthFrame.module.css";
 
@@ -53,15 +54,17 @@ interface CheckoutProps {
   /** A clinic subscribing again goes back to the Pulse, not to onboarding. */
   hasClinic: boolean;
   publicKey: string;
+  /** Test credentials in use: say so, and say why a card was refused. */
+  test: boolean;
 }
 
-export function Checkout({ stage: initial, email, hasClinic, publicKey }: CheckoutProps) {
+export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: CheckoutProps) {
   const [stage, setStage] = useState<Stage>(initial === "pending" ? "processing" : initial);
   const [sdk, setSdk] = useState(false);
   const [ready, setReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const test = publicKey.startsWith("TEST-");
+  const [detail, setDetail] = useState<string>();
 
   // The card form, from Mercado Pago, mounted while the form is shown.
   useEffect(() => {
@@ -88,10 +91,11 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey }: Checko
           onSubmit: async (card: CardFormData) => {
             setSubmitting(true);
             const result = await subscribe({ token: card.token, email: card.payer?.email ?? email }).catch(
-              (): CheckoutOutcome => "pending",
+              (): Subscribed => ({ outcome: "pending" }),
             );
             setSubmitting(false);
-            setStage(result === "pending" ? "processing" : result);
+            setDetail(result.detail);
+            setStage(result.outcome === "pending" ? "processing" : result.outcome);
           },
           // The Brick shows its own field errors; nothing technical reaches the person.
           onError: (error: unknown) => console.error("Mercado Pago Brick", error),
@@ -131,6 +135,16 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey }: Checko
     };
   }, [stage]);
 
+  // Still not final after the quick asks: keep asking, slowly, while the page is open (the webhook may land any time).
+  useEffect(() => {
+    if (stage !== "pending") return;
+    const timer = setInterval(async () => {
+      const result = await check().catch((): CheckoutOutcome => "pending");
+      if (result !== "pending") setStage(result);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [stage]);
+
   const retry = () => {
     setReady(false);
     setAttempt((n) => n + 1);
@@ -168,6 +182,7 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey }: Checko
       <section className={styles.state} aria-live="polite">
         <h1 className={ui.title}>Não foi possível concluir o pagamento.</h1>
         <p className={ui.lead}>Nada foi cobrado. Confira os dados do cartão ou tente com outro.</p>
+        {test && detail ? <p className={ui.fine}>Teste: {detail}</p> : null}
         <button type="button" className={ui.primary} onClick={retry}>
           Tentar novamente
         </button>
@@ -175,22 +190,7 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey }: Checko
     );
   }
 
-  if (stage === "unavailable" || !publicKey) {
-    return (
-      <section className={styles.state}>
-        <h1 className={ui.title}>O pagamento ainda não está disponível.</h1>
-        <p className={ui.lead}>Fale com a Wuavy e ativamos o seu Pulse por lá.</p>
-        <a
-          href={contactHref(site.contact.primary, PLAN.subscribe.topic)}
-          className={ui.primary}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Falar com a Wuavy
-        </a>
-      </section>
-    );
-  }
+  if (stage === "unavailable" || !publicKey) return <Offline email={email} />;
 
   return (
     <>
@@ -203,11 +203,7 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey }: Checko
         </p>
         <p className={ui.priceText}>{PLAN.subscribe.text}</p>
       </header>
-      <ul className={ui.includes} aria-label="O que a assinatura inclui">
-        {PLAN.subscribe.includes.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
+      <Includes />
       <PaymentMethod />
       <div className={styles.brick} aria-busy={!ready || submitting}>
         {!ready && !submitting ? (
@@ -223,6 +219,84 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey }: Checko
         Os dados do cartão vão direto para o Mercado Pago: o Pulse não vê nem guarda o número do cartão.
         {test ? " Ambiente de teste: use um cartão de teste do Mercado Pago; nada é cobrado." : ""}
       </p>
+    </>
+  );
+}
+
+/** What the plan has today, and what it gets once built (marked as such). */
+function Includes() {
+  return (
+    <>
+      <ul className={ui.includes} aria-label="O que a assinatura inclui">
+        {PLAN.subscribe.includes.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      <ul className={ui.soonList} aria-label="Chega em breve ao plano">
+        {PLAN.subscribe.coming.map((item) => (
+          <li key={item}>
+            <Soon />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/**
+ * No online checkout yet (Mercado Pago not configured): the plan is
+ * contracted with Wuavy, which activates it on this account by hand
+ * (migration 0004). The account exists already; once it is active, this
+ * page says so and sends the person on to set up the clinic.
+ */
+function Offline({ email }: { email: string }) {
+  const router = useRouter();
+  const [checking, setChecking] = useState(false);
+  return (
+    <>
+      <header className={ui.head}>
+        <h1 className={ui.title}>
+          Assinatura online <Soon />
+        </h1>
+        <p className={ui.price}>
+          <strong>{brl(PRICE)}</strong>
+          <span>/mês</span>
+        </p>
+        <p className={ui.lead}>
+          Por enquanto, a contratação do Wuavy Pulse é feita direto com a Wuavy. Sua conta já está criada
+          {email ? (
+            <>
+              {" "}
+              (<strong>{email}</strong>)
+            </>
+          ) : null}
+          : assim que o plano for ativado nela, esta página libera a configuração da clínica.
+        </p>
+      </header>
+      <Includes />
+      <div className={ui.actions}>
+        <a
+          href={contactHref(site.contact.primary, `${PLAN.subscribe.topic} (conta ${email})`)}
+          className={ui.primary}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Falar com a Wuavy
+        </a>
+        <button
+          type="button"
+          className={ui.secondary}
+          disabled={checking}
+          onClick={() => {
+            setChecking(true);
+            router.refresh();
+            setTimeout(() => setChecking(false), 1500);
+          }}
+        >
+          {checking ? "Verificando…" : "Já foi ativado? Verificar"}
+        </button>
+      </div>
     </>
   );
 }

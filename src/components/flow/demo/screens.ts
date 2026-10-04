@@ -6,6 +6,7 @@ import { Patients } from "./views/Patients";
 import { Pipeline } from "./views/Pipeline";
 import { Procedures } from "./views/Procedures";
 import { Schedule } from "./views/Schedule";
+import { Settings } from "./views/Settings";
 import { Stock } from "./views/Stock";
 
 /* Every screen of the Pulse but the overview, by slug: the demo and the real Pulse route the same ones. */
@@ -18,4 +19,5 @@ export const SCREENS: Record<string, ComponentType> = {
   procedimentos: Procedures,
   estoque: Stock,
   automacoes: Automations,
+  configuracoes: Settings,
 };

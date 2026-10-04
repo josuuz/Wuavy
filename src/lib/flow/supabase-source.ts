@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { clinicNow } from "./clock";
 import type { FlowSource } from "./source";
-import { LEAD_STAGES, SEGMENTS } from "./types";
+import { LEAD_STAGES, SEGMENTS, TEAM_SIZES } from "./types";
 import type {
   Activity,
   Appointment,
@@ -62,13 +62,19 @@ export function supabaseSource(db: Db): FlowSource {
       if (failed?.error) throw new Error(`Pulse: could not load the clinic (${failed.error.message})`);
 
       const o = org.data!;
+      // Before migration 0003 the profile's columns are not there: no logo, no WhatsApp, the default hours.
       const organization: Organization = {
         id: o.id,
         name: o.name,
         segment: (SEGMENTS as readonly string[]).includes(o.segment) ? (o.segment as Organization["segment"]) : "estetica",
         city: o.city ?? "",
-        // Before migration 0003 the column is not there: no logo.
         logoUrl: o.logo_url ?? undefined,
+        whatsapp: o.whatsapp ?? undefined,
+        teamSize: (TEAM_SIZES as readonly string[]).includes(o.team_size ?? "") ? (o.team_size as Organization["teamSize"]) : undefined,
+        hours:
+          o.opening_time && o.closing_time && o.opening_time < o.closing_time
+            ? { opens: o.opening_time, closes: o.closing_time, days: o.work_days?.length ? o.work_days : [1, 2, 3, 4, 5, 6] }
+            : undefined,
       };
 
       return {
@@ -143,7 +149,15 @@ export function supabaseSource(db: Db): FlowSource {
           }),
         ),
         products: products.data!.map(
-          (p): Product => ({ id: p.id, organizationId: p.organization_id, name: p.name, unit: p.unit, unitCost: p.unit_cost }),
+          (p): Product => ({
+            id: p.id,
+            organizationId: p.organization_id,
+            name: p.name,
+            unit: p.unit,
+            unitCost: p.unit_cost,
+            // A column of migration 0004.
+            minQuantity: p.min_quantity == null ? undefined : Number(p.min_quantity),
+          }),
         ),
         lots: lots.data!.map(
           (l): InventoryLot => ({

@@ -7,33 +7,29 @@ import { brl, units } from "@/lib/flow/format";
 import { lotStatus } from "@/lib/flow/insights";
 import { PROCEDURE_CATEGORIES, type Procedure } from "@/lib/flow/types";
 import { CATEGORY_LABEL } from "../copy";
-import { DeleteButton, Field, FormError, Intro, reais, useWrite } from "../forms";
+import { DeleteButton, Field, FormError, Intro, reais, Soon, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
 /*
   The catalogue. Each procedure's price, duration and recommended return
-  feed the agenda and the automations; the products it consumes link a
+  feed the agenda and the opportunities; the products it consumes link a
   finished visit to the stock. That is what lets the Pulse connect patient,
   agenda, stock and next return when a visit is done.
 */
 
-/** What finishing one visit sets off, and which part of the procedure drives each step. */
+/** What finishing one visit sets off, and which part of the procedure drives each step. `soon`: not built yet. */
 const CHAIN = [
   { what: "Atendimento concluído", from: "finalizado na agenda" },
   { what: "Baixa o estoque", from: "pelos produtos consumidos, do lote que vence primeiro" },
   { what: "Calcula o próximo retorno", from: "pelo retorno recomendado do procedimento" },
-  { what: "Inicia o pós-atendimento", from: "mensagem de cuidado, pela automação" },
-  { what: "Cria a futura oportunidade", from: "convite de retorno quando a data se aproxima" },
+  { what: "Cria a futura oportunidade", from: "o retorno entra em Oportunidades quando a data se aproxima" },
+  { what: "Pós-atendimento automático", from: "mensagem de cuidado depois do atendimento", soon: true },
 ];
 
-/** The automations every procedure feeds, by the rule kind that runs them. */
-const LINKED = [
-  { kind: "reminder", label: () => "Lembrete na véspera" },
-  { kind: "post_visit", label: () => "Cuidado pós-atendimento" },
-  { kind: "patient_return", label: (p: Procedure) => `Convite de retorno em ${p.returnDays} dias` },
-] as const;
+/** Specialties whose procedures rarely fit the aesthetic categories. */
+const OTHER_FIRST = new Set(["odontologia", "outro"]);
 
 export function Procedures() {
   const { data, editable } = useFlow();
@@ -46,7 +42,7 @@ export function Procedures() {
       <header className={styles.head}>
         <h1 className={styles.title}>Procedimentos</h1>
         <p className={styles.lead}>
-          Preço, duração e retorno recomendado de cada procedimento alimentam a agenda e as automações. Os produtos consumidos
+          Preço, duração e retorno recomendado de cada procedimento alimentam a agenda e as oportunidades. Os produtos consumidos
           fazem o estoque baixar sozinho quando um atendimento é finalizado.
         </p>
         {editable ? (
@@ -66,7 +62,10 @@ export function Procedures() {
           <ol className={styles.chain} data-steps="5">
             {CHAIN.map((step) => (
               <li key={step.what}>
-                <strong>{step.what}</strong>
+                <strong>
+                  {step.what}
+                  {step.soon ? <Soon /> : null}
+                </strong>
                 <span>{step.from}</span>
               </li>
             ))}
@@ -140,18 +139,6 @@ export function Procedures() {
                   Custo em produtos ≈ {brl(cost)} por atendimento · margem ≈ {brl(procedure.price - cost)}
                 </p>
               ) : null}
-              <p className={styles.label}>Automações ligadas</p>
-              <ul className={styles.linked}>
-                {LINKED.map((link) => {
-                  const rule = data.automationRules.find((r) => r.kind === link.kind);
-                  return (
-                    <li key={link.kind} data-active={rule?.active ? "" : undefined}>
-                      {link.label(procedure)}
-                      <span className="sr-only">{rule ? (rule.active ? ", ativa" : ", pausada") : ", preparada"}</span>
-                    </li>
-                  );
-                })}
-              </ul>
               {editable ? (
                 <div className={styles.actions}>
                   <button type="button" className={styles.quiet} onClick={() => setEditing(procedure.id)}>
@@ -195,7 +182,11 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
         <input className={styles.input} name="name" required maxLength={200} defaultValue={procedure?.name} autoComplete="off" />
       </Field>
       <Field label="Categoria">
-        <select className={styles.input} name="category" defaultValue={procedure?.category ?? "facial"}>
+        <select
+          className={styles.input}
+          name="category"
+          defaultValue={procedure?.category ?? (OTHER_FIRST.has(data.organization.segment) ? "outro" : "facial")}
+        >
           {PROCEDURE_CATEGORIES.map((category) => (
             <option key={category} value={category}>
               {CATEGORY_LABEL[category]}

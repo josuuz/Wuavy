@@ -88,7 +88,6 @@ type Action =
   | { type: "adjustLot"; id: ID; quantity: number; reason: keyof typeof ADJUST_REASONS }
   | { type: "note"; text: string }
   | { type: "status"; kind: OpportunityKind; status: OpportunityStatus; text?: string }
-  | { type: "toggleRule"; id: ID }
   | { type: "focus"; focus: Focus | null };
 
 function log(state: State, text: string): State {
@@ -111,8 +110,7 @@ function summary(data: FlowData, appointments: Appointment[], patientId: ID) {
 
 const DONE_TEXT: Partial<Record<AppointmentStatus, (name: string, procedure: string) => string>> = {
   confirmado: (name) => `${name} confirmou presença.`,
-  concluido: (name, procedure) =>
-    `${name}: ${procedure} finalizado. Estoque baixado, próximo retorno calculado e pós-atendimento iniciado.`,
+  concluido: (name, procedure) => `${name}: ${procedure} finalizado. Estoque baixado e próximo retorno calculado.`,
   faltou: (name, procedure) => `${name} faltou ao atendimento de ${procedure}.`,
   cancelado: () => "Um cancelamento abriu um horário na agenda.",
 };
@@ -266,10 +264,6 @@ function reducer(state: State, action: Action): State {
       const next = { ...state, statuses: { ...state.statuses, [action.kind]: action.status } };
       return action.text ? log(next, action.text) : next;
     }
-    case "toggleRule": {
-      const automationRules = data.automationRules.map((r) => (r.id === action.id ? { ...r, active: !r.active } : r));
-      return { ...state, data: { ...data, automationRules } };
-    }
     case "focus":
       return { ...state, focus: action.focus };
   }
@@ -284,8 +278,10 @@ interface FlowContext {
   base: string;
   /** A real clinic's data (not the demo's): records live in the database. */
   live: boolean;
-  /** What this clinic may do now: demo, trial, read-only (lib/flow/access.ts). */
+  /** What this clinic may do now: demo, subscription, read-only (lib/flow/access.ts). */
   access: Access;
+  /** The signed-in person, in the real Pulse. */
+  account?: Account;
   /** Records can be created, edited and deleted in the database: a real clinic that isn't read-only. */
   editable: boolean;
   /** "Pergunte ao Pulse" from any screen: open it, with a question already asked if one is given. */
@@ -297,14 +293,22 @@ interface FlowContext {
 
 const Context = createContext<FlowContext | null>(null);
 
+/** The signed-in person: their name at the clinic, e-mail and role. */
+export interface Account {
+  name: string;
+  email: string;
+  role: string;
+}
+
 interface ProviderProps {
   initial: FlowData;
   base?: string;
   access: Access;
+  account?: Account;
   children: ReactNode;
 }
 
-export function FlowProvider({ initial, base = BASE, access, children }: ProviderProps) {
+export function FlowProvider({ initial, base = BASE, access, account, children }: ProviderProps) {
   const [state, send] = useReducer(reducer, { data: initial, statuses: {}, focus: null, seq: 0 });
   const [asking, setAsking] = useState({ open: false, question: "", session: 0 });
   const ask = useCallback(
@@ -332,12 +336,13 @@ export function FlowProvider({ initial, base = BASE, access, children }: Provide
       base,
       live,
       access,
+      account,
       editable: live && canEdit,
       ask,
       asking,
       closeAsk,
     }),
-    [data, state.statuses, state.focus, dispatch, base, live, access, canEdit, ask, asking, closeAsk],
+    [data, state.statuses, state.focus, dispatch, base, live, access, account, canEdit, ask, asking, closeAsk],
   );
   return <Context value={value}>{children}</Context>;
 }

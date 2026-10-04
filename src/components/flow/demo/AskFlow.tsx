@@ -7,19 +7,20 @@ import { localAssistant, SUGGESTED, type FlowAnswer, type FlowAssistant } from "
 import { PassoFigure } from "@/variants/a/PassoFigure";
 import { STAND } from "@/variants/a/passoRig";
 import { viewHref } from "./copy";
+import { Soon } from "./forms";
 import { Sheet } from "./Sheet";
 import { useFlow } from "./store";
 import styles from "./ui.module.css";
 
 /*
-  "Pergunte ao Pulse": the operation's assistant. Suggested questions or free
-  text, answered from the clinic's data. Any screen can open it with a
-  question already asked (the overview does). The assistant is swappable:
+  "Pergunte ao Pulse": the operation's assistant. Today, the questions it can
+  answer by calculation, each from the clinic's own data; free questions wait
+  for Pulse AI, shown here as coming, never faked. Any screen can open it with
+  a question already asked (the overview does). The assistant is swappable:
   point `assistant` at an API-backed FlowAssistant and nothing else changes.
 */
 
 const assistant: FlowAssistant = localAssistant;
-const THINK_MS = 450; // long enough to read as work, short enough not to stall
 
 interface Turn {
   q: string;
@@ -29,14 +30,13 @@ interface Turn {
 export function AskFlow({ open, question, onClose }: { open: boolean; question: string; onClose: () => void }) {
   const { data, base, live } = useFlow();
   const [thread, setThread] = useState<Turn[]>(() => (question ? [{ q: question }] : []));
-  const [text, setText] = useState("");
   const [busy, setBusy] = useState(Boolean(question));
   const end = useRef<HTMLDivElement>(null);
   const arrival = useRef(question);
 
   const answer = useCallback(
     async (q: string) => {
-      const [a] = await Promise.all([assistant.ask(q, data), new Promise((r) => setTimeout(r, THINK_MS))]);
+      const a = await assistant.ask(q, data);
       setThread((t) => t.map((turn, i) => (i === t.length - 1 ? { ...turn, a } : turn)));
       setBusy(false);
       requestAnimationFrame(() => end.current?.scrollIntoView({ block: "end", behavior: "smooth" }));
@@ -53,9 +53,8 @@ export function AskFlow({ open, question, onClose }: { open: boolean; question: 
   }, [answer]);
 
   const ask = (q: string) => {
-    if (!q.trim() || busy) return;
+    if (busy) return;
     setBusy(true);
-    setText("");
     setThread((t) => [...t, { q }]);
     void answer(q);
   };
@@ -76,7 +75,7 @@ export function AskFlow({ open, question, onClose }: { open: boolean; question: 
         {thread.length === 0 ? (
           <div className={styles.askStart}>
             <p className={styles.askIntro}>
-              Pergunte sobre a clínica do seu jeito. Eu leio vendas, pacientes, agenda e estoque e mostro onde agir.
+              Escolha uma pergunta. Eu leio vendas, pacientes, agenda e estoque da {live ? "clínica" : "demo"} e mostro onde agir.
             </p>
             <ul className={styles.askList} aria-label="Perguntas que o Pulse responde">
               {SUGGESTED.map((q) => (
@@ -115,7 +114,7 @@ export function AskFlow({ open, question, onClose }: { open: boolean; question: 
             ) : (
               <p className={styles.thinking}>
                 <span className="pulse-dot" aria-hidden="true" />
-                Pulse analisando…
+                Calculando…
               </p>
             )}
           </div>
@@ -133,30 +132,16 @@ export function AskFlow({ open, question, onClose }: { open: boolean; question: 
         </div>
       ) : null}
 
-      <form
-        className={styles.askForm}
-        onSubmit={(event) => {
-          event.preventDefault();
-          ask(text);
-        }}
-      >
+      <div className={styles.askForm}>
         <label className="sr-only" htmlFor="flow-ask">
-          Sua pergunta
+          Pergunta livre (Pulse AI, em breve)
         </label>
-        <input
-          id="flow-ask"
-          className={styles.input}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder="Ex.: quem posso chamar para preencher 14h?"
-          autoComplete="off"
-        />
-        <button type="submit" className={styles.primary} disabled={busy || !text.trim()}>
-          Perguntar
-        </button>
-      </form>
+        <input id="flow-ask" className={styles.input} disabled placeholder="Pergunte do seu jeito" />
+        <Soon>Pulse AI · Em breve</Soon>
+      </div>
       <p className={styles.fine}>
-        Respostas calculadas a partir dos dados {live ? "da clínica" : "da demo"}. Nenhuma IA está conectada ainda.
+        Cada resposta é calculada na hora com os dados {live ? "da clínica" : "da demo"}, sem IA. Perguntas livres chegam com o
+        Pulse AI.
       </p>
     </Sheet>
   );

@@ -44,6 +44,24 @@ export class MercadoPagoError extends Error {
 
 export const billingReady = () => Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN);
 
+/*
+  Test mode: Mercado Pago only accepts a test seller's subscription with a test
+  buyer's e-mail as payer. MERCADOPAGO_TEST_PAYER_EMAIL stands in for the
+  signed-in person's e-mail at Mercado Pago only (the account keeps the real
+  one). Leave it unset in production: the checkout says "ambiente de teste"
+  whenever it is set or the public key starts with TEST-.
+*/
+const testPayer = () => process.env.MERCADOPAGO_TEST_PAYER_EMAIL?.trim() || null;
+
+export const testMode = () => Boolean(testPayer()) || Boolean(process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY?.startsWith("TEST-"));
+
+/** What Mercado Pago said was wrong, in a line (shown only in test mode). */
+export function describeError(error: MercadoPagoError): string {
+  const body = error.body as { message?: string; cause?: { description?: string }[] } | null;
+  const cause = body?.cause?.map((c) => c.description).filter(Boolean).join("; ");
+  return `Mercado Pago (${error.status}): ${[body?.message, cause].filter(Boolean).join(" — ") || "recusou a assinatura"}`;
+}
+
 async function mp<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; idempotencyKey?: string } = {}): Promise<T> {
   const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
   if (!token) throw new BillingUnavailable("MERCADOPAGO_ACCESS_TOKEN is not set");
@@ -106,7 +124,7 @@ export async function createSubscription(input: { reference: string; email: stri
     body: {
       reason: "Wuavy Pulse",
       external_reference: input.reference,
-      payer_email: input.email,
+      payer_email: testPayer() ?? input.email,
       card_token_id: input.cardToken,
       auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: PRICE / 100, currency_id: "BRL" },
       back_url: input.backUrl,

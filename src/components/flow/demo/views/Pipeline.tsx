@@ -7,7 +7,7 @@ import { brl, capital, dayAt, daysFrom, hour, plural, relDay, shortDate } from "
 import { CLOSED_DAYS, idleLeads, onBoard, openLeads, procedureOf, staleQuote, upcomingFor } from "@/lib/flow/insights";
 import { LEAD_SOURCES, LEAD_STAGES, type Lead, type LeadSource, type LeadStage, type Patient } from "@/lib/flow/types";
 import { NEXT_STEP, SOURCE_LABEL, STAGE_LABEL } from "../copy";
-import { DeleteButton, digits, Field, FocusLink, FormError, Intro, reais, useWrite } from "../forms";
+import { DeleteButton, digits, Field, FocusLink, FormError, Intro, Phone, reais, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow, useFocus } from "../store";
 import styles from "../ui.module.css";
@@ -221,7 +221,9 @@ function LeadDetail({ lead, onDone }: { lead: Lead; onDone: () => void }) {
       <dl className={styles.fields}>
         <div>
           <dt>Telefone</dt>
-          <dd>{lead.phone || "—"}</dd>
+          <dd>
+            <Phone phone={lead.phone} />
+          </dd>
         </div>
         <div>
           <dt>Como conheceu</dt>

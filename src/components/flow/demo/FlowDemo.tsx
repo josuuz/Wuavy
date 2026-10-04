@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { Wordmark } from "@/components/brand/Wordmark";
@@ -10,17 +10,16 @@ import { site } from "@/data/site";
 import { contactHref } from "@/lib/contact";
 import { PRICE, type Access } from "@/lib/flow/access";
 import { brl } from "@/lib/flow/format";
-import { recovered } from "@/lib/flow/insights";
+import { potentialOf } from "@/lib/flow/insights";
 import type { FlowData } from "@/lib/flow/types";
-import { createClient } from "@/lib/supabase/client";
 import { pad } from "@/lib/utils";
 import "../pulse-theme.css";
 import { ThemeToggle } from "../ThemeToggle";
 import { AskFlow } from "./AskFlow";
-import { APP_BASE, BASE, CHECKOUT, MENU, PLAN, VIEWS, viewHref } from "./copy";
-import { PaymentMethod } from "./forms";
+import { APP_BASE, BASE, CHECKOUT, MENU, ONLINE_CHECKOUT, PLAN, VIEWS, viewHref } from "./copy";
+import { PaymentMethod, SignOut, Soon } from "./forms";
 import { Sheet } from "./Sheet";
-import { FlowProvider, useFlow } from "./store";
+import { FlowProvider, useFlow, type Account } from "./store";
 import ui from "./ui.module.css";
 import styles from "./FlowDemo.module.css";
 
@@ -28,34 +27,35 @@ import styles from "./FlowDemo.module.css";
   The Pulse's app shell: the clinic and its screens on the left (a strip
   across the top on phones), the current screen's name, the plan with its
   "Assinar", the theme switch and "Pergunte ao Pulse" above the work. The
-  rail keeps what the Pulse brought back in sight on every screen. Data
-  comes in from the route's layout, with what the clinic may do (`access`):
-  the demo's in memory, or a real clinic's from Supabase, in trial or not.
+  rail keeps the revenue within reach (the open opportunities) in sight on
+  every screen. Data comes in from the route's layout, with what the clinic
+  may do (`access`): the demo's in memory, or a real clinic's from Supabase.
 */
 
 interface FlowDemoProps {
   initial: FlowData;
   access: Access;
   /** The signed-in member, in the real Pulse. */
-  account?: { name: string };
+  account?: Account;
   children: ReactNode;
 }
 
 export function FlowDemo({ initial, access, account, children }: FlowDemoProps) {
   return (
-    <FlowProvider initial={initial} base={access.isDemoMode ? BASE : APP_BASE} access={access}>
-      <Shell account={account}>{children}</Shell>
+    <FlowProvider initial={initial} base={access.isDemoMode ? BASE : APP_BASE} access={access} account={account}>
+      <Shell>{children}</Shell>
     </FlowProvider>
   );
 }
 
-function Shell({ account, children }: { account?: { name: string }; children: ReactNode }) {
+function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { data, ops, base, access, ask, asking, closeAsk } = useFlow();
+  const { data, ops, base, access, account, ask, asking, closeAsk } = useFlow();
   const [subscribing, setSubscribing] = useState(false);
   const current = VIEWS.find((v) => viewHref(v.slug, base) === pathname) ?? VIEWS[0];
+  const menu = MENU.filter((view) => !view.live || !access.isDemoMode);
   const open = ops.filter((o) => o.count > 0 && o.status !== "resolvida").length;
-  const back = recovered(data).total;
+  const potential = potentialOf(ops);
   const status = access.subscriptionStatus;
   // Whoever is not paying: the demo's visitor, a clinic whose subscription was cancelled.
   const canSubscribe = access.isDemoMode || status === "cancelled";
@@ -90,11 +90,11 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
               {plan}
             </span>
           ) : null}
-          {account ? <SignOut /> : null}
+          {account ? <SignOut className={styles.signOut} /> : null}
         </p>
         <nav aria-label="Telas do Pulse" className={styles.nav}>
           <ol>
-            {MENU.map((view, i) => {
+            {menu.map((view, i) => {
               const href = viewHref(view.slug, base);
               const here = href === pathname;
               return (
@@ -115,13 +115,13 @@ function Shell({ account, children }: { account?: { name: string }; children: Re
             })}
           </ol>
         </nav>
-        {back ? (
-          <Link href={`${viewHref("", base)}#valor`} className={styles.railValue}>
-            <span className={styles.railLabel}>Recuperado pelo Pulse · 30 dias</span>
-            <strong className={styles.railAmount}>{brl(back)}</strong>
-            {back >= PRICE ? (
-              <span className={styles.railNote}>{Math.floor(back / PRICE)}× o valor da mensalidade</span>
-            ) : null}
+        {potential ? (
+          <Link href={viewHref("oportunidades", base)} className={styles.railValue}>
+            <span className={styles.railLabel}>Receita potencial · agora</span>
+            <strong className={styles.railAmount}>{brl(potential)}</strong>
+            <span className={styles.railNote}>
+              em {open} {open === 1 ? "oportunidade aberta" : "oportunidades abertas"}
+            </span>
           </Link>
         ) : null}
         {account ? null : (
@@ -228,35 +228,41 @@ function Subscribe({ open, onClose }: { open: boolean; onClose: () => void }) {
           <li key={item}>{item}</li>
         ))}
       </ul>
-      <PaymentMethod />
+      <ul className={ui.soonList} aria-label="Chega em breve ao plano">
+        {offer.coming.map((item) => (
+          <li key={item}>
+            <Soon />
+            {item}
+          </li>
+        ))}
+      </ul>
+      {ONLINE_CHECKOUT ? <PaymentMethod /> : <p className={ui.fine}>{offer.offline.note}</p>}
       <div className={ui.modalActions}>
-        <Link href={CHECKOUT} className={ui.primary} data-checkout="">
-          {offer.cta}
-        </Link>
+        {ONLINE_CHECKOUT ? (
+          <Link href={CHECKOUT} className={ui.primary} data-checkout="">
+            {offer.cta}
+          </Link>
+        ) : (
+          <>
+            <a
+              href={contactHref(site.contact.primary, offer.topic)}
+              className={ui.primary}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {offer.offline.cta}
+            </a>
+            {access.isDemoMode ? (
+              <Link href={`/pulse/entrar?modo=criar&depois=assinar`} className={ui.secondary}>
+                {offer.offline.account}
+              </Link>
+            ) : null}
+          </>
+        )}
         <button type="button" className={ui.quiet} onClick={onClose}>
           {access.isDemoMode ? offer.back.demo : offer.back.other}
         </button>
       </div>
     </Sheet>
-  );
-}
-
-function SignOut() {
-  const router = useRouter();
-  const [leaving, setLeaving] = useState(false);
-  return (
-    <button
-      type="button"
-      className={styles.signOut}
-      disabled={leaving}
-      onClick={async () => {
-        setLeaving(true);
-        await createClient().auth.signOut();
-        router.replace("/pulse/entrar");
-        router.refresh();
-      }}
-    >
-      Sair
-    </button>
   );
 }

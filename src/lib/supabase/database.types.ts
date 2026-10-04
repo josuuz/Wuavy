@@ -485,9 +485,9 @@ export type Database = {
         ];
       };
       products: {
-        Row: { id: string; name: string; organization_id: string; unit: string; unit_cost: number };
-        Insert: { id?: string; name: string; organization_id: string; unit: string; unit_cost: number };
-        Update: { id?: string; name?: string; organization_id?: string; unit?: string; unit_cost?: number };
+        Row: { id: string; min_quantity: number | null; name: string; organization_id: string; unit: string; unit_cost: number };
+        Insert: { id?: string; min_quantity?: number | null; name: string; organization_id: string; unit: string; unit_cost: number };
+        Update: { id?: string; min_quantity?: number | null; name?: string; organization_id?: string; unit?: string; unit_cost?: number };
         Relationships: [
           {
             foreignKeyName: "products_organization_id_fkey";

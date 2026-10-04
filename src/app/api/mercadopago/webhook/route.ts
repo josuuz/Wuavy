@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { BillingUnavailable, syncCharge, syncSubscription, verifySignature } from "@/lib/flow/billing";
+import { BillingUnavailable, MercadoPagoError, syncCharge, syncSubscription, verifySignature } from "@/lib/flow/billing";
 
 /*
   Mercado Pago's notices about subscriptions (configure this URL in the
@@ -10,7 +10,9 @@ import { BillingUnavailable, syncCharge, syncSubscription, verifySignature } fro
   first (nothing unsigned goes further), then the subscription is read back
   from Mercado Pago with our token and its status written from that answer.
   The body is never trusted, and the same notice twice writes the same thing.
-  A 500 makes Mercado Pago retry later; anything else is acknowledged.
+  A 500 makes Mercado Pago retry later; anything else is acknowledged, and so
+  is a subscription Mercado Pago says it does not know (a panel's test notice
+  carries a made-up id), which no retry would ever fix.
 */
 
 interface Notice {
@@ -34,6 +36,10 @@ export async function POST(request: NextRequest) {
     if (type === "subscription_preapproval") await syncSubscription(dataId);
     else if (type === "subscription_authorized_payment") await syncCharge(dataId);
   } catch (error) {
+    if (error instanceof MercadoPagoError && (error.status === 404 || error.status === 400)) {
+      console.warn("Mercado Pago webhook ignored", type, dataId, error.status);
+      return new Response(null, { status: 200 });
+    }
     console.error("Mercado Pago webhook failed", type, dataId, error instanceof BillingUnavailable ? error.message : error);
     return new Response(null, { status: 500 });
   }

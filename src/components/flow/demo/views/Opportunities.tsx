@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { contactLead } from "@/lib/flow/actions";
 import { brl, capital, daysFrom, hour, plural, relDay, units } from "@/lib/flow/format";
 import {
   dueReturns,
@@ -12,8 +13,8 @@ import {
   lotValue,
   missed,
   openSlots,
+  potentialOf,
   procedureOf,
-  recovered,
   returnValue,
   slotMatches,
   stuckLeads,
@@ -21,28 +22,37 @@ import {
 } from "@/lib/flow/insights";
 import type { FlowData, ID, Opportunity, OpportunityKind } from "@/lib/flow/types";
 import { KIND, SOURCE_LABEL, STAGE_LABEL, STATUS_LABEL, VIEWS, viewHref } from "../copy";
-import { Approval, Prepared } from "../forms";
+import { Approval, FormError, Prepared, SendNote, useWrite } from "../forms";
+import { Sheet } from "../Sheet";
 import { useFlow, useFocus } from "../store";
 import styles from "../ui.module.css";
+import { BookingForm, type Draft } from "./Schedule";
 
 /*
   The Pulse's opportunity engine: every front where money is waiting, what
   it is worth, who the Pulse picked to start with, and the action it
   recommends. Nothing goes out on its own: the Pulse identifies, recommends
-  and prepares; a person reviews and approves.
+  and prepares the message; a person reviews it and sends it from the
+  clinic's WhatsApp, then books or records the contact. That is what settles
+  a front: the data changes, and the person leaves the list by themselves.
 */
 
 const SHOWN = 8;
 /** How many people the Pulse picks to start with, per front. */
 const PICK = 8;
 
-/** One person the Pulse picked, with the message it would send them. */
+/** One person the Pulse picked, with the message it would send them and what settles it. */
 export interface Pick {
   id: string;
   name: string;
+  phone: string;
   detail: string;
   value: number;
   message: string;
+  /** A contact in Vendas: the contact is recorded once the message is sent. */
+  leadId?: ID;
+  /** A patient: the booking it leads to. */
+  booking?: Draft;
 }
 
 const first = (name: string) => name.split(" ")[0];
@@ -58,6 +68,8 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
           return {
             id: l.id,
             name: l.name,
+            phone: l.phone,
+            leadId: l.id,
             detail: `${procedure} · sem resposta há ${plural(-daysFrom(d.now, l.lastContactAt), "dia", "dias")}`,
             value: l.potentialValue,
             message: `Oi ${first(l.name)}! Passando para saber se ficou alguma dúvida sobre o orçamento de ${procedure}. Se quiser, já deixo um horário reservado para você.`,
@@ -71,6 +83,8 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
           return {
             id: l.id,
             name: l.name,
+            phone: l.phone,
+            leadId: l.id,
             detail: `${STAGE_LABEL[l.stage]} · ${procedure} · parado há ${plural(-daysFrom(d.now, l.lastContactAt), "dia", "dias")}`,
             value: l.potentialValue,
             message: `Oi ${first(l.name)}! Conseguiu pensar sobre ${procedure}? Tenho horários de avaliação nesta semana e posso reservar um para você.`,
@@ -86,11 +100,14 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
         )
         .slice(0, PICK)
         .map((p) => {
-          const procedure = procedureOf(d, history(d, p.id)[0]?.procedureId ?? "")?.name ?? "procedimento";
+          const last = history(d, p.id)[0]?.procedureId;
+          const procedure = procedureOf(d, last ?? "")?.name ?? "procedimento";
           const days = daysFrom(d.now, p.nextReturnAt!);
           return {
             id: p.id,
             name: p.name,
+            phone: p.phone,
+            booking: { patientId: p.id, procedureId: last },
             detail: `${procedure} · ${days < 0 ? `atrasado há ${plural(-days, "dia", "dias")}` : days === 0 ? "retorno hoje" : `retorno em ${plural(days, "dia", "dias")}`}`,
             value: returnValue(d, p),
             message: `Oi ${first(p.name)}! Já está na época do seu retorno de ${procedure}. Quer que eu veja um horário para você esta semana?`,
@@ -104,6 +121,8 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
           return {
             id: patient.id,
             name: patient.name,
+            phone: patient.phone,
+            booking: { patientId: patient.id, procedureId: step.appointment.procedureId },
             detail: `${procedure?.name ?? "Atendimento"} · faltou ${relDay(d.now, step.appointment.startsAt)}`,
             value: procedure?.price ?? 0,
             message: `Oi ${first(patient.name)}! Sentimos sua falta no ${procedure?.name ?? "atendimento"}. Quer remarcar? Tenho horários livres nos próximos dias.`,
@@ -121,6 +140,13 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
           {
             id: `${slot.startsAt}:${match.patient.id}`,
             name: match.patient.name,
+            phone: match.patient.phone,
+            booking: {
+              startsAt: slot.startsAt,
+              patientId: match.patient.id,
+              procedureId: match.procedure.id,
+              waitlistId: match.waitlistId,
+            },
             detail: `${capital(when)} · ${match.procedure.name} · ${match.score}% compatível`,
             value: match.procedure.price,
             message: `Oi ${first(match.patient.name)}! Abriu um horário ${when} para ${match.procedure.name}. Quer que eu reserve para você?`,
@@ -141,6 +167,8 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
           picks.push({
             id: patient.id,
             name: patient.name,
+            phone: patient.phone,
+            booking: { patientId: patient.id, procedureId: procedure.id },
             detail: `${procedure.name} · usa ${x.product?.name ?? "o produto"}`,
             value: procedure.price,
             message: `Oi ${first(patient.name)}! Estamos com horários para ${procedure.name} nas próximas semanas. Quer que eu reserve um para você?`,
@@ -158,8 +186,7 @@ export function Opportunities() {
   const focus = useFocus("opportunity");
   const [opened, setOpened] = useState<OpportunityKind | null>(focus?.kind ?? null);
   const open = ops.filter((o) => o.count > 0 && o.status !== "resolvida");
-  const potential = open.reduce((s, o) => s + o.value, 0);
-  const back = recovered(data).total;
+  const potential = potentialOf(ops);
   // Where the money is first; empty and settled fronts go last.
   const sorted = [...ops].sort(
     (a, b) =>
@@ -173,15 +200,20 @@ export function Opportunities() {
         <h1 className={styles.title}>Oportunidades</h1>
         <p className={styles.lead}>
           O motor do Pulse cruza vendas, pacientes, agenda e estoque, calcula quanto vale cada frente e separa por onde
-          começar. Nada sai da clínica sem a sua aprovação.
+          começar. Ele prepara cada mensagem; você revisa e envia pelo WhatsApp da clínica.
         </p>
       </header>
 
       <p className={styles.summary}>
-        <strong>{brl(potential)}</strong> em potencial aberto · <strong>{open.length}</strong>{" "}
-        {open.length === 1 ? "frente" : "frentes"} com ação recomendada · <strong>{brl(back)}</strong> recuperados nos
-        últimos 30 dias
+        <strong>{brl(potential)}</strong> em receita potencial · <strong>{open.length}</strong>{" "}
+        {open.length === 1 ? "frente" : "frentes"} com ação recomendada
       </p>
+      {data.patients.length || data.leads.length ? null : (
+        <p className={styles.fine}>
+          As oportunidades aparecem conforme a clínica cadastra pacientes, contatos, agenda e estoque: retornos atrasados,
+          orçamentos sem resposta, faltas, horários vagos e lotes perto da validade.
+        </p>
+      )}
 
       <ol className={styles.opps}>
         {sorted.map((o) => (
@@ -204,8 +236,10 @@ function Front({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggle:
   const picks = selection(data, o.kind);
   const [reviewing, setReviewing] = useState(false);
   const [left, setLeft] = useState<string[]>([]);
+  const [booking, setBooking] = useState<Draft | null>(null);
   const chosen = picks.filter((p) => !left.includes(p.id));
-  const step = o.status === "resolvida" ? 4 : o.status === "em_andamento" ? 3 : reviewing ? 2 : 1;
+  const prepared = o.status === "em_andamento";
+  const step = prepared ? 3 : reviewing ? 2 : 1;
 
   return (
     <li className={styles.opp} data-status={o.status}>
@@ -245,11 +279,11 @@ function Front({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggle:
             <p>{copy.suggestion}</p>
             <Approval step={step} />
 
-            {!access.canEdit ? null : o.status === "nova" && !reviewing ? (
+            {!access.canEdit ? null : !prepared && !reviewing ? (
               <button type="button" className={styles.primary} onClick={() => setReviewing(true)}>
                 {copy.review} ({picks.length})
               </button>
-            ) : o.status === "nova" ? (
+            ) : !prepared ? (
               <>
                 <ul className={styles.picks} aria-label="Quem o Pulse selecionou">
                   {picks.map((p) => (
@@ -274,7 +308,7 @@ function Front({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggle:
                     type="button"
                     className={styles.primary}
                     disabled={!chosen.length}
-                    onClick={() => dispatch({ type: "status", kind: o.kind, status: "em_andamento", text: copy.prepared(chosen.length) })}
+                    onClick={() => dispatch({ type: "status", kind: o.kind, status: "em_andamento" })}
                   >
                     {copy.prepare} ({chosen.length})
                   </button>
@@ -283,25 +317,41 @@ function Front({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggle:
                   </button>
                 </div>
               </>
-            ) : o.status === "em_andamento" ? (
+            ) : (
               <>
-                <p className={styles.done}>{copy.prepared(chosen.length)}</p>
-                {chosen[0] ? (
-                  <>
-                    <p className={styles.label}>Mensagem para {first(chosen[0].name)}</p>
-                    <Prepared text={chosen[0].message} />
-                  </>
-                ) : null}
+                <p className={styles.done}>
+                  {chosen.length ? copy.prepared(chosen.length) : "Todas as pessoas desta seleção já foram trabalhadas."}
+                </p>
+                <SendNote />
+                <ol className={styles.outbox} aria-label="Mensagens prontas">
+                  {chosen.map((p) => (
+                    <li key={p.id}>
+                      <p className={styles.matchName}>
+                        <strong>{p.name}</strong>
+                        <span className={styles.pickValue}>{brl(p.value)}</span>
+                      </p>
+                      <p className={styles.matchWhy}>{p.detail}</p>
+                      <Prepared text={p.message} phone={p.phone} inList>
+                        <Settle pick={p} onBook={setBooking} />
+                      </Prepared>
+                    </li>
+                  ))}
+                </ol>
+                <p className={styles.fine}>
+                  Quando a pessoa responder, agende ou registre o contato: ela sai desta lista sozinha. Recarregar a página
+                  refaz a seleção com os dados de agora.
+                </p>
                 <button
                   type="button"
-                  className={styles.secondary}
-                  onClick={() => dispatch({ type: "status", kind: o.kind, status: "resolvida" })}
+                  className={styles.quiet}
+                  onClick={() => {
+                    dispatch({ type: "status", kind: o.kind, status: "nova" });
+                    setReviewing(true);
+                  }}
                 >
-                  Marcar como resolvida
+                  Voltar à seleção
                 </button>
               </>
-            ) : (
-              <p className={styles.done}>Resolvida.</p>
             )}
 
             <Link href={viewHref(copy.view, base)} className={styles.textAction}>
@@ -310,7 +360,39 @@ function Front({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggle:
           </div>
         </div>
       ) : null}
+
+      <Sheet open={booking !== null} onClose={() => setBooking(null)} title="Novo agendamento" kicker={copy.tag}>
+        {booking ? <BookingForm draft={booking} onDone={() => setBooking(null)} /> : null}
+      </Sheet>
     </li>
+  );
+}
+
+/** What settles one person once the message is sent: the contact recorded, or the booking made. */
+function Settle({ pick, onBook }: { pick: Pick; onBook: (draft: Draft) => void }) {
+  const { live, dispatch } = useFlow();
+  const { pending, error, write } = useWrite();
+  if (pick.booking) {
+    return (
+      <button type="button" className={styles.secondary} onClick={() => onBook(pick.booking!)}>
+        Agendar
+      </button>
+    );
+  }
+  if (!pick.leadId) return null;
+  const leadId = pick.leadId;
+  return (
+    <>
+      <button
+        type="button"
+        className={styles.secondary}
+        disabled={pending}
+        onClick={() => (live ? write(() => contactLead(leadId)) : dispatch({ type: "contactLead", id: leadId }))}
+      >
+        Registrar contato
+      </button>
+      <FormError error={error} />
+    </>
   );
 }
 

@@ -13,6 +13,8 @@ export const SEGMENTS = ["estetica", "odontologia", "dermatologia", "harmonizaca
 export const TEAM_SIZES = ["1", "2-3", "4-6", "7+"] as const;
 /** The logo's largest size: under the Server Actions' 1 MB body, with room for the rest of the form. */
 export const LOGO_MAX = 800 * 1024;
+/** What the logo's file picker offers. The server checks the file's own bytes again (logo.ts). */
+export const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export interface Organization {
   id: ID;
@@ -21,6 +23,10 @@ export interface Organization {
   segment: (typeof SEGMENTS)[number];
   city: string;
   logoUrl?: string;
+  whatsapp?: string;
+  teamSize?: (typeof TEAM_SIZES)[number];
+  /** When the clinic sees patients ("08:00" to "19:00"; days 0 Sunday … 6 Saturday). Absent: the default grid, Monday to Saturday. */
+  hours?: { opens: string; closes: string; days: number[] };
 }
 
 export interface User {
@@ -92,7 +98,7 @@ export interface WaitlistEntry {
   createdAt: string;
 }
 
-export const PROCEDURE_CATEGORIES = ["facial", "injetaveis", "corporal"] as const;
+export const PROCEDURE_CATEGORIES = ["facial", "injetaveis", "corporal", "outro"] as const;
 
 export interface Procedure {
   id: ID;
@@ -111,6 +117,8 @@ export interface Product {
   name: string;
   unit: string;
   unitCost: number;
+  /** At or below this, the Pulse says to buy (migration 0004). Absent: it judges by the sessions left. */
+  minQuantity?: number;
 }
 
 export interface InventoryLot {

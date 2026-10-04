@@ -14,29 +14,30 @@ import {
 import { capital, dayAt, dayLabel, daysFrom, hour, plural, relDay, shortDate, units, weekday } from "@/lib/flow/format";
 import {
   daySlots,
+  opensOn,
   procedureOf,
   professionals,
-  SLOT_TIMES,
   slotMatches,
   slotTime,
+  slotTimes,
   WEEK_DAYS,
   weekStart,
   type Slot,
 } from "@/lib/flow/insights";
 import { LEAD_SOURCES, type Appointment, type AppointmentStatus, type FlowData, type ID, type LeadSource } from "@/lib/flow/types";
 import { APPOINTMENT_LABEL, PERIOD_LABEL, SOURCE_LABEL, viewHref } from "../copy";
-import { DeleteButton, Field, FocusLink, FormError, Intro, Prepared, useWrite } from "../forms";
+import { DeleteButton, Field, FocusLink, FormError, Intro, Prepared, Soon, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow, useFocus, type Booking } from "../store";
 import styles from "../ui.module.css";
 
 /*
   The clinic's agenda: a day or a week, hours down the side, one card per
-  booking with its status, a filter by professional. A free hour books in
-  two taps; a booking is confirmed, finished, marked as a no-show or
-  rescheduled from its card. When a cancellation opens an hour, the Pulse
-  ranks who could take it and prepares the invite. The waiting list sits
-  beside it.
+  booking with its status, a filter by professional. The hours and days are
+  the clinic's own (onboarding, Configurações). A free hour books in two
+  taps; a booking is confirmed, finished, marked as a no-show or rescheduled
+  from its card. When a cancellation opens an hour, the Pulse ranks who could
+  take it and prepares the invite. The waiting list sits beside it.
 */
 
 /** What the booking form opens with: a time, a person, a procedure, a booking to replace. */
@@ -276,6 +277,7 @@ function DayView({ offset, pro, onBook, onOpen }: CalendarProps & { offset: numb
   const booked = shown.filter((s) => s.view.kind === "atendimento").map((s) => s.view.appointment!);
   const count = (status: AppointmentStatus) => booked.filter((a) => a.status === status).length;
   const free = shown.filter((s) => s.view.kind === "livre").length;
+  const closed = !opensOn(data, slotTime(data, offset, 0, 0));
   const suggested = (startsAt: string) => {
     const n = slotMatches(data, startsAt).length;
     return n ? `Pulse sugere ${plural(n, "paciente", "pacientes")} · ` : "";
@@ -290,6 +292,7 @@ function DayView({ offset, pro, onBook, onOpen }: CalendarProps & { offset: numb
         {count("concluido") ? ` · ${plural(count("concluido"), "finalizado", "finalizados")}` : ""}
         {count("faltou") ? ` · ${count("faltou")} ${count("faltou") === 1 ? "falta" : "faltas"}` : ""}
         {free ? ` · ${plural(free, "horário livre", "horários livres")}` : ""}
+        {closed ? " · a clínica não atende neste dia" : ""}
       </p>
       <ol className={styles.dayList}>
         {shown.map(({ slot, view }) => {
@@ -416,7 +419,7 @@ function AppointmentCard({ appointment: a, compact, onOpen }: { appointment: App
  * invite; sending it waits for the WhatsApp connection and a person's go.
  */
 export function SlotInvites({ startsAt, onBook }: { startsAt: string; onBook?: (draft: Draft) => void }) {
-  const { data, dispatch, access } = useFlow();
+  const { data, access } = useFlow();
   const [prepared, setPrepared] = useState<ID[]>([]);
   const matches = slotMatches(data, startsAt);
   const when = `${relDay(data.now, startsAt)} às ${hour(startsAt)}`;
@@ -436,19 +439,26 @@ export function SlotInvites({ startsAt, onBook }: { startsAt: string; onBook?: (
             </p>
             {done ? (
               <Prepared
-                send="Enviar convite"
+                phone={m.patient.phone}
                 text={`Oi ${firstName(m.patient.name)}! Abriu um horário ${when} para ${m.procedure.name}. Quer que eu reserve para você?`}
-              />
+              >
+                {onBook ? (
+                  <button
+                    type="button"
+                    className={styles.quiet}
+                    onClick={() => onBook({ startsAt, patientId: m.patient.id, procedureId: m.procedure.id, waitlistId: m.waitlistId })}
+                  >
+                    Agendar
+                  </button>
+                ) : null}
+              </Prepared>
             ) : (
               <div className={styles.actions}>
                 {access.canEdit ? (
                   <button
                     type="button"
                     className={styles.secondary}
-                    onClick={() => {
-                      setPrepared((list) => [...list, m.patient.id]);
-                      dispatch({ type: "note", text: `Convite para ${when} preparado para ${m.patient.name}. Não enviado.` });
-                    }}
+                    onClick={() => setPrepared((list) => [...list, m.patient.id])}
                   >
                     Preparar convite
                   </button>
@@ -474,7 +484,7 @@ export function SlotInvites({ startsAt, onBook }: { startsAt: string; onBook?: (
 }
 
 function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: () => void }) {
-  const { data, dispatch, editable, access } = useFlow();
+  const { data, editable, access } = useFlow();
   const { pending, error, write } = useWrite();
   const [invited, setInvited] = useState<ID[]>([]);
 
@@ -493,6 +503,7 @@ function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: (
             const patient = data.patients.find((p) => p.id === w.patientId);
             const procedure = procedureOf(data, w.procedureId);
             const done = invited.includes(w.id);
+            const free = firstFree(data, w.period);
             return (
               <li key={w.id}>
                 <strong>{patient?.name}</strong>
@@ -507,17 +518,8 @@ function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: (
                   >
                     Agendar
                   </button>
-                  {done ? (
-                    <span className={styles.done}>Convite preparado</span>
-                  ) : access.canEdit ? (
-                    <button
-                      type="button"
-                      className={styles.quiet}
-                      onClick={() => {
-                        setInvited((list) => [...list, w.id]);
-                        dispatch({ type: "note", text: `Convite de horário preparado para ${patient?.name}. Não enviado.` });
-                      }}
-                    >
+                  {!done && access.canEdit ? (
+                    <button type="button" className={styles.quiet} onClick={() => setInvited((list) => [...list, w.id])}>
                       Preparar convite
                     </button>
                   ) : null}
@@ -527,6 +529,12 @@ function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: (
                     </button>
                   ) : null}
                 </div>
+                {done ? (
+                  <Prepared
+                    phone={patient?.phone}
+                    text={`Oi ${firstName(patient?.name)}! Você está na nossa lista de espera para ${procedure?.name ?? "o atendimento"}. Abriu um horário ${relDay(data.now, free)} às ${hour(free)}: quer que eu reserve para você?`}
+                  />
+                ) : null}
               </li>
             );
           })}
@@ -571,7 +579,7 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
   const busy = (t: string) =>
     slots.some((s) => s.status === "ocupado" && time(s.startsAt) === t && s.appointment?.id !== draft.replaces);
   const gone = (t: string) => date === today && `${date}T${t}:00.000Z` < data.now;
-  const times = [...new Set([...SLOT_TIMES.map(([h, m]) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`), at])].sort();
+  const times = [...new Set([...slotTimes(data).map(([h, m]) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`), at])].sort();
   const candidates = !lead && !fixed && who === "" && valid && startsAt > data.now ? slotMatches(data, startsAt) : [];
 
   if (!data.procedures.length) {
@@ -801,7 +809,6 @@ function AppointmentDetail({
   const procedure = procedureOf(data, a.procedureId);
   const professional = data.users.find((u) => u.id === a.professionalId);
   const uses = data.procedureProducts.filter((pp) => pp.procedureId === a.procedureId);
-  const postVisit = data.automationRules.find((r) => r.kind === "post_visit");
   const nextReturn = procedure ? new Date(Date.parse(a.startsAt) + procedure.returnDays * 86_400_000).toISOString() : "";
   const open = a.status === "agendado" || a.status === "confirmado";
   // Done or missed can only be said on the day or after it.
@@ -854,13 +861,11 @@ function AppointmentDetail({
             <li>
               Calcula o próximo retorno: {shortDate(nextReturn)}, {procedure.returnDays} dias depois
             </li>
-            <li>
-              {postVisit?.active
-                ? "Inicia o pós-atendimento: mensagem de cuidado em 2 dias"
-                : "Pós-atendimento pausado em Automações"}
-            </li>
-            <li>Cria a oportunidade de retorno, com convite 14 dias antes</li>
+            <li>Põe o retorno em Oportunidades 14 dias antes da data, com o convite pronto para enviar</li>
             <li>Registra o atendimento na ficha de {firstName(patient?.name)}</li>
+            <li>
+              Pós-atendimento automático <Soon />
+            </li>
           </ol>
         </div>
       ) : null}

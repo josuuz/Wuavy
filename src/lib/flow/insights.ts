@@ -26,7 +26,7 @@ export const RETURN_WINDOW = [-45, 14] as const; // days around the typical retu
 export const EXPIRY_DAYS = 45; // a lot this close to its date is near expiry
 export const LOW_SESSIONS = 5; // stock for fewer sessions than this is running low
 export const MISSED_DAYS = 14; // a no-show this recent still asks to be rebooked
-// The clinic's daily grid (one room). Hours are stored as the clinic's time.
+// The default daily grid (one room), for a clinic without opening hours (the demo). Hours are stored as the clinic's time.
 export const SLOT_TIMES = [
   [9, 0],
   [10, 0],
@@ -38,7 +38,27 @@ export const SLOT_TIMES = [
   [17, 30],
 ] as const;
 export const WEEK_DAYS = 6; // the week on the agenda: Monday to Saturday
-const DAY_END = "19:00"; // the last hour of the grid ends here
+const DAY_END = "19:00"; // the last hour of the default grid ends here
+const OPEN_DAYS = [1, 2, 3, 4, 5, 6]; // the default week: Monday to Saturday
+
+type SlotTime = readonly [number, number];
+
+/** The day's bookable hours: one an hour within the clinic's opening hours, or the default grid. */
+export function slotTimes(d: FlowData): readonly SlotTime[] {
+  const hours = d.organization.hours;
+  if (!hours) return SLOT_TIMES;
+  const minutes = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+  const times: SlotTime[] = [];
+  for (let t = minutes(hours.opens); t + 60 <= minutes(hours.closes); t += 60) times.push([Math.floor(t / 60), t % 60]);
+  return times.length ? times : SLOT_TIMES;
+}
+
+/** Whether the clinic sees patients on the day of `iso`. */
+export function opensOn(d: FlowData, iso: string) {
+  return (d.organization.hours?.days ?? OPEN_DAYS).includes(new Date(iso).getUTCDay());
+}
+
+const dayEnd = (d: FlowData) => d.organization.hours?.closes ?? DAY_END;
 
 const DAY = 86_400_000;
 const byId = <T extends { id: ID }>(list: T[]) => new Map(list.map((x) => [x.id, x]));
@@ -249,7 +269,9 @@ export function stockLevels(d: FlowData): StockLevel[] {
     );
     const perSession = Math.max(0, ...d.procedureProducts.filter((pp) => pp.productId === product.id).map((pp) => pp.quantity));
     const sessions = perSession ? Math.floor(quantity / perSession + 1e-9) : null;
-    const low = sessions === null ? quantity <= 1 : sessions < LOW_SESSIONS;
+    // The clinic's own minimum first; without one, a guess from the sessions left.
+    const low =
+      product.minQuantity !== undefined ? quantity <= product.minQuantity : sessions === null ? quantity <= 1 : sessions < LOW_SESSIONS;
     return { product, quantity, sessions, status: quantity <= 0 ? "sem_estoque" : low ? "baixo" : "ok" };
   });
 }
@@ -365,10 +387,11 @@ export function slotTime(d: FlowData, dayOffset: number, h: number, m: number) {
   return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + dayOffset, h, m)).toISOString();
 }
 
-/** A day's grid, plus any booking made outside it, so nothing booked goes missing. */
+/** A day's grid (none on a day the clinic is closed), plus any booking made outside it, so nothing booked goes missing. */
 export function daySlots(d: FlowData, dayOffset: number): Slot[] {
-  const grid = SLOT_TIMES.map(([h, m]) => slotTime(d, dayOffset, h, m));
-  const date = grid[0].slice(0, 10);
+  const midnight = slotTime(d, dayOffset, 0, 0);
+  const grid = opensOn(d, midnight) ? slotTimes(d).map(([h, m]) => slotTime(d, dayOffset, h, m)) : [];
+  const date = midnight.slice(0, 10);
   const off = d.appointments.filter((a) => a.startsAt.startsWith(date) && !grid.includes(a.startsAt)).map((a) => a.startsAt);
   return [...new Set([...grid, ...off])].sort().map((startsAt) => {
     const here = d.appointments.filter((a) => a.startsAt === startsAt);
@@ -381,11 +404,18 @@ export function daySlots(d: FlowData, dayOffset: number): Slot[] {
   });
 }
 
-/** Free hours still ahead, today and tomorrow (Sundays closed): what a gap or a cancellation leaves to fill. */
+/**
+ * Free hours still ahead, today and tomorrow, on the days the clinic works:
+ * what a gap or a cancellation leaves to fill. Only on a day whose agenda is
+ * in use (something was booked on it): a day with nothing at all says the
+ * bookings are kept elsewhere, not that every hour of it is lost.
+ */
 export function openSlots(d: FlowData) {
-  return [0, 1].flatMap((day) =>
-    daySlots(d, day).filter((s) => s.status !== "ocupado" && s.startsAt > d.now && new Date(s.startsAt).getUTCDay() !== 0),
-  );
+  return [0, 1].flatMap((day) => {
+    const slots = daySlots(d, day);
+    if (!slots.some((s) => s.appointment)) return [];
+    return slots.filter((s) => s.status !== "ocupado" && s.startsAt > d.now);
+  });
 }
 
 /** Minutes from a free slot to the next booking that day, or to the end of the clinic's day. */
@@ -393,7 +423,7 @@ export function slotRoom(d: FlowData, startsAt: string) {
   const date = startsAt.slice(0, 10);
   const next = d.appointments
     .filter((a) => a.status !== "cancelado" && a.startsAt.startsWith(date) && a.startsAt > startsAt)
-    .reduce((min, a) => (a.startsAt < min ? a.startsAt : min), `${date}T${DAY_END}:00.000Z`);
+    .reduce((min, a) => (a.startsAt < min ? a.startsAt : min), `${date}T${dayEnd(d)}:00.000Z`);
   return Math.round((Date.parse(next) - Date.parse(startsAt)) / 60_000);
 }
 
@@ -535,6 +565,11 @@ export function opportunities(d: FlowData, statuses: Partial<Record<OpportunityK
       noShows.reduce((s, x) => s + (procedureOf(d, x.step.appointment.procedureId)?.price ?? 0), 0),
     ),
   ];
+}
+
+/** What the open fronts are worth together: revenue within reach, not revenue recovered. */
+export function potentialOf(ops: Opportunity[]) {
+  return ops.filter((o) => o.count > 0 && o.status !== "resolvida").reduce((s, o) => s + o.value, 0);
 }
 
 /**

@@ -80,14 +80,14 @@ export const flow = {
   how: {
     chapter: "Como funciona",
     title: "Observa a operação, identifica oportunidades e mostra onde agir.",
-    lead: "Cada parte alimenta a próxima: um atendimento finalizado baixa o estoque, calcula o retorno, inicia o pós-atendimento e deixa a próxima oportunidade pronta.",
+    lead: "Cada parte alimenta a próxima: um atendimento finalizado baixa o estoque, calcula o retorno e deixa a próxima oportunidade pronta.",
     stages: [
       { name: "Atrair", text: "Cada lead chega com origem e interesse registrados." },
       { name: "Organizar", text: "Pacientes, agenda, procedimentos e estoque conectados." },
       { name: "Identificar", text: "Silêncio, retorno vencido, horário vago, validade: o Pulse lê os sinais." },
       { name: "Agir", text: "A próxima ação chega pronta. A equipe revisa e aprova." },
       { name: "Recuperar", text: "O que ficou para trás volta como oportunidade." },
-      { name: "Reter", text: "Retornos no tempo certo e pós-atendimento." },
+      { name: "Reter", text: "Retornos no tempo certo. Pós-atendimento automático em breve." },
     ],
     example: {
       title: "Um exemplo",

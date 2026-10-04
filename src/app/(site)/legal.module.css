@@ -1,0 +1,77 @@
+/* The legal pages: one readable column on Paper, headings in the site's type. */
+
+.page {
+  padding-top: calc(var(--header-h) + var(--space-4));
+  padding-bottom: var(--space-5);
+}
+
+.article {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-3);
+  max-width: 68ch;
+}
+
+.article header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.title {
+  font-size: var(--fs-h2);
+  font-weight: var(--wuavy-display);
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+
+.updated {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.lead {
+  font-size: var(--fs-lead);
+  line-height: 1.35;
+}
+
+.article section {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: var(--space-2);
+  border-top: var(--rule) solid var(--border);
+}
+
+.article h2 {
+  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.75rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+.article p,
+.article li {
+  font-size: var(--fs-body);
+  line-height: 1.55;
+}
+
+.article ul {
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 1.25em;
+  list-style: disc;
+}
+
+.article a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+@media (min-width: 1024px) {
+  .article {
+    grid-column: 3 / span 8;
+  }
+}

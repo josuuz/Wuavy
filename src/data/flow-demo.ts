@@ -156,8 +156,9 @@ const TODAY: [number, number, number, string, Appointment["status"]][] = [
 ];
 
 /**
- * The automations every clinic starts from: all running in the demo, and
- * given to a real clinic at onboarding switched off, for it to choose.
+ * The automations to come, as rules: the demo's preview reads them, and a
+ * real clinic gets them at onboarding, switched off. Nothing runs them yet
+ * (Automações says so).
  */
 export const RULE_TEMPLATES: Omit<AutomationRule, "organizationId" | "active">[] = [
   {
@@ -423,6 +424,7 @@ export function createDemoData(clock = new Date()): FlowData {
 
   const automationRules: AutomationRule[] = RULE_TEMPLATES.map((rule) => ({ ...rule, ...org, active: true }));
 
+  // The recovery tracking to come, as the demo's preview shows it (Visão geral, marked "Em breve").
   const automationRuns: AutomationRun[] = (
     [
       ["rule_lead", -2, "5 follow-ups preparados, 2 orçamentos retomados", 250000, 2],
@@ -453,7 +455,7 @@ export function createDemoData(clock = new Date()): FlowData {
       [0, 8, "Cancelamento de hoje às 16h30: o horário está livre."],
       [-1, 18, "A recepção confirmou 3 atendimentos de amanhã."],
       [-1, 11, "O horário das 14h foi ocupado pela lista de espera."],
-      [-2, 9, "5 follow-ups de orçamento preparados pela automação."],
+      [-2, 9, "5 follow-ups de orçamento preparados em Oportunidades e enviados pela recepção."],
     ] as const
   ).map(([day, h, text], i) => ({ id: `act_${i + 1}`, ...org, at: at(day, h), text }));
 

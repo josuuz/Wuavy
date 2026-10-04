@@ -167,7 +167,10 @@ export const home = {
     servicesTitle: "Serviços",
     contactTitle: "Contato",
     socialTitle: "Redes",
-    // TODO(legal): criar a página de privacidade. Sem href, o item aparece como texto.
-    legal: [{ label: "Política de privacidade", href: "" }],
+    // A link without href shows as plain text, until its page exists.
+    legal: [
+      { label: "Política de privacidade", href: "/privacidade" },
+      { label: "Termos de uso", href: "/termos" },
+    ] as { label: string; href: string }[],
   },
 } as const;

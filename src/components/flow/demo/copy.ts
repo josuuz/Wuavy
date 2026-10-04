@@ -7,6 +7,8 @@ import type {
   Opportunity,
   OpportunityKind,
   OpportunityStatus,
+  SEGMENTS,
+  TEAM_SIZES,
 } from "@/lib/flow/types";
 import type { Focus } from "./store";
 
@@ -19,8 +21,11 @@ import type { Focus } from "./store";
 export const BASE = "/pulse/demo";
 export const APP_BASE = "/pulse/app";
 
-/** The screens, in the menu's order: what needs attention, where the money is, then the operation. */
-export const VIEWS = [
+/**
+ * The screens, in the menu's order: what needs attention, where the money is,
+ * then the operation. `live`: only in a real clinic (the demo has no settings).
+ */
+export const VIEWS: readonly { slug: string; label: string; live?: boolean }[] = [
   { slug: "", label: "Visão geral" },
   { slug: "oportunidades", label: "Oportunidades" },
   { slug: "vendas", label: "Vendas" },
@@ -29,7 +34,8 @@ export const VIEWS = [
   { slug: "procedimentos", label: "Procedimentos" },
   { slug: "estoque", label: "Estoque" },
   { slug: "automacoes", label: "Automações" },
-] as const;
+  { slug: "configuracoes", label: "Configurações", live: true },
+];
 
 export const MENU = VIEWS;
 
@@ -50,6 +56,12 @@ export const focusHref = (focus: Focus, base = BASE) => viewHref(FOCUS_VIEW[focu
 /** Where subscribing happens: the checkout, after signing in or creating the account. */
 export const CHECKOUT = "/pulse/assinar";
 
+/**
+ * Whether the online checkout (Mercado Pago) is configured. Without it, the
+ * plan is contracted with Wuavy and activated by hand (migration 0004).
+ */
+export const ONLINE_CHECKOUT = Boolean(process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY);
+
 /** What the Pulse says about the clinic's plan: the demo, the subscription and how it stands. */
 export const PLAN = {
   demo: {
@@ -63,15 +75,21 @@ export const PLAN = {
     title: "Wuavy Pulse",
     text: "Transforme dados da sua clínica em oportunidades de crescimento.",
     includes: [
-      "Gestão de pacientes e leads",
-      "Agenda e retornos",
-      "Procedimentos",
-      "Estoque",
-      "Indicadores",
-      "Motor de oportunidades",
-      "Automações",
+      "Pacientes, vendas e orçamentos",
+      "Agenda, faltas e retornos",
+      "Procedimentos e estoque ligados",
+      "Motor de oportunidades com receita potencial",
+      "Mensagens prontas para enviar pelo WhatsApp",
     ],
+    /** Part of the plan once they exist: shown, marked as not here yet. */
+    coming: ["Automações inteligentes", "Pulse AI", "Rastreamento de receita recuperada"],
     cta: "Assinar Pulse — R$ 297/mês",
+    /** Without the online checkout: the plan is contracted with Wuavy. */
+    offline: {
+      cta: "Falar com a Wuavy para assinar",
+      note: "Assinatura online em breve. Por enquanto, a contratação é feita direto com a Wuavy, que ativa o Pulse na sua conta.",
+      account: "Já combinei: criar minha conta",
+    },
     back: { demo: "Continuar explorando a demo", other: "Agora não" },
     topic: "assinar o Wuavy Pulse",
   },
@@ -135,7 +153,29 @@ export const APPOINTMENT_LABEL: Record<AppointmentStatus, string> = {
 
 export const PERIOD_LABEL = { manha: "manhã", tarde: "tarde" } as const;
 
-export const CATEGORY_LABEL = { facial: "Facial", injetaveis: "Injetáveis", corporal: "Corporal" } as const;
+export const CATEGORY_LABEL = { facial: "Facial", injetaveis: "Injetáveis", corporal: "Corporal", outro: "Outro" } as const;
+
+export const SEGMENT_LABEL: Record<(typeof SEGMENTS)[number], string> = {
+  estetica: "Estética",
+  odontologia: "Odontologia",
+  dermatologia: "Dermatologia",
+  harmonizacao: "Harmonização",
+  multidisciplinar: "Multidisciplinar",
+  outro: "Outro",
+};
+
+export const TEAM_LABEL: Record<(typeof TEAM_SIZES)[number], string> = { "1": "Só eu", "2-3": "2 a 3", "4-6": "4 a 6", "7+": "7 ou mais" };
+
+/** The week as a clinic reads it, Monday first (0 is Sunday). */
+export const WEEK = [
+  [1, "Seg"],
+  [2, "Ter"],
+  [3, "Qua"],
+  [4, "Qui"],
+  [5, "Sex"],
+  [6, "Sáb"],
+  [0, "Dom"],
+] as const;
 
 /** Units a product can be counted in. */
 export const UNITS = ["un", "frasco", "seringa", "ampola", "bisnaga", "caixa", "litro", "pote"];
@@ -162,7 +202,7 @@ interface KindCopy {
   /** The screen where the records behind it live. */
   view: string;
   suggestion: string;
-  /** The approval's three buttons: look at who, prepare, then (later) send. */
+  /** The approval's buttons: look at who, then prepare each message for a person to send. */
   review: string;
   prepare: string;
   prepared: (n: number) => string;
@@ -183,7 +223,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     suggestion: "Retomar o procedimento de interesse de cada pessoa, começando pelos orçamentos maiores e mais recentes.",
     review: "Revisar contatos",
     prepare: "Preparar mensagens",
-    prepared: (n) => `${plural(n, "mensagem de follow-up preparada", "mensagens de follow-up preparadas")}. Nada foi enviado.`,
+    prepared: (n) => `${plural(n, "mensagem de follow-up pronta", "mensagens de follow-up prontas")} para você revisar e enviar.`,
   },
   patient_return: {
     tag: "Retornos",
@@ -196,7 +236,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     suggestion: "Um convite de retorno com os horários livres da semana, no intervalo recomendado de cada procedimento.",
     review: "Revisar pacientes",
     prepare: "Preparar convites",
-    prepared: (n) => `${plural(n, "convite de retorno preparado", "convites de retorno preparados")}. Nada foi enviado.`,
+    prepared: (n) => `${plural(n, "convite de retorno pronto", "convites de retorno prontos")} para você revisar e enviar.`,
   },
   lead_idle: {
     tag: "Leads",
@@ -210,7 +250,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     suggestion: "Uma mensagem curta retomando a conversa no ponto em que parou, com a avaliação como próximo passo.",
     review: "Revisar contatos",
     prepare: "Preparar mensagens",
-    prepared: (n) => `${plural(n, "mensagem preparada", "mensagens preparadas")} para retomar a conversa. Nada foi enviado.`,
+    prepared: (n) => `${plural(n, "mensagem pronta", "mensagens prontas")} para retomar a conversa. Revise e envie.`,
   },
   open_slot: {
     tag: "Agenda",
@@ -223,7 +263,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     suggestion: "Oferecer cada horário a quem mais combina: a lista de espera do mesmo período primeiro, depois quem tem retorno próximo.",
     review: "Revisar sugestões",
     prepare: "Preparar convites",
-    prepared: (n) => `${plural(n, "convite de horário preparado", "convites de horário preparados")}. Nada foi enviado.`,
+    prepared: (n) => `${plural(n, "convite de horário pronto", "convites de horário prontos")} para você revisar e enviar.`,
   },
   stock_expiry: {
     tag: "Estoque",
@@ -237,7 +277,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     suggestion: "Uma campanha para quem já fez os procedimentos que usam esses produtos, antes do vencimento.",
     review: "Revisar pacientes",
     prepare: "Preparar campanha",
-    prepared: (n) => `Campanha preparada para ${plural(n, "paciente compatível", "pacientes compatíveis")}. Nada foi enviado.`,
+    prepared: (n) => `Mensagens prontas para ${plural(n, "paciente compatível", "pacientes compatíveis")}. Revise e envie.`,
   },
   no_show: {
     tag: "Faltas",
@@ -250,9 +290,40 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     suggestion: "Um convite para remarcar o mesmo procedimento, com os próximos horários livres.",
     review: "Revisar pacientes",
     prepare: "Preparar convites",
-    prepared: (n) => `${plural(n, "convite para remarcar preparado", "convites para remarcar preparados")}. Nada foi enviado.`,
+    prepared: (n) => `${plural(n, "convite para remarcar pronto", "convites para remarcar prontos")} para você revisar e enviar.`,
   },
 };
+
+/**
+ * Automations to come: what each will watch and do. Shown on Automações as
+ * examples, marked "Em breve": none of them runs yet.
+ */
+export const AUTOMATION_EXAMPLES = [
+  {
+    name: "Retorno automático",
+    when: "O paciente chega ao período de retorno do procedimento",
+    conditions: ["Nada marcado na agenda"],
+    actions: ["Criar a oportunidade de retorno", "Preparar o convite com os horários livres", "Enviar quando a equipe aprovar"],
+  },
+  {
+    name: "Orçamento parado",
+    when: "Um orçamento fica alguns dias sem resposta",
+    conditions: ["O orçamento continua aberto"],
+    actions: ["Preparar o follow-up com o procedimento de interesse", "Avisar a recepção"],
+  },
+  {
+    name: "Paciente faltou",
+    when: "Um paciente falta ao atendimento",
+    conditions: ["Nada remarcado"],
+    actions: ["Preparar o convite para remarcar", "Sugerir os próximos horários livres"],
+  },
+  {
+    name: "Horário liberado",
+    when: "Um cancelamento libera um horário",
+    conditions: ["Há alguém na lista de espera"],
+    actions: ["Ordenar quem mais combina com o horário", "Preparar o convite para o primeiro da lista"],
+  },
+] as const;
 
 /** What the automations brought back, by the front that found it. Faltas remarcadas count as returns. */
 export const RECOVERED_FRONTS = [

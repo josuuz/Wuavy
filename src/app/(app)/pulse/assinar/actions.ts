@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { releases, type SubscriptionStatus } from "@/lib/flow/access";
-import { billingReady, createSubscription, MercadoPagoError, syncSubscription } from "@/lib/flow/billing";
+import { billingReady, createSubscription, describeError, MercadoPagoError, syncSubscription, testMode } from "@/lib/flow/billing";
 import { getSession, getSubscription } from "@/lib/flow/session";
 import { absoluteUrl } from "@/lib/seo";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,32 +18,38 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export type CheckoutOutcome = "active" | "pending" | "rejected" | "unavailable";
 
+/** The outcome, and in test mode only, why Mercado Pago refused. */
+export interface Subscribed {
+  outcome: CheckoutOutcome;
+  detail?: string;
+}
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CARD_TOKEN = /^[\w-]{8,128}$/;
 
 const outcome = (status: SubscriptionStatus | null): CheckoutOutcome =>
   releases(status) ? "active" : status === "cancelled" ? "rejected" : "pending";
 
-export async function subscribe(input: { token: string; email: string }): Promise<CheckoutOutcome> {
+export async function subscribe(input: { token: string; email: string }): Promise<Subscribed> {
   const session = await getSession();
   if (!session) redirect("/pulse/entrar?depois=assinar");
 
   const current = await getSubscription();
   // Already paying, or already waiting on one: never a second subscription.
-  if (current && releases(current.status)) return "active";
-  if (current?.status === "pending" && current.provider_subscription_id) return check();
+  if (current && releases(current.status)) return { outcome: "active" };
+  if (current?.status === "pending" && current.provider_subscription_id) return { outcome: await check() };
 
-  if (!billingReady()) return "unavailable";
-  if (typeof input?.token !== "string" || !CARD_TOKEN.test(input.token)) return "rejected";
+  if (!billingReady()) return { outcome: "unavailable" };
+  if (typeof input?.token !== "string" || !CARD_TOKEN.test(input.token)) return { outcome: "rejected" };
   const email = typeof input.email === "string" && EMAIL.test(input.email.trim()) ? input.email.trim() : session.user.email;
-  if (!email) return "rejected";
+  if (!email) return { outcome: "rejected" };
 
   let admin;
   try {
     admin = createAdminClient();
   } catch (error) {
     console.error("subscribe:", error);
-    return "unavailable";
+    return { outcome: "unavailable" };
   }
 
   // Our row first: its id goes to Mercado Pago as the reference, so every notice finds it.
@@ -57,7 +63,7 @@ export async function subscribe(input: { token: string; email: string }): Promis
       .single();
     if (error) {
       console.error("subscribe: row", error);
-      return "unavailable";
+      return { outcome: "unavailable" };
     }
     rowId = data.id;
   }
@@ -70,17 +76,17 @@ export async function subscribe(input: { token: string; email: string }): Promis
       backUrl: absoluteUrl("/pulse/assinar"),
     });
     await admin.from("subscriptions").update({ provider_subscription_id: created.id }).eq("id", rowId);
-    return outcome(await syncSubscription(created.id));
+    return { outcome: outcome(await syncSubscription(created.id)) };
   } catch (error) {
     if (error instanceof MercadoPagoError && error.status < 500) {
       // Refused (card, data): the attempt never became a subscription. A new one gets a new row and key.
       console.warn("subscribe: refused by Mercado Pago", error.status, JSON.stringify(error.body));
       await admin.from("subscriptions").delete().eq("id", rowId).is("provider_subscription_id", null);
-      return "rejected";
+      return { outcome: "rejected", detail: testMode() ? describeError(error) : undefined };
     }
     // Unknown outcome (an outage, a timeout): the row stays; retrying reuses its key, so no second charge.
     console.error("subscribe: Mercado Pago unreachable", error);
-    return "pending";
+    return { outcome: "pending" };
   }
 }
 

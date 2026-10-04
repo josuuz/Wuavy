@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useActionState, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 
 import { createClinic } from "@/app/(app)/pulse/comecar/actions";
-import { LOGO_MAX, SEGMENTS, TEAM_SIZES } from "@/lib/flow/types";
+import { LOGO_MAX, LOGO_TYPES, SEGMENTS, TEAM_SIZES } from "@/lib/flow/types";
+import { SEGMENT_LABEL, TEAM_LABEL, WEEK } from "../demo/copy";
 import { Field, FormError } from "../demo/forms";
 import ui from "../demo/ui.module.css";
 import styles from "./AuthFrame.module.css";
@@ -22,29 +23,6 @@ const STEPS = [
   { short: "Personalização", title: "Personalização", lead: "O jeito da sua clínica. O logo é opcional; o resto já vem preenchido." },
 ];
 
-const SEGMENT_LABEL: Record<(typeof SEGMENTS)[number], string> = {
-  estetica: "Estética",
-  odontologia: "Odontologia",
-  dermatologia: "Dermatologia",
-  harmonizacao: "Harmonização",
-  multidisciplinar: "Multidisciplinar",
-  outro: "Outro",
-};
-
-const TEAM_LABEL: Record<(typeof TEAM_SIZES)[number], string> = { "1": "Só eu", "2-3": "2 a 3", "4-6": "4 a 6", "7+": "7 ou mais" };
-
-/** Monday first, as a clinic's week reads. */
-const DAYS = [
-  [1, "Seg"],
-  [2, "Ter"],
-  [3, "Qua"],
-  [4, "Qui"],
-  [5, "Sex"],
-  [6, "Sáb"],
-  [0, "Dom"],
-] as const;
-
-const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export function ClinicForm() {
   const [state, action, pending] = useActionState(createClinic, null);
@@ -201,7 +179,7 @@ export function ClinicForm() {
               Dias de atendimento
             </p>
             <div className={styles.choices}>
-              {DAYS.map(([day, label]) => (
+              {WEEK.map(([day, label]) => (
                 <label key={day} className={styles.choice}>
                   <input type="checkbox" name="days" value={day} defaultChecked={day >= 1 && day <= 6} />
                   <span>{label}</span>

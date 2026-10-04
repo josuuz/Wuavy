@@ -8,12 +8,22 @@ import { clinicNow } from "./clock";
 import { dayAt } from "./format";
 import { drawDown, restock, visitSummary } from "./insights";
 import { READ_ONLY_MESSAGE } from "./access";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { LOGO_ERROR, logoFormat, logoFrom, saveLogo } from "./logo";
 import { getClinicAccess, getSession } from "./session";
-import { APPOINTMENT_STATUSES, LEAD_SOURCES, LEAD_STAGES, PROCEDURE_CATEGORIES, type InventoryLot } from "./types";
+import {
+  APPOINTMENT_STATUSES,
+  LEAD_SOURCES,
+  LEAD_STAGES,
+  PROCEDURE_CATEGORIES,
+  SEGMENTS,
+  TEAM_SIZES,
+  type InventoryLot,
+} from "./types";
 
 /*
-  The real Pulse's writes: contacts, patients, procedures, the agenda and the
-  stock. Each one takes the clinic from the verified session, never from the
+  The real Pulse's writes: contacts, patients, procedures, the agenda, the
+  stock, and the clinic's own profile. Each one takes the clinic from the verified session, never from the
   browser, checks its input, scopes every query to that clinic (row-level
   security enforces it again) and refreshes the route, so the screen shows
   the database.
@@ -32,13 +42,22 @@ const OPEN_STAGES = LEAD_STAGES.filter((stage) => stage !== "agendado");
 /** Input the person can fix: its message goes back to the form. */
 class Invalid extends Error {}
 
-async function write(step: (db: Db, org: string) => Promise<PostgrestError | null>): Promise<Result> {
+/** Who is writing: the verified session's person and their role at the clinic. */
+interface Writer {
+  userId: string;
+  role: string;
+}
+
+async function write(step: (db: Db, org: string, who: Writer) => Promise<PostgrestError | null>): Promise<Result> {
   const session = await getSession();
   if (!session?.member) return { error: "Sua sessão expirou. Entre de novo." };
-  // A trial that ended reads, never writes: checked here, whatever the screen showed.
+  // A subscription that is not active reads, never writes: checked here, whatever the screen showed.
   if (!(await getClinicAccess())?.canEdit) return { error: READ_ONLY_MESSAGE };
   try {
-    const error = await step(session.supabase, session.member.organization_id);
+    const error = await step(session.supabase, session.member.organization_id, {
+      userId: session.user.id,
+      role: session.member.role,
+    });
     if (error) return { error: describe(error) };
   } catch (error) {
     if (error instanceof Invalid) return { error: error.message };
@@ -53,7 +72,7 @@ function describe(error: PostgrestError) {
   if (error.code === "23503") return "Há outros registros ligados a este.";
   if (error.code === "42501") return "Sem permissão para esta clínica.";
   // A column the database does not have yet: the schema is behind the app.
-  if (error.code === "PGRST204" || error.code === "42703") return "Falta atualizar o banco de dados do Pulse (migration 0002).";
+  if (error.code === "PGRST204" || error.code === "42703") return "Falta atualizar o banco de dados do Pulse (migrations em supabase/migrations).";
   console.error("Pulse write failed", error);
   return "Não foi possível salvar. Tente de novo.";
 }
@@ -193,6 +212,13 @@ export async function deleteLead(leadId: string): Promise<Result> {
 
 /* ── Patients ──────────────────────────────────────────────── */
 
+/**
+ * A patient, and optionally a visit from before the Pulse (a day and a
+ * procedure): it is recorded as a finished appointment, so the last visit,
+ * the spend and the next return follow from it as from any other, and the
+ * return engine has something to work with from the first day. The stock is
+ * not touched: that session's products were used long ago.
+ */
 export async function savePatient(patientId: string | null, form: FormData): Promise<Result> {
   return write(async (db, org) => {
     const patient = {
@@ -200,12 +226,42 @@ export async function savePatient(patientId: string | null, form: FormData): Pro
       phone: text(form, "phone", 40) || null,
       notes: text(form, "notes", 1000) || null,
     };
+    const visitDate = text(form, "visitDate");
+    const visitProcedure = text(form, "visitProcedureId");
+    if (Boolean(visitDate) !== Boolean(visitProcedure)) throw new Invalid("Para o atendimento anterior, informe o dia e o procedimento.");
+    const visit = visitDate ? { date: isoDate(visitDate, "o dia do atendimento anterior"), procedureId: id(visitProcedure) } : null;
+    if (visit && visit.date >= clinicNow().slice(0, 10)) throw new Invalid("O atendimento anterior precisa ser de antes de hoje.");
+
+    let saved = patientId;
     if (patientId) {
-      return affected(
+      const error = affected(
         await db.from("patients").update(patient).eq("id", id(patientId)).eq("organization_id", org).select("id"),
       );
+      if (error) return error;
+    } else {
+      const { data, error } = await db.from("patients").insert({ ...patient, organization_id: org }).select("id").single();
+      if (error) return error;
+      saved = data.id;
     }
-    return (await db.from("patients").insert({ ...patient, organization_id: org })).error;
+    if (!visit) return null;
+
+    const { data: procedure, error: procedureError } = await db
+      .from("procedures")
+      .select("duration_min")
+      .eq("id", visit.procedureId)
+      .eq("organization_id", org)
+      .maybeSingle();
+    if (procedureError) return procedureError;
+    if (!procedure) throw new Invalid("Escolha o procedimento do atendimento anterior.");
+    const added = await db.from("appointments").insert({
+      organization_id: org,
+      patient_id: saved!,
+      procedure_id: visit.procedureId,
+      starts_at: `${visit.date}T09:00:00.000Z`,
+      duration_min: procedure.duration_min,
+      status: "concluido",
+    });
+    return added.error ?? syncPatient(db, org, saved!);
   });
 }
 
@@ -557,6 +613,31 @@ export async function removeFromWaitlist(entryId: string): Promise<Result> {
 
 /* ── Stock ─────────────────────────────────────────────────── */
 
+/** "5", "0,5" or nothing: a product's minimum stock, when the clinic sets one. */
+function minimum(form: FormData) {
+  const value = text(form, "minQuantity");
+  return value ? amount(value, "o estoque mínimo", { zero: true }) : null;
+}
+
+/** A product's name, unit, cost and minimum. Its lots stay as they are. */
+export async function saveProduct(productId: string, form: FormData): Promise<Result> {
+  return write(async (db, org) =>
+    affected(
+      await db
+        .from("products")
+        .update({
+          name: required(text(form, "name"), "o nome do produto"),
+          unit: required(text(form, "unit", 30), "a unidade"),
+          unit_cost: cents(text(form, "unitCost"), "o custo por unidade"),
+          min_quantity: minimum(form),
+        })
+        .eq("id", id(productId))
+        .eq("organization_id", org)
+        .select("id"),
+    ),
+  );
+}
+
 /** A delivery: a lot of a product the clinic has, or of one it registers now. */
 export async function stockIn(form: FormData): Promise<Result> {
   return write(async (db, org) => {
@@ -574,6 +655,7 @@ export async function stockIn(form: FormData): Promise<Result> {
       name = data.name;
     } else {
       name = required(text(form, "name"), "o nome do produto");
+      const min = minimum(form);
       const { data, error } = await db
         .from("products")
         .insert({
@@ -581,6 +663,8 @@ export async function stockIn(form: FormData): Promise<Result> {
           name,
           unit: required(text(form, "unit", 30), "a unidade"),
           unit_cost: cents(text(form, "unitCost"), "o custo por unidade"),
+          // Sent only when set: a clinic still before migration 0004 can stock in.
+          ...(min === null ? {} : { min_quantity: min }),
         })
         .select("id")
         .single();
@@ -612,18 +696,62 @@ export async function adjustLot(lotId: string, form: FormData): Promise<Result> 
   });
 }
 
-/* ── Automations ───────────────────────────────────────────── */
+/* ── The clinic and the account (Configurações) ───────────── */
 
-/** Switches one of the clinic's automations on or off. */
-export async function setRuleActive(ruleId: string, active: boolean): Promise<Result> {
-  return write(async (db, org) =>
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** The clinic's profile, by its owner: the same fields as onboarding. Row-level security checks the owner again (migration 0004). */
+export async function updateClinic(form: FormData): Promise<Result> {
+  return write(async (db, org, who) => {
+    if (who.role !== "owner") throw new Invalid("Só o responsável pela clínica pode mudar estes dados.");
+    const whatsapp = text(form, "whatsapp", 40);
+    if (whatsapp.replace(/\D/g, "").length < 10) throw new Invalid("Informe o WhatsApp da clínica com DDD.");
+    const opens = text(form, "opens", 5);
+    const closes = text(form, "closes", 5);
+    if (!TIME.test(opens) || !TIME.test(closes) || opens >= closes) throw new Invalid("Confira o horário de funcionamento.");
+    const days = [...new Set(form.getAll("days").map(Number))].filter((d) => Number.isInteger(d) && d >= 0 && d <= 6).sort();
+    if (!days.length) throw new Invalid("Escolha ao menos um dia de atendimento.");
+    const logo = logoFrom(form);
+    if (logo && !(await logoFormat(logo))) throw new Invalid(LOGO_ERROR);
+
+    const error = affected(
+      await db
+        .from("organizations")
+        .update({
+          name: required(text(form, "clinic", 120), "o nome da clínica"),
+          whatsapp,
+          segment: oneOf(text(form, "segment"), SEGMENTS, "o tipo de clínica"),
+          team_size: oneOf(text(form, "team"), TEAM_SIZES, "quantos profissionais atendem"),
+          opening_time: opens,
+          closing_time: closes,
+          work_days: days,
+        })
+        .eq("id", org)
+        .select("id"),
+    );
+    if (error || !logo) return error;
+    // Only the server writes to the logos' bucket, after the checks above.
+    let saved = false;
+    try {
+      saved = await saveLogo(createAdminClient(), org, logo);
+    } catch (cause) {
+      console.error("updateClinic: logo", cause);
+    }
+    if (!saved) throw new Invalid("Os dados foram salvos, mas o logo não. Tente de novo.");
+    return null;
+  });
+}
+
+/** The signed-in person's own name at the clinic. Nothing else of the membership can change here (migration 0004). */
+export async function updateAccount(form: FormData): Promise<Result> {
+  return write(async (db, org, who) =>
     affected(
       await db
-        .from("automation_rules")
-        .update({ active: active === true })
-        .eq("id", id(ruleId))
+        .from("members")
+        .update({ name: required(text(form, "name", 120), "o seu nome") })
         .eq("organization_id", org)
-        .select("id"),
+        .eq("user_id", who.userId)
+        .select("user_id"),
     ),
   );
 }

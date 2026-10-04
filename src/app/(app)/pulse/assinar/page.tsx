@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/flow/auth/AuthFrame";
 import { Checkout } from "@/components/flow/auth/Checkout";
 import { releases } from "@/lib/flow/access";
+import { billingReady, testMode } from "@/lib/flow/billing";
 import { getSession, getSubscription } from "@/lib/flow/session";
 
 export const metadata: Metadata = {
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
   The checkout. A visitor without an account creates one first (or signs in)
   and comes back here. A clinic that pays has nothing to do here. Where the
   person stands comes from the server: a payment already confirmed shows the
-  confirmation, one still pending shows that it is being confirmed.
+  confirmation, one still pending shows that it is being confirmed. Without
+  Mercado Pago configured, it says the online subscription is coming and
+  how to contract meanwhile (activated by hand, migration 0004).
 */
 export default async function SubscribePage() {
   const session = await getSession();
@@ -31,7 +34,9 @@ export default async function SubscribePage() {
         stage={stage}
         email={session.user.email ?? ""}
         hasClinic={Boolean(session.member)}
-        publicKey={process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? ""}
+        // Both keys or neither: without the server's, the card form would only lead to "unavailable".
+        publicKey={billingReady() ? (process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? "") : ""}
+        test={testMode()}
       />
     </AuthFrame>
   );

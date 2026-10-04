@@ -26,7 +26,11 @@ export default async function FlowAppLayout({ children }: LayoutProps<"/pulse/ap
     getClinicAccess(),
   ]);
   return (
-    <FlowDemo initial={data} access={access!} account={{ name: session.member.name }}>
+    <FlowDemo
+      initial={data}
+      access={access!}
+      account={{ name: session.member.name, email: session.user.email ?? "", role: session.member.role }}
+    >
       {children}
     </FlowDemo>
   );
