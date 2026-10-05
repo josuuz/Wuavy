@@ -69,9 +69,7 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
   // The card form, from Mercado Pago, mounted while the form is shown.
   useEffect(() => {
     if (stage !== "form" || !sdk || !publicKey || !window.MercadoPago) return;
-    const root = document.documentElement;
-    const light = root.dataset.pulseTheme === "light";
-    const signal = getComputedStyle(root).getPropertyValue("--wuavy-signal").trim();
+    const signal = getComputedStyle(document.documentElement).getPropertyValue("--wuavy-signal").trim();
     let controller: BrickController | undefined;
     let gone = false;
     new window.MercadoPago(publicKey, { locale: "pt-BR" })
@@ -82,7 +80,10 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
           visual: {
             hideFormTitle: true,
             texts: { formSubmit: PLAN.subscribe.cta },
-            style: { theme: light ? "default" : "dark", ...(signal ? { customVariables: { baseColor: signal } } : {}) },
+            // Always the light theme: the card, expiry and CVV are Mercado Pago's own
+            // cross-origin iframes, and its dark theme turns their text white while
+            // leaving the field white — what is typed becomes invisible.
+            style: { theme: "default", ...(signal ? { customVariables: { baseColor: signal } } : {}) },
           },
           paymentMethods: { maxInstallments: 1, types: { excluded: ["debit_card", "prepaid_card"] } },
         },
