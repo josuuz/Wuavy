@@ -217,7 +217,7 @@
 
 .form .input {
   width: 100%;
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .form textarea.input {
@@ -2203,7 +2203,7 @@
 
 .proFilter .input {
   min-width: 12rem;
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .legend {
@@ -3004,4 +3004,31 @@
   .settings {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* PASSO's guide highlights the panel to fill: a Signal edge, nothing louder. */
+.panel[data-guide] {
+  border-color: var(--pulse-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pulse-accent) 18%, transparent);
+}
+
+.panel [data-guide-field="todo"] .input,
+.panel label[data-guide-field="todo"]:not(.field) {
+  border-color: var(--pulse-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pulse-accent) 16%, transparent);
+}
+
+.panel .field[data-guide-field] > .label::after {
+  margin-left: 0.5em;
+  font-weight: 700;
+}
+
+.panel .field[data-guide-field="todo"] > .label::after {
+  content: "← preencher";
+  color: var(--pulse-accent-text);
+}
+
+.panel .field[data-guide-field="ok"] > .label::after {
+  content: "✓";
+  color: var(--pulse-success);
 }

@@ -67,6 +67,7 @@ export function AskFlow({ open, question, onClose }: { open: boolean; question: 
       kicker="Assistente da operação"
       icon={
         <svg className={styles.askPasso} viewBox="24 40 192 252" aria-hidden="true" focusable="false">
+          <PassoFigure pose={STAND} variant="outline" />
           <PassoFigure pose={STAND} mode="idle" />
         </svg>
       }

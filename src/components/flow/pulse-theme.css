@@ -1,9 +1,10 @@
 /*
   Wuavy Pulse: the product's colours, in one place. Every Pulse root carries
   data-pulse (the app shell, the sign-in frame); its surfaces inside carry
-  data-pulse-surface. Dark is the default; html[data-pulse-theme="light"]
-  (set before first paint by the boot script in app/layout.tsx, then by the
-  theme switch) turns the same tokens light. The site's semantic tokens
+  data-pulse-surface. Light is the product's default: html[data-pulse-theme="light"]
+  is set before first paint by the boot script in app/layout.tsx unless the
+  person chose dark (the theme switch). Without the attribute (no script, or
+  dark chosen) the tokens below are dark. The site's semantic tokens
   (--surface, --text, --text-2, --border, --mark, --focus) are mapped onto
   these, so the screens' CSS never names a raw colour.
 */

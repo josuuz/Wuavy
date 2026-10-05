@@ -55,7 +55,7 @@ export function Pipeline() {
       <header className={styles.head}>
         <h1 className={styles.title}>Vendas</h1>
         <p className={styles.lead}>
-          Quem ainda não fechou, do primeiro contato ao agendamento. Ao agendar, a pessoa vira paciente, com a origem e o
+          O funil comercial da clínica: quem ainda não fechou, do primeiro contato ao agendamento. Ao agendar, a pessoa vira paciente, com a origem e o
           orçamento guardados.
         </p>
         <div className={styles.actions}>

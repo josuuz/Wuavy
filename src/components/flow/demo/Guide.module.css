@@ -1,0 +1,302 @@
+/* PASSO's guide: a small card low beside the menu, never over the work's
+   middle; a pill when left for later; a one-line tip atop a screen. */
+
+.card {
+  position: fixed;
+  z-index: 30;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  max-width: 26rem;
+  margin-left: auto;
+  padding: 1rem 1rem 1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--pulse-sheet);
+  /* A list with --pulse-shadow would break where it is "none" (dark). */
+  box-shadow: 0 18px 40px -24px rgb(18 19 18 / 0.35);
+  color: var(--text);
+  animation: guide-in var(--duration-element) var(--wuavy-ease-out) both;
+}
+
+.passo {
+  width: 2.75rem;
+  height: auto;
+  flex: none;
+  overflow: visible;
+}
+
+.body {
+  display: grid;
+  /* Never wider than the card, whatever a line inside asks for. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.step {
+  display: grid;
+  gap: 0.15rem;
+  font-weight: 640;
+}
+
+.step span {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pulse-accent-text);
+}
+
+.text {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+/* Away from the step's screen the title and the button say enough. */
+.text[data-away] {
+  display: none;
+}
+
+.fields {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.fields li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.fields li::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+.fields li[data-done] {
+  color: var(--text);
+}
+
+.fields li[data-done]::before {
+  border-color: var(--pulse-success);
+  background: var(--pulse-success);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  align-items: center;
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  border-radius: 2px;
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
+  font-size: 0.8125rem;
+  font-weight: 640;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.quiet {
+  min-height: 2.25rem;
+  font-size: 0.8125rem;
+  font-weight: 640;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.progress {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: var(--fs-micro);
+  color: var(--text-2);
+}
+
+.bar {
+  display: flex;
+  gap: 3px;
+}
+
+.bar span {
+  width: 1rem;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.bar span[data-on] {
+  background: var(--pulse-accent);
+}
+
+/* Left for later: a small way back, in the corner. */
+.pill {
+  position: fixed;
+  z-index: 30;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--pulse-sheet);
+  box-shadow: var(--pulse-shadow);
+  color: var(--text);
+  animation: guide-in var(--duration-element) var(--wuavy-ease-out) both;
+}
+
+.pillOpen {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 0.4rem 0 0.95rem;
+  font-size: 0.8125rem;
+  font-weight: 640;
+  cursor: pointer;
+}
+
+.pillCount {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pillHide {
+  width: 2.5rem;
+  min-height: 2.5rem;
+  font-size: 1.1rem;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+/* A screen's first-visit tip: one line, above the work. */
+.tip {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 0.9rem 0.6rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--pulse-accent) 35%, var(--border));
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--pulse-accent) 6%, var(--pulse-card));
+  font-size: 0.875rem;
+  animation: guide-in var(--duration-element) var(--wuavy-ease-out) both;
+}
+
+.tip .passo {
+  width: 2rem;
+}
+
+.tip p {
+  flex: 1;
+}
+
+@keyframes guide-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Reduced motion: the guide still arrives, as a short fade, without rising. */
+@keyframes guide-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .pill,
+  .tip {
+    animation-name: guide-fade;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .quiet:hover,
+  .pillHide:hover {
+    color: var(--text);
+  }
+}
+
+/* On the rail layout: under the menu, pointing up at it; over nothing.
+   Compact, so the rail's own content keeps its place. */
+@media (min-width: 1024px) {
+  .card {
+    position: relative;
+    display: block;
+    flex: none;
+    max-width: none;
+    margin: 1.4rem 0 0;
+    padding: 0.8rem 0.85rem;
+    box-shadow: none;
+    animation: none;
+  }
+
+  .card .passo {
+    position: absolute;
+    top: -2.1rem;
+    right: 0.5rem;
+    width: 2.2rem;
+  }
+
+  .body {
+    gap: 0.45rem;
+  }
+
+  .text {
+    font-size: 0.8125rem;
+  }
+
+  .step {
+    font-size: 0.875rem;
+  }
+
+  .actions {
+    gap: 0 0.7rem;
+  }
+
+  .primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .quiet {
+    min-height: 1.75rem;
+    font-size: 0.75rem;
+  }
+
+  .progress {
+    flex-wrap: wrap;
+    gap: 0.3rem 0.6rem;
+  }
+
+  .bar span {
+    width: 0.75rem;
+  }
+
+  .pill {
+    position: static;
+    align-self: flex-start;
+    box-shadow: none;
+    animation: none;
+  }
+}

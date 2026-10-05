@@ -1,0 +1,653 @@
+/* Conversas: one surface split by hairlines, not three cards. The list, the
+   chat and the person; on a phone, one at a time (data-pane). */
+
+.inbox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: calc(100svh - 9rem);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--pulse-card);
+  box-shadow: var(--pulse-shadow);
+  overflow: hidden;
+}
+
+.listCol,
+.chatCol,
+.infoCol {
+  display: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+.inbox[data-pane="list"] .listCol,
+.inbox[data-pane="chat"] .chatCol,
+.inbox[data-pane="info"] .infoCol {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── The list ── */
+.listHead {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--pulse-border-soft);
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.02em;
+}
+
+.search {
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pulse-ink) 4%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.filters {
+  display: flex;
+  gap: 0.3rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: -1rem;
+  padding-inline: 1rem;
+}
+
+.filters button {
+  flex: none;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-ui) linear,
+    color var(--duration-ui) linear;
+}
+
+.filters button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.item {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 1px solid var(--pulse-border-soft);
+  transition: background-color var(--duration-ui) linear;
+}
+
+.item[aria-current] {
+  background: color-mix(in srgb, var(--pulse-ink) 6%, transparent);
+  box-shadow: inset 2px 0 0 var(--pulse-accent);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--pulse-accent) 14%, var(--pulse-card));
+  color: var(--pulse-accent-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.avatarLarge {
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 1rem;
+}
+
+.itemMain {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.itemTop {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.itemTop strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 640;
+}
+
+.itemTime {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.itemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.4rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.flag {
+  font-weight: 640;
+  color: var(--pulse-accent-text);
+}
+
+.unread {
+  display: grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: auto;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.empty {
+  padding: 1.25rem 1rem;
+}
+
+/* ── The chat ── */
+.chatHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--pulse-border-soft);
+}
+
+.back {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  font-size: 1.1rem;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.chatWho {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.chatWho strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatWho span {
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+/* On a phone the status takes its own row under the name. */
+.statusPick {
+  order: 1;
+  flex-basis: 100%;
+}
+
+.statusPick select {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0 0.6rem;
+  font-size: 0.8125rem;
+}
+
+.infoButton {
+  min-height: 2.25rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: 2px;
+  font-size: 0.8125rem;
+  font-weight: 640;
+  cursor: pointer;
+}
+
+/* The Pulse's one word about this conversation. */
+.signal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.7rem;
+  align-items: center;
+  margin: 0.75rem 1rem 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 2px solid var(--pulse-accent);
+  background: color-mix(in srgb, var(--pulse-accent) 7%, transparent);
+  font-size: 0.875rem;
+}
+
+.signal p {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.signalAction {
+  min-height: 2rem;
+  font-size: 0.8125rem;
+  font-weight: 640;
+  color: var(--pulse-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.row {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.day {
+  justify-self: center;
+  margin: 0.6rem 0 0.2rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.bubble {
+  display: grid;
+  gap: 0.2rem;
+  max-width: min(32rem, 82%);
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.bubble[data-dir="in"] {
+  justify-self: start;
+  border-bottom-left-radius: 3px;
+  background: color-mix(in srgb, var(--pulse-ink) 6%, transparent);
+}
+
+.bubble[data-dir="out"] {
+  justify-self: end;
+  border-bottom-right-radius: 3px;
+  background: color-mix(in srgb, var(--pulse-accent) 13%, var(--pulse-card));
+}
+
+/* Internal: never sent. A ruled box, not a bubble. */
+.bubble[data-dir="note"] {
+  justify-self: center;
+  max-width: min(36rem, 92%);
+  border: 1px dashed color-mix(in srgb, var(--pulse-warning) 70%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--pulse-warning) 7%, transparent);
+}
+
+.noteLabel {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pulse-warning);
+}
+
+.meta {
+  justify-self: end;
+  font-size: 0.6875rem;
+  color: var(--text-2);
+}
+
+.toast {
+  margin: 0 1rem 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 0.8125rem;
+  font-weight: 640;
+}
+
+.composer {
+  position: relative;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--pulse-border-soft);
+}
+
+.composer[data-note] .field {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--pulse-warning) 70%, transparent);
+  background: color-mix(in srgb, var(--pulse-warning) 6%, transparent);
+}
+
+.modes {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.modes button {
+  min-height: 1.9rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 640;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.modes button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--pulse-ink) 8%, transparent);
+  color: var(--text);
+}
+
+.field {
+  width: 100%;
+  min-height: 3rem;
+  max-height: 10rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--pulse-ink) 3%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.review {
+  font-size: 0.75rem;
+  font-weight: 640;
+  color: var(--pulse-accent-text);
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.2rem;
+  align-items: center;
+}
+
+.tools button {
+  min-height: 2.25rem;
+  padding: 0 0.55rem;
+  border-radius: 2px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-ui) linear,
+    color var(--duration-ui) linear;
+}
+
+.tools button[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--pulse-ink) 7%, transparent);
+  color: var(--text);
+}
+
+.tools .sendButton {
+  margin-left: auto;
+  padding: 0 1.1rem;
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
+  font-weight: 640;
+}
+
+.tools .sendButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.menu {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.4rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: 6px;
+  background: var(--pulse-sheet);
+}
+
+.menu button {
+  display: grid;
+  gap: 0.1rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 4px;
+  text-align: left;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.menu button span {
+  color: var(--text-2);
+}
+
+.followUps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.followUps button {
+  display: inline-flex;
+  width: auto;
+}
+
+.pickDate .input,
+.pickDate input {
+  min-height: 2.25rem;
+}
+
+/* ── The person ── */
+.infoCol {
+  gap: 1rem;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.infoHead {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  text-align: center;
+}
+
+.infoHead strong {
+  font-size: 1.05rem;
+}
+
+.kind {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: 999px;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+}
+
+.facts {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.facts div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.facts dt {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+}
+
+.facts dd {
+  font-size: 0.875rem;
+}
+
+.facts select,
+.facts input {
+  width: 100%;
+  min-height: 2.25rem;
+  font-size: 0.875rem;
+}
+
+.money {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.overdue {
+  font-weight: 640;
+  color: var(--pulse-danger);
+}
+
+.saved {
+  font-size: 0.8125rem;
+  font-weight: 640;
+  color: var(--pulse-success);
+}
+
+.infoActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.infoActions > * {
+  flex: 1 1 auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .item:hover,
+  .menu button:hover {
+    background: color-mix(in srgb, var(--pulse-ink) 5%, transparent);
+  }
+
+  .tools button:not(.sendButton):hover,
+  .filters button:not([aria-pressed="true"]):hover,
+  .back:hover {
+    color: var(--text);
+  }
+}
+
+/* Wide: the list and the chat side by side; the person replaces the chat on demand. */
+@media (min-width: 1024px) {
+  .inbox {
+    grid-template-columns: 19rem minmax(0, 1fr);
+    height: max(34rem, calc(100svh - 14rem));
+    min-height: 0;
+  }
+
+  .inbox .listCol {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--pulse-border-soft);
+  }
+
+  .inbox[data-pane="list"] .chatCol {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .listCol .back,
+  .chatCol .back {
+    display: none;
+  }
+
+  .chatHead {
+    flex-wrap: nowrap;
+  }
+
+  .statusPick {
+    order: 0;
+    flex-basis: auto;
+  }
+
+  .inbox[data-pane="info"] .infoCol .back {
+    display: grid;
+  }
+}
+
+/* Wider still: all three at once. */
+@media (min-width: 1280px) {
+  .inbox {
+    grid-template-columns: 20rem minmax(0, 1fr) 19rem;
+  }
+
+  .inbox .chatCol,
+  .inbox .infoCol {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .infoCol {
+    border-left: 1px solid var(--pulse-border-soft);
+  }
+
+  .infoCol .back,
+  .inbox[data-pane="info"] .infoCol .back,
+  .infoButton {
+    display: none;
+  }
+
+  /* The notice already shows under the chat. */
+  .saved {
+    display: none;
+  }
+}

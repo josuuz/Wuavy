@@ -526,3 +526,60 @@
     background: color-mix(in srgb, var(--pulse-ink) 5%, transparent);
   }
 }
+
+/* PASSO's guide points here: a ring on the entry, and a nudging arrow. */
+.navLink[data-guide] {
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--pulse-accent);
+  border-radius: 2px;
+}
+
+/* Positioned, so its screen-reader text stays inside the phone's scrolling menu. */
+.guideArrow {
+  position: relative;
+  display: inline-flex;
+  margin-left: auto;
+  padding-left: 0.5rem;
+  font-weight: 700;
+  color: var(--pulse-accent-text);
+}
+
+.guideArrow span[aria-hidden] {
+  animation: guide-nudge 1.6s var(--wuavy-ease-out) infinite;
+}
+
+@keyframes guide-nudge {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: translateX(-4px);
+  }
+}
+
+/* Reduced motion: the arrow stays put and only breathes, slowly. */
+@media (prefers-reduced-motion: reduce) {
+  .guideArrow span[aria-hidden] {
+    animation: guide-breathe 3.2s linear infinite;
+  }
+}
+
+@keyframes guide-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Conversas fills the screen's height: no page padding below the work. */
+@media (min-width: 1024px) {
+  .content[data-view="conversas"] {
+    max-width: none;
+    padding-bottom: 1.5rem;
+  }
+}

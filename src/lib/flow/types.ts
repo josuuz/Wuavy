@@ -22,6 +22,8 @@ export interface Organization {
   /** The kind of clinic, chosen at onboarding. */
   segment: (typeof SEGMENTS)[number];
   city: string;
+  /** Street, number, district and city, as the clinic writes it (migration 0006). */
+  address?: string;
   logoUrl?: string;
   whatsapp?: string;
   teamSize?: (typeof TEAM_SIZES)[number];

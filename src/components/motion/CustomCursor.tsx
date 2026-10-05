@@ -9,10 +9,9 @@ type CursorState = "default" | "action" | "view" | "text" | "hidden";
 
 const ACTION = "a[href], button, [role='button'], summary, label, [data-cursor='action']";
 const TEXT = "input, textarea, select, [contenteditable='true']";
-const MAX_LAG = 10; // px
 
 /**
- * The cursor is a small Signal dot that trails the pointer. Over anything
+ * The cursor is a small Signal dot that sits exactly on the pointer. Over anything
  * you can press it swells into a soft halo; over a case it fills out and
  * carries a "Ver case" label; over a field it steps aside for the native
  * text cursor.
@@ -61,7 +60,6 @@ export function CustomCursor() {
     modals.observe(document.body, { subtree: true, attributes: true, attributeFilter: ["open"] });
 
     const target = { x: -100, y: -100 };
-    const pos = { x: -100, y: -100 };
     let frame = 0;
     let hit: Element | null = null;
     let seen: Element | null = null;
@@ -69,7 +67,6 @@ export function CustomCursor() {
     let magnetInner: HTMLElement | null = null;
     let spotHost: HTMLElement | null = null;
     let spot: HTMLElement | null = null;
-    let placed = "";
 
     // The DOM attribute is the single source of truth (a route change resets it).
     const setState = (next: CursorState, text?: string) => {
@@ -101,17 +98,14 @@ export function CustomCursor() {
       spot = spotHost?.querySelector<HTMLElement>("[data-spot]") ?? null;
     };
 
-    // One frame per screen refresh, however fast the mouse reports: reads first, then writes.
+    // At most one write per screen refresh, and always at the pointer itself: no
+    // trail and no easing, so however fast or slow the machine, the dot is where
+    // the mouse is (the native cursor is hidden; a dot left behind reads as none).
     const tick = () => {
       frame = 0;
       if (hit !== seen) resolve();
-      // The label and the light follow the pointer itself: only when it has moved.
-      const at = `${target.x},${target.y}`;
-      const fresh = at !== placed;
-      placed = at;
-      const m = fresh && magnetInner && magnet ? magnet.getBoundingClientRect() : null;
-      const h = fresh && spot && spotHost ? spotHost.getBoundingClientRect() : null;
-
+      el.style.transform = `translate3d(${target.x}px, ${target.y}px, 0)`;
+      const m = magnetInner && magnet ? magnet.getBoundingClientRect() : null;
       if (m && magnetInner) {
         // Magnetic buttons: the label leans toward the pointer, at most ~8px.
         const dx = (target.x - (m.left + m.width / 2)) / (m.width / 2);
@@ -119,51 +113,37 @@ export function CustomCursor() {
         magnetInner.style.transform = `translate3d(${(dx * 7).toFixed(1)}px, ${(dy * 4).toFixed(1)}px, 0)`;
       }
       // Row lights: the light sits under the pointer, inside its row.
+      const h = spot && spotHost ? spotHost.getBoundingClientRect() : null;
       if (h && spot) spot.style.translate = `${(target.x - h.left).toFixed(0)}px ${(target.y - h.top).toFixed(0)}px`;
-
-      // A soft trail, but on a short leash: however fast the mouse, the dot is
-      // never more than MAX_LAG from it (the native cursor is hidden, so a dot
-      // left far behind reads as no cursor at all).
-      pos.x += (target.x - pos.x) * 0.5;
-      pos.y += (target.y - pos.y) * 0.5;
-      const lagX = target.x - pos.x;
-      const lagY = target.y - pos.y;
-      const lag = Math.hypot(lagX, lagY);
-      if (lag > MAX_LAG) {
-        pos.x = target.x - (lagX / lag) * MAX_LAG;
-        pos.y = target.y - (lagY / lag) * MAX_LAG;
-      }
-      el.style.transform = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
-      if (Math.abs(target.x - pos.x) > 0.2 || Math.abs(target.y - pos.y) > 0.2) {
-        frame = requestAnimationFrame(tick);
-      }
     };
 
     const onMove = (event: PointerEvent) => {
       if (event.pointerType !== "mouse") return;
       target.x = event.clientX;
       target.y = event.clientY;
-      if (el.dataset.state === "hidden") {
-        pos.x = target.x;
-        pos.y = target.y;
-      }
       hit = event.target instanceof Element ? event.target : null;
+      // Back from outside the window: show it at once, where the pointer is.
+      if (el.dataset.state === "hidden") seen = null;
       if (!frame) frame = requestAnimationFrame(tick);
     };
 
     const onDown = () => el.setAttribute("data-pressed", "");
     const onUp = () => el.removeAttribute("data-pressed");
-    const onLeave = () => {
+    const hide = () => {
       setState("hidden");
       releaseMagnet();
       hit = seen = null;
-      placed = "";
+    };
+    // Only leaving the window hides it (relatedTarget null), never crossing an element.
+    const onOut = (event: MouseEvent) => {
+      if (!event.relatedTarget) hide();
     };
 
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("pointerdown", onDown);
     window.addEventListener("pointerup", onUp);
-    document.addEventListener("pointerleave", onLeave);
+    document.addEventListener("mouseout", onOut);
+    window.addEventListener("blur", hide);
 
     return () => {
       cancelAnimationFrame(frame);
@@ -173,7 +153,8 @@ export function CustomCursor() {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
-      document.removeEventListener("pointerleave", onLeave);
+      document.removeEventListener("mouseout", onOut);
+      window.removeEventListener("blur", hide);
     };
   }, [enabled]);
 

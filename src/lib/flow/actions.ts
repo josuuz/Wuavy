@@ -720,6 +720,7 @@ export async function updateClinic(form: FormData): Promise<Result> {
         .update({
           name: required(text(form, "clinic", 120), "o nome da clínica"),
           whatsapp,
+          address: text(form, "address", 200) || null,
           segment: oneOf(text(form, "segment"), SEGMENTS, "o tipo de clínica"),
           team_size: oneOf(text(form, "team"), TEAM_SIZES, "quantos profissionais atendem"),
           opening_time: opens,

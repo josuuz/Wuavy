@@ -20,6 +20,8 @@ import { AskFlow } from "./AskFlow";
 import { APP_BASE, BASE, CHECKOUT, MENU, ONLINE_CHECKOUT, PLAN, VIEWS, viewHref } from "./copy";
 import { PaymentMethod, SignOut, Soon } from "./forms";
 import { Sheet } from "./Sheet";
+import { GuideCard, GuidePill, GuideProvider, ScreenTip, useGuide } from "./Guide";
+import { InboxProvider } from "./inbox";
 import { FlowProvider, useFlow, type Account } from "./store";
 import ui from "./ui.module.css";
 import styles from "./FlowDemo.module.css";
@@ -44,7 +46,11 @@ interface FlowDemoProps {
 export function FlowDemo({ initial, access, account, children }: FlowDemoProps) {
   return (
     <FlowProvider initial={initial} base={access.isDemoMode ? BASE : APP_BASE} access={access} account={account}>
-      <Shell>{children}</Shell>
+      <GuideProvider>
+        <InboxProvider>
+          <Shell>{children}</Shell>
+        </InboxProvider>
+      </GuideProvider>
     </FlowProvider>
   );
 }
@@ -53,6 +59,7 @@ function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { data, ops, base, access, account, ask, asking, closeAsk } = useFlow();
   const [subscribing, setSubscribing] = useState(false);
+  const guide = useGuide();
   const current = VIEWS.find((v) => viewHref(v.slug, base) === pathname) ?? VIEWS[0];
   const menu = MENU.filter((view) => !view.live || !access.isDemoMode);
   const open = ops.filter((o) => o.count > 0 && o.status !== "resolvida").length;
@@ -101,9 +108,15 @@ function Shell({ children }: { children: ReactNode }) {
             {menu.map((view, i) => {
               const href = viewHref(view.slug, base);
               const here = href === pathname;
+              const pointed = guide.target === view.slug;
               return (
                 <li key={view.slug}>
-                  <Link href={href} className={styles.navLink} aria-current={here ? "page" : undefined}>
+                  <Link
+                    href={href}
+                    className={styles.navLink}
+                    aria-current={here ? "page" : undefined}
+                    data-guide={pointed ? "" : undefined}
+                  >
                     <span className={styles.navIndex} aria-hidden="true">
                       {pad(i + 1)}
                     </span>
@@ -113,12 +126,20 @@ function Shell({ children }: { children: ReactNode }) {
                         {open}
                       </span>
                     ) : null}
+                    {pointed ? (
+                      <span className={styles.guideArrow}>
+                        <span aria-hidden="true">←</span>
+                        <span className="sr-only">: comece aqui</span>
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               );
             })}
           </ol>
         </nav>
+        <GuideCard />
+        <GuidePill />
         {potential ? (
           <Link href={viewHref("oportunidades", base)} className={styles.railValue}>
             <span className={styles.railLabel}>Receita potencial · agora</span>
@@ -161,7 +182,8 @@ function Shell({ children }: { children: ReactNode }) {
           </button>
         </header>
         <PlanNotice onSubscribe={subscribe} />
-        <main id="conteudo" className={styles.content}>
+        <main id="conteudo" className={styles.content} data-view={current.slug || "visao-geral"}>
+          <ScreenTip />
           {children}
         </main>
       </div>

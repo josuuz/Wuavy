@@ -334,6 +334,7 @@ export type Database = {
       };
       organizations: {
         Row: {
+          address: string | null;
           city: string | null;
           closing_time: string | null;
           created_at: string;
@@ -347,6 +348,7 @@ export type Database = {
           work_days: number[];
         };
         Insert: {
+          address?: string | null;
           city?: string | null;
           closing_time?: string | null;
           created_at?: string;
@@ -360,6 +362,7 @@ export type Database = {
           work_days?: number[];
         };
         Update: {
+          address?: string | null;
           city?: string | null;
           closing_time?: string | null;
           created_at?: string;

@@ -73,6 +73,7 @@ interface State {
 type Action =
   | { type: "moveLead"; id: ID; stage: LeadStage }
   | { type: "contactLead"; id: ID }
+  | { type: "updateLead"; id: ID; changes: { procedureId?: ID; potentialValue?: number; nextAction?: string } }
   | {
       type: "addLead";
       lead: { name: string; phone: string; source: LeadSource; procedureId: ID; potentialValue: number; stage: LeadStage; nextAction: string; patientId?: ID };
@@ -133,6 +134,12 @@ function reducer(state: State, action: Action): State {
         { ...state, data: { ...data, leads } },
         action.type === "moveLead" ? `${lead?.name} passou para a etapa seguinte em Vendas.` : `Contato registrado com ${lead?.name}.`,
       );
+    }
+    case "updateLead": {
+      const lead = data.leads.find((l) => l.id === action.id);
+      if (!lead) return state;
+      const leads = data.leads.map((l) => (l.id === action.id ? { ...l, ...action.changes } : l));
+      return log({ ...state, data: { ...data, leads } }, `${lead.name}: dados atualizados pela conversa.`);
     }
     case "addLead": {
       const seq = state.seq + 1;

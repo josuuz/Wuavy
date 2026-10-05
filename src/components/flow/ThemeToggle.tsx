@@ -5,10 +5,10 @@ import { useSyncExternalStore } from "react";
 import styles from "./ThemeToggle.module.css";
 
 /*
-  Dark or light, for every screen of the Pulse. The choice lives on <html>
-  as data-pulse-theme ("light", or nothing for the default dark) and in
-  localStorage; the boot script in app/layout.tsx puts it back before first
-  paint, so a reload never flashes the other theme. Where the browser has
+  Light or dark, for every screen of the Pulse. Light is the default: the
+  boot script in app/layout.tsx sets data-pulse-theme="light" on <html>
+  before first paint unless "dark" was saved in localStorage, so a first
+  visit opens light and a reload never flashes the other theme. Where the browser has
   view transitions, the swap crossfades; elsewhere it is immediate.
 */
 
@@ -26,7 +26,7 @@ function subscribe(onChange: () => void) {
 }
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const theme = useSyncExternalStore(subscribe, read, (): Theme => "dark");
+  const theme = useSyncExternalStore(subscribe, read, (): Theme => "light");
   const next: Theme = theme === "dark" ? "light" : "dark";
   const label = next === "light" ? "Usar tema claro" : "Usar tema escuro";
 

@@ -13,8 +13,9 @@ import { updateAccount, updateClinic } from "@/lib/flow/actions";
 import { brl } from "@/lib/flow/format";
 import { LOGO_MAX, LOGO_TYPES, SEGMENTS, TEAM_SIZES } from "@/lib/flow/types";
 import { createClient } from "@/lib/supabase/client";
-import { PLAN, SEGMENT_LABEL, TEAM_LABEL, WEEK } from "../copy";
+import { GUIDE, PLAN, SEGMENT_LABEL, TEAM_LABEL, WEEK } from "../copy";
 import { Field, FormError, Intro, SignOut, Soon, useWrite } from "../forms";
+import { clinicChecklist, useGuide, type ClinicField } from "../Guide";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
@@ -56,6 +57,7 @@ export function Settings() {
         <AccountSettings />
         <PlanSettings />
         <PrivacySettings />
+        <HelpSettings />
       </div>
     </div>
   );
@@ -71,6 +73,12 @@ function ClinicSettings() {
   const hours = org.hours ?? DEFAULT_HOURS;
   const owner = account?.role === "owner";
   const locked = !owner || !access.canEdit;
+  const guide = useGuide();
+  const guided = guide.active && !guide.saved.minimized && guide.current?.id === "clinica";
+  // PASSO points at each field the first step asks for: still empty, or already done.
+  const checklist = clinicChecklist(org);
+  const mark = (key: ClinicField) =>
+    guided ? (checklist.find((f) => f.key === key)?.filled ? "ok" : "todo") : undefined;
 
   const onLogo = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -87,7 +95,11 @@ function ClinicSettings() {
   };
 
   return (
-    <section className={`${styles.panel} ${styles.settingsWide}`} aria-labelledby="dados-clinica">
+    <section
+      className={`${styles.panel} ${styles.settingsWide}`}
+      aria-labelledby="dados-clinica"
+      data-guide={guided ? "" : undefined}
+    >
       <h2 id="dados-clinica" className={styles.label}>
         Dados da clínica
       </h2>
@@ -95,7 +107,7 @@ function ClinicSettings() {
       <form className={styles.form} onSubmit={submit(updateClinic, done)} onChange={touched}>
         <fieldset className={styles.fieldset} disabled={locked}>
           <legend className="sr-only">Dados da clínica</legend>
-          <label className={auth.logo}>
+          <label className={auth.logo} data-guide-field={mark("logo")}>
             <span className={auth.logoMark}>
               {preview ? (
                 // eslint-disable-next-line @next/next/no-img-element -- a local preview (blob URL), never optimized
@@ -113,10 +125,10 @@ function ClinicSettings() {
             <input className="sr-only" type="file" name="logo" accept={LOGO_TYPES.join(",")} onChange={onLogo} />
           </label>
           <div className={styles.twoFields}>
-            <Field label="Nome da clínica">
+            <Field label="Nome da clínica" guide={mark("name")}>
               <input className={styles.input} name="clinic" required maxLength={120} defaultValue={org.name} autoComplete="organization" />
             </Field>
-            <Field label="WhatsApp da clínica">
+            <Field label="WhatsApp da clínica" guide={mark("whatsapp")}>
               <input
                 className={styles.input}
                 name="whatsapp"
@@ -130,6 +142,16 @@ function ClinicSettings() {
               />
             </Field>
           </div>
+          <Field label="Endereço" guide={mark("address")}>
+            <input
+              className={styles.input}
+              name="address"
+              maxLength={200}
+              defaultValue={org.address}
+              placeholder="Rua, número, bairro e cidade"
+              autoComplete="street-address"
+            />
+          </Field>
           <div className={styles.twoFields}>
             <Field label="Tipo de clínica">
               <select className={styles.input} name="segment" defaultValue={org.segment}>
@@ -151,10 +173,10 @@ function ClinicSettings() {
             </Field>
           </div>
           <div className={styles.twoFields}>
-            <Field label="Abre às">
+            <Field label="Abre às" guide={mark("hours")}>
               <input className={styles.input} type="time" name="opens" required defaultValue={hours.opens} />
             </Field>
-            <Field label="Fecha às">
+            <Field label="Fecha às" guide={mark("hours")}>
               <input className={styles.input} type="time" name="closes" required defaultValue={hours.closes} />
             </Field>
           </div>
@@ -336,6 +358,24 @@ function PrivacySettings() {
           </a>
         </li>
       </ul>
+    </section>
+  );
+}
+
+/** The first-run guide, again: PASSO walks the first steps from the start. */
+function HelpSettings() {
+  const { restart } = useGuide();
+  return (
+    <section className={styles.panel} aria-labelledby="ajuda">
+      <h2 id="ajuda" className={styles.label}>
+        {GUIDE.restart.title}
+      </h2>
+      <p className={styles.fine}>{GUIDE.restart.text}</p>
+      <div className={styles.actions}>
+        <button type="button" className={styles.secondary} onClick={restart}>
+          {GUIDE.restart.cta}
+        </button>
+      </div>
     </section>
   );
 }

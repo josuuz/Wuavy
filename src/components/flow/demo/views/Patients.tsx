@@ -109,7 +109,8 @@ export function Patients() {
   const [creating, setCreating] = useState(false);
   const q = query.trim().toLowerCase();
   const qDigits = digits(q);
-  const list = groups[filter].filter(
+  // A search looks through every patient: someone just booked from Conversas is not in "Precisam retornar".
+  const list = (q ? groups.todos : groups[filter]).filter(
     (p) => !q || p.name.toLowerCase().includes(q) || (qDigits.length >= 4 && digits(p.phone).includes(qDigits)),
   );
   const shown = groups[filter];

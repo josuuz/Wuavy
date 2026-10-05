@@ -100,6 +100,15 @@
   transform: translateX(-5px);
 }
 
+/* In the Pulse, with reduced motion, he stops looking around and only blinks:
+   a guide beside the work, not something moving in the corner of the eye. */
+@media (prefers-reduced-motion: reduce) {
+  :global([data-pulse]) [data-mode="idle"] .look,
+  :global([data-pulse]) [data-mode="idle"] .pupils {
+    animation: none;
+  }
+}
+
 @keyframes look {
   0%,
   26% {

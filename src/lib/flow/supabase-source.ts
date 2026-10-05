@@ -68,6 +68,8 @@ export function supabaseSource(db: Db): FlowSource {
         name: o.name,
         segment: (SEGMENTS as readonly string[]).includes(o.segment) ? (o.segment as Organization["segment"]) : "estetica",
         city: o.city ?? "",
+        // Before migration 0006 there is no address column: none.
+        address: o.address?.trim() || undefined,
         logoUrl: o.logo_url ?? undefined,
         whatsapp: o.whatsapp ?? undefined,
         teamSize: (TEAM_SIZES as readonly string[]).includes(o.team_size ?? "") ? (o.team_size as Organization["teamSize"]) : undefined,

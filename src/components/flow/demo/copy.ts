@@ -27,6 +27,7 @@ export const APP_BASE = "/pulse/app";
  */
 export const VIEWS: readonly { slug: string; label: string; live?: boolean }[] = [
   { slug: "", label: "Visão geral" },
+  { slug: "conversas", label: "Conversas" },
   { slug: "oportunidades", label: "Oportunidades" },
   { slug: "vendas", label: "Vendas" },
   { slug: "pacientes", label: "Pacientes" },
@@ -115,6 +116,98 @@ export const PLAN = {
       cta: "Assinar de novo",
     },
   },
+};
+
+/**
+ * The first-run guide, told by PASSO: a short list the clinic can follow,
+ * skip or leave for later. `go` is said away from the step's screen, `here`
+ * on it. Six steps everywhere; in the demo the first is already done (its
+ * clinic comes configured, and the demo has no settings).
+ */
+export const GUIDE = {
+  welcome: {
+    /** When the first step is the clinic's profile. */
+    clinic: "Vamos deixar o Pulse com a cara da sua clínica?",
+    tour: "Quer conhecer o Pulse pelo que ele faz de melhor? Leva um minuto.",
+    start: { clinic: "Começar configuração", tour: "Começar" },
+    later: "Agora não",
+  },
+  title: "Primeiros passos",
+  progress: (done: number, total: number) => `${done} de ${total} concluídos`,
+  skip: "Pular por enquanto",
+  later: "Continuar depois",
+  go: (label: string) => `Ir para ${label}`,
+  hide: "Ocultar guia",
+  done: {
+    text: "Tudo pronto. O Pulse já conhece a sua clínica e começa a apontar o que fazer.",
+    /** Some steps were skipped: they stay in the count, and the tutorial can be seen again. */
+    skipped: (n: number) =>
+      `Você pulou ${n === 1 ? "1 etapa" : `${n} etapas`}. Ela${n === 1 ? "" : "s"} continua${n === 1 ? "" : "m"} aqui: dá para rever o tutorial em Configurações.`,
+    cta: "Concluir",
+  },
+  restart: { title: "Ajuda e tutorial", text: "Reveja os primeiros passos com o PASSO quando quiser.", cta: "Rever o tutorial" },
+  steps: [
+    {
+      id: "clinica",
+      view: "configuracoes",
+      title: "Personalizar a clínica",
+      go: "Comece pelas Configurações: logo, nome, WhatsApp e horários deixam o Pulse com a cara da clínica.",
+      here: "Primeiro, vamos deixar o Pulse com a identidade da sua clínica. Preencha o que estiver destacado e salve.",
+    },
+    {
+      id: "procedimento",
+      view: "procedimentos",
+      title: "Cadastrar o primeiro procedimento",
+      go: "Agora os serviços: cada procedimento traz preço, duração e retorno.",
+      here: "Cadastre um procedimento com preço, duração e intervalo de retorno.",
+    },
+    {
+      id: "paciente",
+      view: "pacientes",
+      title: "Cadastrar o primeiro paciente",
+      go: "Depois, quem a clínica atende.",
+      here: "Cadastre um paciente. O telefone é o que liga a conversa ao cadastro.",
+    },
+    {
+      id: "agendamento",
+      view: "agenda",
+      title: "Criar o primeiro agendamento",
+      go: "Com procedimento e paciente, a agenda já funciona.",
+      here: "Clique num horário livre para agendar.",
+    },
+    {
+      id: "conversas",
+      view: "conversas",
+      title: "Conhecer Conversas",
+      go: "Veja onde a equipe vai atender, com o contexto de cada pessoa ao lado.",
+      here: "Cada conversa mostra a etapa, o procedimento e a próxima ação da pessoa.",
+    },
+    {
+      id: "oportunidades",
+      view: "oportunidades",
+      title: "Ver as oportunidades",
+      go: "Por último, onde o Pulse mostra o dinheiro parado.",
+      here: "Aqui o Pulse junta os sinais da clínica em ações, com o valor de cada uma.",
+    },
+  ],
+  /** What the clinic step looks for in Configurações. The logo is optional: it never holds the step back. */
+  clinicFields: {
+    logo: "Logo da clínica (opcional)",
+    name: "Nome da clínica",
+    whatsapp: "WhatsApp",
+    address: "Endereço",
+    hours: "Horários de atendimento",
+  },
+} as const;
+
+export type GuideStepId = (typeof GUIDE.steps)[number]["id"];
+
+/** PASSO's one-time tip on a screen's first visit. */
+export const SCREEN_TIPS: Record<string, string> = {
+  procedimentos: "Cadastre os serviços da clínica para o Pulse conseguir cruzar agenda, pacientes e estoque.",
+  estoque: "Depois vamos relacionar produtos aos procedimentos para identificar oportunidades.",
+  conversas: "Aqui sua equipe poderá atender sem sair do Pulse.",
+  oportunidades: "É aqui que o Pulse transforma sinais da operação em ações.",
 };
 
 export const STAGE_LABEL: Record<LeadStage, string> = {
