@@ -53,6 +53,9 @@ export const billingReady = () => Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN);
 */
 const testPayer = () => process.env.MERCADOPAGO_TEST_PAYER_EMAIL?.trim() || null;
 
+/** The e-mail the card form is created with: in test mode the test buyer's, so the card token and the subscription name the same payer. */
+export const payerEmail = (email: string) => testPayer() ?? email;
+
 export const testMode = () => Boolean(testPayer()) || Boolean(process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY?.startsWith("TEST-"));
 
 /** What Mercado Pago said was wrong, in a line (shown only in test mode). */

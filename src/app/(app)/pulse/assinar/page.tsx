@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/flow/auth/AuthFrame";
 import { Checkout } from "@/components/flow/auth/Checkout";
 import { releases } from "@/lib/flow/access";
-import { billingReady, testMode } from "@/lib/flow/billing";
+import { billingReady, payerEmail, testMode } from "@/lib/flow/billing";
 import { getSession, getSubscription, markJourney } from "@/lib/flow/session";
 
 export const metadata: Metadata = {
@@ -33,7 +33,7 @@ export default async function SubscribePage() {
     <AuthFrame>
       <Checkout
         stage={stage}
-        email={session.user.email ?? ""}
+        email={payerEmail(session.user.email ?? "")}
         hasClinic={Boolean(session.member)}
         // Both keys or neither: without the server's, the card form would only lead to "unavailable".
         publicKey={billingReady() ? (process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? "") : ""}
