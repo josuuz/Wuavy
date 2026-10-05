@@ -24,7 +24,8 @@ const STEPS = [
 ];
 
 
-export function ClinicForm() {
+/** `name`: the person's, from their account, so nothing asked at sign-up is asked again. */
+export function ClinicForm({ name = "" }: { name?: string }) {
   const [state, action, pending] = useActionState(createClinic, null);
   const [step, setStep] = useState(0);
   const [preview, setPreview] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export function ClinicForm() {
             <input className={ui.input} name="clinic" required maxLength={120} autoComplete="organization" />
           </Field>
           <Field label="Nome do responsável">
-            <input className={ui.input} name="name" required maxLength={120} autoComplete="name" />
+            <input className={ui.input} name="name" required maxLength={120} autoComplete="name" defaultValue={name} />
           </Field>
           <Field label="WhatsApp da clínica">
             <input

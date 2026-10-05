@@ -87,8 +87,7 @@ export const PLAN = {
     /** Without the online checkout: the plan is contracted with Wuavy. */
     offline: {
       cta: "Falar com a Wuavy para assinar",
-      note: "Assinatura online em breve. Por enquanto, a contratação é feita direto com a Wuavy, que ativa o Pulse na sua conta.",
-      account: "Já combinei: criar minha conta",
+      note: "Estamos finalizando a ativação online. Por enquanto, a contratação é feita direto com a Wuavy, que ativa o Pulse nesta mesma conta.",
     },
     back: { demo: "Continuar explorando a demo", other: "Agora não" },
     topic: "assinar o Wuavy Pulse",

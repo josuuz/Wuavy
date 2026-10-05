@@ -10,11 +10,13 @@ import ui from "../demo/ui.module.css";
 import { authMessage } from "./messages";
 
 /*
-  Sign in, create the account that will own a clinic, or ask for a link to
-  reset the password. Supabase Auth runs in the browser with the publishable
-  key; the session lands in cookies, and the server takes it from there. A
-  new account, once confirmed, goes on to create its clinic (/pulse/comecar);
-  a reset link opens /pulse/redefinir-senha.
+  Sign in, create an account, or ask for a link to reset the password. One
+  account for the whole journey: it opens the demo, subscribes, and then owns
+  the clinic. Creating it asks only name, e-mail and password; the name and
+  where the person came from go with the account (user metadata) and the
+  database keeps them as the lead's profile (migration 0005). Supabase Auth
+  runs in the browser with the publishable key; the session lands in cookies.
+  A reset link opens /pulse/redefinir-senha.
 */
 
 /*
@@ -27,6 +29,9 @@ const EMAIL_RETURN = { confirm: "/flow/auth/callback", reset: "/flow/redefinir-s
 
 export type SignInMode = "entrar" | "criar" | "recuperar";
 
+/** What the person came to do: explore the demo, or subscribe. */
+export type SignInIntent = "demo" | "assinar";
+
 const SUBMIT: Record<SignInMode, string> = { entrar: "Entrar", criar: "Criar conta", recuperar: "Enviar link" };
 
 interface SignInFormProps {
@@ -34,11 +39,12 @@ interface SignInFormProps {
   initialMode?: SignInMode;
   /** A confirmation to show above the form, such as a password just reset. */
   notice?: string;
-  /** Where to go once in, when the person came to do something (the checkout). */
+  intent?: SignInIntent;
+  /** Where to go once in, when the person came to do something (the demo, the checkout). */
   then?: string;
 }
 
-export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }: SignInFormProps) {
+export function SignInForm({ linkFailed, initialMode = "entrar", notice, intent, then }: SignInFormProps) {
   const router = useRouter();
   const [mode, setMode] = useState<SignInMode>(initialMode);
   const [pending, setPending] = useState(false);
@@ -85,7 +91,13 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }:
     const { data, error } = await auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}${EMAIL_RETURN.confirm}` },
+      options: {
+        emailRedirectTo: `${window.location.origin}${EMAIL_RETURN.confirm}`,
+        data: {
+          name: String(form.get("name") ?? "").trim().slice(0, 120),
+          source: intent === "assinar" ? "checkout" : intent ?? "site",
+        },
+      },
     });
     if (error) {
       setError(authMessage(error));
@@ -93,12 +105,12 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }:
       return;
     }
     if (data.session) {
-      router.replace(then ?? "/pulse/comecar");
+      // The Pulse sends a new account where it belongs: the demo, until it subscribes.
+      router.replace(then ?? "/pulse/app");
       router.refresh();
       return;
     }
-    // Email confirmation is on: the link brings the person back, signed in, to onboarding,
-    // which sends anyone who hasn't paid yet on to the checkout.
+    // Email confirmation is on: the link brings the person back, signed in (auth/callback).
     setSent({ to: email, reset: false });
     setPending(false);
   }
@@ -114,8 +126,8 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }:
           </p>
         ) : (
           <p>
-            Enviamos um link para <strong>{sent.to}</strong>. Abra-o neste navegador para continuar{" "}
-            {then ? "a assinatura" : "e criar a sua clínica"}.
+            Enviamos um link para <strong>{sent.to}</strong>. Abra-o neste navegador para{" "}
+            {intent === "assinar" ? "continuar a assinatura" : "acessar o Pulse"}.
           </p>
         )}
       </div>
@@ -131,6 +143,11 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }:
       ) : null}
       {mode === "recuperar" ? (
         <p className={ui.fine}>Informe o e-mail da sua conta. Enviaremos um link para você criar uma nova senha.</p>
+      ) : null}
+      {mode === "criar" ? (
+        <Field label="Nome">
+          <input className={ui.input} name="name" required maxLength={120} autoComplete="name" />
+        </Field>
       ) : null}
       <Field label="E-mail">
         <input className={ui.input} name="email" type="email" required autoComplete="email" />
@@ -156,7 +173,7 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }:
       <FormError error={error} />
       <div className={ui.actions}>
         <button type="submit" className={ui.primary} disabled={pending}>
-          {SUBMIT[mode]}
+          {mode === "criar" && intent === "demo" ? "Acessar demonstração" : SUBMIT[mode]}
         </button>
         {mode === "entrar" ? (
           <>
@@ -169,7 +186,13 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, then }:
           </>
         ) : (
           <button type="button" className={ui.quiet} onClick={() => switchTo("entrar")}>
-            {mode === "criar" ? "Já tenho conta" : "Voltar para entrar"}
+            {mode === "criar" ? (
+              <>
+                Já tenho uma conta <span aria-hidden="true">→</span> Entrar
+              </>
+            ) : (
+              "Voltar para entrar"
+            )}
           </button>
         )}
       </div>

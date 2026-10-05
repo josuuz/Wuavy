@@ -446,6 +446,39 @@ export type Database = {
           },
         ];
       };
+      profiles: {
+        Row: {
+          user_id: string;
+          name: string | null;
+          source: string;
+          demo_first_at: string | null;
+          demo_last_at: string | null;
+          subscribe_clicked_at: string | null;
+          checkout_started_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          name?: string | null;
+          source?: string;
+          demo_first_at?: string | null;
+          demo_last_at?: string | null;
+          subscribe_clicked_at?: string | null;
+          checkout_started_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          name?: string | null;
+          source?: string;
+          demo_first_at?: string | null;
+          demo_last_at?: string | null;
+          subscribe_clicked_at?: string | null;
+          checkout_started_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       procedures: {
         Row: {
           category: string;
@@ -598,6 +631,8 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       is_member: { Args: { org: string }; Returns: boolean };
+      is_owner: { Args: { org: string }; Returns: boolean };
+      pulse_mark: { Args: { step: string }; Returns: undefined };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

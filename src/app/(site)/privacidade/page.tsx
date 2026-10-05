@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacidade" },
 };
 
-const UPDATED = "3 de outubro de 2026";
+const UPDATED = "4 de outubro de 2026";
 const EMAIL = "ola@wuavy.com";
 
 export default function PrivacyPage() {
@@ -49,8 +49,10 @@ export default function PrivacyPage() {
             <h2>Que dados tratamos</h2>
             <ul>
               <li>
-                <strong>Conta:</strong> nome, e-mail e senha de quem usa o Pulse (a senha é guardada de forma criptografada pelo
-                provedor de autenticação; a Wuavy não a vê).
+                <strong>Conta:</strong> nome, e-mail e senha de quem cria uma conta, inclusive só para conhecer a demonstração (a
+                senha é guardada de forma criptografada pelo provedor de autenticação; a Wuavy não a vê). Registramos também por
+                onde a conta chegou e as etapas que percorreu (acessou a demonstração, abriu a
+                assinatura, assinou, configurou a clínica).
               </li>
               <li>
                 <strong>Clínica:</strong> nome, WhatsApp, especialidade, tamanho da equipe, horário de atendimento e logo.
@@ -78,7 +80,8 @@ export default function PrivacyPage() {
               Para prestar o serviço contratado (agenda, pacientes, oportunidades e mensagens prontas), autenticar o acesso,
               cobrar a assinatura, dar suporte, manter a segurança e cumprir obrigações legais. As bases legais são a execução do
               contrato, o legítimo interesse (segurança e prevenção de fraude) e o cumprimento de obrigação legal. Para os dados
-              dos pacientes, a base legal é definida pela clínica, como controladora.
+              dos pacientes, a base legal é definida pela clínica, como controladora. Com a conta criada para a demonstração,
+              a Wuavy pode entrar em contato sobre o Pulse (legítimo interesse).
             </p>
           </section>
 

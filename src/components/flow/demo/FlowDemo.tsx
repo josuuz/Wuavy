@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
+import { markSubscribeIntent } from "@/app/(app)/pulse/demo/actions";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { site } from "@/data/site";
 import { contactHref } from "@/lib/contact";
@@ -62,7 +63,10 @@ function Shell({ children }: { children: ReactNode }) {
   const plan = access.isDemoMode ? "Demo · dados fictícios" : status ? PLAN.chip[status] : null;
   // The chip draws the eye only when the subscription asks for something.
   const tone = status && status !== "active" ? "ended" : undefined;
-  const subscribe = () => setSubscribing(true);
+  const subscribe = () => {
+    setSubscribing(true);
+    markSubscribeIntent().catch(() => {});
+  };
 
   return (
     <div className={styles.app} data-pulse="">
@@ -84,7 +88,7 @@ function Shell({ children }: { children: ReactNode }) {
             <Image className={styles.logo} src={data.organization.logoUrl} alt="" width={28} height={28} unoptimized />
           ) : null}
           {data.organization.name}
-          {account ? <span>{account.name}</span> : null}
+          {account && !access.isDemoMode ? <span>{account.name}</span> : null}
           {plan ? (
             <span className={styles.plan} data-tone={tone}>
               {plan}
@@ -124,7 +128,7 @@ function Shell({ children }: { children: ReactNode }) {
             </span>
           </Link>
         ) : null}
-        {account ? null : (
+        {account && !access.isDemoMode ? null : (
           <Link href="/pulse" className={styles.back}>
             <span aria-hidden="true">←</span> Voltar ao Wuavy Pulse
           </Link>
@@ -243,21 +247,14 @@ function Subscribe({ open, onClose }: { open: boolean; onClose: () => void }) {
             {offer.cta}
           </Link>
         ) : (
-          <>
-            <a
-              href={contactHref(site.contact.primary, offer.topic)}
-              className={ui.primary}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {offer.offline.cta}
-            </a>
-            {access.isDemoMode ? (
-              <Link href={`/pulse/entrar?modo=criar&depois=assinar`} className={ui.secondary}>
-                {offer.offline.account}
-              </Link>
-            ) : null}
-          </>
+          <a
+            href={contactHref(site.contact.primary, offer.topic)}
+            className={ui.primary}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {offer.offline.cta}
+          </a>
         )}
         <button type="button" className={ui.quiet} onClick={onClose}>
           {access.isDemoMode ? offer.back.demo : offer.back.other}

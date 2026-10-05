@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
-import { asStatus, clinicAccess } from "./access";
+import { asStatus, clinicAccess, releases } from "./access";
 
 /*
   Who is signed in and which clinic they work at, verified with Supabase Auth
@@ -56,3 +56,28 @@ export const getClinicAccess = cache(async () => {
   const subscription = await getSubscription();
   return clinicAccess(subscription?.status ?? null);
 });
+
+/**
+ * Where a signed-in person belongs, by the one rule of the journey: a clinic
+ * → the Pulse; paid but no clinic yet → onboarding; anyone else (a lead, a
+ * payment pending or cancelled) → the demo, where "Assinar" is.
+ */
+export async function homePath() {
+  const session = await getSession();
+  if (!session) return "/pulse/entrar";
+  if (session.member) return "/pulse/app";
+  const subscription = await getSubscription();
+  return releases(subscription?.status) && !subscription?.organization_id ? "/pulse/comecar" : "/pulse/demo";
+}
+
+/**
+ * Records a step of the signed-in person's own journey (migration 0005). A
+ * note for the funnel, never a gate: it fails quietly, before or after the
+ * migration exists.
+ */
+export async function markJourney(step: "demo" | "subscribe" | "checkout") {
+  const session = await getSession();
+  if (!session) return;
+  const { error } = await session.supabase.rpc("pulse_mark", { step });
+  if (error) console.warn("markJourney:", step, error.message);
+}

@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { FlowDemo } from "@/components/flow/demo/FlowDemo";
-import { getClinicAccess, getSession } from "@/lib/flow/session";
+import { getClinicAccess, getSession, homePath } from "@/lib/flow/session";
 import { supabaseSource } from "@/lib/flow/supabase-source";
 
 /*
   The real Pulse: the demo's shell and screens over the signed-in clinic's
   data. Who is signed in and which clinic they belong to come from Supabase
   Auth and the members table; nobody else's rows can load (row-level security).
+  Without a clinic there is nothing real to show: a paid subscription goes on
+  to onboarding, anyone else back to the demo (homePath).
 */
 
 export const metadata: Metadata = {
@@ -19,7 +21,7 @@ export const metadata: Metadata = {
 export default async function FlowAppLayout({ children }: LayoutProps<"/pulse/app">) {
   const session = await getSession();
   if (!session) redirect("/pulse/entrar");
-  if (!session.member) redirect("/pulse/comecar");
+  if (!session.member) redirect(await homePath());
 
   const [data, access] = await Promise.all([
     supabaseSource(session.supabase).load(session.member.organization_id),

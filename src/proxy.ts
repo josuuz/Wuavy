@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
   Keeps the Supabase session fresh on the Pulse's signed-in routes: an expired
   access token is refreshed here and the new cookies go out with the response
   (Server Components can read cookies but not write them). The marketing site
-  and the demo never pass through it.
+  never passes through it.
 */
 
 export async function proxy(request: NextRequest) {
@@ -34,5 +34,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/pulse/app/:path*", "/pulse/entrar", "/pulse/comecar", "/pulse/assinar"],
+  matcher: ["/pulse/app/:path*", "/pulse/demo/:path*", "/pulse/entrar", "/pulse/comecar", "/pulse/assinar"],
 };

@@ -21,7 +21,7 @@ export default async function CreateClinicPage() {
 
   return (
     <AuthFrame>
-      <ClinicForm />
+      <ClinicForm name={(session.user.user_metadata?.name as string | undefined) ?? ""} />
     </AuthFrame>
   );
 }
