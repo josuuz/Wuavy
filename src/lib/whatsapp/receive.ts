@@ -47,7 +47,7 @@ export async function handleEvents(events: WebhookEvent[]) {
         connection,
         message_id: event.messageId,
         wa_id: event.waId,
-        profile_name: event.profileName ?? undefined,
+        profile_name: event.profileName,
         phone_display: displayPhone(event.waId),
         sent_at: event.at.toISOString(),
         kind: event.kind,

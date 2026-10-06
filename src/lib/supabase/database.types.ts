@@ -1386,7 +1386,7 @@ export type Database = {
           media?: Json
           message_id: string
           phone_display: string
-          profile_name?: string
+          profile_name: string | null
           sent_at: string
           wa_id: string
         }
