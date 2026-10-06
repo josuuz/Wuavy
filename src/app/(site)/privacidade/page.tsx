@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacidade" },
 };
 
-const UPDATED = "4 de outubro de 2026";
+const UPDATED = "6 de outubro de 2026";
 const EMAIL = "ola@wuavy.com";
 
 export default function PrivacyPage() {
@@ -59,9 +59,14 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <strong>Cadastrados pela clínica:</strong> pacientes e contatos (nome, telefone, observações comerciais),
-                agendamentos, orçamentos, procedimentos e estoque. O Pulse não é prontuário: não deve receber dados clínicos.
-                Como o procedimento agendado pode revelar informação de saúde, o acesso a esses dados é restrito à equipe da
-                própria clínica.
+                agendamentos, orçamentos, procedimentos e estoque. Como o procedimento agendado pode revelar informação de
+                saúde, o acesso a esses dados é restrito à equipe da própria clínica.
+              </li>
+              <li>
+                <strong>Prontuário, se a clínica usar:</strong> queixa principal e anotações de cada atendimento. São dados
+                de saúde, sensíveis pela LGPD: só o responsável e os profissionais da clínica leem ou escrevem, nunca a
+                recepção, e a restrição é aplicada no banco de dados. A clínica é a controladora e responde pelas regras do
+                seu conselho profissional sobre prontuário; o registro no Pulse não tem certificação digital.
               </li>
               <li>
                 <strong>Pagamento:</strong> quando a assinatura é feita online, o cartão é digitado no formulário do Mercado Pago;

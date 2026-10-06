@@ -7,6 +7,7 @@ import { clinicNow } from "./clock";
 import type { FlowSource } from "./source";
 import { LEAD_STAGES, SEGMENTS, TEAM_SIZES } from "./types";
 import type {
+  ClinicalRecord,
   Activity,
   Appointment,
   AutomationRule,
@@ -55,6 +56,8 @@ export function supabaseSource(db: Db): FlowSource {
           db.from("automation_runs").select("*").eq("organization_id", id).order("ran_at", { ascending: false }),
           db.from("activities").select("*").eq("organization_id", id).order("at", { ascending: false }).limit(50),
         ]);
+      // Before migration 0007 there is no such table, and the front desk reads none: no records, never a failure.
+      const records = await db.from("clinical_records").select("*").eq("organization_id", id).order("recorded_at", { ascending: false });
 
       const failed = [org, members, leads, patients, appointments, waitlist, procedures, products, lots, uses, rules, runs, activities].find(
         (result) => result.error,
@@ -127,6 +130,10 @@ export function supabaseSource(db: Db): FlowSource {
             startsAt: iso(a.starts_at),
             durationMin: a.duration_min,
             status: a.status as Appointment["status"],
+            // Columns of migration 0007: absent before it runs.
+            deposit: a.deposit_cents
+              ? { cents: a.deposit_cents, due: a.deposit_due ?? undefined, paidAt: a.deposit_paid_at ? iso(a.deposit_paid_at) : undefined }
+              : undefined,
           }),
         ),
         waitlist: waitlist.data!.map(
@@ -157,6 +164,7 @@ export function supabaseSource(db: Db): FlowSource {
             name: p.name,
             unit: p.unit,
             unitCost: p.unit_cost,
+            brand: p.brand?.trim() || undefined,
             // A column of migration 0004.
             minQuantity: p.min_quantity == null ? undefined : Number(p.min_quantity),
           }),
@@ -205,6 +213,17 @@ export function supabaseSource(db: Db): FlowSource {
         ),
         activities: activities.data!.map(
           (a): Activity => ({ id: a.id, organizationId: a.organization_id, at: iso(a.at), text: a.text }),
+        ),
+        records: (records.error ? [] : records.data).map(
+          (r): ClinicalRecord => ({
+            id: r.id,
+            organizationId: r.organization_id,
+            patientId: r.patient_id,
+            recordedAt: iso(r.recorded_at),
+            chiefComplaint: r.chief_complaint ?? "",
+            notes: r.notes ?? "",
+            authorId: r.author_id ?? undefined,
+          }),
         ),
       } satisfies FlowData;
     },

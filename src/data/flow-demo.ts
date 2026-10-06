@@ -1,5 +1,6 @@
 import { SLOT_TIMES, visitSummary } from "@/lib/flow/insights";
 import type {
+  ClinicalRecord,
   Activity,
   Appointment,
   AutomationRule,
@@ -67,16 +68,16 @@ const procedures: Omit<Procedure, "organizationId">[] = [
 ];
 
 const products: Omit<Product, "organizationId">[] = [
-  { id: "prod_toxina", name: "Toxina botulínica 100U", unit: "frasco", unitCost: 68000 },
-  { id: "prod_ah", name: "Ácido hialurônico 1 ml", unit: "seringa", unitCost: 42000 },
-  { id: "prod_skin", name: "Ácido hialurônico skinbooster", unit: "seringa", unitCost: 9000 },
-  { id: "prod_bio", name: "Bioestimulador de colágeno", unit: "frasco", unitCost: 95000 },
-  { id: "prod_glicolico", name: "Ácido glicólico 70%", unit: "frasco", unitCost: 6500 },
-  { id: "prod_mascara", name: "Máscara calmante", unit: "un", unitCost: 2000 },
-  { id: "prod_anestesico", name: "Anestésico tópico", unit: "bisnaga", unitCost: 4500 },
-  { id: "prod_agulhas", name: "Agulhas 30G", unit: "caixa", unitCost: 3800 },
-  { id: "prod_serum", name: "Sérum vitamina C", unit: "frasco", unitCost: 12000 },
-  { id: "prod_oleo", name: "Óleo de massagem", unit: "litro", unitCost: 5500 },
+  { id: "prod_toxina", brand: "Neurolab", name: "Toxina botulínica 100U", unit: "frasco", unitCost: 68000 },
+  { id: "prod_ah", brand: "Dermavia", name: "Ácido hialurônico 1 ml", unit: "seringa", unitCost: 42000 },
+  { id: "prod_skin", brand: "Dermavia", name: "Ácido hialurônico skinbooster", unit: "seringa", unitCost: 9000 },
+  { id: "prod_bio", brand: "Colagenix", name: "Bioestimulador de colágeno", unit: "frasco", unitCost: 95000 },
+  { id: "prod_glicolico", brand: "Aurea Pharma", name: "Ácido glicólico 70%", unit: "frasco", unitCost: 6500 },
+  { id: "prod_mascara", brand: "Aurea Pharma", name: "Máscara calmante", unit: "un", unitCost: 2000 },
+  { id: "prod_anestesico", brand: "Nordlab", name: "Anestésico tópico", unit: "bisnaga", unitCost: 4500 },
+  { id: "prod_agulhas", brand: "Nordlab", name: "Agulhas 30G", unit: "caixa", unitCost: 3800 },
+  { id: "prod_serum", brand: "Vitalis", name: "Sérum vitamina C", unit: "frasco", unitCost: 12000 },
+  { id: "prod_oleo", brand: "Vitalis", name: "Óleo de massagem", unit: "litro", unitCost: 5500 },
 ];
 
 const uses: [string, string, number][] = [
@@ -459,6 +460,29 @@ export function createDemoData(clock = new Date()): FlowData {
     ] as const
   ).map(([day, h, text], i) => ({ id: `act_${i + 1}`, ...org, at: at(day, h), text }));
 
+  // Clinical records for the last visits of the first patients: a chief complaint and what was done.
+  const COMPLAINT: Record<string, [string, string]> = {
+    proc_limpeza: ["Oleosidade e cravos na zona T.", "Limpeza com extração. Pele reagiu bem, sem vermelhidão persistente."],
+    proc_peeling: ["Manchas de sol nas maçãs do rosto.", "Peeling aplicado em duas camadas. Reforçado o uso diário de protetor solar."],
+    proc_micro: ["Marcas de acne e poros dilatados.", "Microagulhamento em toda a face. Leve vermelhidão esperada por 48 horas."],
+    proc_skin: ["Pele desidratada e sem viço.", "Skinbooster em pontos distribuídos. Sem intercorrências."],
+    proc_toxina: ["Rugas de expressão na testa e entre as sobrancelhas.", "Aplicação em testa e glabela. Retorno em 15 dias para avaliar."],
+    proc_labial: ["Quer mais volume nos lábios, com naturalidade.", "Preenchimento em contorno e corpo labial. Edema leve orientado."],
+    proc_harmo: ["Quer equilibrar o contorno do rosto.", "Harmonização em mento e mandíbula. Fotos registradas."],
+    proc_bio: ["Flacidez leve na face e no pescoço.", "Bioestimulador em terço inferior. Massagem orientada por 5 dias."],
+    proc_drenagem: ["Inchaço nas pernas no fim do dia.", "Drenagem em membros inferiores. Sugerido pacote semanal."],
+  };
+  const records: ClinicalRecord[] = patients.slice(0, 40).flatMap((patient) =>
+    appointments
+      .filter((a) => a.patientId === patient.id && a.status === "concluido")
+      .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
+      .slice(0, 2)
+      .map((a) => {
+        const [chiefComplaint, notes] = COMPLAINT[a.procedureId] ?? ["Avaliação estética.", "Atendimento sem intercorrências."];
+        return { id: `rec_${a.id}`, ...org, patientId: patient.id, recordedAt: a.startsAt, chiefComplaint, notes, authorId: a.professionalId };
+      }),
+  );
+
   return {
     now,
     organization: { id: ORG, name: "Clínica Aurora", segment: "estetica", city: "Campinas" },
@@ -483,5 +507,6 @@ export function createDemoData(clock = new Date()): FlowData {
     automationRules,
     automationRuns,
     activities,
+    records,
   };
 }

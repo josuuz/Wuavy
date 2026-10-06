@@ -137,6 +137,28 @@ function isoDate(value: string, what: string) {
   return value;
 }
 
+/**
+ * A deposit, from the booking form: a percentage of the procedure's price or a
+ * fixed amount, due by a date (the day of the booking when none is given).
+ * No deposit: nothing to write.
+ */
+function depositOf(form: FormData, price: number, startsAt: string) {
+  const kind = text(form, "depositKind");
+  if (!kind) return null;
+  let value: number;
+  if (kind === "percent") {
+    const pct = Number(text(form, "depositValue").replace(",", "."));
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) throw new Invalid("Informe o sinal entre 1% e 100%.");
+    value = Math.round((price * pct) / 100);
+  } else if (kind === "fixed") {
+    value = cents(text(form, "depositValue"), "o valor do sinal");
+  } else throw new Invalid("Escolha como cobrar o sinal.");
+  if (value <= 0) throw new Invalid("O sinal precisa ser maior que zero.");
+  if (value > price && price > 0) throw new Invalid("O sinal não pode passar do preço do procedimento.");
+  const due = text(form, "depositDue") ? isoDate(text(form, "depositDue"), "o vencimento do sinal") : startsAt.slice(0, 10);
+  return { deposit_cents: value, deposit_due: due };
+}
+
 /* ── Contacts (sales) ──────────────────────────────────────── */
 
 export async function saveLead(leadId: string | null, form: FormData): Promise<Result> {
@@ -426,6 +448,8 @@ export async function book(form: FormData): Promise<Result> {
       professional_id: professionalId,
       starts_at: startsAt,
       duration_min: procedure.duration_min,
+      // Sent only when asked: a booking without a deposit works before migration 0007.
+      ...depositOf(form, procedure.price, startsAt),
     });
     if (appointment.error) return undo(db, org, created, appointment.error);
 
@@ -497,6 +521,44 @@ export async function setAppointmentStatus(appointmentId: string, status: string
     const say = DONE_TEXT[next];
     return say ? log(db, org, say(before.patients?.name ?? "Paciente", before.procedures?.name ?? "procedimento")) : null;
   });
+}
+
+/** Asks, changes or removes a booking's deposit. Removing it forgets that it was paid. */
+export async function saveDeposit(appointmentId: string, form: FormData): Promise<Result> {
+  return write(async (db, org) => {
+    const { data, error } = await db
+      .from("appointments")
+      .select("starts_at, procedures(price)")
+      .eq("id", id(appointmentId))
+      .eq("organization_id", org)
+      .maybeSingle();
+    if (error) return error;
+    if (!data) throw new Invalid("Registro não encontrado.");
+    const deposit = depositOf(form, data.procedures?.price ?? 0, data.starts_at);
+    return affected(
+      await db
+        .from("appointments")
+        .update(deposit ?? { deposit_cents: null, deposit_due: null, deposit_paid_at: null })
+        .eq("id", appointmentId)
+        .eq("organization_id", org)
+        .select("id"),
+    );
+  });
+}
+
+/** The deposit was received (or that was a mistake). Marked by hand until payments run through the Pulse. */
+export async function setDepositPaid(appointmentId: string, paid: boolean): Promise<Result> {
+  return write(async (db, org) =>
+    affected(
+      await db
+        .from("appointments")
+        .update({ deposit_paid_at: paid ? new Date().toISOString() : null })
+        .eq("id", id(appointmentId))
+        .eq("organization_id", org)
+        .not("deposit_cents", "is", null)
+        .select("id"),
+    ),
+  );
 }
 
 export async function deleteAppointment(appointmentId: string): Promise<Result> {
@@ -630,6 +692,7 @@ export async function saveProduct(productId: string, form: FormData): Promise<Re
           unit: required(text(form, "unit", 30), "a unidade"),
           unit_cost: cents(text(form, "unitCost"), "o custo por unidade"),
           min_quantity: minimum(form),
+          brand: text(form, "brand", 80) || null,
         })
         .eq("id", id(productId))
         .eq("organization_id", org)
@@ -665,6 +728,7 @@ export async function stockIn(form: FormData): Promise<Result> {
           unit_cost: cents(text(form, "unitCost"), "o custo por unidade"),
           // Sent only when set: a clinic still before migration 0004 can stock in.
           ...(min === null ? {} : { min_quantity: min }),
+          ...(text(form, "brand", 80) ? { brand: text(form, "brand", 80) } : {}),
         })
         .select("id")
         .single();
@@ -740,6 +804,36 @@ export async function updateClinic(form: FormData): Promise<Result> {
     }
     if (!saved) throw new Invalid("Os dados foram salvos, mas o logo não. Tente de novo.");
     return null;
+  });
+}
+
+/**
+ * A clinical record: written and read only by the owner and the professionals
+ * (the database refuses anyone else, migration 0007). Edited in place; never
+ * deleted from the Pulse.
+ */
+export async function saveRecord(recordId: string | null, patientId: string, form: FormData): Promise<Result> {
+  return write(async (db, org, who) => {
+    if (who.role !== "owner" && who.role !== "professional") throw new Invalid("Só o responsável e os profissionais registram prontuários.");
+    const chief_complaint = text(form, "chiefComplaint", 500) || null;
+    const notes = text(form, "notes", 8000) || null;
+    if (!chief_complaint && !notes) throw new Invalid("Escreva a queixa principal ou a evolução.");
+    const recorded_at = text(form, "recordedAt") ? new Date(`${isoDate(text(form, "recordedAt"), "a data")}T12:00:00.000Z`).toISOString() : clinicNow();
+    if (recordId) {
+      return affected(
+        await db
+          .from("clinical_records")
+          .update({ chief_complaint, notes, recorded_at, updated_at: new Date().toISOString() })
+          .eq("id", id(recordId))
+          .eq("organization_id", org)
+          .select("id"),
+      );
+    }
+    return (
+      await db
+        .from("clinical_records")
+        .insert({ organization_id: org, patient_id: id(patientId), chief_complaint, notes, recorded_at, author_id: who.userId })
+    ).error;
   });
 }
 

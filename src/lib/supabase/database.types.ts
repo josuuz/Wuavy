@@ -25,6 +25,9 @@ export type Database = {
       };
       appointments: {
         Row: {
+          deposit_cents: number | null;
+          deposit_due: string | null;
+          deposit_paid_at: string | null;
           duration_min: number;
           id: string;
           organization_id: string;
@@ -35,6 +38,9 @@ export type Database = {
           status: string;
         };
         Insert: {
+          deposit_cents?: number | null;
+          deposit_due?: string | null;
+          deposit_paid_at?: string | null;
           duration_min: number;
           id?: string;
           organization_id: string;
@@ -45,6 +51,9 @@ export type Database = {
           status?: string;
         };
         Update: {
+          deposit_cents?: number | null;
+          deposit_due?: string | null;
+          deposit_paid_at?: string | null;
           duration_min?: number;
           id?: string;
           organization_id?: string;
@@ -209,6 +218,39 @@ export type Database = {
             referencedColumns: ["organization_id", "id"];
           },
         ];
+      };
+      clinical_records: {
+        Row: {
+          author_id: string | null;
+          chief_complaint: string | null;
+          id: string;
+          notes: string | null;
+          organization_id: string;
+          patient_id: string;
+          recorded_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          author_id?: string | null;
+          chief_complaint?: string | null;
+          id?: string;
+          notes?: string | null;
+          organization_id: string;
+          patient_id: string;
+          recorded_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          author_id?: string | null;
+          chief_complaint?: string | null;
+          id?: string;
+          notes?: string | null;
+          organization_id?: string;
+          patient_id?: string;
+          recorded_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       leads: {
         Row: {
@@ -521,9 +563,9 @@ export type Database = {
         ];
       };
       products: {
-        Row: { id: string; min_quantity: number | null; name: string; organization_id: string; unit: string; unit_cost: number };
-        Insert: { id?: string; min_quantity?: number | null; name: string; organization_id: string; unit: string; unit_cost: number };
-        Update: { id?: string; min_quantity?: number | null; name?: string; organization_id?: string; unit?: string; unit_cost?: number };
+        Row: { brand: string | null; id: string; min_quantity: number | null; name: string; organization_id: string; unit: string; unit_cost: number };
+        Insert: { brand?: string | null; id?: string; min_quantity?: number | null; name: string; organization_id: string; unit: string; unit_cost: number };
+        Update: { brand?: string | null; id?: string; min_quantity?: number | null; name?: string; organization_id?: string; unit?: string; unit_cost?: number };
         Relationships: [
           {
             foreignKeyName: "products_organization_id_fkey";

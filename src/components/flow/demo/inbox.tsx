@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createContext, useContext, useReducer, type ReactNode } from "react";
 
 import {
@@ -10,6 +11,7 @@ import {
   type Message,
 } from "@/lib/flow/conversations";
 import type { ID } from "@/lib/flow/types";
+import { viewHref } from "./copy";
 import { useFlow } from "./store";
 
 /*
@@ -32,12 +34,13 @@ export type InboxChange =
   | { type: "write"; id: ID; text: string; note: boolean; now: string; authorId?: ID }
   | { type: "status"; id: ID; status: ConversationStatus }
   | { type: "followUp"; id: ID; at: string }
-  | { type: "assign"; id: ID; userId: ID };
+  | { type: "assign"; id: ID; userId: ID }
+  | { type: "start"; conversation: Conversation };
 
 function change(state: Inbox, c: InboxChange): Inbox {
   const edit = (patch: (conv: Conversation) => Conversation) => ({
     ...state,
-    conversations: state.conversations.map((conv) => (conv.id === c.id ? patch(conv) : conv)),
+    conversations: state.conversations.map((conv) => ("id" in c && conv.id === c.id ? patch(conv) : conv)),
   });
   switch (c.type) {
     case "read":
@@ -71,7 +74,19 @@ function change(state: Inbox, c: InboxChange): Inbox {
       return edit((conv) => ({ ...conv, followUpAt: c.at, status: "follow_up" }));
     case "assign":
       return edit((conv) => ({ ...conv, assignedUserId: c.userId }));
+    case "start":
+      return state.conversations.some((conv) => conv.id === c.conversation.id)
+        ? state
+        : { ...state, conversations: [c.conversation, ...state.conversations] };
   }
+}
+
+/** Someone to talk to: a contact, a patient, or both. */
+export interface Person {
+  leadId?: ID;
+  patientId?: ID;
+  name: string;
+  phone: string;
 }
 
 const Context = createContext<{ inbox: Inbox; update: (c: InboxChange) => void } | null>(null);
@@ -89,4 +104,49 @@ export function useInbox() {
   const value = useContext(Context);
   if (!value) throw new Error("useInbox outside InboxProvider");
   return value;
+}
+
+/**
+ * "Iniciar contato": opens this person's conversation in Conversas with the
+ * message ready to review, starting one when there is none (the demo's
+ * conversations live in memory). A real clinic has no conversations until
+ * WhatsApp is connected: Conversas then shows who to contact and the message.
+ * Nothing is ever sent from here.
+ */
+export function StartContact({ person, draft, className }: { person: Person; draft: string; className?: string }) {
+  const { data, dispatch, base, live, access } = useFlow();
+  const { inbox, update } = useInbox();
+
+  const open = () => {
+    let id: ID | undefined;
+    if (!live) {
+      const lead = person.leadId ? data.leads.find((l) => l.id === person.leadId) : undefined;
+      const patientId = person.patientId ?? lead?.patientId;
+      const existing = inbox.conversations.find(
+        (c) => (person.leadId && c.participant.leadId === person.leadId) || (patientId && c.participant.patientId === patientId),
+      );
+      id = existing?.id ?? `conv_${person.leadId ?? patientId ?? person.phone}`;
+      if (!existing) {
+        update({
+          type: "start",
+          conversation: {
+            id,
+            organizationId: data.organization.id,
+            channel: "whatsapp",
+            participant: { ...person, patientId },
+            status: "aberta",
+            unread: 0,
+          },
+        });
+      }
+    }
+    dispatch({ type: "focus", focus: { to: "conversation", id, name: person.name, draft } });
+  };
+
+  if (!access.canEdit) return null;
+  return (
+    <Link href={viewHref("conversas", base)} className={className} onClick={open}>
+      Iniciar contato
+    </Link>
+  );
 }

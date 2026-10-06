@@ -339,6 +339,10 @@ export interface ExpiryOpportunity {
   procedures: Procedure[];
   /** Everyone who already did one of them and has nothing booked. */
   patients: Patient[];
+  /** Contacts still open on one of them: who asked about it, and who has a quote not yet closed. */
+  leads: Lead[];
+  /** Everyone the lot could reach, each person once (a contact who is also one of the patients counts once). */
+  people: number;
   /** Sessions the lot still covers, at the lightest use. */
   sessions: number;
   /** Revenue if the lot is used before its date, at the cheapest of those procedures. */
@@ -360,11 +364,16 @@ export function expiryOpportunities(d: FlowData): ExpiryOpportunity[] {
     const price = procedures.length ? Math.min(...procedures.map((p) => p.price)) : 0;
     const reach = patients.filter((p) => !taken.has(p.id)).slice(0, sessions);
     reach.forEach((p) => taken.add(p.id));
+    const wanted = new Set(procedures.map((p) => p.id));
+    const known = new Set(patients.map((p) => p.id));
+    const leads = openLeads(d).filter((l) => wanted.has(l.procedureId) && !(l.patientId && known.has(l.patientId)));
     return {
       lot,
       product: d.products.find((p) => p.id === lot.productId),
       procedures,
       patients,
+      leads,
+      people: patients.length + leads.length,
       sessions,
       potential: reach.length * price,
     };

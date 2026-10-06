@@ -5,11 +5,11 @@ import { useState } from "react";
 import { adjustLot, saveProduct, stockIn, type Result } from "@/lib/flow/actions";
 import { brl, daysFrom, plural, units } from "@/lib/flow/format";
 import {
+  EXPIRY_DAYS,
   expiryOpportunities,
   lotStatus,
   lotValue,
   lowStock,
-  proceduresUsing,
   stockLevels,
   type LotStatus,
 } from "@/lib/flow/insights";
@@ -23,10 +23,10 @@ import styles from "../ui.module.css";
 /*
   Stock, read as money. A lot near its date is not a number to watch: the
   Pulse finds the procedures that use it and the patients who already did
-  them, and says what using it in time would bring. Then what to buy, what
-  needs a look (below the clinic's own minimum, when it set one), every
-  product and every lot, with a way to receive a delivery, to set a lot to
-  what is really on the shelf, and to edit a product.
+  them, and says what using it in time would bring. Then the products, with
+  a few filters (running low, near their date, by brand) and each one's
+  alert on its own row; the lots, one tap away, with a way to set one to
+  what is really on the shelf.
 */
 
 const STATUS: Record<LotStatus, string> = {
@@ -49,11 +49,30 @@ export function Stock() {
   const [entering, setEntering] = useState(false);
   const [adjusting, setAdjusting] = useState<ID | null>(null);
   const [editing, setEditing] = useState<ID | null>(null);
+  const [filter, setFilter] = useState<"todos" | "baixo" | "vencimento">("todos");
+  const [brand, setBrand] = useState("");
   const levels = stockLevels(data);
   const edited = data.products.find((p) => p.id === editing);
   const near = expiryOpportunities(data);
-  const low = lowStock(data);
-  const watch = data.lots.filter((l) => l.quantity > 0 && (lotStatus(data, l) === "vencido" || lotStatus(data, l) === "atencao"));
+  const low = new Set(lowStock(data).map((s) => s.product.id));
+  // The nearest date among a product's lots with something left: what "próximo do vencimento" reads.
+  const nearest = (productId: ID) =>
+    data.lots
+      .filter((l) => l.productId === productId && l.quantity > 0)
+      .reduce<string | null>((min, l) => (!min || l.expiresAt < min ? l.expiresAt : min), null);
+  const expiring = (productId: ID) => {
+    const date = nearest(productId);
+    return date !== null && daysFrom(data.now, date) <= EXPIRY_DAYS;
+  };
+  const brands = [...new Set(data.products.map((p) => p.brand).filter((b): b is string => Boolean(b)))].sort((a, b) =>
+    a.localeCompare(b, "pt-BR"),
+  );
+  const shown = levels.filter(
+    (l) =>
+      (filter === "todos" || (filter === "baixo" ? low.has(l.product.id) : expiring(l.product.id))) &&
+      (!brand || l.product.brand === brand),
+  );
+  const expiringCount = levels.filter((l) => expiring(l.product.id)).length;
   const lots = data.lots
     .filter((l) => l.quantity > 0)
     .sort((a, b) => ORDER[lotStatus(data, a)] - ORDER[lotStatus(data, b)] || a.expiresAt.localeCompare(b.expiresAt));
@@ -100,13 +119,24 @@ export function Stock() {
                         produto · usado em {x.procedures.map((p) => p.name).join(", ") || "nenhum procedimento"}
                       </p>
                       <p className={styles.expiryText}>
-                        {x.patients.length ? (
+                        {x.people ? (
                           <>
-                            Existem <strong>{plural(x.patients.length, "paciente compatível", "pacientes compatíveis")}</strong> com
-                            procedimentos que utilizam este produto.
+                            Encontramos <strong>{plural(x.people, "oportunidade", "oportunidades")}</strong>:{" "}
+                            {[
+                              x.patients.length ? plural(x.patients.length, "paciente que já fez", "pacientes que já fizeram") : "",
+                              x.leads.filter((l) => l.stage !== "orcamento").length
+                                ? plural(x.leads.filter((l) => l.stage !== "orcamento").length, "contato que perguntou", "contatos que perguntaram")
+                                : "",
+                              x.leads.filter((l) => l.stage === "orcamento").length
+                                ? plural(x.leads.filter((l) => l.stage === "orcamento").length, "orçamento em aberto", "orçamentos em aberto")
+                                : "",
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                            .
                           </>
                         ) : (
-                          "Nenhum paciente fez os procedimentos que usam este produto ainda."
+                          "Ninguém fez ou pediu os procedimentos que usam este produto ainda."
                         )}
                       </p>
                       {x.potential ? (
@@ -114,9 +144,11 @@ export function Stock() {
                           {brl(x.potential)} <span>de receita possível antes do vencimento</span>
                         </p>
                       ) : null}
-                      <FocusLink focus={{ to: "opportunity", kind: "stock_expiry" }} className={styles.primary}>
-                        Ver oportunidade
-                      </FocusLink>
+                      {x.people ? (
+                        <FocusLink focus={{ to: "opportunity", kind: "stock_expiry" }} className={styles.primary}>
+                          Ver pacientes
+                        </FocusLink>
+                      ) : null}
                     </li>
                   );
                 })}
@@ -124,149 +156,140 @@ export function Stock() {
             </section>
           ) : null}
 
-          <div className={styles.alerts} data-count="2">
-            <section className={styles.alertCard} data-tone={low.length ? "act" : undefined} aria-labelledby="comprar">
-              <h2 id="comprar" className={styles.label}>
-                Estoque baixo <span>{low.length}</span>
+          <section aria-labelledby="produtos" className={styles.stockList}>
+            <div className={styles.toolbar}>
+              <h2 id="produtos" className={styles.label}>
+                Produtos <span>{shown.length}</span>
               </h2>
-              {low.length ? (
-                <ul className={styles.alertList}>
-                  {low.map((s) => (
-                    <li key={s.product.id}>
-                      <strong>{s.product.name}</strong>
-                      <span>
-                        {s.quantity > 0 ? units(s.quantity, s.product.unit) : "Sem estoque"}
-                        {s.product.minQuantity !== undefined
-                          ? ` · mínimo ${units(s.product.minQuantity, s.product.unit)}`
-                          : s.sessions !== null && s.quantity > 0
-                            ? ` · dá para ${plural(s.sessions, "atendimento", "atendimentos")}`
-                            : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className={styles.fine}>Nada acabando.</p>
-              )}
-              {low.length ? <p className={styles.alertFoot}>Hora de comprar.</p> : null}
-            </section>
-
-            <section className={styles.alertCard} aria-labelledby="atencao">
-              <h2 id="atencao" className={styles.label}>
-                Precisa de atenção <span>{watch.length}</span>
-              </h2>
-              {watch.length ? (
-                <ul className={styles.alertList}>
-                  {watch.map((lot) => {
-                    const product = productOf(lot);
-                    const days = daysFrom(data.now, lot.expiresAt);
+              <div className={styles.chips} role="group" aria-label="Filtrar produtos">
+                <button type="button" aria-pressed={filter === "todos"} onClick={() => setFilter("todos")}>
+                  Todos
+                </button>
+                <button type="button" aria-pressed={filter === "baixo"} onClick={() => setFilter("baixo")}>
+                  Estoque baixo{low.size ? ` · ${low.size}` : ""}
+                </button>
+                <button type="button" aria-pressed={filter === "vencimento"} onClick={() => setFilter("vencimento")}>
+                  Próximos do vencimento{expiringCount ? ` · ${expiringCount}` : ""}
+                </button>
+              </div>
+              {brands.length ? (
+                <label className={styles.brandFilter}>
+                  <span className="sr-only">Marca</span>
+                  <select className={styles.input} value={brand} onChange={(event) => setBrand(event.target.value)}>
+                    <option value="">Todas as marcas</option>
+                    {brands.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
+            {shown.length ? (
+              <table className={styles.table} data-rows="">
+                <thead>
+                  <tr>
+                    <th scope="col">Produto</th>
+                    <th scope="col">Em estoque</th>
+                    <th scope="col">Mínimo</th>
+                    <th scope="col">Preço de compra</th>
+                    <th scope="col">Validade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((level) => {
+                    const product = level.product;
+                    const date = nearest(product.id);
+                    const days = date ? daysFrom(data.now, date) : null;
+                    const alert =
+                      days !== null && days < 0 ? "vencido" : days !== null && days <= EXPIRY_DAYS ? "proximo" : low.has(product.id) ? "baixo" : null;
                     return (
-                      <li key={lot.id}>
-                        <strong>{product?.name}</strong>
-                        <span>
-                          {days < 0
-                            ? `${expiry(days)}: separe e ajuste o estoque`
-                            : days <= 90
-                              ? `lote ${lot.lotCode} vence ${expiry(days)}: planeje o uso`
-                              : `só ${units(lot.quantity, product?.unit ?? "un")} no lote ${lot.lotCode}`}
-                        </span>
-                      </li>
+                      <tr key={product.id} data-status={alert ? "atencao" : undefined}>
+                        <td data-label="Produto">
+                          {editable ? (
+                            <button type="button" className={styles.rowButton} onClick={() => setEditing(product.id)}>
+                              {product.name}
+                            </button>
+                          ) : (
+                            <strong>{product.name}</strong>
+                          )}
+                          {product.brand ? <span className={styles.brand}>{product.brand}</span> : null}
+                        </td>
+                        <td data-label="Em estoque">
+                          {level.quantity > 0 ? units(level.quantity, product.unit) : "Sem estoque"}
+                          {alert === "baixo" ? (
+                            <span className={styles.lotStatus} data-status="atencao">
+                              Baixo
+                            </span>
+                          ) : null}
+                        </td>
+                        <td data-label="Mínimo">{product.minQuantity !== undefined ? units(product.minQuantity, product.unit) : "—"}</td>
+                        <td data-label="Preço de compra">
+                          {brl(product.unitCost)} <span className={styles.unitNote}>/ {product.unit}</span>
+                        </td>
+                        <td data-label="Validade">
+                          {days === null ? "—" : expiry(days)}
+                          {alert === "vencido" || alert === "proximo" ? (
+                            <span className={styles.lotStatus} data-status={alert}>
+                              {STATUS[alert]}
+                            </span>
+                          ) : null}
+                        </td>
+                      </tr>
                     );
                   })}
-                </ul>
-              ) : (
-                <p className={styles.fine}>Nada fora do normal.</p>
-              )}
-            </section>
-          </div>
-
-          <section aria-labelledby="produtos">
-            <h2 id="produtos" className={styles.label}>
-              Produtos <span>{data.products.length}</span>
-            </h2>
-            <table className={styles.table} data-rows="">
-              <thead>
-                <tr>
-                  <th scope="col">Produto</th>
-                  <th scope="col">Em estoque</th>
-                  <th scope="col">Mínimo</th>
-                  <th scope="col">Custo por unidade</th>
-                  <th scope="col">Usado em</th>
-                </tr>
-              </thead>
-              <tbody>
-                {levels.map((level) => (
-                  <tr key={level.product.id} data-status={level.status === "ok" ? undefined : "atencao"}>
-                    <td data-label="Produto">
-                      {editable ? (
-                        <button type="button" className={styles.rowButton} onClick={() => setEditing(level.product.id)}>
-                          {level.product.name}
-                        </button>
-                      ) : (
-                        <strong>{level.product.name}</strong>
-                      )}
-                    </td>
-                    <td data-label="Em estoque">{level.quantity > 0 ? units(level.quantity, level.product.unit) : "Sem estoque"}</td>
-                    <td data-label="Mínimo">
-                      {level.product.minQuantity !== undefined ? units(level.product.minQuantity, level.product.unit) : "—"}
-                    </td>
-                    <td data-label="Custo por unidade">{brl(level.product.unitCost)}</td>
-                    <td data-label="Usado em">
-                      {proceduresUsing(data, level.product.id)
-                        .map((u) => u.procedure.name)
-                        .join(", ") || "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            ) : (
+              <p className={styles.fine}>Nenhum produto neste filtro.</p>
+            )}
           </section>
 
-          <h2 className={styles.label}>Lotes</h2>
-          <table className={styles.table} data-rows="">
-            <thead>
-              <tr>
-                <th scope="col">Produto</th>
-                <th scope="col">Quantidade</th>
-                <th scope="col">Lote</th>
-                <th scope="col">Validade</th>
-                <th scope="col">Custo aprox.</th>
-                <th scope="col">Usado em</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lots.map((lot) => {
-                const product = productOf(lot);
-                const status = lotStatus(data, lot);
-                return (
-                  <tr key={lot.id} data-status={status}>
-                    <td data-label="Produto">
-                      <strong>{product?.name}</strong>
-                    </td>
-                    <td data-label="Quantidade">{units(lot.quantity, product?.unit ?? "un")}</td>
-                    <td data-label="Lote">{lot.lotCode}</td>
-                    <td data-label="Validade">{expiry(daysFrom(data.now, lot.expiresAt))}</td>
-                    <td data-label="Custo aprox.">{brl(lotValue(data, lot))}</td>
-                    <td data-label="Usado em">
-                      {proceduresUsing(data, lot.productId)
-                        .map((u) => u.procedure.name)
-                        .join(", ") || "—"}
-                    </td>
-                    <td data-label="Status">
-                      <span className={styles.lotStatus} data-status={status}>
-                        {STATUS[status]}
-                      </span>
-                      <button type="button" className={styles.inlineAction} onClick={() => setAdjusting(lot.id)}>
-                        Ajustar
-                      </button>
-                    </td>
+          <details className={styles.costs}>
+            <summary>Lotes · {lots.length}</summary>
+            {lots.length ? (
+              <table className={styles.table} data-rows="">
+                <thead>
+                  <tr>
+                    <th scope="col">Produto</th>
+                    <th scope="col">Quantidade</th>
+                    <th scope="col">Lote</th>
+                    <th scope="col">Validade</th>
+                    <th scope="col">Custo aprox.</th>
+                    <th scope="col">Status</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {lots.length === 0 ? <p className={styles.fine}>Nenhum lote com saldo. Faça uma entrada de produto.</p> : null}
+                </thead>
+                <tbody>
+                  {lots.map((lot) => {
+                    const product = productOf(lot);
+                    const status = lotStatus(data, lot);
+                    return (
+                      <tr key={lot.id} data-status={status}>
+                        <td data-label="Produto">
+                          <strong>{product?.name}</strong>
+                        </td>
+                        <td data-label="Quantidade">{units(lot.quantity, product?.unit ?? "un")}</td>
+                        <td data-label="Lote">{lot.lotCode}</td>
+                        <td data-label="Validade">{expiry(daysFrom(data.now, lot.expiresAt))}</td>
+                        <td data-label="Custo aprox.">{brl(lotValue(data, lot))}</td>
+                        <td data-label="Status">
+                          <span className={styles.lotStatus} data-status={status}>
+                            {STATUS[status]}
+                          </span>
+                          <button type="button" className={styles.inlineAction} onClick={() => setAdjusting(lot.id)}>
+                            Ajustar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <p className={styles.fine}>Nenhum lote com saldo. Faça uma entrada de produto.</p>
+            )}
+          </details>
         </>
       )}
 
@@ -308,7 +331,7 @@ function StockInForm({ onDone }: { onDone: () => void }) {
     dispatch({
       type: "stockIn",
       productId: productId === "novo" ? undefined : productId,
-      product: productId === "novo" ? { name: get("name"), unit: get("unit"), unitCost } : undefined,
+      product: productId === "novo" ? { name: get("name"), unit: get("unit"), unitCost, brand: get("brand") || undefined } : undefined,
       lot: { lotCode: get("lotCode"), quantity, expiresAt: `${get("expiresAt")}T00:00:00.000Z` },
     });
     return {};
@@ -331,9 +354,14 @@ function StockInForm({ onDone }: { onDone: () => void }) {
       </Field>
       {productId === "novo" ? (
         <>
-          <Field label="Nome do produto">
-            <input className={styles.input} name="name" required maxLength={200} autoComplete="off" />
-          </Field>
+          <div className={styles.twoFields}>
+            <Field label="Nome do produto">
+              <input className={styles.input} name="name" required maxLength={200} autoComplete="off" />
+            </Field>
+            <Field label="Marca (opcional)">
+              <input className={styles.input} name="brand" maxLength={80} autoComplete="off" />
+            </Field>
+          </div>
           <div className={styles.twoFields}>
             <Field label="Unidade">
               <select className={styles.input} name="unit" defaultValue="frasco">
@@ -344,7 +372,7 @@ function StockInForm({ onDone }: { onDone: () => void }) {
                 ))}
               </select>
             </Field>
-            <Field label="Custo por unidade (R$)">
+            <Field label="Preço de compra por unidade (R$)">
               <input className={styles.input} name="unitCost" required inputMode="decimal" placeholder="0" />
             </Field>
           </div>
@@ -433,9 +461,14 @@ function ProductForm({ product, onDone }: { product: Product; onDone: () => void
   const options = UNITS.includes(product.unit) ? UNITS : [product.unit, ...UNITS];
   return (
     <form className={styles.form} onSubmit={submit((form) => saveProduct(product.id, form), onDone)}>
-      <Field label="Nome do produto">
-        <input className={styles.input} name="name" required maxLength={200} defaultValue={product.name} autoComplete="off" />
-      </Field>
+      <div className={styles.twoFields}>
+        <Field label="Nome do produto">
+          <input className={styles.input} name="name" required maxLength={200} defaultValue={product.name} autoComplete="off" />
+        </Field>
+        <Field label="Marca (opcional)">
+          <input className={styles.input} name="brand" maxLength={80} defaultValue={product.brand} autoComplete="off" />
+        </Field>
+      </div>
       <div className={styles.twoFields}>
         <Field label="Unidade">
           <select className={styles.input} name="unit" defaultValue={product.unit}>
@@ -446,7 +479,7 @@ function ProductForm({ product, onDone }: { product: Product; onDone: () => void
             ))}
           </select>
         </Field>
-        <Field label="Custo por unidade (R$)">
+        <Field label="Preço de compra por unidade (R$)">
           <input className={styles.input} name="unitCost" required inputMode="decimal" defaultValue={reais(product.unitCost)} />
         </Field>
       </div>

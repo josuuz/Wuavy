@@ -23,6 +23,7 @@ import {
 import type { FlowData, ID, Opportunity, OpportunityKind } from "@/lib/flow/types";
 import { KIND, SOURCE_LABEL, STAGE_LABEL, STATUS_LABEL, VIEWS, viewHref } from "../copy";
 import { Approval, FormError, Prepared, SendNote, useWrite } from "../forms";
+import { StartContact } from "../inbox";
 import { Sheet } from "../Sheet";
 import { useFlow, useFocus } from "../store";
 import styles from "../ui.module.css";
@@ -158,6 +159,7 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
       // As many people per lot as it has sessions, each once: the lot that expires first picks first.
       const used = new Set<ID>();
       const picks: Pick[] = [];
+      const warm: Pick[] = [];
       for (const x of expiryOpportunities(d)) {
         for (const patient of x.patients.filter((p) => !used.has(p.id)).slice(0, x.sessions)) {
           const did = history(d, patient.id).find((a) => x.procedures.some((p) => p.id === a.procedureId));
@@ -169,13 +171,31 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
             name: patient.name,
             phone: patient.phone,
             booking: { patientId: patient.id, procedureId: procedure.id },
-            detail: `${procedure.name} · usa ${x.product?.name ?? "o produto"}`,
+            detail: `Já fez ${procedure.name} · usa ${x.product?.name ?? "o produto"}`,
             value: procedure.price,
             message: `Oi ${first(patient.name)}! Estamos com horários para ${procedure.name} nas próximas semanas. Quer que eu reserve um para você?`,
           });
         }
+        for (const lead of x.leads.filter((l) => !used.has(l.id)).sort((a, b) => Number(b.stage === "orcamento") - Number(a.stage === "orcamento"))) {
+          const procedure = procedureOf(d, lead.procedureId);
+          if (!procedure) continue;
+          used.add(lead.id);
+          const quoted = lead.stage === "orcamento";
+          warm.push({
+            id: lead.id,
+            name: lead.name,
+            phone: lead.phone,
+            leadId: lead.id,
+            detail: `${quoted ? "Orçamento em aberto" : "Perguntou sobre"} ${procedure.name}`,
+            value: lead.potentialValue || procedure.price,
+            message: quoted
+              ? `Oi ${first(lead.name)}! Seu orçamento de ${procedure.name} ainda está de pé, e temos horários nas próximas semanas. Quer fechar?`
+              : `Oi ${first(lead.name)}! Você perguntou sobre ${procedure.name}. Temos horários nas próximas semanas: quer que eu reserve um para você?`,
+          });
+        }
       }
-      return picks.slice(0, PICK);
+      // The warmest first: open quotes and people who asked, then patients who already did it.
+      return [...warm, ...picks].slice(0, PICK * 2);
     }
   }
 }
@@ -332,6 +352,11 @@ function Front({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggle:
                       </p>
                       <p className={styles.matchWhy}>{p.detail}</p>
                       <Prepared text={p.message} phone={p.phone} inList>
+                        <StartContact
+                          person={{ leadId: p.leadId, patientId: p.booking?.patientId, name: p.name, phone: p.phone }}
+                          draft={p.message}
+                          className={styles.secondary}
+                        />
                         <Settle pick={p} onBook={setBooking} />
                       </Prepared>
                     </li>

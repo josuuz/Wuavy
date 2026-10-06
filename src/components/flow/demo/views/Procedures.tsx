@@ -31,6 +31,9 @@ const CHAIN = [
 /** Specialties whose procedures rarely fit the aesthetic categories. */
 const OTHER_FIRST = new Set(["odontologia", "outro"]);
 
+/** Below this margin (after products only), the procedure is flagged. */
+const THIN_MARGIN = 30;
+
 export function Procedures() {
   const { data, editable } = useFlow();
   // null: closed; "new": a new procedure; otherwise the id being edited.
@@ -134,11 +137,10 @@ export function Procedures() {
               ) : (
                 <p className={styles.fine}>Nenhum produto ligado: finalizar não mexe no estoque.</p>
               )}
-              {cost ? (
-                <p className={styles.fine}>
-                  Custo em produtos ≈ {brl(cost)} por atendimento · margem ≈ {brl(procedure.price - cost)}
-                </p>
-              ) : null}
+              <details className={styles.costs}>
+                <summary>Custos e margem</summary>
+                <Margin price={procedure.price} cost={cost} linked={uses.length > 0} />
+              </details>
               {editable ? (
                 <div className={styles.actions}>
                   <button type="button" className={styles.quiet} onClick={() => setEditing(procedure.id)}>
@@ -173,6 +175,15 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
     return uses.map((u, i) => ({ key: i, productId: u.productId, quantity: String(u.quantity).replace(".", ",") }));
   });
   const [next, setNext] = useState(rows.length);
+  const [price, setPrice] = useState(procedure ? reais(procedure.price) : "");
+  const priceCents = Math.round(Number(price.replace(/[R$\s.]/g, "").replace(",", ".")) * 100) || 0;
+  const cost = Math.round(
+    rows.reduce((sum, r) => {
+      const unitCost = data.products.find((p) => p.id === r.productId)?.unitCost ?? 0;
+      const qty = Number(r.quantity.replace(",", "."));
+      return sum + (Number.isFinite(qty) ? qty * unitCost : 0);
+    }, 0),
+  );
   const update = (key: number, change: Partial<{ productId: string; quantity: string }>) =>
     setRows(rows.map((r) => (r.key === key ? { ...r, ...change } : r)));
 
@@ -200,7 +211,8 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
           name="price"
           required
           inputMode="decimal"
-          defaultValue={procedure ? reais(procedure.price) : undefined}
+          value={price}
+          onChange={(event) => setPrice(event.target.value)}
         />
       </Field>
       <div className={styles.twoFields}>
@@ -212,8 +224,10 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
         </Field>
       </div>
 
-      <fieldset className={styles.fieldset}>
-        <legend className={styles.label}>Produtos consumidos por atendimento</legend>
+      <details className={styles.costs} open={rows.length > 0}>
+        <summary>Custos e margem</summary>
+        <fieldset className={styles.fieldset}>
+        <legend className={styles.label}>Produtos usados por atendimento</legend>
         {data.products.length ? (
           <>
             {rows.map((row) => {
@@ -274,7 +288,9 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
         ) : (
           <p className={styles.fine}>Nenhum produto cadastrado ainda. Faça uma entrada em Estoque para ligar produtos a este procedimento.</p>
         )}
-      </fieldset>
+        </fieldset>
+        <Margin price={priceCents} cost={cost} linked={rows.some((r) => r.productId)} />
+      </details>
 
       <FormError error={error} />
       <div className={styles.actions}>
@@ -293,5 +309,42 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
         ) : null}
       </div>
     </form>
+  );
+}
+
+/** What a procedure leaves: price, product cost, gross profit, margin. A warning only at a loss or a thin margin. */
+function Margin({ price, cost, linked }: { price: number; cost: number; linked: boolean }) {
+  if (!linked) return <p className={styles.fine}>Ligue os produtos usados para o Pulse calcular o custo e a margem.</p>;
+  // In whole reais, as shown, so price − cost = profit on screen too.
+  const shownCost = Math.round(cost / 100) * 100;
+  const profit = price - shownCost;
+  const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
+  return (
+    <>
+      <dl className={styles.facts}>
+        <div>
+          <dt>Preço</dt>
+          <dd>{brl(price)}</dd>
+        </div>
+        <div>
+          <dt>Custo estimado</dt>
+          <dd>{brl(shownCost)}</dd>
+        </div>
+        <div>
+          <dt>Lucro</dt>
+          <dd>{brl(profit)}</dd>
+        </div>
+        <div>
+          <dt>Margem</dt>
+          <dd>{price > 0 ? `${margin}%` : "—"}</dd>
+        </div>
+      </dl>
+      {profit < 0 ? (
+        <p className={styles.flag}>Prejuízo: o custo dos produtos passa do preço cobrado.</p>
+      ) : price > 0 && margin < THIN_MARGIN ? (
+        <p className={styles.flag}>Margem baixa: abaixo de {THIN_MARGIN}% depois dos produtos.</p>
+      ) : null}
+      <p className={styles.fine}>Só o custo dos produtos: mão de obra, taxas e aluguel não entram na conta.</p>
+    </>
   );
 }

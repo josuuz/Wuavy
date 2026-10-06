@@ -49,6 +49,7 @@ const FOCUS_VIEW: Record<Focus["to"], string> = {
   sales: "vendas",
   lead: "vendas",
   agenda: "agenda",
+  conversation: "conversas",
 };
 
 /** The screen a focus opens. */
@@ -364,10 +365,11 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
       `${plural(o.count, "lote vence", "lotes vencem")} em até 45 dias. Usados nos procedimentos certos, viram receita em vez de prejuízo.`,
     valueLabel: "em procedimentos possíveis",
     action: "Ver oportunidade",
-    picked: (n) => `Pulse selecionou ${top(n, "paciente", "pacientes")} para usar esses produtos antes de vencer.`,
+    picked: (n) =>
+      `Pulse selecionou ${n === 1 ? "a pessoa mais relevante" : `as ${n} pessoas mais relevantes`}: quem tem orçamento em aberto, quem perguntou e quem já fez.`,
     view: "estoque",
     suggestion: "Uma campanha para quem já fez os procedimentos que usam esses produtos, antes do vencimento.",
-    review: "Revisar pacientes",
+    review: "Ver pacientes",
     prepare: "Preparar campanha",
     prepared: (n) => `Mensagens prontas para ${plural(n, "paciente compatível", "pacientes compatíveis")}. Revise e envie.`,
   },

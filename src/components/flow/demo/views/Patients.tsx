@@ -28,6 +28,7 @@ import { useFlow, useFocus, type PatientFilter } from "../store";
 import styles from "../ui.module.css";
 import { LeadForm } from "./Pipeline";
 import { BookingForm } from "./Schedule";
+import { ChiefComplaint, ClinicalRecords } from "./ClinicalRecords";
 
 /*
   Pacientes, the center of the Pulse: one record per person, from how they
@@ -365,6 +366,8 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
         </div>
       </dl>
 
+      <ChiefComplaint patient={patient} />
+
       <div className={styles.recordGrid}>
         <div className={styles.recordCol}>
           <section aria-labelledby="agendados">
@@ -417,6 +420,8 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
               <p className={styles.fine}>Nenhum atendimento ainda.</p>
             )}
           </section>
+
+          <ClinicalRecords patient={patient} />
         </div>
 
         <div className={styles.recordCol}>
@@ -536,7 +541,7 @@ function PatientForm({ patient, onDone }: { patient?: Patient; onDone: () => voi
       <Field label="Observações">
         <textarea className={styles.input} name="notes" maxLength={1000} defaultValue={patient?.notes} />
       </Field>
-      <p className={styles.fine}>Só observações comerciais e de atendimento. Nada de prontuário ou dado clínico.</p>
+      <p className={styles.fine}>Só observações comerciais e de atendimento. Dados clínicos vão no Prontuário da ficha.</p>
       {data.procedures.length ? (
         <fieldset className={styles.fieldset}>
           <legend className={styles.label}>{patient ? "Adicionar atendimento anterior" : "Último atendimento"} (opcional)</legend>

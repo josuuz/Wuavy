@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { PRICE } from "@/lib/flow/access";
 import { brl, capital, dayLabel, daysFrom, hour, plural, relDay } from "@/lib/flow/format";
@@ -30,6 +30,7 @@ import { APPOINTMENT_LABEL, KIND, RECOVERED_FRONTS, STATUS_LABEL, viewHref } fro
 import { FocusLink, Soon } from "../forms";
 import { useFlow, type Focus } from "../store";
 import styles from "../ui.module.css";
+import { Indicators } from "./Indicators";
 import { selection } from "./Opportunities";
 
 /*
@@ -70,6 +71,7 @@ const names = (list: string[]) => (list.length > 3 ? `${list.slice(0, 3).join(",
 export function Overview() {
   const { data, ops, base, live, ask } = useFlow();
   const hello = useSyncExternalStore(noSubscribe, greeting, () => "Bom dia");
+  const [tab, setTab] = useState<"agora" | "indicadores">("agora");
   const today = daySlots(data, 0);
   const booked = today.filter((s) => s.status === "ocupado").map((s) => s.appointment!);
   const patientName = (id: string) => data.patients.find((p) => p.id === id)?.name ?? "";
@@ -296,8 +298,22 @@ export function Overview() {
   return (
     <div className={styles.page}>
       <h1 className={styles.greet}>
-        {hello}. <span>O que precisa da sua atenção agora?</span>
+        {hello}. <span>{tab === "agora" ? "O que precisa da sua atenção agora?" : "Como a clínica está indo?"}</span>
       </h1>
+
+      <div className={`${styles.segmented} ${styles.tabs}`} role="group" aria-label="Visão geral">
+        <button type="button" aria-pressed={tab === "agora"} onClick={() => setTab("agora")}>
+          Agora
+        </button>
+        <button type="button" aria-pressed={tab === "indicadores"} onClick={() => setTab("indicadores")}>
+          Indicadores
+        </button>
+      </div>
+
+      {tab === "indicadores" ? (
+        <Indicators />
+      ) : (
+        <>
 
       <div className={styles.askStrip}>
         <p className={styles.askStripLabel}>
@@ -576,6 +592,8 @@ export function Overview() {
           <p className={styles.fine}>O que acontecer na clínica aparece aqui: agendamentos, confirmações, entradas no estoque.</p>
         )}
       </section>
+        </>
+      )}
     </div>
   );
 }

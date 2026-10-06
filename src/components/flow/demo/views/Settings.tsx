@@ -328,8 +328,8 @@ function PrivacySettings() {
         Privacidade e dados
       </h2>
       <p className={styles.fine}>
-        Os dados da clínica e dos pacientes são da clínica. O Pulse guarda só o necessário para a operação: nada de prontuário ou
-        dado clínico.
+        Os dados da clínica e dos pacientes são da clínica. O prontuário, quando usado, só é visto pelo responsável e pelos
+        profissionais: nunca pela recepção.
       </p>
       <ul className={styles.rows}>
         <li>

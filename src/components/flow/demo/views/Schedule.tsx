@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 import {
   addToWaitlist,
   book,
   deleteAppointment,
   removeFromWaitlist,
+  saveDeposit,
   setAppointmentStatus,
+  setDepositPaid,
   type Result,
 } from "@/lib/flow/actions";
-import { capital, dayAt, dayLabel, daysFrom, hour, plural, relDay, shortDate, units, weekday } from "@/lib/flow/format";
+import { brl, capital, dayAt, dayLabel, daysFrom, hour, plural, relDay, shortDate, units, weekday } from "@/lib/flow/format";
 import {
   daySlots,
   opensOn,
@@ -26,7 +28,7 @@ import {
 } from "@/lib/flow/insights";
 import { LEAD_SOURCES, type Appointment, type AppointmentStatus, type FlowData, type ID, type LeadSource } from "@/lib/flow/types";
 import { APPOINTMENT_LABEL, PERIOD_LABEL, SOURCE_LABEL, viewHref } from "../copy";
-import { DeleteButton, Field, FocusLink, FormError, Intro, Prepared, Soon, useWrite } from "../forms";
+import { DeleteButton, Field, FocusLink, FormError, Intro, Prepared, Soon, reais, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
 import { useFlow, useFocus, type Booking } from "../store";
 import styles from "../ui.module.css";
@@ -65,9 +67,10 @@ function firstFree(data: FlowData, period?: "manha" | "tarde") {
 export function Schedule() {
   const { data, live, editable } = useFlow();
   const focus = useFocus("agenda");
-  const [mode, setMode] = useState<"dia" | "semana">("dia");
+  const [mode, setMode] = useState<"dia" | "semana" | "mes">("dia");
   const [day, setDay] = useState(focus?.day ?? 0);
   const [week, setWeek] = useState(0);
+  const [month, setMonth] = useState(0);
   const [pro, setPro] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [managing, setManaging] = useState<ID | null>(null);
@@ -90,17 +93,19 @@ export function Schedule() {
           : day === -1
             ? `Ontem · ${dayLabel(dayIso)}`
             : capital(dayLabel(dayIso))
-      : `${shortDate(slotTime(data, start, 0, 0))} – ${shortDate(slotTime(data, start + WEEK_DAYS - 1, 0, 0))}`;
-  const atToday = mode === "dia" ? day === 0 : week === 0;
-  const step = (by: number) => (mode === "dia" ? setDay(day + by) : setWeek(week + by));
+      : mode === "semana"
+        ? `${shortDate(slotTime(data, start, 0, 0))} – ${shortDate(slotTime(data, start + WEEK_DAYS - 1, 0, 0))}`
+        : monthLabel(data.now, month);
+  const atToday = mode === "dia" ? day === 0 : mode === "semana" ? week === 0 : month === 0;
+  const step = (by: number) => (mode === "dia" ? setDay(day + by) : mode === "semana" ? setWeek(week + by) : setMonth(month + by));
 
   return (
     <div className={styles.page}>
       <header className={styles.head}>
         <h1 className={styles.title}>Agenda</h1>
         <p className={styles.lead}>
-          O dia e a semana da clínica. Toque num horário livre para agendar; toque num atendimento para confirmar, finalizar
-          ou remarcar.
+          O dia, a semana e o mês da clínica. Toque num horário livre para agendar; toque num atendimento para confirmar,
+          finalizar ou remarcar.
         </p>
       </header>
 
@@ -147,13 +152,16 @@ export function Schedule() {
           <button type="button" aria-pressed={mode === "semana"} onClick={() => setMode("semana")}>
             Semana
           </button>
+          <button type="button" aria-pressed={mode === "mes"} onClick={() => setMode("mes")}>
+            Mês
+          </button>
         </div>
         <div className={styles.stepper}>
           <button
             type="button"
             className={styles.stepButton}
             onClick={() => step(-1)}
-            aria-label={mode === "dia" ? "Dia anterior" : "Semana anterior"}
+            aria-label={mode === "dia" ? "Dia anterior" : mode === "semana" ? "Semana anterior" : "Mês anterior"}
           >
             ‹
           </button>
@@ -164,7 +172,7 @@ export function Schedule() {
             type="button"
             className={styles.stepButton}
             onClick={() => step(1)}
-            aria-label={mode === "dia" ? "Próximo dia" : "Próxima semana"}
+            aria-label={mode === "dia" ? "Próximo dia" : mode === "semana" ? "Próxima semana" : "Próximo mês"}
           >
             ›
           </button>
@@ -175,6 +183,7 @@ export function Schedule() {
             onClick={() => {
               setDay(0);
               setWeek(0);
+              setMonth(0);
             }}
           >
             Hoje
@@ -206,7 +215,16 @@ export function Schedule() {
 
       <div className={styles.calendar} data-mode={mode}>
         <div className={styles.calMain}>
-          {mode === "dia" ? (
+          {mode === "mes" ? (
+            <MonthView
+              month={month}
+              pro={pro}
+              onDay={(offset) => {
+                setDay(offset);
+                setMode("dia");
+              }}
+            />
+          ) : mode === "dia" ? (
             <DayView offset={day} pro={pro} onBook={(startsAt) => setDraft({ startsAt })} onOpen={setManaging} />
           ) : (
             <WeekView start={start} pro={pro} onBook={(startsAt) => setDraft({ startsAt })} onOpen={setManaging} />
@@ -390,6 +408,77 @@ function WeekView({ start, pro, onBook, onOpen }: CalendarProps & { start: numbe
     </>
   );
 }
+
+const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+/** The first day of the month `offset` months from now, at midnight (the data's clock). */
+function monthStart(now: string, offset: number) {
+  const n = new Date(now);
+  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + offset, 1));
+}
+
+const monthLabel = (now: string, offset: number) => {
+  const d = monthStart(now, offset);
+  return `${capital(MONTHS[d.getUTCMonth()])} de ${d.getUTCFullYear()}`;
+};
+
+/**
+ * The month at a glance: each day and how many people come, nothing more. A
+ * day opens the day view, where the names and the free hours are.
+ */
+function MonthView({ month, pro, onDay }: { month: number; pro: string; onDay: (offset: number) => void }) {
+  const { data } = useFlow();
+  const first = monthStart(data.now, month);
+  const length = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  const lead = (first.getUTCDay() + 6) % 7; // Monday first
+  const counts = new Map<string, number>();
+  for (const a of data.appointments) {
+    if (a.status === "cancelado" || (pro && a.professionalId !== pro)) continue;
+    const date = a.startsAt.slice(0, 10);
+    counts.set(date, (counts.get(date) ?? 0) + 1);
+  }
+  const busiest = Math.max(1, ...counts.values());
+  const days = Array.from({ length }, (_, i) => {
+    const iso = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), i + 1)).toISOString();
+    return { iso, n: i + 1, count: counts.get(iso.slice(0, 10)) ?? 0, offset: daysFrom(data.now, iso) };
+  });
+  const total = days.reduce((s, d) => s + d.count, 0);
+
+  return (
+    <>
+      <p className={styles.calSummary}>{plural(total, "atendimento no mês", "atendimentos no mês")}</p>
+      <ol className={styles.month} aria-label={monthLabel(data.now, month)}>
+        {WEEK_HEADS.map((h) => (
+          <li key={h} className={styles.monthHead} aria-hidden="true">
+            {h}
+          </li>
+        ))}
+        {Array.from({ length: lead }, (_, i) => (
+          <li key={`v${i}`} aria-hidden="true" />
+        ))}
+        {days.map((d) => (
+          <li key={d.iso}>
+            <button
+              type="button"
+              className={styles.monthDay}
+              aria-current={d.offset === 0 ? "date" : undefined}
+              data-past={d.offset < 0 ? "" : undefined}
+              data-closed={opensOn(data, d.iso) ? undefined : ""}
+              style={{ "--load": d.count / busiest } as CSSProperties}
+              onClick={() => onDay(d.offset)}
+              aria-label={`${dayLabel(d.iso)}: ${plural(d.count, "atendimento", "atendimentos")}`}
+            >
+              <span className={styles.monthNumber}>{d.n}</span>
+              {d.count ? <span className={styles.monthCount}>{d.count}</span> : null}
+            </button>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
+const WEEK_HEADS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 function AppointmentCard({ appointment: a, compact, onOpen }: { appointment: Appointment; compact?: boolean; onOpen: () => void }) {
   const { data } = useFlow();
@@ -602,6 +691,8 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
     if (!procedureId) return { error: "Escolha o procedimento." };
     if (!lead && !fixed && !who) return { error: "Escolha o paciente." };
     if (who === "novo" && !name) return { error: "Informe o nome." };
+    const deposit = depositFrom(form, procedureOf(data, procedureId)?.price ?? 0, date);
+    if (deposit && "error" in deposit) return deposit;
     dispatch({
       type: "book",
       booking: {
@@ -616,6 +707,7 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
             : undefined,
         waitlistId: waitlistId || undefined,
         replaces: draft.replaces,
+        deposit: deposit ?? undefined,
       },
     });
     return {};
@@ -758,6 +850,8 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
         </Field>
       </div>
 
+      <DepositFields price={procedureOf(data, procedureId)?.price ?? 0} due={valid ? date : today} />
+
       {pros.length ? (
         <Field label="Profissional">
           <select
@@ -841,6 +935,8 @@ function AppointmentDetail({
           <dd>{patient?.phone || "—"}</dd>
         </div>
       </dl>
+
+      <DepositPanel appointment={a} price={procedure?.price ?? 0} />
 
       {open && procedure ? (
         <div className={styles.suggestion}>
@@ -988,5 +1084,152 @@ function WaitlistForm({ onDone }: { onDone: () => void }) {
         </button>
       </div>
     </form>
+  );
+}
+
+export type DepositStatus = "pendente" | "pago" | "vencido";
+const DEPOSIT_LABEL: Record<DepositStatus, string> = { pendente: "Pendente", pago: "Pago", vencido: "Vencido" };
+
+/** Paid when marked so; overdue once its due day has passed unpaid; pending until then. */
+export function depositStatus(a: Appointment, now: string): DepositStatus | null {
+  if (!a.deposit) return null;
+  if (a.deposit.paidAt) return "pago";
+  return a.deposit.due && a.deposit.due < now.slice(0, 10) ? "vencido" : "pendente";
+}
+
+/** The demo reads the same fields the server reads (actions.ts, depositOf). */
+function depositFrom(form: FormData, price: number, date: string): { cents: number; due: string } | { error: string } | null {
+  const kind = String(form.get("depositKind") ?? "");
+  if (!kind) return null;
+  const raw = Number(String(form.get("depositValue") ?? "").replace(/[R$\s.]/g, "").replace(",", "."));
+  if (!Number.isFinite(raw) || raw <= 0) return { error: "Informe o valor do sinal." };
+  if (kind === "percent" && raw > 100) return { error: "Informe o sinal entre 1% e 100%." };
+  const cents = kind === "percent" ? Math.round((price * raw) / 100) : Math.round(raw * 100);
+  if (price > 0 && cents > price) return { error: "O sinal não pode passar do preço do procedimento." };
+  return { cents, due: String(form.get("depositDue") || date) };
+}
+
+/**
+ * "Cobrar sinal", off until asked: a percentage of the price or a fixed
+ * amount, and the day it is due. Shows what it comes to, nothing more.
+ */
+function DepositFields({ price, due, initial }: { price: number; due: string; initial?: { cents: number; due?: string } }) {
+  const [on, setOn] = useState(Boolean(initial));
+  const [kind, setKind] = useState<"percent" | "fixed">(initial ? "fixed" : "percent");
+  const [value, setValue] = useState(initial ? reais(initial.cents) : "30");
+  const n = Number(value.replace(/[R$\s.]/g, "").replace(",", "."));
+  const cents = !Number.isFinite(n) ? 0 : kind === "percent" ? Math.round((price * n) / 100) : Math.round(n * 100);
+
+  return (
+    <div className={styles.deposit}>
+      <label className={styles.check}>
+        <input type="checkbox" checked={on} onChange={(event) => setOn(event.target.checked)} />
+        Cobrar sinal
+      </label>
+      {on ? (
+        <>
+          <input type="hidden" name="depositKind" value={kind} />
+          <div className={styles.depositRow}>
+            <div className={styles.segmented} role="group" aria-label="Como cobrar o sinal">
+              <button type="button" aria-pressed={kind === "percent"} onClick={() => setKind("percent")}>
+                %
+              </button>
+              <button type="button" aria-pressed={kind === "fixed"} onClick={() => setKind("fixed")}>
+                R$
+              </button>
+            </div>
+            <label className={styles.depositValue}>
+              <span className="sr-only">{kind === "percent" ? "Percentual do preço" : "Valor do sinal em reais"}</span>
+              <input
+                className={styles.input}
+                name="depositValue"
+                inputMode="decimal"
+                required
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+              />
+            </label>
+            <Field label="Vence em">
+              <input className={styles.input} type="date" name="depositDue" defaultValue={initial?.due ?? due} />
+            </Field>
+          </div>
+          <p className={styles.fine}>
+            Sinal de <strong>{brl(cents)}</strong>
+            {price ? ` sobre ${brl(price)}` : ""}. Link de pagamento <Soon />
+          </p>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/** The deposit on a booking: its amount and status, marked paid by hand until payments run through the Pulse. */
+function DepositPanel({ appointment: a, price }: { appointment: Appointment; price: number }) {
+  const { data, dispatch, live, access } = useFlow();
+  const { pending, error, write, submit } = useWrite();
+  const [editing, setEditing] = useState(false);
+  const status = depositStatus(a, data.now);
+  const open = a.status === "agendado" || a.status === "confirmado";
+  if (!a.deposit && (!open || !access.canEdit)) return null;
+
+  if (editing) {
+    const demoSave = async (form: FormData): Promise<Result> => {
+      const deposit = depositFrom(form, price, a.startsAt.slice(0, 10));
+      if (deposit && "error" in deposit) return deposit;
+      dispatch({ type: "deposit", id: a.id, deposit });
+      return {};
+    };
+    return (
+      <form className={styles.form} onSubmit={submit(live ? (form) => saveDeposit(a.id, form) : demoSave, () => setEditing(false))}>
+        <DepositFields price={price} due={a.startsAt.slice(0, 10)} initial={a.deposit} />
+        <FormError error={error} />
+        <div className={styles.actions}>
+          <button type="submit" className={styles.primary} disabled={pending}>
+            Salvar sinal
+          </button>
+          <button type="button" className={styles.quiet} onClick={() => setEditing(false)}>
+            Cancelar
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  if (!a.deposit) {
+    return (
+      <button type="button" className={styles.quiet} onClick={() => setEditing(true)}>
+        Cobrar sinal
+      </button>
+    );
+  }
+
+  const paid = status === "pago";
+  const mark = () => {
+    if (live) return write(() => setDepositPaid(a.id, !paid));
+    dispatch({ type: "depositPaid", id: a.id, paid: !paid });
+  };
+  return (
+    <div className={styles.depositLine}>
+      <span>
+        Sinal {brl(a.deposit.cents)}
+        {a.deposit.due && !paid ? ` · vence ${shortDate(`${a.deposit.due}T12:00:00.000Z`)}` : ""}
+      </span>
+      <span className={styles.depositStatus} data-status={status ?? undefined}>
+        {status ? DEPOSIT_LABEL[status] : ""}
+      </span>
+      {access.canEdit ? (
+        <span className={styles.depositActions}>
+          <button type="button" className={styles.quiet} disabled={pending} onClick={mark}>
+            {paid ? "Desfazer pagamento" : "Marcar como pago"}
+          </button>
+          {!paid ? (
+            <button type="button" className={styles.quiet} onClick={() => setEditing(true)}>
+              Alterar
+            </button>
+          ) : null}
+        </span>
+      ) : null}
+      <FormError error={error} />
+    </div>
   );
 }

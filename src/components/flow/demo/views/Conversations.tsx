@@ -25,7 +25,7 @@ import { SOURCE_LABEL, STAGE_LABEL } from "../copy";
 import { FocusLink, Soon, reais } from "../forms";
 import { useInbox, type InboxChange } from "../inbox";
 import { Sheet } from "../Sheet";
-import { useFlow } from "../store";
+import { useFlow, useFocus } from "../store";
 import ui from "../ui.module.css";
 import { BookingForm } from "./Schedule";
 import styles from "./Conversations.module.css";
@@ -106,8 +106,10 @@ export function Conversations() {
   const conversations = inbox.conversations.map((c) => withContact(data, c));
   const [filter, setFilter] = useState<Filter>("todos");
   const [query, setQuery] = useState("");
-  const [openId, setOpenId] = useState<ID | null>(null);
-  const [pane, setPane] = useState<Pane>("list");
+  // "Iniciar contato" from another screen: that conversation, open, with its first message ready.
+  const asked = useFocus("conversation");
+  const [openId, setOpenId] = useState<ID | null>(asked?.id ?? null);
+  const [pane, setPane] = useState<Pane>(asked?.id ? "chat" : "list");
   const [booking, setBooking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [note, setNote] = useState(false);
@@ -170,10 +172,22 @@ export function Conversations() {
             Conversas <Soon />
           </h1>
           <p className={ui.lead}>
-            O atendimento pelo WhatsApp, ao lado do CRM: cada conversa com a etapa, o procedimento e a próxima ação da
+            O atendimento pelo WhatsApp, ao lado de Vendas: cada conversa com a etapa, o procedimento e a próxima ação da
             pessoa. Chega com a integração do WhatsApp; até lá, nenhuma mensagem passa pelo Pulse.
           </p>
         </header>
+        {asked ? (
+          <section className={ui.panel} aria-labelledby="contato-a-iniciar">
+            <h2 id="contato-a-iniciar" className={ui.label}>
+              Contato a iniciar · {asked.name}
+            </h2>
+            <p className={ui.note}>{asked.draft}</p>
+            <p className={ui.fine}>
+              Quando o WhatsApp estiver conectado, esta conversa começa aqui. Por enquanto, a mensagem fica pronta para você
+              copiar.
+            </p>
+          </section>
+        ) : null}
         {access.isDemoMode ? null : (
           <p className={ui.fine}>Enquanto isso, a demonstração mostra como vai funcionar com dados fictícios.</p>
         )}
@@ -264,6 +278,7 @@ export function Conversations() {
           flash={setNotice}
           note={note}
           setNote={setNote}
+          draft={asked?.id === selected.id ? asked.draft : undefined}
           authorId={data.users.find((u) => u.name === account?.name)?.id ?? data.users[0]?.id}
         />
       ) : null}
@@ -310,12 +325,14 @@ interface ChatProps {
   /** The composer writes an internal note instead of a message. */
   note: boolean;
   setNote: (note: boolean) => void;
+  /** A first message brought from another screen, to review before sending. */
+  draft?: string;
   authorId?: ID;
 }
 
-function Chat({ conversation: c, thread, send, onBack, onInfo, onBook, notice, flash, note, setNote, authorId }: ChatProps) {
+function Chat({ conversation: c, thread, send, onBack, onInfo, onBook, notice, flash, note, setNote, draft, authorId }: ChatProps) {
   const { data, access, dispatch } = useFlow();
-  const [text, setText] = useState("");
+  const [text, setText] = useState(draft ?? "");
   const [suggested, setSuggested] = useState(false);
   const [tool, setTool] = useState<"templates" | "followup" | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);

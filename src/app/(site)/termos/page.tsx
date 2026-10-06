@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/termos" },
 };
 
-const UPDATED = "3 de outubro de 2026";
+const UPDATED = "6 de outubro de 2026";
 
 export default function TermsPage() {
   const talk = contactHref(site.contact.primary, "termos do Wuavy Pulse");
@@ -64,7 +64,11 @@ export default function TermsPage() {
             <h2>Uso adequado</h2>
             <ul>
               <li>Cadastre só dados de que a clínica precisa para atender e vender, com base legal para isso (LGPD).</li>
-              <li>O Pulse não é prontuário eletrônico: não registre dados clínicos ou de saúde além do procedimento agendado.</li>
+              <li>
+                O prontuário do Pulse (queixa principal e anotações) é um registro de apoio, sem certificação digital: não
+                substitui o prontuário exigido pelo conselho profissional da clínica, que continua responsável por ele. Só o
+                responsável e os profissionais acessam esses registros.
+              </li>
               <li>
                 As mensagens preparadas pelo Pulse são enviadas pela clínica, no WhatsApp dela, e são de responsabilidade da
                 clínica. Não use o Pulse para mensagens em massa sem consentimento.

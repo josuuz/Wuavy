@@ -89,6 +89,8 @@ export interface Appointment {
   startsAt: string;
   durationMin: number;
   status: AppointmentStatus;
+  /** A deposit asked when booking (migration 0007). Overdue is read from `due`, never stored. */
+  deposit?: { cents: number; due?: string; paidAt?: string };
 }
 
 export interface WaitlistEntry {
@@ -118,9 +120,26 @@ export interface Product {
   organizationId: ID;
   name: string;
   unit: string;
+  /** The purchase price of one unit. */
   unitCost: number;
+  brand?: string;
   /** At or below this, the Pulse says to buy (migration 0004). Absent: it judges by the sessions left. */
   minQuantity?: number;
+}
+
+/**
+ * A clinical record (migration 0007): what the patient came for and what was
+ * done. Only the clinic's owner and professionals read or write it (the
+ * database enforces it); the front desk never receives these rows.
+ */
+export interface ClinicalRecord {
+  id: ID;
+  organizationId: ID;
+  patientId: ID;
+  recordedAt: string;
+  chiefComplaint: string;
+  notes: string;
+  authorId?: ID;
 }
 
 export interface InventoryLot {
@@ -200,4 +219,6 @@ export interface FlowData {
   automationRules: AutomationRule[];
   automationRuns: AutomationRun[];
   activities: Activity[];
+  /** Empty for whoever may not see clinical records. */
+  records: ClinicalRecord[];
 }

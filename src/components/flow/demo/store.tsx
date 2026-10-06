@@ -46,7 +46,9 @@ export type Focus =
   | { to: "patients"; filter: PatientFilter }
   | { to: "sales"; filter: "novo" | "sem_resposta" | "parados" }
   | { to: "lead"; id: ID }
-  | { to: "agenda"; day: number };
+  | { to: "agenda"; day: number }
+  /** A conversation to open (in the demo) or to start once WhatsApp is connected, with its first message ready. */
+  | { to: "conversation"; id?: ID; name: string; draft: string };
 
 /** A booking, as the booking form sends it. */
 export interface Booking {
@@ -61,6 +63,8 @@ export interface Booking {
   waitlistId?: ID;
   /** The booking this one reschedules. */
   replaces?: ID;
+  /** A deposit asked with the booking. */
+  deposit?: { cents: number; due?: string };
 }
 
 interface State {
@@ -83,10 +87,13 @@ type Action =
   | {
       type: "stockIn";
       productId?: ID;
-      product?: { name: string; unit: string; unitCost: number };
+      product?: { name: string; unit: string; unitCost: number; brand?: string };
       lot: { lotCode: string; quantity: number; expiresAt: string };
     }
   | { type: "adjustLot"; id: ID; quantity: number; reason: keyof typeof ADJUST_REASONS }
+  | { type: "deposit"; id: ID; deposit: { cents: number; due?: string } | null }
+  | { type: "depositPaid"; id: ID; paid: boolean }
+  | { type: "record"; record: { id?: ID; patientId: ID; recordedAt: string; chiefComplaint: string; notes: string } }
   | { type: "note"; text: string }
   | { type: "status"; kind: OpportunityKind; status: OpportunityStatus; text?: string }
   | { type: "focus"; focus: Focus | null };
@@ -214,6 +221,7 @@ function reducer(state: State, action: Action): State {
           startsAt: b.startsAt,
           durationMin: procedure.durationMin,
           status: "agendado",
+          deposit: b.deposit,
         },
       ];
       const waitlist = data.waitlist.filter((w) => w.id !== b.waitlistId);
@@ -264,6 +272,25 @@ function reducer(state: State, action: Action): State {
         { ...state, data: { ...data, lots } },
         `Estoque ajustado (${ADJUST_REASONS[action.reason]}): ${product?.name ?? "produto"}, lote ${lot.lotCode}.`,
       );
+    }
+    case "deposit":
+    case "depositPaid": {
+      const appointments = data.appointments.map((a) => {
+        if (a.id !== action.id) return a;
+        if (action.type === "deposit") return { ...a, deposit: action.deposit ?? undefined };
+        return a.deposit ? { ...a, deposit: { ...a.deposit, paidAt: action.paid ? data.now : undefined } } : a;
+      });
+      return { ...state, data: { ...data, appointments } };
+    }
+    case "record": {
+      const { record } = action;
+      if (record.id) {
+        const records = data.records.map((r) => (r.id === record.id ? { ...r, ...record, id: r.id } : r));
+        return { ...state, data: { ...data, records } };
+      }
+      const seq = state.seq + 1;
+      const added = { ...record, id: `rec_demo_${seq}`, organizationId: org };
+      return { ...state, seq, data: { ...data, records: [added, ...data.records] } };
     }
     case "note":
       return log(state, action.text);
