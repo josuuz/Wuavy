@@ -417,43 +417,58 @@ export type Database = {
           author_id: string | null
           body: string
           channel: string
+          connection_id: string | null
           conversation_id: string
           created_at: string
           delivery_status: string | null
           direction: string
+          failed_reason: string | null
           id: string
+          media: Json | null
+          message_type: string | null
           occurred_at: string
           organization_id: string
           provider: string | null
           provider_message_id: string | null
+          status_at: string | null
         }
         Insert: {
           author_id?: string | null
           body: string
           channel: string
+          connection_id?: string | null
           conversation_id: string
           created_at?: string
           delivery_status?: string | null
           direction: string
+          failed_reason?: string | null
           id?: string
+          media?: Json | null
+          message_type?: string | null
           occurred_at?: string
           organization_id: string
           provider?: string | null
           provider_message_id?: string | null
+          status_at?: string | null
         }
         Update: {
           author_id?: string | null
           body?: string
           channel?: string
+          connection_id?: string | null
           conversation_id?: string
           created_at?: string
           delivery_status?: string | null
           direction?: string
+          failed_reason?: string | null
           id?: string
+          media?: Json | null
+          message_type?: string | null
           occurred_at?: string
           organization_id?: string
           provider?: string | null
           provider_message_id?: string | null
+          status_at?: string | null
         }
         Relationships: [
           {
@@ -488,6 +503,7 @@ export type Database = {
           status: string
           updated_at: string | null
           updated_by: string | null
+          whatsapp_wa_id: string | null
         }
         Insert: {
           assigned_user_id?: string | null
@@ -504,6 +520,7 @@ export type Database = {
           status?: string
           updated_at?: string | null
           updated_by?: string | null
+          whatsapp_wa_id?: string | null
         }
         Update: {
           assigned_user_id?: string | null
@@ -520,6 +537,7 @@ export type Database = {
           status?: string
           updated_at?: string | null
           updated_by?: string | null
+          whatsapp_wa_id?: string | null
         }
         Relationships: [
           {
@@ -1155,6 +1173,93 @@ export type Database = {
           },
         ]
       }
+      whatsapp_connections: {
+        Row: {
+          business_id: string | null
+          connected_at: string | null
+          connected_by: string | null
+          created_at: string
+          disconnected_at: string | null
+          disconnected_by: string | null
+          display_name: string | null
+          display_phone_number: string | null
+          id: string
+          last_error: string | null
+          mode: string
+          number_choice: string | null
+          onboarding: string
+          organization_id: string
+          phone_number_id: string
+          provider: string
+          status: string
+          updated_at: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          connected_at?: string | null
+          connected_by?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          disconnected_by?: string | null
+          display_name?: string | null
+          display_phone_number?: string | null
+          id?: string
+          last_error?: string | null
+          mode: string
+          number_choice?: string | null
+          onboarding?: string
+          organization_id: string
+          phone_number_id: string
+          provider?: string
+          status?: string
+          updated_at?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          connected_at?: string | null
+          connected_by?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          disconnected_by?: string | null
+          display_name?: string | null
+          display_phone_number?: string | null
+          id?: string
+          last_error?: string | null
+          mode?: string
+          number_choice?: string | null
+          onboarding?: string
+          organization_id?: string
+          phone_number_id?: string
+          provider?: string
+          status?: string
+          updated_at?: string | null
+          waba_id?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_credentials: {
+        Row: {
+          connection_id: string
+          created_at: string
+          pin_secret_id: string | null
+          token_secret_id: string | null
+        }
+        Insert: {
+          connection_id: string
+          created_at?: string
+          pin_secret_id?: string | null
+          token_secret_id?: string | null
+        }
+        Update: {
+          connection_id?: string
+          created_at?: string
+          pin_secret_id?: string | null
+          token_secret_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       pulse_leads: {
@@ -1263,6 +1368,43 @@ export type Database = {
           id: string
           last_sign_in_at: string
         }[]
+      }
+      pulse_whatsapp_forget_secrets: {
+        Args: { connection: string }
+        Returns: undefined
+      }
+      pulse_whatsapp_keep_secret: {
+        Args: { connection: string; kind: string; value: string }
+        Returns: undefined
+      }
+      pulse_whatsapp_receive: {
+        Args: {
+          body: string
+          connection: string
+          direction?: string
+          kind: string
+          media?: Json
+          message_id: string
+          phone_display: string
+          profile_name?: string
+          sent_at: string
+          wa_id: string
+        }
+        Returns: string
+      }
+      pulse_whatsapp_secret: {
+        Args: { connection: string; kind: string }
+        Returns: string
+      }
+      pulse_whatsapp_status: {
+        Args: {
+          connection: string
+          message_id: string
+          new_status: string
+          reason?: string
+          status_time: string
+        }
+        Returns: boolean
       }
       sees_patient: { Args: { org: string; patient: string }; Returns: boolean }
     }

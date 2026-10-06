@@ -19,10 +19,11 @@ import { clinicChecklist, useGuide, type ClinicField } from "../Guide";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
 import { TeamSettings } from "./Team";
+import { WhatsAppSettings } from "./WhatsAppSettings";
 
 /*
   Configurações, and only what a clinic needs: its profile (the same fields
-  as onboarding), the team (the owner's), the person's own name and password,
+  as onboarding), the team and the WhatsApp channel (the owner's), the person's own name and password,
   the plan, privacy, and the way out. The server checks who may change what
   (lib/flow/actions.ts, lib/flow/team.ts, migrations 0004 and 0009); the demo
   has no settings.
@@ -57,6 +58,7 @@ export function Settings() {
       <div className={styles.settings}>
         <ClinicSettings />
         <TeamSettings />
+        {can.admin ? <WhatsAppSettings /> : null}
         <AccountSettings />
         {can.admin ? <PlanSettings /> : null}
         <PrivacySettings />

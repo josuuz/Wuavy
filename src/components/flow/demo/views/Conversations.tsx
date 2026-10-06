@@ -1,14 +1,18 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { whatsappHref } from "@/lib/contact";
 import { READ_ONLY_MESSAGE } from "@/lib/flow/access";
 import { addEntry, loadThread, startConversation, updateConversation } from "@/lib/flow/conversation-actions";
 import { brl, dayAt, dayLabel, daysFrom, hour, relDay } from "@/lib/flow/format";
+import { createClient } from "@/lib/supabase/client";
+import { retryWhatsApp, sendWhatsApp } from "@/lib/whatsapp/actions";
 import {
   CHANNEL_LABEL,
   CONVERSATION_STATUSES,
+  DELIVERY_LABEL,
   MANUAL_CHANNELS,
   TEMPLATES,
   fillTemplate,
@@ -938,6 +942,7 @@ function LiveConversations() {
   const [query, setQuery] = useState("");
   const [starting, setStarting] = useState(false);
   const [booking, setBooking] = useState(false);
+  const tick = useLiveMessages();
 
   const q = query.trim().toLowerCase();
   const list = conversations.filter((c) => {
@@ -1055,6 +1060,7 @@ function LiveConversations() {
           onInfo={() => setPane("info")}
           onBook={() => setBooking(true)}
           onCreated={(id) => setOpenId(id)}
+          tick={tick}
         />
       ) : (
         <section className={styles.chatCol} aria-label="Conversa">
@@ -1087,7 +1093,49 @@ function LiveConversations() {
   );
 }
 
+/**
+ * With WhatsApp connected, what arrives (a message, a delivery status) shows
+ * without reloading: Supabase Realtime tells the screen something changed in
+ * this clinic's history (row-level security decides who hears it), and the
+ * screen reads it again from the server. Returns a counter that moves on each
+ * change, for the open thread to reload.
+ */
+function useLiveMessages() {
+  const { data } = useFlow();
+  const router = useRouter();
+  const [tick, setTick] = useState(0);
+  const listening = Boolean(data.whatsapp?.connection);
+  const org = data.organization.id;
+  useEffect(() => {
+    if (!listening) return;
+    const supabase = createClient();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const changed = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        router.refresh();
+        setTick((t) => t + 1);
+      }, 400);
+    };
+    const channel = supabase
+      .channel(`conversas-${org}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_messages", filter: `organization_id=eq.${org}` }, changed)
+      .subscribe();
+    return () => {
+      clearTimeout(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [listening, org, router]);
+  return tick;
+}
+
+/** "Enviar pelo WhatsApp" (the integration sends it), or registering what happened elsewhere. */
+type Mode = MessageDirection | "send";
+
+const WINDOW_NOTICE = "Para retomar esta conversa pelo WhatsApp é necessário usar uma mensagem aprovada.";
+
 interface LiveThreadProps {
+  tick: number;
   conversation?: Conversation;
   person?: PendingPerson;
   draft?: string;
@@ -1098,11 +1146,13 @@ interface LiveThreadProps {
 }
 
 /** One conversation's history, oldest at the top, and the form that registers what happened next. */
-function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, onCreated }: LiveThreadProps) {
+function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, onCreated, tick }: LiveThreadProps) {
   const { data, access, can } = useFlow();
   const [thread, setThread] = useState<Thread | null>(c ? null : { messages: [], more: false });
   const [older, setOlder] = useState(false);
-  const [who, setWho] = useState<MessageDirection>(draft ? "out" : "in");
+  const whatsapp = data.whatsapp?.connection;
+  const sending = Boolean(c) && whatsapp?.status === "connected";
+  const [who, setWho] = useState<Mode>(sending ? "send" : draft ? "out" : "in");
   const [channel, setChannel] = useState<Channel>("whatsapp_manual");
   const [text, setText] = useState(draft ?? "");
   const [tool, setTool] = useState<"templates" | "followup" | null>(null);
@@ -1130,7 +1180,17 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
     return () => {
       alive = false;
     };
-  }, [conversationId, latest]);
+  }, [conversationId, latest, tick]);
+
+  // Meta's window: free-form replies within 24 hours of the person's last WhatsApp message.
+  const replyOpen = Boolean(thread?.replyUntil && thread.replyUntil > data.now);
+  const put = (m: Message) =>
+    setThread((t) => {
+      const list = t?.messages ?? [];
+      const at = list.findIndex((x) => x.id === m.id);
+      const messages = at >= 0 ? list.map((x, i) => (i === at ? m : x)) : [...list, m];
+      return { ...t, messages, more: t?.more ?? false };
+    });
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
@@ -1144,7 +1204,7 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
 
   const compose = (value: string) => {
     setText(value);
-    setWho("out");
+    setWho(sending ? "send" : "out");
     setChannel("whatsapp_manual");
     setTool(null);
     field.current?.focus();
@@ -1155,6 +1215,19 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
     const body = text.trim();
     if (!body || saving) return;
     if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    if (who === "send") {
+      if (!c) return;
+      setSaving(true);
+      setError(null);
+      const result = await sendWhatsApp(c.id, body);
+      setSaving(false);
+      if (result.message) {
+        put(result.message);
+        setText("");
+      }
+      if (result.error) setError(result.error);
+      return;
+    }
     const form = new FormData();
     form.set("direction", who);
     form.set("channel", channel);
@@ -1167,7 +1240,14 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
     setText("");
     if (!c && result.conversationId) return onCreated(result.conversationId);
     const added = result.message;
-    if (added) setThread((t) => ({ messages: [...(t?.messages ?? []), added], more: t?.more ?? false }));
+    if (added) put(added);
+  };
+
+  const retry = async (m: Message) => {
+    setError(null);
+    const result = await retryWhatsApp(m.id);
+    if (result.message) put(result.message);
+    if (result.error) setError(result.error);
   };
 
   const loadOlder = async () => {
@@ -1175,7 +1255,7 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
     setOlder(true);
     const page = await loadThread(c.id, messages[0].at);
     setOlder(false);
-    setThread({ messages: [...page.messages, ...messages], more: page.more });
+    setThread((t) => ({ ...t, messages: [...page.messages, ...messages], more: page.more }));
   };
 
   const change = async (patch: Parameters<typeof updateConversation>[1], said: string) => {
@@ -1247,6 +1327,8 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
         ) : null}
         {rows.map(({ m, heading }) => {
           const author = data.users.find((u) => u.id === m.authorId)?.name;
+          const viaWhatsApp = m.channel === "whatsapp";
+          const delivery = viaWhatsApp && m.direction === "out" && m.delivery && m.delivery !== "received" ? m.delivery : null;
           return (
             <div key={m.id} className={styles.row} data-dir={m.direction}>
               {heading ? <p className={styles.day}>{heading}</p> : null}
@@ -1261,8 +1343,27 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
                 <p>{m.text}</p>
                 <span className={styles.meta}>
                   {stamp(m.at)}
-                  {author && m.channel !== "whatsapp" ? ` · Registrado por ${author}` : ""}
+                  {viaWhatsApp
+                    ? m.direction === "out"
+                      ? author
+                        ? ` · Enviado por ${author}`
+                        : " · Pelo celular"
+                      : ""
+                    : author
+                      ? ` · Registrado por ${author}`
+                      : ""}
+                  {delivery ? ` · ${DELIVERY_LABEL[delivery]}` : ""}
                 </span>
+                {delivery === "failed" ? (
+                  <span className={styles.meta}>
+                    Não foi possível enviar a mensagem.{" "}
+                    {access.canEdit && sending ? (
+                      <button type="button" className={ui.textAction} onClick={() => retry(m)}>
+                        Tentar novamente
+                      </button>
+                    ) : null}
+                  </span>
+                ) : null}
               </div>
             </div>
           );
@@ -1279,7 +1380,12 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
       {access.canEdit ? (
         <form className={styles.composer} onSubmit={submit} data-note={who === "note" ? "" : undefined}>
           <div className={styles.composerRow}>
-            <div className={styles.modes} role="group" aria-label="Quem falou">
+            <div className={styles.modes} role="group" aria-label="O que fazer">
+              {sending ? (
+                <button type="button" aria-pressed={who === "send"} onClick={() => setWho("send")}>
+                  Enviar pelo WhatsApp
+                </button>
+              ) : null}
               <button type="button" aria-pressed={who === "in"} onClick={() => setWho("in")}>
                 Cliente disse
               </button>
@@ -1290,7 +1396,7 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
                 Nota interna
               </button>
             </div>
-            {who === "note" ? null : (
+            {who === "note" || who === "send" ? null : (
               <label>
                 <span className="sr-only">Canal</span>
                 <select className={ui.input} value={channel} onChange={(e) => setChannel(e.target.value as Channel)}>
@@ -1308,9 +1414,11 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
             className={styles.field}
             rows={2}
             maxLength={4000}
-            aria-label="O que aconteceu"
+            aria-label={who === "send" ? "Mensagem" : "O que aconteceu"}
             placeholder={
-              who === "note"
+              who === "send"
+                ? `Mensagem para ${firstName(participant.name)} pelo WhatsApp…`
+                : who === "note"
                 ? "Nota para a equipe (a pessoa não vê)…"
                 : who === "in"
                   ? "O que a pessoa disse ou pediu…"
@@ -1332,7 +1440,7 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
             <button type="button" onClick={() => compose(suggestReply(data, conv, messages))}>
               Sugerir resposta
             </button>
-            {who === "out" && number && text.trim() && access.canReachOut ? (
+            {who === "out" && !sending && number && text.trim() && access.canReachOut ? (
               <a href={whatsappHref(number, text.trim())} target="_blank" rel="noopener noreferrer">
                 Abrir no WhatsApp
               </a>
@@ -1347,8 +1455,12 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
                 Follow-up
               </button>
             ) : null}
-            <button type="submit" className={styles.sendButton} disabled={!text.trim() || saving}>
-              {saving ? "Salvando…" : who === "note" ? "Salvar nota" : "Registrar"}
+            <button
+              type="submit"
+              className={styles.sendButton}
+              disabled={!text.trim() || saving || (who === "send" && !replyOpen)}
+            >
+              {who === "send" ? (saving ? "Enviando…" : "Enviar") : saving ? "Salvando…" : who === "note" ? "Salvar nota" : "Registrar"}
             </button>
           </div>
           {tool === "templates" ? (
@@ -1364,10 +1476,16 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
             </ul>
           ) : null}
           {tool === "followup" ? <FollowUpPicker now={data.now} onPick={followUp} /> : null}
+          {who === "send" && thread && !replyOpen && !error ? <p className={ui.fine}>{WINDOW_NOTICE}</p> : null}
           <FormError error={error} />
           <p className={ui.fine}>
-            O Pulse ainda não envia nem recebe pelo WhatsApp: as mensagens saem do WhatsApp da clínica, e aqui fica registrado o
-            que aconteceu.
+            {sending
+              ? "Enviar pelo WhatsApp entrega a mensagem pelo WhatsApp da clínica. Registrar só anota o que aconteceu fora do Pulse."
+              : whatsapp?.status === "error"
+                ? "O WhatsApp da clínica precisa ser reconectado em Configurações. Enquanto isso, registre aqui o que aconteceu."
+                : whatsapp
+                  ? "As mensagens recebidas pelo WhatsApp da clínica aparecem aqui. Registre também o que aconteceu fora dele."
+                  : "O Pulse ainda não envia nem recebe pelo WhatsApp: as mensagens saem do WhatsApp da clínica, e aqui fica registrado o que aconteceu."}
           </p>
         </form>
       ) : (

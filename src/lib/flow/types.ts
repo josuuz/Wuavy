@@ -5,6 +5,7 @@
   times are ISO strings in the clinic's wall clock (see clock.ts).
 */
 
+import type { WhatsAppState } from "@/lib/whatsapp/types";
 import type { Conversation } from "./conversations";
 import type { MemberStatus, Role } from "./roles";
 
@@ -290,4 +291,6 @@ export interface FlowData {
    * (a thread loads when it is opened). The demo keeps its own in memory (inbox.tsx).
    */
   conversations: Conversation[];
+  /** The clinic's WhatsApp channel (migration 0012), for the front office; absent in the demo and for professionals. */
+  whatsapp?: WhatsAppState;
 }

@@ -4,12 +4,14 @@ import { clinicNow } from "./clock";
 import {
   CONVERSATION_STATUSES,
   MANUAL_CHANNELS,
+  REPLY_WINDOW_MS,
   THREAD_PAGE,
+  toMessage,
   type Channel,
   type Message,
-  type MessageDirection,
   type Thread,
 } from "./conversations";
+import { samePhone } from "@/lib/whatsapp/phone";
 import { LEAD_SOURCES } from "./types";
 import { getSession } from "./session";
 import { permissionsFor } from "./roles";
@@ -41,39 +43,8 @@ export interface PersonRef {
   patientId?: string;
 }
 
-/** A phone as a line: area code and the last eight digits (with or without 55 or a mobile's extra 9). */
-function phoneKey(phone: string) {
-  let n = phone.replace(/\D/g, "").replace(/^0+/, "");
-  if (n.length >= 12 && n.startsWith("55")) n = n.slice(2);
-  return n.length >= 10 ? `${n.slice(0, 2)}${n.slice(-8)}` : n.slice(-8);
-}
-/** The same line: never a guess across area codes, so two people are never merged into one. */
-const samePhone = (a: string, b: string) => {
-  const key = phoneKey(a);
-  return key.length >= 8 && key === phoneKey(b);
-};
-
 const MESSAGE_COLUMNS = "id, conversation_id, direction, channel, body, occurred_at, author_id, delivery_status";
-
-function asMessage(m: {
-  id: string;
-  conversation_id: string;
-  direction: string;
-  channel: string;
-  body: string;
-  occurred_at: string;
-  author_id: string | null;
-}): Message {
-  return {
-    id: m.id,
-    conversationId: m.conversation_id,
-    direction: m.direction as MessageDirection,
-    text: m.body,
-    at: new Date(m.occurred_at).toISOString(),
-    authorId: m.author_id ?? undefined,
-    channel: m.channel as Channel,
-  };
-}
+const asMessage = toMessage;
 
 /** The person's conversation: the patient's when they are one, otherwise the contact's; created when there is none. */
 async function conversationFor(db: Db, org: string, person: PersonRef): Promise<string> {
@@ -271,7 +242,23 @@ export async function loadThread(conversationId: string, before?: string): Promi
     .order("created_at", { ascending: false })
     .limit(THREAD_PAGE + 1);
   if (before && !Number.isNaN(Date.parse(before))) query = query.lt("occurred_at", before);
-  const { data } = await query;
+  const [{ data }, { data: lastIn }] = await Promise.all([
+    query,
+    session.supabase
+      .from("conversation_messages")
+      .select("occurred_at")
+      .eq("organization_id", session.member.organization_id)
+      .eq("conversation_id", conversation)
+      .eq("direction", "in")
+      .eq("channel", "whatsapp")
+      .order("occurred_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
   const rows = data ?? [];
-  return { messages: rows.slice(0, THREAD_PAGE).map(asMessage).reverse(), more: rows.length > THREAD_PAGE };
+  return {
+    messages: rows.slice(0, THREAD_PAGE).map(asMessage).reverse(),
+    more: rows.length > THREAD_PAGE,
+    replyUntil: lastIn ? new Date(Date.parse(lastIn.occurred_at) + REPLY_WINDOW_MS).toISOString() : undefined,
+  };
 }

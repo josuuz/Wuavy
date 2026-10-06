@@ -47,8 +47,22 @@ export const CHANNEL_LABEL: Record<Channel, string> = {
   phone: "Ligação",
   manual: "Pessoalmente ou outro",
   internal_note: "Nota interna",
-  whatsapp: "WhatsApp (automático)",
+  whatsapp: "WhatsApp",
 };
+
+/** Where a message sent through WhatsApp is: the database's delivery status (migration 0009). */
+export type DeliveryStatus = "pending" | "sent" | "delivered" | "read" | "failed" | "received";
+
+export const DELIVERY_LABEL: Record<Exclude<DeliveryStatus, "received">, string> = {
+  pending: "Enviando",
+  sent: "Enviado",
+  delivered: "Entregue",
+  read: "Lido",
+  failed: "Falhou",
+};
+
+/** Meta's customer service window: free-form replies only within 24 hours of the person's last message. */
+export const REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export interface Message {
   id: ID;
@@ -62,6 +76,31 @@ export interface Message {
   authorId?: ID;
   /** A real clinic's entries say how they happened. */
   channel?: Channel;
+  /** Sent through WhatsApp by the Pulse: where it is (sending, sent, delivered, read, failed). */
+  delivery?: DeliveryStatus;
+}
+
+/** A conversation_messages row as the screens read it. */
+export function toMessage(m: {
+  id: string;
+  conversation_id: string;
+  direction: string;
+  channel: string;
+  body: string;
+  occurred_at: string;
+  author_id: string | null;
+  delivery_status: string | null;
+}): Message {
+  return {
+    id: m.id,
+    conversationId: m.conversation_id,
+    direction: m.direction as MessageDirection,
+    text: m.body,
+    at: new Date(m.occurred_at).toISOString(),
+    authorId: m.author_id ?? undefined,
+    channel: m.channel as Channel,
+    delivery: (m.delivery_status as DeliveryStatus | null) ?? undefined,
+  };
 }
 
 export interface Conversation {
@@ -81,6 +120,12 @@ export interface Conversation {
 export interface Thread {
   messages: Message[];
   more: boolean;
+  /**
+   * Until when a free-form WhatsApp reply may be sent (24 hours after the
+   * person's last WhatsApp message, on the clinic's clock); absent when they
+   * never wrote by WhatsApp.
+   */
+  replyUntil?: string;
 }
 
 /** How many entries a thread loads at a time. */

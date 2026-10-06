@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { FlowDemo } from "@/components/flow/demo/FlowDemo";
 import { getClinicAccess, getSession, homePath } from "@/lib/flow/session";
 import { supabaseSource } from "@/lib/flow/supabase-source";
+import { whatsappState } from "@/lib/whatsapp/state";
 
 /*
   The real Pulse: the demo's shell and screens over the signed-in clinic's
@@ -25,13 +26,14 @@ export default async function FlowAppLayout({ children }: LayoutProps<"/pulse/ap
   if (!session) redirect("/pulse/entrar");
   if (!session.member) redirect(await homePath());
 
-  const [data, access] = await Promise.all([
+  const [data, access, whatsapp] = await Promise.all([
     supabaseSource(session.supabase, session.member.role).load(session.member.organization_id),
     getClinicAccess(),
+    whatsappState(session),
   ]);
   return (
     <FlowDemo
-      initial={data}
+      initial={{ ...data, whatsapp }}
       access={access!}
       account={{ id: session.user.id, name: session.member.name, email: session.user.email ?? "", role: session.member.role }}
     >
