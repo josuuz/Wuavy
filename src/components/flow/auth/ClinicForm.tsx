@@ -30,10 +30,12 @@ export function ClinicForm({ name = "" }: { name?: string }) {
   const [step, setStep] = useState(0);
   const [preview, setPreview] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  // How the person works: only shapes the onboarding (the team size it saves, the last screen). Nothing else depends on it.
+  const [mode, setMode] = useState<"solo" | "team" | null>(null);
   const form = useRef<HTMLFormElement>(null);
   const steps = useRef<(HTMLFieldSetElement | null)[]>([]);
 
-  if (state?.done) return <Ready />;
+  if (state?.done) return <Ready team={mode === "team"} />;
 
   const forward = () => {
     // The browser's own checks, for this step's fields only.
@@ -133,19 +135,39 @@ export function ClinicForm({ name = "" }: { name?: string }) {
               ))}
             </div>
           </div>
-          <div className={styles.group} role="radiogroup" aria-labelledby="equipe">
-            <p id="equipe" className={ui.label}>
-              Profissionais que atendem
+          <div className={styles.group} role="radiogroup" aria-labelledby="trabalho">
+            <p id="trabalho" className={ui.label}>
+              Como você trabalha hoje?
             </p>
             <div className={styles.choices}>
-              {TEAM_SIZES.map((size) => (
-                <label key={size} className={styles.choice}>
-                  <input type="radio" name="team" value={size} defaultChecked={size === "2-3"} />
-                  <span>{TEAM_LABEL[size]}</span>
-                </label>
-              ))}
+              <label className={styles.choice}>
+                <input type="radio" name="mode" value="solo" required checked={mode === "solo"} onChange={() => setMode("solo")} />
+                <span>Trabalho sozinho</span>
+              </label>
+              <label className={styles.choice}>
+                <input type="radio" name="mode" value="team" required checked={mode === "team"} onChange={() => setMode("team")} />
+                <span>Tenho uma equipe</span>
+              </label>
             </div>
           </div>
+          {/* The answer is the clinic's team size (team_size): alone is "1"; a team says roughly how many attend. */}
+          {mode === "team" ? (
+            <div className={styles.group} role="radiogroup" aria-labelledby="equipe">
+              <p id="equipe" className={ui.label}>
+                Quantos profissionais atendem?
+              </p>
+              <div className={styles.choices}>
+                {TEAM_SIZES.filter((size) => size !== "1").map((size) => (
+                  <label key={size} className={styles.choice}>
+                    <input type="radio" name="team" value={size} defaultChecked={size === "2-3"} />
+                    <span>{TEAM_LABEL[size]}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <input type="hidden" name="team" value="1" />
+          )}
         </fieldset>
 
         <fieldset
@@ -224,8 +246,8 @@ export function ClinicForm({ name = "" }: { name?: string }) {
   );
 }
 
-/** The end of onboarding: one sentence and the way in. */
-function Ready() {
+/** The end of onboarding: one sentence and the way in. With a team, the offer to add it now (never required). */
+function Ready({ team }: { team: boolean }) {
   return (
     <section className={styles.ready} aria-labelledby="pronto">
       <span className={styles.signal} data-size="small" aria-hidden="true">
@@ -236,10 +258,30 @@ function Ready() {
       <h1 id="pronto" className={ui.title}>
         Seu Pulse está pronto.
       </h1>
-      <p className={ui.lead}>A clínica foi criada. No primeiro acesso, o Pulse mostra o que preparar para começar a encontrar oportunidades.</p>
-      <Link href="/pulse/app" className={ui.primary}>
-        Entrar no Pulse
-      </Link>
+      {team ? (
+        <>
+          <p className={ui.lead}>
+            A clínica foi criada. Quer adicionar sua equipe agora? Cada pessoa entra com o próprio e-mail e senha.
+          </p>
+          <div className={ui.actions}>
+            <Link href="/pulse/app/configuracoes#equipe" className={ui.primary}>
+              Adicionar equipe
+            </Link>
+            <Link href="/pulse/app" className={ui.quiet}>
+              Fazer isso depois
+            </Link>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className={ui.lead}>
+            A clínica foi criada. No primeiro acesso, o Pulse mostra o que preparar para começar a encontrar oportunidades.
+          </p>
+          <Link href="/pulse/app" className={ui.primary}>
+            Entrar no Pulse
+          </Link>
+        </>
+      )}
     </section>
   );
 }

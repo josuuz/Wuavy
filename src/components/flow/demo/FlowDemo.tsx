@@ -185,6 +185,8 @@ function Shell({ children }: { children: ReactNode }) {
         </header>
         <PlanNotice onSubscribe={subscribe} />
         <main id="conteudo" className={styles.content} data-view={current.slug || "visao-geral"}>
+          <GuideCard inline />
+          <GuidePill inline />
           <ScreenTip />
           {allowed ? (
             children

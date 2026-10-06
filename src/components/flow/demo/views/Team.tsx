@@ -10,86 +10,157 @@ import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
 /*
-  Configurações → Equipe, for the owner. Everyone has their own login: the
-  owner adds a person by name, e-mail and role, and sends them the one-time
-  link the Pulse makes (by WhatsApp or e-mail, from the owner's own apps).
-  Roles change in place; someone who leaves is disabled, never deleted, so
-  their name stays on everything they did. The server and the database check
-  that only the owner does any of this (lib/flow/team.ts, migration 0009).
+  Configurações → Equipe, for the owner. One screen that follows the clinic's
+  size: someone working alone sees a short note and a way to add someone
+  later; a small team, a plain list; a large one, the same list with filters.
+  Everyone has their own login: the owner adds a person by name, e-mail and
+  role and sends them the one-time link the Pulse makes. The role decides
+  what each person sees; there is nothing else to set. Someone who leaves is
+  disabled, never deleted, so their name stays on what they did. The server
+  and the database check all of it again (lib/flow/team.ts, migration 0009).
 */
 
 const ROLE_HINT: Record<Role, string> = {
-  owner: "Acesso completo: equipe, custos, indicadores e configurações.",
-  reception: "Agenda, pacientes, vendas, conversas e estoque. Sem custos, prontuários ou configurações.",
-  professional: "A própria agenda, os pacientes dela e os prontuários. Sem vendas, custos ou configurações.",
+  owner: "Vê e faz tudo: equipe, custos, indicadores e configurações.",
+  reception: "Agenda, pacientes, vendas, conversas e estoque. Não vê custos nem prontuários.",
+  professional: "A própria agenda, os pacientes dela e os prontuários. Não vê vendas nem custos.",
 };
 
-const ORDER: Record<MemberStatus, number> = { active: 0, invited: 1, disabled: 2 };
+const STATUS_ORDER: Record<MemberStatus, number> = { active: 0, invited: 1, disabled: 2 };
+const ROLE_ORDER: Record<Role, number> = { owner: 0, reception: 1, professional: 2 };
+const FILTER_LABEL: Record<Role, string> = { owner: "Responsáveis", reception: "Recepção", professional: "Profissionais" };
+/** Above this many people, the list gets filters by role; above SEARCH_FROM, a search too. */
+const FILTERS_FROM = 6;
+const SEARCH_FROM = 11;
+
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
+const statusOf = (u: User): MemberStatus => u.status ?? "active";
 
 export function TeamSettings() {
   const { data, me, can } = useFlow();
   const [inviting, setInviting] = useState(false);
   const [sent, setSent] = useState<{ name: string; email?: string; result: InviteResult } | null>(null);
+  const [filter, setFilter] = useState<Role | "todos">("todos");
+  const [query, setQuery] = useState("");
   if (!can.team) return null;
+
   const team = [...data.users].sort(
-    (a, b) => ORDER[a.status ?? "active"] - ORDER[b.status ?? "active"] || a.name.localeCompare(b.name, "pt-BR"),
+    (a, b) =>
+      STATUS_ORDER[statusOf(a)] - STATUS_ORDER[statusOf(b)] ||
+      ROLE_ORDER[a.role] - ROLE_ORDER[b.role] ||
+      a.name.localeCompare(b.name, "pt-BR"),
   );
+  const alone = team.length === 1;
+  const activeOwners = team.filter((u) => u.role === "owner" && statusOf(u) === "active").length;
+  const roles = ROLES.filter((role) => team.some((u) => u.role === role));
+  const q = query.trim().toLowerCase();
+  const shown = team.filter(
+    (u) =>
+      (filter === "todos" || u.role === filter) &&
+      (!q || u.name.toLowerCase().includes(q) || (u.email ?? "").toLowerCase().includes(q)),
+  );
+
+  const add = () => {
+    setSent(null);
+    setInviting(true);
+  };
+  const invite = inviting ? (
+    <InviteForm
+      onDone={(name, email, result) => {
+        setInviting(false);
+        setSent({ name, email, result });
+      }}
+      onCancel={() => setInviting(false)}
+    />
+  ) : null;
+  const ready = sent ? <InviteSent name={sent.name} email={sent.email} result={sent.result} onClose={() => setSent(null)} /> : null;
+
+  // Working alone is a normal way to use the Pulse: no list, no nudge, just the way to add someone later.
+  if (alone) {
+    return (
+      <section className={styles.panel} aria-labelledby="equipe">
+        <h2 id="equipe" className={styles.label}>
+          Equipe
+        </h2>
+        <p className={styles.teamSolo}>Você está usando o Pulse sozinho.</p>
+        <p className={styles.fine}>
+          Quando sua clínica crescer, você pode adicionar recepção ou profissionais sem compartilhar sua senha.
+        </p>
+        {ready}
+        {invite ?? (
+          <div className={styles.actions}>
+            <button type="button" className={styles.secondary} onClick={add}>
+              Adicionar alguém à equipe
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className={`${styles.panel} ${styles.settingsWide}`} aria-labelledby="equipe">
       <h2 id="equipe" className={styles.label}>
-        Equipe
+        Equipe <span>{team.filter((u) => statusOf(u) === "active").length} com acesso</span>
       </h2>
       <p className={styles.fine}>
-        Cada pessoa entra com o próprio e-mail e senha. Quem sai da clínica é desativado: perde o acesso na hora, e o que
-        registrou continua com o nome dela.
+        Cada pessoa entra com o próprio e-mail e senha. A função já define o que ela vê: não há nada para configurar.
       </p>
-
-      <table className={styles.table} data-rows="">
-        <thead>
-          <tr>
-            <th scope="col">Nome</th>
-            <th scope="col">E-mail</th>
-            <th scope="col">Função</th>
-            <th scope="col">Status</th>
-            <th scope="col">
-              <span className="sr-only">Ações</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {team.map((member) => (
-            <MemberRow
-              key={member.id}
-              member={member}
-              self={member.id === me}
-              onLink={(result) => setSent({ name: member.name, email: member.email, result })}
-            />
+      <details className={styles.costs}>
+        <summary>O que cada função vê</summary>
+        <dl className={styles.teamRoles}>
+          {ROLES.map((role) => (
+            <div key={role}>
+              <dt>{ROLE_LABEL[role]}</dt>
+              <dd>{ROLE_HINT[role]}</dd>
+            </div>
           ))}
-        </tbody>
-      </table>
+        </dl>
+      </details>
 
-      {sent ? <InviteSent name={sent.name} email={sent.email} result={sent.result} onClose={() => setSent(null)} /> : null}
+      {team.length >= FILTERS_FROM ? (
+        <div className={styles.teamTools}>
+          <div className={styles.chips} role="group" aria-label="Filtrar a equipe">
+            <button type="button" aria-pressed={filter === "todos"} onClick={() => setFilter("todos")}>
+              Todos · {team.length}
+            </button>
+            {roles.map((role) => (
+              <button key={role} type="button" aria-pressed={filter === role} onClick={() => setFilter(role)}>
+                {FILTER_LABEL[role]} · {team.filter((u) => u.role === role).length}
+              </button>
+            ))}
+          </div>
+          {team.length >= SEARCH_FROM ? (
+            <input
+              className={styles.input}
+              type="search"
+              placeholder="Buscar por nome ou e-mail"
+              aria-label="Buscar na equipe"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
-      {inviting ? (
-        <InviteForm
-          onDone={(name, email, result) => {
-            setInviting(false);
-            setSent({ name, email, result });
-          }}
-          onCancel={() => setInviting(false)}
-        />
-      ) : (
+      <ul className={styles.team}>
+        {shown.map((member) => (
+          <Member
+            key={member.id}
+            member={member}
+            self={member.id === me}
+            lastOwner={member.role === "owner" && statusOf(member) === "active" && activeOwners === 1}
+            onLink={(result) => setSent({ name: member.name, email: member.email, result })}
+          />
+        ))}
+      </ul>
+      {!shown.length ? <p className={styles.fine}>Ninguém neste filtro.</p> : null}
+
+      {ready}
+      {invite ?? (
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.primary}
-            onClick={() => {
-              setSent(null);
-              setInviting(true);
-            }}
-          >
-            Convidar membro
+          <button type="button" className={styles.primary} onClick={add}>
+            Adicionar pessoa
           </button>
         </div>
       )}
@@ -97,11 +168,25 @@ export function TeamSettings() {
   );
 }
 
-function MemberRow({ member, self, onLink }: { member: User; self: boolean; onLink: (result: InviteResult) => void }) {
+function Member({
+  member,
+  self,
+  lastOwner,
+  onLink,
+}: {
+  member: User;
+  self: boolean;
+  lastOwner: boolean;
+  onLink: (result: InviteResult) => void;
+}) {
   const { pending, error, write } = useWrite();
   const [renewing, setRenewing] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const status = member.status ?? "active";
+  const [saved, setSaved] = useState(false);
+  const status = statusOf(member);
+  const first = firstName(member.name);
+  // The last active owner, and the person themself, keep their role: the clinic never ends up without a responsável.
+  const fixedRole = status === "disabled" || self || lastOwner;
 
   const renew = async () => {
     setRenewing(true);
@@ -111,15 +196,18 @@ function MemberRow({ member, self, onLink }: { member: User; self: boolean; onLi
   };
 
   return (
-    <tr>
-      <td data-label="Nome">
-        <strong>{member.name}</strong>
-        {self ? <span className={styles.fine}> (você)</span> : null}
-      </td>
-      <td data-label="E-mail">{member.email ?? "—"}</td>
-      <td data-label="Função">
-        {status === "disabled" ? (
-          ROLE_LABEL[member.role]
+    <li className={styles.member} data-status={status}>
+      <div className={styles.memberWho}>
+        <strong>
+          {member.name}
+          {self ? <span> (você)</span> : null}
+        </strong>
+        <span>{member.email ?? "—"}</span>
+      </div>
+
+      <div className={styles.memberRole}>
+        {fixedRole ? (
+          <span className={styles.memberRoleText}>{ROLE_LABEL[member.role]}</span>
         ) : (
           <label>
             <span className="sr-only">Função de {member.name}</span>
@@ -127,7 +215,10 @@ function MemberRow({ member, self, onLink }: { member: User; self: boolean; onLi
               className={styles.input}
               value={member.role}
               disabled={pending}
-              onChange={(event) => write(() => updateMember(member.id, { role: event.target.value }))}
+              onChange={(event) => {
+                setSaved(false);
+                write(() => updateMember(member.id, { role: event.target.value }), () => setSaved(true));
+              }}
             >
               {ROLES.map((role) => (
                 <option key={role} value={role}>
@@ -137,51 +228,72 @@ function MemberRow({ member, self, onLink }: { member: User; self: boolean; onLi
             </select>
           </label>
         )}
-      </td>
-      <td data-label="Status">
         <span className={styles.status} data-status={status === "invited" ? "em_andamento" : undefined}>
           {STATUS_LABEL[status]}
         </span>
-      </td>
-      <td data-label="Ações">
-        <div className={styles.actions}>
-          {status === "invited" ? (
-            <button type="button" className={styles.quiet} disabled={renewing} onClick={renew}>
-              {renewing ? "Gerando…" : "Novo link"}
-            </button>
-          ) : null}
-          {status === "disabled" ? (
+      </div>
+
+      <div className={styles.memberActions}>
+        {status === "invited" ? (
+          <button type="button" className={styles.quiet} disabled={renewing} onClick={renew}>
+            {renewing ? "Gerando…" : "Gerar novo link"}
+          </button>
+        ) : null}
+        {status === "disabled" ? (
+          <button
+            type="button"
+            className={styles.secondary}
+            disabled={pending}
+            onClick={() => write(() => updateMember(member.id, { status: "active" }))}
+          >
+            Reativar
+          </button>
+        ) : self || lastOwner || confirming ? null : (
+          <button type="button" className={styles.quiet} onClick={() => setConfirming(true)}>
+            {status === "invited" ? "Cancelar convite" : "Desativar acesso"}
+          </button>
+        )}
+      </div>
+
+      {confirming ? (
+        <div className={styles.memberNote}>
+          <p>
+            {status === "invited"
+              ? `O link de ${first} deixa de funcionar.`
+              : `${first} deixa de entrar no Pulse na hora. O que já registrou continua salvo, com o nome.`}
+          </p>
+          <div className={styles.actions}>
             <button
               type="button"
               className={styles.secondary}
               disabled={pending}
-              onClick={() => write(() => updateMember(member.id, { status: "active" }))}
+              onClick={() => write(() => updateMember(member.id, { status: "disabled" }), () => setConfirming(false))}
             >
-              Reativar
+              {status === "invited" ? "Cancelar convite" : "Desativar acesso"}
             </button>
-          ) : self ? null : confirming ? (
-            <>
-              <button
-                type="button"
-                className={styles.secondary}
-                disabled={pending}
-                onClick={() => write(() => updateMember(member.id, { status: "disabled" }), () => setConfirming(false))}
-              >
-                {status === "invited" ? "Cancelar o convite" : "Desativar o acesso"}
-              </button>
-              <button type="button" className={styles.quiet} onClick={() => setConfirming(false)}>
-                Manter
-              </button>
-            </>
-          ) : (
-            <button type="button" className={styles.quiet} onClick={() => setConfirming(true)}>
-              {status === "invited" ? "Cancelar convite" : "Desativar"}
+            <button type="button" className={styles.quiet} onClick={() => setConfirming(false)}>
+              Manter
             </button>
-          )}
+          </div>
         </div>
-        <FormError error={error} />
-      </td>
-    </tr>
+      ) : null}
+      {lastOwner ? (
+        <p className={`${styles.fine} ${styles.memberNote}`}>
+          Único responsável: a clínica precisa de pelo menos um responsável ativo. Para mudar, torne outra pessoa responsável
+          primeiro.
+        </p>
+      ) : null}
+      {saved && !error ? (
+        <p className={`${styles.fine} ${styles.memberNote}`} role="status">
+          Função alterada.
+        </p>
+      ) : null}
+      {error ? (
+        <div className={styles.memberNote}>
+          <FormError error={error} />
+        </div>
+      ) : null}
+    </li>
   );
 }
 
@@ -211,14 +323,13 @@ function InviteForm({
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      <div className={styles.twoFields}>
-        <Field label="Nome">
-          <input className={styles.input} name="name" required maxLength={120} autoComplete="off" />
-        </Field>
-        <Field label="E-mail">
-          <input className={styles.input} name="email" type="email" required maxLength={320} autoComplete="off" />
-        </Field>
-      </div>
+      <p className={styles.label}>Adicionar pessoa</p>
+      <Field label="Nome">
+        <input className={styles.input} name="name" required maxLength={120} autoComplete="off" />
+      </Field>
+      <Field label="E-mail">
+        <input className={styles.input} name="email" type="email" required maxLength={320} autoComplete="off" />
+      </Field>
       <Field label="Função">
         <select className={styles.input} name="role" value={role} onChange={(event) => setRole(event.target.value as Role)}>
           {ROLES.map((r) => (
@@ -232,7 +343,7 @@ function InviteForm({
       <FormError error={error} />
       <div className={styles.actions}>
         <button type="submit" className={styles.primary} disabled={pending}>
-          {pending ? "Convidando…" : "Convidar"}
+          {pending ? "Gerando convite…" : "Gerar convite"}
         </button>
         <button type="button" className={styles.quiet} onClick={onCancel}>
           Cancelar
@@ -256,13 +367,13 @@ function InviteSent({ name, email, result, onClose }: { name: string; email?: st
       </div>
     );
   }
-  const first = name.split(" ")[0] || name;
+  const first = firstName(name);
   if (!result.link) {
     return (
       <div className={styles.suggestion} role="status">
         <p className={styles.label}>Convite registrado</p>
         <p>
-          {first} já tem conta no Pulse. Peça para entrar com o e-mail e a senha dela: o convite para a{" "}
+          {first} já tem conta no Pulse. Peça para entrar com o próprio e-mail e senha: o convite para a{" "}
           {data.organization.name} aparece ao entrar.
         </p>
         <button type="button" className={styles.quiet} onClick={onClose}>
@@ -275,10 +386,10 @@ function InviteSent({ name, email, result, onClose }: { name: string; email?: st
   return (
     <div className={styles.suggestion} role="status">
       <p className={styles.label}>Convite pronto para {first}</p>
-      <p className={styles.fine}>
-        Envie o link para {first}. Ele vale por tempo limitado e funciona uma vez; se expirar, use “Novo link”. Não abra
-        o link você mesmo: ele entra na conta da pessoa convidada.
+      <p>
+        <strong>Envie este link para a pessoa convidada. Não abra o link por ela.</strong>
       </p>
+      <p className={styles.fine}>O link funciona uma vez e expira. Se expirar, use “Gerar novo link” na lista.</p>
       <input className={styles.input} readOnly value={result.link} aria-label="Link de convite" onFocus={(event) => event.target.select()} />
       <div className={styles.actions}>
         <button

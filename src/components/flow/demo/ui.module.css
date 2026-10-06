@@ -3535,3 +3535,127 @@
 .monthStrip .textAction {
   min-height: 2rem;
 }
+
+/* ── Configurações → Equipe: one list that works the same on a phone and on a desk ── */
+.teamSolo {
+  font-size: 1.0625rem;
+  font-weight: 640;
+}
+
+.teamRoles {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.teamRoles div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.teamRoles dt {
+  font-weight: 640;
+}
+
+.teamRoles dd {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
+.teamTools {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.team {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.member {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem 0;
+  border-top: var(--rule) solid var(--border);
+}
+
+.memberWho {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.memberWho strong {
+  font-weight: 640;
+}
+
+.memberWho strong span {
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+.memberWho > span {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.member[data-status="disabled"] .memberWho strong {
+  color: var(--text-2);
+}
+
+.memberRole {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.memberRole select {
+  width: auto;
+  min-height: 2.25rem;
+}
+
+.memberRoleText {
+  font-size: 0.9375rem;
+}
+
+.memberActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.memberActions:empty {
+  display: none;
+}
+
+.memberNote {
+  display: grid;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 768px) {
+  .member {
+    grid-template-columns: minmax(0, 1fr) auto minmax(9rem, auto);
+    align-items: center;
+    gap: 0.5rem 1.25rem;
+  }
+
+  .memberActions {
+    justify-content: flex-end;
+  }
+
+  .memberActions:empty {
+    display: flex;
+  }
+
+  .teamTools {
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 18rem);
+    align-items: center;
+  }
+}

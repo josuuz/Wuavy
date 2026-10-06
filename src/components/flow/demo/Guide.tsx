@@ -218,11 +218,27 @@ function Passo({ point }: { point?: boolean }) {
   );
 }
 
+/**
+ * Screens whose content a floating card would cover on a phone (Configurações' team list): there, below the rail
+ * layout, the guide sits inside the page, at its top, instead of floating over it.
+ */
+const IN_PAGE = new Set(["configuracoes"]);
+
+/**
+ * Where the guide is drawn: `inline` is its copy inside the page, used only on the IN_PAGE screens and only on a
+ * phone; the rail's copy steps aside there (both through CSS, so the layout decides, not the script).
+ */
+function placement(slug: string, inline?: boolean) {
+  if (inline) return IN_PAGE.has(slug) ? { "data-inline": "" } : null;
+  return IN_PAGE.has(slug) ? { "data-defer": "" } : {};
+}
+
 /** The guide's card, in the rail under the menu (low on the screen on a phone): the welcome, the current step, or the end. */
-export function GuideCard() {
+export function GuideCard({ inline }: { inline?: boolean }) {
   const guide = useGuide();
   const { base, data } = useFlow();
-  if (!guide.active || guide.saved.minimized) return null;
+  const place = placement(guide.slug, inline);
+  if (!guide.active || guide.saved.minimized || !place) return null;
   const { current, steps, doneCount, slug } = guide;
   const total = steps.length;
   const label = (view: string) => VIEWS.find((v) => v.slug === view)?.label ?? view;
@@ -296,7 +312,7 @@ export function GuideCard() {
   }
 
   return (
-    <aside className={styles.card} aria-label={GUIDE.title} aria-live="polite">
+    <aside className={styles.card} aria-label={GUIDE.title} aria-live="polite" {...place}>
       <Passo point={guide.target !== null || !guide.saved.onboardingStarted} />
       <div className={styles.body}>
         {body}
@@ -314,11 +330,12 @@ export function GuideCard() {
 }
 
 /** The guide left for later: a small way back, with its progress. */
-export function GuidePill() {
+export function GuidePill({ inline }: { inline?: boolean }) {
   const guide = useGuide();
-  if (!guide.active || !guide.saved.minimized) return null;
+  const place = placement(guide.slug, inline);
+  if (!guide.active || !guide.saved.minimized || !place) return null;
   return (
-    <div className={styles.pill}>
+    <div className={styles.pill} {...place}>
       <button type="button" className={styles.pillOpen} onClick={guide.open}>
         <span className="pulse-dot" aria-hidden="true" />
         {GUIDE.title}

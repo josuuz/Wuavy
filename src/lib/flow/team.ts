@@ -101,7 +101,7 @@ export async function inviteMember(form: FormData): Promise<InviteResult> {
       if (membershipsError) return membershipsError;
       const here = memberships.find((m) => m.organization_id === org);
       if (here?.status === "active") throw new Invalid("Essa pessoa já faz parte da equipe.");
-      if (here?.status === "invited") throw new Invalid("Essa pessoa já foi convidada. Use “Novo link” na lista da equipe.");
+      if (here?.status === "invited") throw new Invalid("Essa pessoa já foi convidada. Use “Gerar novo link” na lista da equipe.");
       if (here?.status === "disabled") throw new Invalid("Essa pessoa já fez parte da equipe. Reative o acesso dela na lista.");
       if (memberships.some((m) => m.status !== "disabled")) throw new Invalid("Este e-mail já está na equipe de outra clínica do Pulse.");
     }
