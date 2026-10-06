@@ -3,6 +3,7 @@ import type {
   ClinicalRecord,
   Activity,
   Appointment,
+  AppointmentFinancial,
   AutomationRule,
   AutomationRun,
   FlowData,
@@ -483,13 +484,31 @@ export function createDemoData(clock = new Date()): FlowData {
       }),
   );
 
+  // Each finished visit's money as it was frozen: the demo's costs have not changed, so today's are that day's.
+  const financials: AppointmentFinancial[] = appointments
+    .filter((a) => a.status === "concluido")
+    .map((a) => {
+      const price = procedures.find((p) => p.id === a.procedureId)?.price ?? 0;
+      const cost = demoCost(a.procedureId);
+      return {
+        appointmentId: a.id,
+        completedAt: a.startsAt,
+        listPrice: price,
+        discount: 0,
+        priceCharged: price,
+        totalCost: cost,
+        grossProfit: price - cost,
+        grossMargin: price > 0 ? Math.round(((price - cost) / price) * 10000) / 100 : undefined,
+      };
+    });
+
   return {
     now,
     organization: { id: ORG, name: "Clínica Aurora", segment: "estetica", city: "Campinas" },
     users: [
-      { id: "user_helena", ...org, name: "Dra. Helena Prado", role: "owner" },
-      { id: "user_marina", ...org, name: "Marina Costa", role: "professional" },
-      { id: "user_julia", ...org, name: "Júlia", role: "reception" },
+      { id: "user_helena", ...org, name: "Dra. Helena Prado", role: "owner", status: "active" },
+      { id: "user_marina", ...org, name: "Marina Costa", role: "professional", status: "active" },
+      { id: "user_julia", ...org, name: "Júlia", role: "reception", status: "active" },
     ],
     leads,
     patients,
@@ -508,5 +527,16 @@ export function createDemoData(clock = new Date()): FlowData {
     automationRuns,
     activities,
     records,
+    financials,
+    conversations: [],
   };
+}
+
+/** One session's products at the demo's costs. */
+export function demoCost(procedureId: string) {
+  return Math.round(
+    uses
+      .filter(([procedure]) => procedure === procedureId)
+      .reduce((sum, [, product, quantity]) => sum + quantity * (products.find((p) => p.id === product)?.unitCost ?? 0), 0),
+  );
 }

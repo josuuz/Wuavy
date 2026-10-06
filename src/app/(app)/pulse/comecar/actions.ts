@@ -87,9 +87,15 @@ export async function createClinic(_: ClinicState | null, form: FormData): Promi
     return { error: "Não foi possível criar a clínica. Tente de novo." };
   };
 
-  const { error: memberError } = await admin
-    .from("members")
-    .insert({ organization_id: org.id, user_id: session.user.id, name, role: "owner" });
+  const { error: memberError } = await admin.from("members").insert({
+    organization_id: org.id,
+    user_id: session.user.id,
+    name,
+    role: "owner",
+    status: "active",
+    email: session.user.email ?? null,
+    joined_at: new Date().toISOString(),
+  });
   if (memberError) return undo("member", memberError);
 
   // The subscription becomes the clinic's, only if it still has none: two tabs submitting make one clinic.

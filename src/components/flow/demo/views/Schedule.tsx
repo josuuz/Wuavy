@@ -7,10 +7,12 @@ import {
   addToWaitlist,
   book,
   deleteAppointment,
+  finishAppointment,
   removeFromWaitlist,
   saveDeposit,
   setAppointmentStatus,
   setDepositPaid,
+  visitSupplies,
   type Result,
 } from "@/lib/flow/actions";
 import { brl, capital, dayAt, dayLabel, daysFrom, hour, plural, relDay, shortDate, units, weekday } from "@/lib/flow/format";
@@ -26,7 +28,15 @@ import {
   weekStart,
   type Slot,
 } from "@/lib/flow/insights";
-import { LEAD_SOURCES, type Appointment, type AppointmentStatus, type FlowData, type ID, type LeadSource } from "@/lib/flow/types";
+import {
+  LEAD_SOURCES,
+  type Appointment,
+  type AppointmentStatus,
+  type AppointmentSupply,
+  type FlowData,
+  type ID,
+  type LeadSource,
+} from "@/lib/flow/types";
 import { APPOINTMENT_LABEL, PERIOD_LABEL, SOURCE_LABEL, viewHref } from "../copy";
 import { DeleteButton, Field, FocusLink, FormError, Intro, Prepared, Soon, reais, useWrite } from "../forms";
 import { Sheet } from "../Sheet";
@@ -65,7 +75,7 @@ function firstFree(data: FlowData, period?: "manha" | "tarde") {
 }
 
 export function Schedule() {
-  const { data, live, editable } = useFlow();
+  const { data, live, editable, can } = useFlow();
   const focus = useFocus("agenda");
   const [mode, setMode] = useState<"dia" | "semana" | "mes">("dia");
   const [day, setDay] = useState(focus?.day ?? 0);
@@ -75,6 +85,8 @@ export function Schedule() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [managing, setManaging] = useState<ID | null>(null);
   const [waiting, setWaiting] = useState(false);
+  // Booking, rescheduling and the waiting list are the front office's; a professional reads their agenda and records the visits.
+  const book = can.book ? (startsAt: string) => setDraft({ startsAt }) : undefined;
   const appointment = data.appointments.find((a) => a.id === managing);
   const pros = professionals(data);
   // Cancellations still ahead, today and tomorrow: each one is an hour the Pulse can fill.
@@ -116,7 +128,7 @@ export function Schedule() {
         </Intro>
       ) : null}
 
-      {freed.map((slot) => {
+      {(can.book ? freed : []).map((slot) => {
         const who = data.patients.find((p) => p.id === slot.appointment?.patientId);
         const matches = slotMatches(data, slot.startsAt);
         return (
@@ -225,12 +237,12 @@ export function Schedule() {
               }}
             />
           ) : mode === "dia" ? (
-            <DayView offset={day} pro={pro} onBook={(startsAt) => setDraft({ startsAt })} onOpen={setManaging} />
+            <DayView offset={day} pro={pro} onBook={book} onOpen={setManaging} />
           ) : (
-            <WeekView start={start} pro={pro} onBook={(startsAt) => setDraft({ startsAt })} onOpen={setManaging} />
+            <WeekView start={start} pro={pro} onBook={book} onOpen={setManaging} />
           )}
         </div>
-        <Waitlist onBook={setDraft} onAdd={editable ? () => setWaiting(true) : undefined} />
+        {can.book ? <Waitlist onBook={setDraft} onAdd={editable ? () => setWaiting(true) : undefined} /> : null}
       </div>
 
       <Sheet
@@ -275,7 +287,8 @@ export function Schedule() {
 
 interface CalendarProps {
   pro: string;
-  onBook: (startsAt: string) => void;
+  /** Absent for whoever may not book: a free hour is only shown. */
+  onBook?: (startsAt: string) => void;
   onOpen: (id: ID) => void;
 }
 
@@ -324,7 +337,9 @@ function DayView({ offset, pro, onBook, onOpen }: CalendarProps & { offset: numb
                 <p className={styles.busy}>
                   Ocupado · {data.users.find((u) => u.id === view.appointment.professionalId)?.name ?? "outro profissional"}
                 </p>
-              ) : view.kind === "livre" ? (
+              ) : view.kind === "livre" && !onBook ? (
+                <p className={styles.busy}>Horário livre</p>
+              ) : view.kind === "livre" && onBook ? (
                 <button type="button" className={styles.freeSlot} onClick={() => onBook(slot.startsAt)}>
                   <strong>Horário livre</strong>
                   <span>
@@ -387,7 +402,9 @@ function WeekView({ start, pro, onBook, onOpen }: CalendarProps & { start: numbe
                         <AppointmentCard compact appointment={view.appointment} onOpen={() => onOpen(view.appointment.id)} />
                       ) : view.kind === "outro" ? (
                         <span className={styles.busy}>Ocupado</span>
-                      ) : view.kind === "livre" ? (
+                      ) : view.kind === "livre" && !onBook ? (
+                        <span className={styles.busy}>Livre</span>
+                      ) : view.kind === "livre" && onBook ? (
                         <button
                           type="button"
                           className={styles.freeCell}
@@ -885,8 +902,11 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
 
 /**
  * One booking and what can happen to it. Finishing is where the modules
- * meet, so the sheet says what it will do: the stock it takes, the return
- * it sets, the record it joins.
+ * meet, so the sheet says what it will do (the stock it takes, the return
+ * it sets) and asks what only the visit knows: what was charged and which
+ * products were really used. A finished visit shows what was charged and,
+ * to the owner, what it cost that day. Who booked it and who changed it last
+ * are on it too.
  */
 function AppointmentDetail({
   appointment: a,
@@ -897,8 +917,10 @@ function AppointmentDetail({
   onDone: () => void;
   onReschedule: () => void;
 }) {
-  const { data, dispatch, live } = useFlow();
+  const { data, dispatch, live, can } = useFlow();
   const { pending, error, write } = useWrite();
+  const [finishing, setFinishing] = useState(false);
+  const who = (userId?: ID) => data.users.find((u) => u.id === userId)?.name;
   const patient = data.patients.find((p) => p.id === a.patientId);
   const procedure = procedureOf(data, a.procedureId);
   const professional = data.users.find((u) => u.id === a.professionalId);
@@ -934,11 +956,24 @@ function AppointmentDetail({
           <dt>Telefone</dt>
           <dd>{patient?.phone || "—"}</dd>
         </div>
+        {a.status === "concluido" ? (
+          <div>
+            <dt>Valor cobrado</dt>
+            <dd>
+              {brl(a.priceCharged ?? procedure?.price ?? 0)}
+              {a.discount ? ` · desconto de ${brl(a.discount)}` : ""}
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
-      <DepositPanel appointment={a} price={procedure?.price ?? 0} />
+      {a.status === "concluido" && can.finance ? <VisitMoney appointment={a} /> : null}
 
-      {open && procedure ? (
+      {can.book ? <DepositPanel appointment={a} price={procedure?.price ?? 0} /> : null}
+
+      {finishing ? <FinishForm appointment={a} onDone={onDone} onCancel={() => setFinishing(false)} /> : null}
+
+      {open && procedure && !finishing ? (
         <div className={styles.suggestion}>
           <p className={styles.label}>Ao finalizar, o Pulse</p>
           <ol className={styles.effects}>
@@ -966,7 +1001,7 @@ function AppointmentDetail({
         </div>
       ) : null}
 
-      <div className={styles.actions}>
+      {finishing ? null : <div className={styles.actions}>
         {a.status === "agendado" ? (
           <button type="button" className={styles.primary} disabled={pending} onClick={() => set("confirmado")}>
             Confirmar presença
@@ -977,7 +1012,7 @@ function AppointmentDetail({
             type="button"
             className={a.status === "confirmado" ? styles.primary : styles.secondary}
             disabled={pending}
-            onClick={() => set("concluido")}
+            onClick={() => setFinishing(true)}
           >
             Finalizar atendimento
           </button>
@@ -987,17 +1022,17 @@ function AppointmentDetail({
             Faltou
           </button>
         ) : null}
-        {a.status === "faltou" || a.status === "cancelado" ? (
+        {can.book && (a.status === "faltou" || a.status === "cancelado") ? (
           <button type="button" className={styles.primary} disabled={pending} onClick={onReschedule}>
             {a.status === "faltou" ? "Remarcar" : "Agendar de novo"}
           </button>
         ) : null}
-        {open ? (
+        {can.book && open ? (
           <button type="button" className={styles.quiet} disabled={pending} onClick={onReschedule}>
             Remarcar
           </button>
         ) : null}
-        {open ? (
+        {can.book && open ? (
           <button type="button" className={styles.quiet} disabled={pending} onClick={() => set("cancelado")}>
             Cancelar agendamento
           </button>
@@ -1012,25 +1047,185 @@ function AppointmentDetail({
             Desfazer falta
           </button>
         ) : null}
-      </div>
+      </div>}
       <FormError error={error} />
 
       <FocusLink focus={{ to: "patient", id: a.patientId }}>
         Abrir a ficha de {firstName(patient?.name)} <span aria-hidden="true">→</span>
       </FocusLink>
 
+      {who(a.createdBy) || who(a.updatedBy) ? (
+        <p className={styles.fine}>
+          {who(a.createdBy) ? `Agendado por ${who(a.createdBy)}` : ""}
+          {who(a.createdBy) && who(a.updatedBy) ? " · " : ""}
+          {who(a.updatedBy) ? `última alteração por ${who(a.updatedBy)}` : ""}
+          {a.status === "concluido" && who(a.completedBy) ? ` · finalizado por ${who(a.completedBy)}` : ""}
+        </p>
+      ) : null}
+
       {live ? (
-        <div className={styles.actions}>
-          <DeleteButton
-            confirm="Excluir este agendamento"
-            pending={pending}
-            onDelete={() => write(() => deleteAppointment(a.id), onDone)}
-          />
-        </div>
+        // A finished visit only the owner deletes (its products go back to the stock); the database checks it.
+        can.book && (a.status !== "concluido" || can.finance) ? (
+          <div className={styles.actions}>
+            <DeleteButton
+              confirm="Excluir este agendamento"
+              pending={pending}
+              onDelete={() => write(() => deleteAppointment(a.id), onDone)}
+            />
+          </div>
+        ) : null
       ) : (
         <p className={styles.fine}>Na demo, as mudanças valem até recarregar a página.</p>
       )}
     </>
+  );
+}
+
+/** "2,5" for a form field. */
+const decimal = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 3, useGrouping: false });
+
+/**
+ * Finishing a visit: what the patient paid (the procedure's price, unless
+ * there was a discount) and the products really used (the procedure's own,
+ * adjustable). The stock takes those quantities and the visit keeps what
+ * they cost today, for good (migration 0009).
+ */
+function FinishForm({ appointment: a, onDone, onCancel }: { appointment: Appointment; onDone: () => void; onCancel: () => void }) {
+  const { data, dispatch, live } = useFlow();
+  const { pending, error, submit } = useWrite();
+  const price = procedureOf(data, a.procedureId)?.price ?? 0;
+  const uses = data.procedureProducts.filter((pp) => pp.procedureId === a.procedureId);
+
+  // The demo finishes in memory, reading the form the way the server does.
+  const demoFinish = async (form: FormData): Promise<Result> => {
+    const charged = Math.round(Number(String(form.get("charged") ?? "").replace(/[R$\s.]/g, "").replace(",", ".")) * 100);
+    if (!Number.isFinite(charged) || charged < 0) return { error: "Informe o valor cobrado em reais." };
+    const quantities = form.getAll("supplyQuantity").map((q) => Number(String(q).replace(",", ".")));
+    if (quantities.some((q) => !Number.isFinite(q) || q < 0)) return { error: "Informe a quantidade de cada produto usado." };
+    const supplies = form.getAll("supplyProduct").map((productId, i) => ({ productId: String(productId), quantity: quantities[i] }));
+    dispatch({ type: "appointment", id: a.id, status: "concluido", charged, supplies: supplies.filter((s) => s.quantity > 0) });
+    return {};
+  };
+
+  return (
+    <form className={styles.form} onSubmit={submit(live ? (form) => finishAppointment(a.id, form) : demoFinish, onDone)}>
+      <p className={styles.label}>Finalizar atendimento</p>
+      <Field label="Valor cobrado (R$)">
+        <input className={styles.input} name="charged" required inputMode="decimal" defaultValue={reais(price)} />
+      </Field>
+      <p className={styles.fine}>Preço do procedimento: {brl(price)}. Se houve desconto, informe o que o paciente pagou.</p>
+      {uses.length ? (
+        <fieldset className={styles.fieldset}>
+          <legend className={styles.label}>Produtos usados</legend>
+          {uses.map((use) => {
+            const product = data.products.find((p) => p.id === use.productId);
+            return (
+              <div key={use.productId} className={styles.useRow}>
+                <input type="hidden" name="supplyProduct" value={use.productId} />
+                <label htmlFor={`supply-${use.productId}`}>{product?.name ?? "Produto"}</label>
+                <input
+                  id={`supply-${use.productId}`}
+                  className={styles.input}
+                  name="supplyQuantity"
+                  inputMode="decimal"
+                  required
+                  defaultValue={decimal(use.quantity)}
+                />
+                <span className={styles.unitNote}>{product?.unit}</span>
+              </div>
+            );
+          })}
+          <p className={styles.fine}>
+            Ajuste se este atendimento usou mais ou menos (0 se não usou). O estoque baixa estas quantidades e o custo de hoje
+            fica registrado no atendimento.
+          </p>
+        </fieldset>
+      ) : (
+        <p className={styles.fine}>Nenhum produto ligado a este procedimento: o estoque não muda.</p>
+      )}
+      <FormError error={error} />
+      <div className={styles.actions}>
+        <button type="submit" className={styles.primary} disabled={pending}>
+          {pending ? "Finalizando…" : "Confirmar finalização"}
+        </button>
+        <button type="button" className={styles.quiet} onClick={onCancel}>
+          Voltar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * A finished visit's money as it was frozen that day, for the owner: what
+ * was charged, what the products cost then, the gross profit and margin. A
+ * later change in a product's price never changes it.
+ */
+function VisitMoney({ appointment: a }: { appointment: Appointment }) {
+  const { data, live } = useFlow();
+  const [supplies, setSupplies] = useState<AppointmentSupply[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const snapshot = data.financials.find((f) => f.appointmentId === a.id);
+  if (!snapshot) {
+    return (
+      <p className={styles.fine}>
+        Atendimento finalizado antes do registro de custos: em Indicadores, o lucro dele é estimado pelo custo atual dos
+        produtos.
+      </p>
+    );
+  }
+  return (
+    <div className={styles.suggestion}>
+      <p className={styles.label}>Custo no dia do atendimento</p>
+      <dl className={styles.facts}>
+        <div>
+          <dt>Cobrado</dt>
+          <dd>{brl(snapshot.priceCharged)}</dd>
+        </div>
+        <div>
+          <dt>Custo dos produtos</dt>
+          <dd>{brl(snapshot.totalCost)}</dd>
+        </div>
+        <div>
+          <dt>Lucro bruto</dt>
+          <dd>{brl(snapshot.grossProfit)}</dd>
+        </div>
+        <div>
+          <dt>Margem</dt>
+          <dd>{snapshot.grossMargin === undefined ? "—" : `${Math.round(snapshot.grossMargin)}%`}</dd>
+        </div>
+      </dl>
+      {supplies ? (
+        supplies.length ? (
+          <ul className={styles.uses}>
+            {supplies.map((s) => (
+              <li key={s.productName}>
+                <span>{s.productName}</span>
+                <span className={styles.qty}>
+                  {units(s.quantity, s.unit)} × {brl(s.unitCost)} = {brl(s.totalCost)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.fine}>Nenhum produto usado.</p>
+        )
+      ) : live ? (
+        <button
+          type="button"
+          className={styles.quiet}
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            setSupplies(await visitSupplies(a.id));
+            setLoading(false);
+          }}
+        >
+          Ver produtos usados
+        </button>
+      ) : null}
+      <p className={styles.fine}>Registrado ao finalizar: mudanças no preço dos produtos não alteram este valor.</p>
+    </div>
   );
 }
 
@@ -1087,18 +1282,26 @@ function WaitlistForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-export type DepositStatus = "pendente" | "pago" | "vencido";
-const DEPOSIT_LABEL: Record<DepositStatus, string> = { pendente: "Pendente", pago: "Pago", vencido: "Vencido" };
+export type DepositStatus = "pendente" | "pago" | "vencido" | "cancelado";
+const DEPOSIT_LABEL: Record<DepositStatus, string> = { pendente: "Pendente", pago: "Pago", vencido: "Vencido", cancelado: "Cancelado" };
 
-/** Paid when marked so; overdue once its due day has passed unpaid; pending until then. */
+/**
+ * Read, never stored: paid when marked so; cancelled with its booking when
+ * unpaid; overdue once its due day has passed; pending until then.
+ */
 export function depositStatus(a: Appointment, now: string): DepositStatus | null {
   if (!a.deposit) return null;
   if (a.deposit.paidAt) return "pago";
+  if (a.status === "cancelado") return "cancelado";
   return a.deposit.due && a.deposit.due < now.slice(0, 10) ? "vencido" : "pendente";
 }
 
 /** The demo reads the same fields the server reads (actions.ts, depositOf). */
-function depositFrom(form: FormData, price: number, date: string): { cents: number; due: string } | { error: string } | null {
+function depositFrom(
+  form: FormData,
+  price: number,
+  date: string,
+): { cents: number; due: string; percent?: number } | { error: string } | null {
   const kind = String(form.get("depositKind") ?? "");
   if (!kind) return null;
   const raw = Number(String(form.get("depositValue") ?? "").replace(/[R$\s.]/g, "").replace(",", "."));
@@ -1106,17 +1309,17 @@ function depositFrom(form: FormData, price: number, date: string): { cents: numb
   if (kind === "percent" && raw > 100) return { error: "Informe o sinal entre 1% e 100%." };
   const cents = kind === "percent" ? Math.round((price * raw) / 100) : Math.round(raw * 100);
   if (price > 0 && cents > price) return { error: "O sinal não pode passar do preço do procedimento." };
-  return { cents, due: String(form.get("depositDue") || date) };
+  return { cents, due: String(form.get("depositDue") || date), percent: kind === "percent" ? Math.round(raw) : undefined };
 }
 
 /**
  * "Cobrar sinal", off until asked: a percentage of the price or a fixed
  * amount, and the day it is due. Shows what it comes to, nothing more.
  */
-function DepositFields({ price, due, initial }: { price: number; due: string; initial?: { cents: number; due?: string } }) {
+function DepositFields({ price, due, initial }: { price: number; due: string; initial?: Appointment["deposit"] }) {
   const [on, setOn] = useState(Boolean(initial));
-  const [kind, setKind] = useState<"percent" | "fixed">(initial ? "fixed" : "percent");
-  const [value, setValue] = useState(initial ? reais(initial.cents) : "30");
+  const [kind, setKind] = useState<"percent" | "fixed">(initial && !initial.percent ? "fixed" : "percent");
+  const [value, setValue] = useState(initial ? (initial.percent ? String(initial.percent) : reais(initial.cents)) : "30");
   const n = Number(value.replace(/[R$\s.]/g, "").replace(",", "."));
   const cents = !Number.isFinite(n) ? 0 : kind === "percent" ? Math.round((price * n) / 100) : Math.round(n * 100);
 
@@ -1211,13 +1414,18 @@ function DepositPanel({ appointment: a, price }: { appointment: Appointment; pri
   return (
     <div className={styles.depositLine}>
       <span>
-        Sinal {brl(a.deposit.cents)}
-        {a.deposit.due && !paid ? ` · vence ${shortDate(`${a.deposit.due}T12:00:00.000Z`)}` : ""}
+        Sinal {a.deposit.percent ? `${a.deposit.percent}% · ` : ""}
+        {brl(a.deposit.cents)}
+        {paid && a.deposit.paidAt
+          ? ` · pago em ${shortDate(a.deposit.paidAt)}`
+          : a.deposit.due && status !== "cancelado"
+            ? ` · vence ${shortDate(`${a.deposit.due}T12:00:00.000Z`)}`
+            : ""}
       </span>
       <span className={styles.depositStatus} data-status={status ?? undefined}>
         {status ? DEPOSIT_LABEL[status] : ""}
       </span>
-      {access.canEdit ? (
+      {access.canEdit && status !== "cancelado" ? (
         <span className={styles.depositActions}>
           <button type="button" className={styles.quiet} disabled={pending} onClick={mark}>
             {paid ? "Desfazer pagamento" : "Marcar como pago"}

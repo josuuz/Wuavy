@@ -39,6 +39,7 @@ const FRONT: Record<OpportunityKind, string> = {
   lead_followup: "Orçamentos sem resposta",
   lead_idle: "Leads parados",
   patient_return: "Retornos sem marcar",
+  patient_lapsed: "Pacientes sem voltar há mais de 90 dias",
   no_show: "Faltas sem remarcar",
   stock_expiry: "Estoque perto da validade",
   open_slot: "Horários vagos até amanhã",
@@ -147,7 +148,8 @@ function stock(d: FlowData): FlowAnswer {
   const cost = near.reduce((s, x) => s + lotValue(d, x.lot), 0);
   const worth = near.reduce((s, x) => s + x.potential, 0);
   return {
-    text: `Sim: ${plural(near.length, "lote vence", "lotes vencem")} nos próximos 45 dias, ${brl(cost)} em produto. Usados a tempo nos procedimentos certos, rendem cerca de ${brl(worth)}.`,
+    // The products' value only for whoever sees costs (the owner); the rest read none.
+    text: `Sim: ${plural(near.length, "lote vence", "lotes vencem")} nos próximos 45 dias${cost ? `, ${brl(cost)} em produto` : ""}. Usados a tempo nos procedimentos certos, rendem cerca de ${brl(worth)}.`,
     items: near.map((x) => ({
       label: `${x.product?.name}: ${units(x.lot.quantity, x.product?.unit ?? "un")}, vence em ${daysFrom(d.now, x.lot.expiresAt)} dias`,
       value: `${plural(x.patients.length, "compatível", "compatíveis")} · ${brl(x.potential)}`,

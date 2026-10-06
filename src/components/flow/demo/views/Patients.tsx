@@ -99,7 +99,9 @@ function groupsOf(d: FlowData, steps: Map<string, NextStep>): Record<PatientFilt
 }
 
 export function Patients() {
-  const { data, editable } = useFlow();
+  const { data, editable: live, can } = useFlow();
+  // Registering patients is the front office's; a professional sees the patients of their own agenda.
+  const editable = live && can.patients;
   const opened = useFocus("patient");
   const filtered = useFocus("patients");
   const steps = new Map(data.patients.map((p) => [p.id, nextStep(data, p)]));
@@ -235,9 +237,11 @@ export function Patients() {
 
 /** The whole person on one page, what to do next first. */
 function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
-  const { data, editable, access } = useFlow();
+  const { data, editable, access, can } = useFlow();
   const { pending, error, write } = useWrite();
   const [mode, setMode] = useState<"ver" | "agendar" | "venda" | "editar">("ver");
+  // Booking and sales are the front office's; deleting a patient (and their visits and records) is the owner's.
+  const schedule = () => setMode("agendar");
   const [invited, setInvited] = useState(false);
   const step = nextStep(data, patient);
   const upcoming = upcomingFor(data, patient.id);
@@ -285,9 +289,11 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
               Faltou {relDay(data.now, step.appointment.startsAt)} ({procedureOf(data, step.appointment.procedureId)?.name}).
               Vale remarcar enquanto o interesse está vivo.
             </p>
-            <button type="button" className={styles.primary} onClick={() => setMode("agendar")}>
-              Remarcar
-            </button>
+            {can.book ? (
+              <button type="button" className={styles.primary} onClick={schedule}>
+                Remarcar
+              </button>
+            ) : null}
           </>
         ) : step.kind === "retorno" ? (
           <>
@@ -297,10 +303,12 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
                 : `O retorno ${lastProcedure ? `de ${lastProcedure.name} ` : ""}chega ${relDay(data.now, patient.nextReturnAt!)}. Nada marcado ainda.`}
             </p>
             <div className={styles.actions}>
-              <button type="button" className={styles.primary} onClick={() => setMode("agendar")}>
-                Agendar retorno
-              </button>
-              {!invited && access.canEdit ? (
+              {can.book ? (
+                <button type="button" className={styles.primary} onClick={schedule}>
+                  Agendar retorno
+                </button>
+              ) : null}
+              {!invited && access.canEdit && can.book ? (
                 <button type="button" className={styles.secondary} onClick={() => setInvited(true)}>
                   Preparar convite
                 </button>
@@ -327,9 +335,11 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
         ) : step.kind === "primeiro" ? (
           <>
             <p className={styles.nextText}>Ainda sem atendimento. Marque o primeiro.</p>
-            <button type="button" className={styles.primary} onClick={() => setMode("agendar")}>
-              Agendar
-            </button>
+            {can.book ? (
+              <button type="button" className={styles.primary} onClick={schedule}>
+                Agendar
+              </button>
+            ) : null}
           </>
         ) : (
           <p className={styles.nextText}>
@@ -495,20 +505,22 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
       </div>
 
       <div className={styles.actions}>
-        {step.kind === "agendado" || step.kind === "em_dia" || step.kind === "orcamento" ? (
-          <button type="button" className={styles.primary} onClick={() => setMode("agendar")}>
+        {can.book && (step.kind === "agendado" || step.kind === "em_dia" || step.kind === "orcamento") ? (
+          <button type="button" className={styles.primary} onClick={schedule}>
             Agendar
           </button>
         ) : null}
-        <button type="button" className={styles.secondary} onClick={() => setMode("venda")}>
-          Novo orçamento
-        </button>
-        {editable ? (
+        {can.sales ? (
+          <button type="button" className={styles.secondary} onClick={() => setMode("venda")}>
+            Novo orçamento
+          </button>
+        ) : null}
+        {editable && can.patients ? (
           <button type="button" className={styles.quiet} onClick={() => setMode("editar")}>
             Editar
           </button>
         ) : null}
-        {editable ? (
+        {editable && can.deletePatients ? (
           <DeleteButton
             confirm="Excluir paciente e seus agendamentos"
             pending={pending}

@@ -45,11 +45,13 @@ const toNumber = (value: string) => Number(value.trim().replace(",", "."));
 const decimal = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 3, useGrouping: false });
 
 export function Stock() {
-  const { data, editable } = useFlow();
+  const { data, editable: live, can } = useFlow();
+  // Receiving and adjusting: the front desk and the owner. Costs: the owner only (the others read none).
+  const editable = live && can.stock;
   const [entering, setEntering] = useState(false);
   const [adjusting, setAdjusting] = useState<ID | null>(null);
   const [editing, setEditing] = useState<ID | null>(null);
-  const [filter, setFilter] = useState<"todos" | "baixo" | "vencimento">("todos");
+  const [filter, setFilter] = useState<"todos" | "baixo" | "vencimento" | "vencidos">("todos");
   const [brand, setBrand] = useState("");
   const levels = stockLevels(data);
   const edited = data.products.find((p) => p.id === editing);
@@ -60,19 +62,30 @@ export function Stock() {
     data.lots
       .filter((l) => l.productId === productId && l.quantity > 0)
       .reduce<string | null>((min, l) => (!min || l.expiresAt < min ? l.expiresAt : min), null);
-  const expiring = (productId: ID) => {
+  const daysLeft = (productId: ID) => {
     const date = nearest(productId);
-    return date !== null && daysFrom(data.now, date) <= EXPIRY_DAYS;
+    return date === null ? null : daysFrom(data.now, date);
   };
+  const expiring = (productId: ID) => {
+    const days = daysLeft(productId);
+    return days !== null && days >= 0 && days <= EXPIRY_DAYS;
+  };
+  const expired = (productId: ID) => (daysLeft(productId) ?? 0) < 0;
   const brands = [...new Set(data.products.map((p) => p.brand).filter((b): b is string => Boolean(b)))].sort((a, b) =>
     a.localeCompare(b, "pt-BR"),
   );
   const shown = levels.filter(
     (l) =>
-      (filter === "todos" || (filter === "baixo" ? low.has(l.product.id) : expiring(l.product.id))) &&
+      (filter === "todos" ||
+        (filter === "baixo"
+          ? low.has(l.product.id)
+          : filter === "vencidos"
+            ? expired(l.product.id)
+            : expiring(l.product.id))) &&
       (!brand || l.product.brand === brand),
   );
   const expiringCount = levels.filter((l) => expiring(l.product.id)).length;
+  const expiredCount = levels.filter((l) => expired(l.product.id)).length;
   const lots = data.lots
     .filter((l) => l.quantity > 0)
     .sort((a, b) => ORDER[lotStatus(data, a)] - ORDER[lotStatus(data, b)] || a.expiresAt.localeCompare(b.expiresAt));
@@ -84,11 +97,13 @@ export function Stock() {
       <header className={styles.head}>
         <h1 className={styles.title}>Estoque</h1>
         <p className={styles.lead}>O que comprar e o que usar antes de vencer. A cada atendimento finalizado, o Pulse dá baixa sozinho.</p>
-        <div className={styles.actions}>
-          <button type="button" className={styles.primary} onClick={() => setEntering(true)}>
-            Entrada de produto
-          </button>
-        </div>
+        {can.stock ? (
+          <div className={styles.actions}>
+            <button type="button" className={styles.primary} onClick={() => setEntering(true)}>
+              Entrada de produto
+            </button>
+          </div>
+        ) : null}
       </header>
 
       {data.products.length === 0 ? (
@@ -115,8 +130,9 @@ export function Stock() {
                         </span>
                       </p>
                       <p className={styles.fine}>
-                        {units(x.lot.quantity, x.product?.unit ?? "un")} · lote {x.lot.lotCode} · {brl(lotValue(data, x.lot))} em
-                        produto · usado em {x.procedures.map((p) => p.name).join(", ") || "nenhum procedimento"}
+                        {units(x.lot.quantity, x.product?.unit ?? "un")} · lote {x.lot.lotCode}
+                        {can.finance ? ` · ${brl(lotValue(data, x.lot))} em produto` : ""} · usado em{" "}
+                        {x.procedures.map((p) => p.name).join(", ") || "nenhum procedimento"}
                       </p>
                       <p className={styles.expiryText}>
                         {x.people ? (
@@ -146,7 +162,7 @@ export function Stock() {
                       ) : null}
                       {x.people ? (
                         <FocusLink focus={{ to: "opportunity", kind: "stock_expiry" }} className={styles.primary}>
-                          Ver pacientes
+                          Ver pessoas
                         </FocusLink>
                       ) : null}
                     </li>
@@ -171,6 +187,9 @@ export function Stock() {
                 <button type="button" aria-pressed={filter === "vencimento"} onClick={() => setFilter("vencimento")}>
                   Próximos do vencimento{expiringCount ? ` · ${expiringCount}` : ""}
                 </button>
+                <button type="button" aria-pressed={filter === "vencidos"} onClick={() => setFilter("vencidos")}>
+                  Vencidos{expiredCount ? ` · ${expiredCount}` : ""}
+                </button>
               </div>
               {brands.length ? (
                 <label className={styles.brandFilter}>
@@ -193,7 +212,7 @@ export function Stock() {
                     <th scope="col">Produto</th>
                     <th scope="col">Em estoque</th>
                     <th scope="col">Mínimo</th>
-                    <th scope="col">Preço de compra</th>
+                    {can.finance ? <th scope="col">Preço de compra</th> : null}
                     <th scope="col">Validade</th>
                   </tr>
                 </thead>
@@ -214,7 +233,9 @@ export function Stock() {
                           ) : (
                             <strong>{product.name}</strong>
                           )}
-                          {product.brand ? <span className={styles.brand}>{product.brand}</span> : null}
+                          {product.brand || product.category ? (
+                            <span className={styles.brand}>{[product.brand, product.category].filter(Boolean).join(" · ")}</span>
+                          ) : null}
                         </td>
                         <td data-label="Em estoque">
                           {level.quantity > 0 ? units(level.quantity, product.unit) : "Sem estoque"}
@@ -225,9 +246,11 @@ export function Stock() {
                           ) : null}
                         </td>
                         <td data-label="Mínimo">{product.minQuantity !== undefined ? units(product.minQuantity, product.unit) : "—"}</td>
-                        <td data-label="Preço de compra">
-                          {brl(product.unitCost)} <span className={styles.unitNote}>/ {product.unit}</span>
-                        </td>
+                        {can.finance ? (
+                          <td data-label="Preço de compra">
+                            {brl(product.unitCost ?? 0)} <span className={styles.unitNote}>/ {product.unit}</span>
+                          </td>
+                        ) : null}
                         <td data-label="Validade">
                           {days === null ? "—" : expiry(days)}
                           {alert === "vencido" || alert === "proximo" ? (
@@ -256,7 +279,7 @@ export function Stock() {
                     <th scope="col">Quantidade</th>
                     <th scope="col">Lote</th>
                     <th scope="col">Validade</th>
-                    <th scope="col">Custo aprox.</th>
+                    {can.finance ? <th scope="col">Custo aprox.</th> : null}
                     <th scope="col">Status</th>
                   </tr>
                 </thead>
@@ -272,14 +295,16 @@ export function Stock() {
                         <td data-label="Quantidade">{units(lot.quantity, product?.unit ?? "un")}</td>
                         <td data-label="Lote">{lot.lotCode}</td>
                         <td data-label="Validade">{expiry(daysFrom(data.now, lot.expiresAt))}</td>
-                        <td data-label="Custo aprox.">{brl(lotValue(data, lot))}</td>
+                        {can.finance ? <td data-label="Custo aprox.">{brl(lotValue(data, lot))}</td> : null}
                         <td data-label="Status">
                           <span className={styles.lotStatus} data-status={status}>
                             {STATUS[status]}
                           </span>
-                          <button type="button" className={styles.inlineAction} onClick={() => setAdjusting(lot.id)}>
-                            Ajustar
-                          </button>
+                          {can.stock ? (
+                            <button type="button" className={styles.inlineAction} onClick={() => setAdjusting(lot.id)}>
+                              Ajustar
+                            </button>
+                          ) : null}
                         </td>
                       </tr>
                     );
@@ -331,7 +356,17 @@ function StockInForm({ onDone }: { onDone: () => void }) {
     dispatch({
       type: "stockIn",
       productId: productId === "novo" ? undefined : productId,
-      product: productId === "novo" ? { name: get("name"), unit: get("unit"), unitCost, brand: get("brand") || undefined } : undefined,
+      product:
+        productId === "novo"
+          ? {
+              name: get("name"),
+              unit: get("unit"),
+              unitCost,
+              brand: get("brand") || undefined,
+              category: get("category") || undefined,
+              supplier: get("supplier") || undefined,
+            }
+          : undefined,
       lot: { lotCode: get("lotCode"), quantity, expiresAt: `${get("expiresAt")}T00:00:00.000Z` },
     });
     return {};
@@ -362,6 +397,15 @@ function StockInForm({ onDone }: { onDone: () => void }) {
               <input className={styles.input} name="brand" maxLength={80} autoComplete="off" />
             </Field>
           </div>
+          <div className={styles.twoFields}>
+            <Field label="Categoria (opcional)">
+              <input className={styles.input} name="category" maxLength={60} autoComplete="off" list="categorias" />
+            </Field>
+            <Field label="Fornecedor (opcional)">
+              <input className={styles.input} name="supplier" maxLength={120} autoComplete="off" />
+            </Field>
+          </div>
+          <Categories />
           <div className={styles.twoFields}>
             <Field label="Unidade">
               <select className={styles.input} name="unit" defaultValue="frasco">
@@ -457,6 +501,7 @@ function AdjustForm({ lot, onDone }: { lot: InventoryLot; onDone: () => void }) 
 
 /** A product's details and its minimum: at or below it, the Pulse says to buy. */
 function ProductForm({ product, onDone }: { product: Product; onDone: () => void }) {
+  const { can } = useFlow();
   const { pending, error, submit } = useWrite();
   const options = UNITS.includes(product.unit) ? UNITS : [product.unit, ...UNITS];
   return (
@@ -470,6 +515,15 @@ function ProductForm({ product, onDone }: { product: Product; onDone: () => void
         </Field>
       </div>
       <div className={styles.twoFields}>
+        <Field label="Categoria (opcional)">
+          <input className={styles.input} name="category" maxLength={60} defaultValue={product.category} autoComplete="off" list="categorias" />
+        </Field>
+        <Field label="Fornecedor (opcional)">
+          <input className={styles.input} name="supplier" maxLength={120} defaultValue={product.supplier} autoComplete="off" />
+        </Field>
+      </div>
+      <Categories />
+      <div className={styles.twoFields}>
         <Field label="Unidade">
           <select className={styles.input} name="unit" defaultValue={product.unit}>
             {options.map((unit) => (
@@ -479,9 +533,11 @@ function ProductForm({ product, onDone }: { product: Product; onDone: () => void
             ))}
           </select>
         </Field>
-        <Field label="Preço de compra por unidade (R$)">
-          <input className={styles.input} name="unitCost" required inputMode="decimal" defaultValue={reais(product.unitCost)} />
-        </Field>
+        {can.finance ? (
+          <Field label="Preço de compra por unidade (R$)">
+            <input className={styles.input} name="unitCost" required inputMode="decimal" defaultValue={reais(product.unitCost ?? 0)} />
+          </Field>
+        ) : null}
       </div>
       <Field label={`Estoque mínimo (${product.unit})`}>
         <input
@@ -505,5 +561,18 @@ function ProductForm({ product, onDone }: { product: Product; onDone: () => void
         </button>
       </div>
     </form>
+  );
+}
+
+/** The categories already in use, offered while typing one: one spelling per category. */
+function Categories() {
+  const { data } = useFlow();
+  const used = [...new Set(data.products.map((p) => p.category).filter(Boolean))];
+  return (
+    <datalist id="categorias">
+      {used.map((c) => (
+        <option key={c} value={c} />
+      ))}
+    </datalist>
   );
 }

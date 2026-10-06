@@ -13,6 +13,7 @@ import {
 } from "react";
 
 import type { Access } from "@/lib/flow/access";
+import { permissionsFor, type Permissions } from "@/lib/flow/roles";
 import { dayAt } from "@/lib/flow/format";
 import { drawDown, moveStock, opportunities, procedureOf, restock, visitSummary } from "@/lib/flow/insights";
 import type {
@@ -48,7 +49,7 @@ export type Focus =
   | { to: "lead"; id: ID }
   | { to: "agenda"; day: number }
   /** A conversation to open (in the demo) or to start once WhatsApp is connected, with its first message ready. */
-  | { to: "conversation"; id?: ID; name: string; draft: string };
+  | { to: "conversation"; id?: ID; name: string; draft: string; phone?: string; leadId?: ID; patientId?: ID };
 
 /** A booking, as the booking form sends it. */
 export interface Booking {
@@ -64,7 +65,7 @@ export interface Booking {
   /** The booking this one reschedules. */
   replaces?: ID;
   /** A deposit asked with the booking. */
-  deposit?: { cents: number; due?: string };
+  deposit?: { cents: number; due?: string; percent?: number };
 }
 
 interface State {
@@ -83,15 +84,22 @@ type Action =
       lead: { name: string; phone: string; source: LeadSource; procedureId: ID; potentialValue: number; stage: LeadStage; nextAction: string; patientId?: ID };
     }
   | { type: "book"; booking: Booking }
-  | { type: "appointment"; id: ID; status: AppointmentStatus }
+  | {
+      type: "appointment";
+      id: ID;
+      status: AppointmentStatus;
+      /** When finishing: what was charged and the products used, if they differ from the procedure's. */
+      charged?: number;
+      supplies?: { productId: ID; quantity: number }[];
+    }
   | {
       type: "stockIn";
       productId?: ID;
-      product?: { name: string; unit: string; unitCost: number; brand?: string };
+      product?: { name: string; unit: string; unitCost: number; brand?: string; category?: string; supplier?: string };
       lot: { lotCode: string; quantity: number; expiresAt: string };
     }
   | { type: "adjustLot"; id: ID; quantity: number; reason: keyof typeof ADJUST_REASONS }
-  | { type: "deposit"; id: ID; deposit: { cents: number; due?: string } | null }
+  | { type: "deposit"; id: ID; deposit: { cents: number; due?: string; percent?: number } | null }
   | { type: "depositPaid"; id: ID; paid: boolean }
   | { type: "record"; record: { id?: ID; patientId: ID; recordedAt: string; chiefComplaint: string; notes: string } }
   | { type: "note"; text: string }
@@ -111,7 +119,7 @@ function summary(data: FlowData, appointments: Appointment[], patientId: ID) {
       .filter((a) => a.patientId === patientId && a.status === "concluido")
       .map((a) => {
         const procedure = procedureOf(data, a.procedureId);
-        return { startsAt: a.startsAt, price: procedure?.price ?? 0, returnDays: procedure?.returnDays ?? 0 };
+        return { startsAt: a.startsAt, price: a.priceCharged ?? procedure?.price ?? 0, returnDays: procedure?.returnDays ?? 0 };
       }),
   );
 }
@@ -221,7 +229,7 @@ function reducer(state: State, action: Action): State {
           startsAt: b.startsAt,
           durationMin: procedure.durationMin,
           status: "agendado",
-          deposit: b.deposit,
+          deposit: b.deposit ? { ...b.deposit, provider: "manual" as const } : undefined,
         },
       ];
       const waitlist = data.waitlist.filter((w) => w.id !== b.waitlistId);
@@ -233,16 +241,40 @@ function reducer(state: State, action: Action): State {
     case "appointment": {
       const before = data.appointments.find((a) => a.id === action.id);
       if (!before || before.status === action.status) return state;
-      // Finishing a visit takes its products from the stock; undoing it gives them back.
-      const uses = data.procedureProducts.filter((pp) => pp.procedureId === before.procedureId);
+      // Finishing a visit takes its products from the stock and freezes its money; undoing it gives both back.
+      const uses = action.supplies ?? data.procedureProducts.filter((pp) => pp.procedureId === before.procedureId);
       let lots = data.lots;
-      if (action.status === "concluido") lots = moveStock(lots, drawDown(lots, uses, data.now), -1);
-      else if (before.status === "concluido") lots = moveStock(lots, restock(lots, uses, data.now), 1);
-      const appointments = data.appointments.map((a) => (a.id === action.id ? { ...a, status: action.status } : a));
+      let financials = data.financials.filter((f) => f.appointmentId !== before.id);
+      const price = procedureOf(data, before.procedureId)?.price ?? 0;
+      const charged = action.status === "concluido" ? (action.charged ?? price) : undefined;
+      if (action.status === "concluido") {
+        lots = moveStock(lots, drawDown(lots, uses, data.now), -1);
+        const cost = Math.round(uses.reduce((s, u) => s + u.quantity * (data.products.find((p) => p.id === u.productId)?.unitCost ?? 0), 0));
+        financials = [
+          ...financials,
+          {
+            appointmentId: before.id,
+            completedAt: data.now,
+            listPrice: price,
+            discount: Math.max(0, price - charged!),
+            priceCharged: charged!,
+            totalCost: cost,
+            grossProfit: charged! - cost,
+            grossMargin: charged! > 0 ? Math.round(((charged! - cost) / charged!) * 10000) / 100 : undefined,
+          },
+        ];
+      } else if (before.status === "concluido") {
+        lots = moveStock(lots, restock(lots, data.procedureProducts.filter((pp) => pp.procedureId === before.procedureId), data.now), 1);
+      }
+      const appointments = data.appointments.map((a) =>
+        a.id === action.id
+          ? { ...a, status: action.status, priceCharged: charged, discount: charged === undefined ? undefined : Math.max(0, price - charged) }
+          : a,
+      );
       const patients = data.patients.map((p) =>
         p.id === before.patientId ? { ...p, ...summary(data, appointments, p.id) } : p,
       );
-      const next = { ...state, data: { ...data, appointments, patients, lots } };
+      const next = { ...state, data: { ...data, appointments, patients, lots, financials } };
       const say = DONE_TEXT[action.status];
       const name = data.patients.find((p) => p.id === before.patientId)?.name ?? "Paciente";
       return say ? log(next, say(name, procedureOf(data, before.procedureId)?.name ?? "procedimento")) : next;
@@ -277,7 +309,7 @@ function reducer(state: State, action: Action): State {
     case "depositPaid": {
       const appointments = data.appointments.map((a) => {
         if (a.id !== action.id) return a;
-        if (action.type === "deposit") return { ...a, deposit: action.deposit ?? undefined };
+        if (action.type === "deposit") return { ...a, deposit: action.deposit ? { ...action.deposit, provider: "manual" as const } : undefined };
         return a.deposit ? { ...a, deposit: { ...a.deposit, paidAt: action.paid ? data.now : undefined } } : a;
       });
       return { ...state, data: { ...data, appointments } };
@@ -318,6 +350,14 @@ interface FlowContext {
   account?: Account;
   /** Records can be created, edited and deleted in the database: a real clinic that isn't read-only. */
   editable: boolean;
+  /**
+   * What the signed-in person's role allows (lib/flow/roles.ts): the screens
+   * show only what they can use. The demo's visitor sees everything. The
+   * server and the database check it again.
+   */
+  can: Permissions;
+  /** The signed-in member's id, in the real Pulse. */
+  me?: ID;
   /** "Pergunte ao Pulse" from any screen: open it, with a question already asked if one is given. */
   ask: (question?: string) => void;
   /** Whether it is open, and the question it was opened with: each new question starts a new conversation (`session`). */
@@ -327,8 +367,9 @@ interface FlowContext {
 
 const Context = createContext<FlowContext | null>(null);
 
-/** The signed-in person: their name at the clinic, e-mail and role. */
+/** The signed-in person: their id, name at the clinic, e-mail and role. */
 export interface Account {
+  id?: ID;
   name: string;
   email: string;
   role: string;
@@ -361,6 +402,7 @@ export function FlowProvider({ initial, base = BASE, access, account, children }
     },
     [canEdit],
   );
+  const can = useMemo(() => permissionsFor(live ? account?.role : "demo"), [live, account?.role]);
   const value = useMemo(
     () => ({
       data,
@@ -372,11 +414,13 @@ export function FlowProvider({ initial, base = BASE, access, account, children }
       access,
       account,
       editable: live && canEdit,
+      can,
+      me: account?.id,
       ask,
       asking,
       closeAsk,
     }),
-    [data, state.statuses, state.focus, dispatch, base, live, access, account, canEdit, ask, asking, closeAsk],
+    [data, state.statuses, state.focus, dispatch, base, live, access, account, canEdit, can, ask, asking, closeAsk],
   );
   return <Context value={value}>{children}</Context>;
 }

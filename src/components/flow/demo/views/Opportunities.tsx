@@ -8,6 +8,7 @@ import { brl, capital, daysFrom, hour, plural, relDay, units } from "@/lib/flow/
 import {
   dueReturns,
   expiryOpportunities,
+  lapsedPatients,
   history,
   idleLeads,
   lotValue,
@@ -89,6 +90,22 @@ export function selection(d: FlowData, kind: OpportunityKind): Pick[] {
             detail: `${STAGE_LABEL[l.stage]} · ${procedure} · parado há ${plural(-daysFrom(d.now, l.lastContactAt), "dia", "dias")}`,
             value: l.potentialValue,
             message: `Oi ${first(l.name)}! Conseguiu pensar sobre ${procedure}? Tenho horários de avaliação nesta semana e posso reservar um para você.`,
+          };
+        });
+    case "patient_lapsed":
+      return lapsedPatients(d)
+        .slice(0, PICK)
+        .map((p) => {
+          const last = history(d, p.id)[0]?.procedureId;
+          const procedure = procedureOf(d, last ?? "")?.name ?? "procedimento";
+          return {
+            id: p.id,
+            name: p.name,
+            phone: p.phone,
+            booking: { patientId: p.id, procedureId: last },
+            detail: `${procedure} · última visita ${relDay(d.now, p.lastVisitAt!)}`,
+            value: returnValue(d, p),
+            message: `Oi ${first(p.name)}! Faz um tempo desde o seu ${procedure} aqui na clínica. Que tal marcar um horário para cuidarmos de você de novo?`,
           };
         });
     case "patient_return":
@@ -487,6 +504,18 @@ function Detail({ kind, data }: { kind: OpportunityKind; data: FlowData }) {
             procedureOf(data, history(data, p.id)[0]?.procedureId ?? "")?.name ?? "",
             capital(relDay(data.now, p.nextReturnAt!)),
             brl(returnValue(data, p)),
+          ])}
+        />
+      );
+    case "patient_lapsed":
+      return (
+        <Records
+          head={["Paciente", "Último procedimento", "Última visita", "Já investiu"]}
+          rows={lapsedPatients(data).map((p) => [
+            p.name,
+            procedureOf(data, history(data, p.id)[0]?.procedureId ?? "")?.name ?? "",
+            capital(relDay(data.now, p.lastVisitAt!)),
+            brl(p.totalSpent),
           ])}
         />
       );

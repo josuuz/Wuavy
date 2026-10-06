@@ -18,12 +18,14 @@ import { Field, FormError, Intro, SignOut, Soon, useWrite } from "../forms";
 import { clinicChecklist, useGuide, type ClinicField } from "../Guide";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
+import { TeamSettings } from "./Team";
 
 /*
   Configurações, and only what a clinic needs: its profile (the same fields
-  as onboarding), the person's own name and password, the plan, privacy, and
-  the way out. The server checks who may change what (lib/flow/actions.ts,
-  migration 0004); the demo has no settings.
+  as onboarding), the team (the owner's), the person's own name and password,
+  the plan, privacy, and the way out. The server checks who may change what
+  (lib/flow/actions.ts, lib/flow/team.ts, migrations 0004 and 0009); the demo
+  has no settings.
 */
 
 const DEFAULT_HOURS = { opens: "08:00", closes: "19:00", days: [1, 2, 3, 4, 5, 6] };
@@ -35,7 +37,7 @@ function useSaved() {
 }
 
 export function Settings() {
-  const { live } = useFlow();
+  const { live, can } = useFlow();
   if (!live) {
     return (
       <div className={styles.page}>
@@ -50,28 +52,29 @@ export function Settings() {
     <div className={styles.page}>
       <header className={styles.head}>
         <h1 className={styles.title}>Configurações</h1>
-        <p className={styles.lead}>Os dados da clínica, a sua conta e o plano.</p>
+        <p className={styles.lead}>{can.admin ? "Os dados da clínica, a equipe, a sua conta e o plano." : "A sua conta e os dados da clínica."}</p>
       </header>
       <div className={styles.settings}>
         <ClinicSettings />
+        <TeamSettings />
         <AccountSettings />
-        <PlanSettings />
+        {can.admin ? <PlanSettings /> : null}
         <PrivacySettings />
-        <HelpSettings />
+        {can.admin ? <HelpSettings /> : null}
       </div>
     </div>
   );
 }
 
 function ClinicSettings() {
-  const { data, account, access } = useFlow();
+  const { data, access, can } = useFlow();
   const { pending, error, submit } = useWrite();
   const { saved, done, touched } = useSaved();
   const [preview, setPreview] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const org = data.organization;
   const hours = org.hours ?? DEFAULT_HOURS;
-  const owner = account?.role === "owner";
+  const owner = can.admin;
   const locked = !owner || !access.canEdit;
   const guide = useGuide();
   const guided = guide.active && !guide.saved.minimized && guide.current?.id === "clinica";

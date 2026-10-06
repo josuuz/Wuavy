@@ -4,12 +4,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
 import { clinicNow } from "./clock";
+import type { Conversation } from "./conversations";
+import { permissionsFor, isRole, type MemberStatus } from "./roles";
 import type { FlowSource } from "./source";
 import { LEAD_STAGES, SEGMENTS, TEAM_SIZES } from "./types";
 import type {
   ClinicalRecord,
   Activity,
   Appointment,
+  AppointmentFinancial,
   AutomationRule,
   AutomationRun,
   FlowData,
@@ -26,9 +29,12 @@ import type {
 
 /*
   The real FlowSource: one select per table, through the signed-in user's
-  client, so row-level security holds even if a filter were missing. Rows go
-  from snake_case to the Pulse's types; times are normalised to the same ISO
-  form the demo uses, because the schedule compares them as strings.
+  client, so row-level security holds even if a filter were missing. What a
+  role may not see simply does not come back (the front desk gets no
+  clinical records, a professional no sales); what only the owner may see
+  (costs, the visits' frozen money) is not even asked for by anyone else.
+  Rows go from snake_case to the Pulse's types; times are normalised to the
+  same ISO form the demo uses, because the schedule compares them as strings.
 */
 
 type Db = SupabaseClient<Database>;
@@ -36,33 +42,55 @@ type Db = SupabaseClient<Database>;
 const iso = (value: string) => new Date(value).toISOString();
 const isoOrUndefined = (value: string | null) => (value ? iso(value) : undefined);
 
-export function supabaseSource(db: Db): FlowSource {
+/** A product's columns everyone may read: never its cost (migration 0010). */
+const PRODUCT_COLUMNS = "id, organization_id, name, unit, min_quantity, brand, category, supplier";
+/** The conversations the list shows: the most recent first. */
+const CONVERSATIONS = 300;
+
+export function supabaseSource(db: Db, role: string): FlowSource {
+  const can = permissionsFor(role);
   return {
     async load(organizationId) {
       const id = organizationId;
+      const none = Promise.resolve({ data: [], error: null });
       const [org, members, leads, patients, appointments, waitlist, procedures, products, lots, uses, rules, runs, activities] =
         await Promise.all([
           db.from("organizations").select("*").eq("id", id).single(),
-          db.from("members").select("*").eq("organization_id", id),
+          db.from("members").select("organization_id, user_id, name, role, status, email").eq("organization_id", id),
           db.from("leads").select("*").eq("organization_id", id).order("created_at", { ascending: false }),
           db.from("patients").select("*").eq("organization_id", id).order("name"),
           db.from("appointments").select("*").eq("organization_id", id).order("starts_at"),
           db.from("waitlist_entries").select("*").eq("organization_id", id).order("created_at"),
           db.from("procedures").select("*").eq("organization_id", id).order("name"),
-          db.from("products").select("*").eq("organization_id", id).order("name"),
+          db.from("products").select(PRODUCT_COLUMNS).eq("organization_id", id).order("name"),
           db.from("inventory_lots").select("*").eq("organization_id", id).order("expires_at"),
           db.from("procedure_products").select("*").eq("organization_id", id),
           db.from("automation_rules").select("*").eq("organization_id", id),
           db.from("automation_runs").select("*").eq("organization_id", id).order("ran_at", { ascending: false }),
           db.from("activities").select("*").eq("organization_id", id).order("at", { ascending: false }).limit(50),
         ]);
-      // Before migration 0007 there is no such table, and the front desk reads none: no records, never a failure.
-      const records = await db.from("clinical_records").select("*").eq("organization_id", id).order("recorded_at", { ascending: false });
-
       const failed = [org, members, leads, patients, appointments, waitlist, procedures, products, lots, uses, rules, runs, activities].find(
         (result) => result.error,
       );
       if (failed?.error) throw new Error(`Pulse: could not load the clinic (${failed.error.message})`);
+
+      const [records, costs, financials, conversations] = await Promise.all([
+        can.records
+          ? db.from("clinical_records").select("*").eq("organization_id", id).order("recorded_at", { ascending: false })
+          : none,
+        can.finance ? db.rpc("pulse_product_costs", { org: id }) : none,
+        can.finance ? db.from("appointment_financials").select("*").eq("organization_id", id) : none,
+        can.conversations
+          ? db
+              .from("conversations")
+              .select("*")
+              .eq("organization_id", id)
+              .order("last_message_at", { ascending: false, nullsFirst: false })
+              .limit(CONVERSATIONS)
+          : none,
+      ]);
+      const extra = [records, costs, financials, conversations].find((result) => result.error);
+      if (extra?.error) throw new Error(`Pulse: could not load the clinic (${extra.error.message})`);
 
       const o = org.data!;
       // Before migration 0003 the profile's columns are not there: no logo, no WhatsApp, the default hours.
@@ -82,13 +110,25 @@ export function supabaseSource(db: Db): FlowSource {
             : undefined,
       };
 
+      const unitCost = new Map((costs.data ?? []).map((c) => [c.product_id, c.unit_cost]));
+      const leadRows = leads.data!;
+      const patientRows = patients.data!;
+      const users = members.data!.map(
+        (m): User => ({
+          id: m.user_id,
+          organizationId: m.organization_id,
+          name: m.name,
+          role: isRole(m.role) ? m.role : "reception",
+          status: m.status as MemberStatus,
+          email: m.email ?? undefined,
+        }),
+      );
+
       return {
         now: clinicNow(),
         organization,
-        users: members.data!.map(
-          (m): User => ({ id: m.user_id, organizationId: m.organization_id, name: m.name, role: m.role as User["role"] }),
-        ),
-        leads: leads.data!.map(
+        users,
+        leads: leadRows.map(
           (l): Lead => ({
             id: l.id,
             organizationId: l.organization_id,
@@ -103,11 +143,10 @@ export function supabaseSource(db: Db): FlowSource {
             lastContactAt: iso(l.last_contact_at),
             quoteSentAt: isoOrUndefined(l.quote_sent_at),
             nextAction: l.next_action ?? "",
-            // Absent until migration 0002 adds the column.
             patientId: l.patient_id ?? undefined,
           }),
         ),
-        patients: patients.data!.map(
+        patients: patientRows.map(
           (p): Patient => ({
             id: p.id,
             organizationId: p.organization_id,
@@ -130,10 +169,20 @@ export function supabaseSource(db: Db): FlowSource {
             startsAt: iso(a.starts_at),
             durationMin: a.duration_min,
             status: a.status as Appointment["status"],
-            // Columns of migration 0007: absent before it runs.
             deposit: a.deposit_cents
-              ? { cents: a.deposit_cents, due: a.deposit_due ?? undefined, paidAt: a.deposit_paid_at ? iso(a.deposit_paid_at) : undefined }
+              ? {
+                  cents: a.deposit_cents,
+                  due: a.deposit_due ?? undefined,
+                  paidAt: a.deposit_paid_at ? iso(a.deposit_paid_at) : undefined,
+                  percent: a.deposit_percent ?? undefined,
+                  provider: a.deposit_provider === "manual" ? "manual" : undefined,
+                }
               : undefined,
+            priceCharged: a.price_charged ?? undefined,
+            discount: a.discount ?? undefined,
+            createdBy: a.created_by ?? undefined,
+            updatedBy: a.updated_by ?? undefined,
+            completedBy: a.completed_by ?? undefined,
           }),
         ),
         waitlist: waitlist.data!.map(
@@ -163,9 +212,10 @@ export function supabaseSource(db: Db): FlowSource {
             organizationId: p.organization_id,
             name: p.name,
             unit: p.unit,
-            unitCost: p.unit_cost,
+            unitCost: unitCost.get(p.id),
             brand: p.brand?.trim() || undefined,
-            // A column of migration 0004.
+            category: p.category?.trim() || undefined,
+            supplier: p.supplier?.trim() || undefined,
             minQuantity: p.min_quantity == null ? undefined : Number(p.min_quantity),
           }),
         ),
@@ -207,14 +257,19 @@ export function supabaseSource(db: Db): FlowSource {
             ranAt: iso(r.ran_at),
             summary: r.summary,
             recovered: r.recovered,
-            // A column of migration 0003: absent before it runs.
-            converted: "converted" in r ? Number(r.converted) : undefined,
+            converted: Number(r.converted),
           }),
         ),
         activities: activities.data!.map(
-          (a): Activity => ({ id: a.id, organizationId: a.organization_id, at: iso(a.at), text: a.text }),
+          (a): Activity => ({
+            id: a.id,
+            organizationId: a.organization_id,
+            at: iso(a.at),
+            text: a.text,
+            actorId: a.actor_id ?? undefined,
+          }),
         ),
-        records: (records.error ? [] : records.data).map(
+        records: (records.data ?? []).map(
           (r): ClinicalRecord => ({
             id: r.id,
             organizationId: r.organization_id,
@@ -223,8 +278,47 @@ export function supabaseSource(db: Db): FlowSource {
             chiefComplaint: r.chief_complaint ?? "",
             notes: r.notes ?? "",
             authorId: r.author_id ?? undefined,
+            updatedBy: r.updated_by ?? undefined,
           }),
         ),
+        financials: (financials.data ?? []).map(
+          (f): AppointmentFinancial => ({
+            appointmentId: f.appointment_id,
+            completedAt: iso(f.completed_at),
+            listPrice: f.list_price,
+            discount: f.discount,
+            priceCharged: f.price_charged,
+            totalCost: f.total_cost,
+            grossProfit: f.gross_profit,
+            grossMargin: f.gross_margin == null ? undefined : Number(f.gross_margin),
+          }),
+        ),
+        conversations: (conversations.data ?? []).map((c): Conversation => {
+          const lead = c.lead_id ? leadRows.find((l) => l.id === c.lead_id) : undefined;
+          const patient = c.patient_id ? patientRows.find((p) => p.id === c.patient_id) : undefined;
+          return {
+            id: c.id,
+            organizationId: c.organization_id,
+            participant: {
+              leadId: c.lead_id ?? undefined,
+              patientId: c.patient_id ?? lead?.patient_id ?? undefined,
+              name: patient?.name ?? lead?.name ?? "",
+              phone: patient?.phone ?? lead?.phone ?? "",
+            },
+            status: c.status as Conversation["status"],
+            assignedUserId: c.assigned_user_id ?? undefined,
+            followUpAt: isoOrUndefined(c.follow_up_at),
+            unread: 0,
+            lastMessage:
+              c.last_message_at && c.last_message_preview
+                ? {
+                    text: c.last_message_preview,
+                    direction: (c.last_direction ?? "note") as "in" | "out" | "note",
+                    at: iso(c.last_message_at),
+                  }
+                : undefined,
+          };
+        }),
       } satisfies FlowData;
     },
   };

@@ -18,7 +18,7 @@ import "../pulse-theme.css";
 import { ThemeToggle } from "../ThemeToggle";
 import { AskFlow } from "./AskFlow";
 import { APP_BASE, BASE, CHECKOUT, MENU, ONLINE_CHECKOUT, PLAN, VIEWS, viewHref } from "./copy";
-import { PaymentMethod, SignOut, Soon } from "./forms";
+import { Intro, PaymentMethod, SignOut, Soon } from "./forms";
 import { Sheet } from "./Sheet";
 import { GuideCard, GuidePill, GuideProvider, ScreenTip, useGuide } from "./Guide";
 import { InboxProvider } from "./inbox";
@@ -57,11 +57,13 @@ export function FlowDemo({ initial, access, account, children }: FlowDemoProps) 
 
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { data, ops, base, access, account, ask, asking, closeAsk } = useFlow();
+  const { data, ops, base, access, account, can, ask, asking, closeAsk } = useFlow();
   const [subscribing, setSubscribing] = useState(false);
   const guide = useGuide();
   const current = VIEWS.find((v) => viewHref(v.slug, base) === pathname) ?? VIEWS[0];
-  const menu = MENU.filter((view) => !view.live || !access.isDemoMode);
+  // Only the screens the person's role can use (the server and the database refuse the rest anyway).
+  const menu = MENU.filter((view) => (!view.live || !access.isDemoMode) && (!view.need || can[view.need]));
+  const allowed = !current.need || can[current.need];
   const open = ops.filter((o) => o.count > 0 && o.status !== "resolvida").length;
   const potential = potentialOf(ops);
   const status = access.subscriptionStatus;
@@ -140,7 +142,7 @@ function Shell({ children }: { children: ReactNode }) {
         </nav>
         <GuideCard />
         <GuidePill />
-        {potential ? (
+        {potential && can.sales ? (
           <Link href={viewHref("oportunidades", base)} className={styles.railValue}>
             <span className={styles.railLabel}>Receita potencial · agora</span>
             <strong className={styles.railAmount}>{brl(potential)}</strong>
@@ -184,7 +186,18 @@ function Shell({ children }: { children: ReactNode }) {
         <PlanNotice onSubscribe={subscribe} />
         <main id="conteudo" className={styles.content} data-view={current.slug || "visao-geral"}>
           <ScreenTip />
-          {children}
+          {allowed ? (
+            children
+          ) : (
+            <div className={ui.page}>
+              <header className={ui.head}>
+                <h1 className={ui.title}>{current.label}</h1>
+              </header>
+              <Intro title="Sem acesso">
+                Esta tela não faz parte da sua função na clínica. Se precisar dela, fale com o responsável.
+              </Intro>
+            </div>
+          )}
         </main>
       </div>
 

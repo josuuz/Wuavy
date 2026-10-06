@@ -5,6 +5,7 @@ import { useState, useSyncExternalStore } from "react";
 
 import { PRICE } from "@/lib/flow/access";
 import { brl, capital, dayLabel, daysFrom, hour, plural, relDay } from "@/lib/flow/format";
+import type { Permissions } from "@/lib/flow/roles";
 import {
   averageTicket,
   awaiting,
@@ -30,6 +31,7 @@ import { APPOINTMENT_LABEL, KIND, RECOVERED_FRONTS, STATUS_LABEL, viewHref } fro
 import { FocusLink, Soon } from "../forms";
 import { useFlow, type Focus } from "../store";
 import styles from "../ui.module.css";
+import { insights, numbers } from "@/lib/flow/indicators";
 import { Indicators } from "./Indicators";
 import { selection } from "./Opportunities";
 
@@ -64,14 +66,22 @@ interface Todo {
   action: string;
   focus?: Focus;
   view?: string;
+  /** What the role must allow for it to show (lib/flow/roles.ts). */
+  need?: keyof Permissions;
 }
 
 const names = (list: string[]) => (list.length > 3 ? `${list.slice(0, 3).join(", ")} e mais ${list.length - 3}` : list.join(", "));
 
 export function Overview() {
-  const { data, ops, base, live, ask } = useFlow();
+  const { data, ops, base, live, ask, can } = useFlow();
   const hello = useSyncExternalStore(noSubscribe, greeting, () => "Bom dia");
-  const [tab, setTab] = useState<"agora" | "indicadores">("agora");
+  const [picked, setTab] = useState<"agora" | "indicadores">("agora");
+  // Indicadores (revenue, profit, margins) are the owner's: the rest of the team sees what to do now.
+  const tab = can.finance ? picked : "agora";
+  // The month so far, and the three things worth knowing: the summary; Indicadores has the analysis.
+  const thisMonth = { from: 1 - new Date(data.now).getUTCDate(), to: 0 };
+  const month = numbers(data, thisMonth);
+  const reading = insights(data, thisMonth).slice(0, 3);
   const today = daySlots(data, 0);
   const booked = today.filter((s) => s.status === "ocupado").map((s) => s.appointment!);
   const patientName = (id: string) => data.patients.find((p) => p.id === id)?.name ?? "";
@@ -157,6 +167,7 @@ export function Overview() {
       text: slots.length === 1 ? "horário vazio até amanhã" : "horários vazios até amanhã",
       detail: `${byDay.join(" · ")} · cerca de ${brl(slots.length * averageTicket(data))}`,
       action: "Preencher",
+      need: "book",
       focus: { to: "agenda", day: daysFrom(data.now, slots[0].startsAt) },
     });
   }
@@ -166,6 +177,7 @@ export function Overview() {
       text: fresh.length === 1 ? "lead esperando resposta" : "leads esperando resposta",
       detail: names(fresh.map((l) => l.name)),
       action: "Responder",
+      need: "sales",
       focus: { to: "sales", filter: "novo" },
     });
   }
@@ -175,6 +187,7 @@ export function Overview() {
       text: stuck.length === 1 ? "orçamento sem resposta" : "orçamentos sem resposta",
       detail: `${brl(stuck.reduce((s, l) => s + l.potentialValue, 0))} em aberto · ${names(stuck.map((l) => l.name))}`,
       action: "Fazer follow-up",
+      need: "sales",
       focus: { to: "opportunity", kind: "lead_followup" },
     });
   }
@@ -184,6 +197,7 @@ export function Overview() {
       text: noShows.length === 1 ? "paciente faltou e não remarcou" : "pacientes faltaram e não remarcaram",
       detail: names(noShows.map((x) => x.patient.name)),
       action: "Remarcar",
+      need: "book",
       focus: noShows.length === 1 ? { to: "patient", id: noShows[0].patient.id } : { to: "patients", filter: "faltou" },
     });
   }
@@ -193,6 +207,7 @@ export function Overview() {
       text: overdue.length === 1 ? "paciente com retorno atrasado" : "pacientes com retorno atrasado",
       detail: `${brl(overdue.reduce((s, p) => s + returnValue(data, p), 0))} em retornos prováveis, sem nada marcado`,
       action: "Ver pacientes",
+      need: "book",
       focus: { to: "patients", filter: "retorno" },
     });
   }
@@ -202,6 +217,7 @@ export function Overview() {
       text: week.length === 1 ? "paciente deveria retornar esta semana" : "pacientes deveriam retornar esta semana",
       detail: names(week.map((p) => p.name)),
       action: "Ver pacientes",
+      need: "book",
       focus: { to: "patients", filter: "semana" },
     });
   }
@@ -212,6 +228,7 @@ export function Overview() {
       text: expiring.length === 1 ? "lote vence em até 45 dias" : "lotes vencem em até 45 dias",
       detail: `${names(expiring.map((x) => x.product?.name ?? "produto"))} · ${plural(people, "paciente compatível", "pacientes compatíveis")}`,
       action: "Ver oportunidade",
+      need: "sales",
       focus: { to: "opportunity", kind: "stock_expiry" },
     });
   }
@@ -225,6 +242,8 @@ export function Overview() {
     });
   }
 
+  // Only what the person's role acts on: a professional is not asked to chase quotes or fill the agenda.
+  const shown = todos.filter((t) => !t.need || can[t.need]);
   const found = ops.filter((o) => o.count > 0).sort((a, b) => b.value - a.value);
   const potential = potentialOf(ops);
   const back = recovered(data);
@@ -235,12 +254,12 @@ export function Overview() {
   const alerts = low.length + expiring.length;
 
   // The numbers of now, each one a door to where it is acted on.
-  const stats: { value: string; label: string; focus?: Focus; view?: string; main?: boolean }[] = [
-    { value: brl(potential), label: "Receita potencial em oportunidades", view: "oportunidades", main: true },
-    { value: String(dueReturns(data).length), label: "Pacientes para retornar", focus: { to: "patients", filter: "retorno" } },
-    { value: String(slots.length), label: "Horários vagos até amanhã", focus: { to: "agenda", day: 0 } },
-    { value: String(openLeads(data).length), label: "Leads em aberto", view: "vendas" },
-    { value: String(stuck.length), label: "Orçamentos sem resposta", focus: { to: "sales", filter: "sem_resposta" } },
+  const stats: { value: string; label: string; focus?: Focus; view?: string; main?: boolean; need?: keyof Permissions }[] = [
+    { value: brl(potential), label: "Receita potencial em oportunidades", view: "oportunidades", main: true, need: "sales" },
+    { value: String(dueReturns(data).length), label: "Pacientes para retornar", focus: { to: "patients", filter: "retorno" }, need: "book" },
+    { value: String(slots.length), label: "Horários vagos até amanhã", focus: { to: "agenda", day: 0 }, need: "book" },
+    { value: String(openLeads(data).length), label: "Leads em aberto", view: "vendas", need: "sales" },
+    { value: String(stuck.length), label: "Orçamentos sem resposta", focus: { to: "sales", filter: "sem_resposta" }, need: "sales" },
     { value: String(alerts), label: alerts === 1 ? "Alerta de estoque" : "Alertas de estoque", view: "estoque" },
   ];
 
@@ -284,9 +303,9 @@ export function Overview() {
     return (
       <div className={styles.page}>
         <h1 className={styles.greet}>
-          {hello}. <span>Seu Pulse está ativo. Vamos prepará-lo para a clínica.</span>
+          {hello}. <span>{can.admin ? "Seu Pulse está ativo. Vamos prepará-lo para a clínica." : "O Pulse da clínica está ativo."}</span>
         </h1>
-        {checklist}
+        {can.admin ? checklist : null}
         <p className={styles.fine}>
           Conforme a clínica usa o Pulse, esta tela passa a mostrar o que precisa de atenção, as oportunidades e quanto cada
           uma vale.
@@ -301,14 +320,16 @@ export function Overview() {
         {hello}. <span>{tab === "agora" ? "O que precisa da sua atenção agora?" : "Como a clínica está indo?"}</span>
       </h1>
 
-      <div className={`${styles.segmented} ${styles.tabs}`} role="group" aria-label="Visão geral">
-        <button type="button" aria-pressed={tab === "agora"} onClick={() => setTab("agora")}>
-          Agora
-        </button>
-        <button type="button" aria-pressed={tab === "indicadores"} onClick={() => setTab("indicadores")}>
-          Indicadores
-        </button>
-      </div>
+      {can.finance ? (
+        <div className={`${styles.segmented} ${styles.tabs}`} role="group" aria-label="Visão geral">
+          <button type="button" aria-pressed={tab === "agora"} onClick={() => setTab("agora")}>
+            Agora
+          </button>
+          <button type="button" aria-pressed={tab === "indicadores"} onClick={() => setTab("indicadores")}>
+            Indicadores
+          </button>
+        </div>
+      ) : null}
 
       {tab === "indicadores" ? (
         <Indicators />
@@ -320,17 +341,17 @@ export function Overview() {
           <span className="pulse-dot" aria-hidden="true" />
           Pergunte ao Pulse
         </p>
-        {QUICK.map((q) => (
+        {(can.sales ? QUICK : QUICK.slice(0, 1)).map((q) => (
           <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)}>
             {q}
           </button>
         ))}
       </div>
 
-      {preparing ? checklist : null}
+      {preparing && can.admin ? checklist : null}
 
       <ul className={styles.stats} aria-label="Números de agora">
-        {stats.map((stat) => {
+        {stats.filter((stat) => !stat.need || can[stat.need]).map((stat) => {
           const body = (
             <>
               <span className={styles.statValue}>{stat.value}</span>
@@ -351,14 +372,32 @@ export function Overview() {
         })}
       </ul>
 
+          {can.finance ? <section className={styles.monthStrip} aria-label="Este mês">
+            <p>
+              <span className={styles.label}>Este mês</span> <strong>{brl(month.revenue)}</strong> faturados ·{" "}
+              <strong>{brl(month.profit)}</strong> de lucro bruto
+              {month.estimated ? " (parte estimada: atendimentos sem custo registrado)" : ""}
+            </p>
+            {reading.length ? (
+              <ol className={styles.readingsMini}>
+                {reading.map((i) => (
+                  <li key={i.id}>{i.text}</li>
+                ))}
+              </ol>
+            ) : null}
+            <button type="button" className={styles.textAction} onClick={() => setTab("indicadores")}>
+              Ver indicadores <span aria-hidden="true">→</span>
+            </button>
+          </section> : null}
+
       <div className={styles.duo}>
         <section className={styles.panel} aria-labelledby="atencao">
           <h2 id="atencao" className={styles.label}>
-            Precisa da sua atenção <span>{todos.length ? plural(todos.length, "item", "itens") : ""}</span>
+            Precisa da sua atenção <span>{shown.length ? plural(shown.length, "item", "itens") : ""}</span>
           </h2>
-          {todos.length ? (
+          {shown.length ? (
             <ol className={styles.todo}>
-              {todos.map((item) => (
+              {shown.map((item) => (
                 <li key={item.text}>
                   <span className={styles.todoCount}>{item.count}</span>
                   <p>
@@ -426,7 +465,7 @@ export function Overview() {
         </section>
       </div>
 
-      <section className={styles.foundBlock} aria-labelledby="encontradas">
+      {can.sales ? <section className={styles.foundBlock} aria-labelledby="encontradas">
         <h2 id="encontradas" className={styles.label}>
           Oportunidades encontradas pelo Pulse {potential ? <span>{brl(potential)} em potencial</span> : null}
         </h2>
@@ -461,9 +500,9 @@ export function Overview() {
               : "Nenhuma oportunidade aberta agora."}
           </p>
         )}
-      </section>
+      </section> : null}
 
-      <section id="valor" className={styles.value} aria-labelledby="valor-titulo">
+      {can.finance ? <section id="valor" className={styles.value} aria-labelledby="valor-titulo">
         <h2 id="valor-titulo" className={styles.valueTitle}>
           <span className="pulse-dot" aria-hidden="true" />
           Receita recuperada pelo Pulse <Soon />
@@ -520,9 +559,9 @@ export function Overview() {
             </p>
           </>
         )}
-      </section>
+      </section> : null}
 
-      <div className={styles.duo}>
+      {can.finance ? <div className={styles.duo}>
         {live ? null : (
           <section className={styles.panel} aria-labelledby="recuperada">
             <h2 id="recuperada" className={styles.label}>
@@ -573,9 +612,9 @@ export function Overview() {
             pagamentos forem registrados no Pulse.
           </p>
         </section>
-      </div>
+      </div> : null}
 
-      <section className={styles.feedBlock} aria-labelledby="atividade">
+      {can.sales ? <section className={styles.feedBlock} aria-labelledby="atividade">
         <h2 id="atividade" className={styles.label}>
           Atividade recente
         </h2>
@@ -591,7 +630,7 @@ export function Overview() {
         ) : (
           <p className={styles.fine}>O que acontecer na clínica aparece aqui: agendamentos, confirmações, entradas no estoque.</p>
         )}
-      </section>
+      </section> : null}
         </>
       )}
     </div>

@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 
-import { brl, daysFrom } from "@/lib/flow/format";
+import { brl, daysFrom, plural } from "@/lib/flow/format";
 import {
   before,
   busiestDays,
@@ -24,12 +24,17 @@ import styles from "../ui.module.css";
   tallest bar and on hover; the numbers behind each bar are in its label.
 */
 
-type Range = "7" | "30" | "mes" | "custom";
+type Range = "7" | "30" | "mes" | "anterior" | "custom";
 
 function periodOf(range: Range, now: string, custom: { from: string; to: string }): Period {
   if (range === "7") return { from: -6, to: 0 };
   if (range === "30") return { from: -29, to: 0 };
   if (range === "mes") return { from: 1 - new Date(now).getUTCDate(), to: 0 };
+  if (range === "anterior") {
+    const n = new Date(now);
+    const first = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth() - 1, 1)).toISOString();
+    return { from: daysFrom(now, first), to: -n.getUTCDate() };
+  }
   const from = daysFrom(now, `${custom.from}T12:00:00.000Z`);
   const to = daysFrom(now, `${custom.to}T12:00:00.000Z`);
   return from <= to ? { from, to } : { from: to, to: from };
@@ -46,13 +51,16 @@ export function Indicators() {
   const then = before(data, period);
   const read = insights(data, period);
   const ranking = procedureRanking(data, period);
+  const series = revenueSeries(data, period);
   const sold = ranking.filter((r) => r.count > 0);
 
   const tiles: { label: string; value: string; delta: number | null }[] = [
     { label: "Faturamento", value: brl(now.revenue), delta: change(now.revenue, then.revenue) },
-    { label: "Lucro estimado", value: brl(now.profit), delta: change(now.profit, then.profit) },
+    { label: now.estimated ? "Lucro bruto (parte estimada)" : "Lucro bruto", value: brl(now.profit), delta: change(now.profit, then.profit) },
     { label: "Ticket médio", value: now.ticket ? brl(now.ticket) : "—", delta: change(now.ticket, then.ticket) },
     { label: "Pacientes atendidos", value: String(now.patients), delta: change(now.patients, then.patients) },
+    { label: "Pacientes novos", value: String(now.newPatients), delta: change(now.newPatients, then.newPatients) },
+    { label: "Pacientes recorrentes", value: String(now.returning), delta: change(now.returning, then.returning) },
     {
       label: "Conversão de leads",
       value: now.conversion === null ? "—" : `${now.conversion}%`,
@@ -69,6 +77,7 @@ export function Indicators() {
               ["7", "7 dias"],
               ["30", "30 dias"],
               ["mes", "Este mês"],
+              ["anterior", "Mês anterior"],
               ["custom", "Período"],
             ] as const
           ).map(([id, label]) => (
@@ -122,7 +131,13 @@ export function Indicators() {
           </li>
         ))}
       </ul>
-      <p className={styles.fine}>O lucro estimado desconta só os produtos usados em cada procedimento.</p>
+      <p className={styles.fine}>
+        O lucro bruto desconta só os produtos usados, pelo custo do dia em que cada atendimento foi finalizado: mudar o preço
+        de um produto não muda o passado.
+        {now.estimated
+          ? ` ${plural(now.estimated, "atendimento do período foi finalizado", "atendimentos do período foram finalizados")} antes do registro de custos: o lucro ${now.estimated === 1 ? "dele" : "deles"} é estimado com base no custo disponível hoje.`
+          : ""}
+      </p>
 
       {read.length ? (
         <section className={styles.readings} aria-labelledby="leitura">
@@ -141,7 +156,13 @@ export function Indicators() {
       ) : null}
 
       <div className={styles.charts}>
-        <Bars title="Faturamento por período" items={revenueSeries(data, period)} format={brl} sparse />
+        <Bars title="Faturamento por período" items={series} format={brl} sparse />
+        <Bars
+          title="Lucro bruto por período"
+          items={series.map((s) => ({ label: s.label, value: Math.max(0, s.profit) }))}
+          format={brl}
+          sparse
+        />
         <section className={styles.chart} aria-labelledby="mais-vendidos">
           <h2 id="mais-vendidos" className={styles.label}>
             Procedimentos mais e menos vendidos

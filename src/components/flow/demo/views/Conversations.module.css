@@ -651,3 +651,53 @@
     display: none;
   }
 }
+
+/* ── A real clinic's history: entries registered by hand ── */
+
+/* Who spoke and how: above each entry, quieter than the note's label. */
+.entryLabel {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+}
+
+.composerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  align-items: center;
+}
+
+.composerRow select {
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  font-size: 0.8125rem;
+}
+
+.tools a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.55rem;
+  border-radius: 2px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.older {
+  justify-self: center;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  text-decoration: underline;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tools a:hover,
+  .older:hover {
+    color: var(--text);
+  }
+}

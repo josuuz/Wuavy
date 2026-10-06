@@ -35,7 +35,9 @@ const OTHER_FIRST = new Set(["odontologia", "outro"]);
 const THIN_MARGIN = 30;
 
 export function Procedures() {
-  const { data, editable } = useFlow();
+  const { data, editable: live, can } = useFlow();
+  // The catalogue is the owner's to change; everyone reads it. Costs and margins are the owner's only.
+  const editable = live && can.procedures;
   // null: closed; "new": a new procedure; otherwise the id being edited.
   const [editing, setEditing] = useState<string | null>(null);
   const current = data.procedures.find((p) => p.id === editing);
@@ -137,10 +139,12 @@ export function Procedures() {
               ) : (
                 <p className={styles.fine}>Nenhum produto ligado: finalizar não mexe no estoque.</p>
               )}
-              <details className={styles.costs}>
-                <summary>Custos e margem</summary>
-                <Margin price={procedure.price} cost={cost} linked={uses.length > 0} />
-              </details>
+              {can.finance ? (
+                <details className={styles.costs}>
+                  <summary>Custos e margem</summary>
+                  <Margin price={procedure.price} cost={cost} linked={uses.length > 0} />
+                </details>
+              ) : null}
               {editable ? (
                 <div className={styles.actions}>
                   <button type="button" className={styles.quiet} onClick={() => setEditing(procedure.id)}>
@@ -312,7 +316,11 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
   );
 }
 
-/** What a procedure leaves: price, product cost, gross profit, margin. A warning only at a loss or a thin margin. */
+/**
+ * What a procedure leaves today: price, product cost at today's purchase
+ * prices, gross profit, margin. For pricing only: finished visits keep the
+ * cost of their own day (Indicadores). A warning only at a loss or a thin margin.
+ */
 function Margin({ price, cost, linked }: { price: number; cost: number; linked: boolean }) {
   if (!linked) return <p className={styles.fine}>Ligue os produtos usados para o Pulse calcular o custo e a margem.</p>;
   // In whole reais, as shown, so price − cost = profit on screen too.
@@ -327,7 +335,7 @@ function Margin({ price, cost, linked }: { price: number; cost: number; linked: 
           <dd>{brl(price)}</dd>
         </div>
         <div>
-          <dt>Custo estimado</dt>
+          <dt>Custo hoje</dt>
           <dd>{brl(shownCost)}</dd>
         </div>
         <div>
@@ -344,7 +352,10 @@ function Margin({ price, cost, linked }: { price: number; cost: number; linked: 
       ) : price > 0 && margin < THIN_MARGIN ? (
         <p className={styles.flag}>Margem baixa: abaixo de {THIN_MARGIN}% depois dos produtos.</p>
       ) : null}
-      <p className={styles.fine}>Só o custo dos produtos: mão de obra, taxas e aluguel não entram na conta.</p>
+      <p className={styles.fine}>
+        Pelo preço de compra atual dos produtos; mão de obra, taxas e aluguel não entram na conta. Atendimentos já finalizados
+        guardam o custo do dia em que foram feitos.
+      </p>
     </>
   );
 }

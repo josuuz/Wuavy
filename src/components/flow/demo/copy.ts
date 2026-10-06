@@ -1,5 +1,6 @@
 import type { SubscriptionStatus } from "@/lib/flow/access";
 import { plural } from "@/lib/flow/format";
+import type { Permissions } from "@/lib/flow/roles";
 import type {
   AppointmentStatus,
   LeadSource,
@@ -24,17 +25,18 @@ export const APP_BASE = "/pulse/app";
 /**
  * The screens, in the menu's order: what needs attention, where the money is,
  * then the operation. `live`: only in a real clinic (the demo has no settings).
+ * `need`: what the person's role must allow to see it (lib/flow/roles.ts).
  */
-export const VIEWS: readonly { slug: string; label: string; live?: boolean }[] = [
+export const VIEWS: readonly { slug: string; label: string; live?: boolean; need?: keyof Permissions }[] = [
   { slug: "", label: "Visão geral" },
-  { slug: "conversas", label: "Conversas" },
-  { slug: "oportunidades", label: "Oportunidades" },
-  { slug: "vendas", label: "Vendas" },
+  { slug: "conversas", label: "Conversas", need: "conversations" },
+  { slug: "oportunidades", label: "Oportunidades", need: "sales" },
+  { slug: "vendas", label: "Vendas", need: "sales" },
   { slug: "pacientes", label: "Pacientes" },
   { slug: "agenda", label: "Agenda" },
   { slug: "procedimentos", label: "Procedimentos" },
   { slug: "estoque", label: "Estoque" },
-  { slug: "automacoes", label: "Automações" },
+  { slug: "automacoes", label: "Automações", need: "admin" },
   { slug: "configuracoes", label: "Configurações", live: true },
 ];
 
@@ -314,7 +316,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     picked: (n) => `Pulse selecionou ${top(n, "contato", "contatos")}.`,
     view: "vendas",
     suggestion: "Retomar o procedimento de interesse de cada pessoa, começando pelos orçamentos maiores e mais recentes.",
-    review: "Revisar contatos",
+    review: "Ver pessoas",
     prepare: "Preparar mensagens",
     prepared: (n) => `${plural(n, "mensagem de follow-up pronta", "mensagens de follow-up prontas")} para você revisar e enviar.`,
   },
@@ -327,9 +329,23 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     picked: (n) => `Pulse selecionou ${top(n, "paciente", "pacientes")}, pela chance de retorno.`,
     view: "pacientes",
     suggestion: "Um convite de retorno com os horários livres da semana, no intervalo recomendado de cada procedimento.",
-    review: "Revisar pacientes",
+    review: "Ver pessoas",
     prepare: "Preparar convites",
     prepared: (n) => `${plural(n, "convite de retorno pronto", "convites de retorno prontos")} para você revisar e enviar.`,
+  },
+  patient_lapsed: {
+    tag: "Sem retorno",
+    headline: (o) => `${plural(o.count, "paciente sem voltar", "pacientes sem voltar")} há mais de 90 dias`,
+    sentence: (o) =>
+      `${plural(o.count, "paciente não volta", "pacientes não voltam")} há mais de 90 dias e não ${o.count === 1 ? "tem" : "têm"} nada marcado: é a base da clínica esfriando.`,
+    valueLabel: "se voltarem para o último procedimento",
+    action: "Reconquistar",
+    picked: (n) => `Pulse selecionou ${top(n, "paciente", "pacientes")}, de quem mais investiu na clínica.`,
+    view: "pacientes",
+    suggestion: "Uma mensagem pessoal lembrando o último procedimento, com um motivo para voltar agora.",
+    review: "Ver pessoas",
+    prepare: "Preparar mensagens",
+    prepared: (n) => `${plural(n, "mensagem pronta", "mensagens prontas")} para reconquistar. Revise e envie.`,
   },
   lead_idle: {
     tag: "Leads",
@@ -341,7 +357,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     picked: (n) => `Pulse selecionou ${top(n, "contato", "contatos")}.`,
     view: "vendas",
     suggestion: "Uma mensagem curta retomando a conversa no ponto em que parou, com a avaliação como próximo passo.",
-    review: "Revisar contatos",
+    review: "Ver pessoas",
     prepare: "Preparar mensagens",
     prepared: (n) => `${plural(n, "mensagem pronta", "mensagens prontas")} para retomar a conversa. Revise e envie.`,
   },
@@ -354,7 +370,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     picked: (n) => `Pulse encontrou ${plural(n, "paciente compatível", "pacientes compatíveis")}, um por horário.`,
     view: "agenda",
     suggestion: "Oferecer cada horário a quem mais combina: a lista de espera do mesmo período primeiro, depois quem tem retorno próximo.",
-    review: "Revisar sugestões",
+    review: "Ver pessoas",
     prepare: "Preparar convites",
     prepared: (n) => `${plural(n, "convite de horário pronto", "convites de horário prontos")} para você revisar e enviar.`,
   },
@@ -369,7 +385,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
       `Pulse selecionou ${n === 1 ? "a pessoa mais relevante" : `as ${n} pessoas mais relevantes`}: quem tem orçamento em aberto, quem perguntou e quem já fez.`,
     view: "estoque",
     suggestion: "Uma campanha para quem já fez os procedimentos que usam esses produtos, antes do vencimento.",
-    review: "Ver pacientes",
+    review: "Ver pessoas",
     prepare: "Preparar campanha",
     prepared: (n) => `Mensagens prontas para ${plural(n, "paciente compatível", "pacientes compatíveis")}. Revise e envie.`,
   },
@@ -382,7 +398,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     picked: (n) => `Pulse separou ${plural(n, "paciente", "pacientes")} para remarcar enquanto o interesse está vivo.`,
     view: "pacientes",
     suggestion: "Um convite para remarcar o mesmo procedimento, com os próximos horários livres.",
-    review: "Revisar pacientes",
+    review: "Ver pessoas",
     prepare: "Preparar convites",
     prepared: (n) => `${plural(n, "convite para remarcar pronto", "convites para remarcar prontos")} para você revisar e enviar.`,
   },

@@ -17,9 +17,11 @@ import styles from "../ui.module.css";
 */
 
 export function useCanRecord() {
-  const { access, account } = useFlow();
-  return access.isDemoMode || account?.role === "owner" || account?.role === "professional";
+  return useFlow().can.records;
 }
+
+/** Who wrote it: a member's name, kept after they leave the clinic (members are disabled, never deleted). */
+const authorOf = (data: FlowData, userId?: string) => (userId ? data.users.find((u) => u.id === userId)?.name : undefined);
 
 const recordsOf = (data: FlowData, patientId: string) =>
   data.records.filter((r) => r.patientId === patientId).sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
@@ -74,7 +76,11 @@ export function ClinicalRecords({ patient }: { patient: Patient }) {
               </li>
             ) : (
               <li key={r.id}>
-                <span className={styles.when}>{shortDate(r.recordedAt)}</span>
+                <span className={styles.when}>
+                  {shortDate(r.recordedAt)}
+                  {authorOf(data, r.authorId) ? ` · ${authorOf(data, r.authorId)}` : ""}
+                  {r.updatedBy && r.updatedBy !== r.authorId && authorOf(data, r.updatedBy) ? ` · editado por ${authorOf(data, r.updatedBy)}` : ""}
+                </span>
                 {r.chiefComplaint ? <strong>{r.chiefComplaint}</strong> : null}
                 {r.notes ? <p>{r.notes}</p> : null}
                 {access.canEdit ? (

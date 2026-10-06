@@ -2,9 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
+import { whatsappHref } from "@/lib/contact";
+import { READ_ONLY_MESSAGE } from "@/lib/flow/access";
+import { addEntry, loadThread, startConversation, updateConversation } from "@/lib/flow/conversation-actions";
 import { brl, dayAt, dayLabel, daysFrom, hour, relDay } from "@/lib/flow/format";
 import {
+  CHANNEL_LABEL,
   CONVERSATION_STATUSES,
+  MANUAL_CHANNELS,
   TEMPLATES,
   fillTemplate,
   firstName,
@@ -15,17 +20,21 @@ import {
   suggestReply,
   waitingOnClinic,
   withContact,
+  type Channel,
   type Conversation,
   type ConversationStatus,
   type Message,
+  type MessageDirection,
+  type Thread,
 } from "@/lib/flow/conversations";
 import { hasUpcoming, procedureOf, staleQuote, upcomingFor } from "@/lib/flow/insights";
-import { LEAD_STAGES, type FlowData, type ID } from "@/lib/flow/types";
+import { LEAD_SOURCES, LEAD_STAGES, type FlowData, type ID } from "@/lib/flow/types";
 import { SOURCE_LABEL, STAGE_LABEL } from "../copy";
-import { FocusLink, Soon, reais } from "../forms";
+import { Field, FocusLink, Prepared, Soon, reais, useWrite, FormError, waNumber } from "../forms";
 import { useInbox, type InboxChange } from "../inbox";
 import { Sheet } from "../Sheet";
-import { useFlow, useFocus } from "../store";
+import { useFlow, useFocus, type Focus } from "../store";
+import { contactLead } from "@/lib/flow/actions";
 import ui from "../ui.module.css";
 import { BookingForm } from "./Schedule";
 import styles from "./Conversations.module.css";
@@ -38,8 +47,10 @@ import styles from "./Conversations.module.css";
   here and everywhere at once, and booking uses the agenda's own form.
 
   Nothing is sent: there is no WhatsApp yet. The demo's threads are built
-  from its fictitious clinic and live in memory; a real clinic has none
-  until the integration exists (lib/flow/conversations.ts).
+  from its fictitious clinic and live in memory. A real clinic keeps its
+  own history in the database (lib/flow/conversation-actions.ts): the team
+  registers what happened (what the person said, what the clinic said, a
+  call, a note), with the time and who registered it, and it stays.
 */
 
 const STATUS_LABEL: Record<ConversationStatus, string> = {
@@ -100,7 +111,15 @@ function bookingDraft(data: FlowData, c: Conversation) {
   return lead ? { leadId: lead.id } : { patientId: patient?.id, procedureId: procedureFor(data, c)?.id };
 }
 
+/**
+ * The demo's conversations live in memory; a real clinic's in the database,
+ * registered by hand until WhatsApp is connected (LiveConversations, below).
+ */
 export function Conversations() {
+  return useFlow().live ? <LiveConversations /> : <DemoConversations />;
+}
+
+function DemoConversations() {
   const { data, access, account } = useFlow();
   const { inbox, update: send } = useInbox();
   const conversations = inbox.conversations.map((c) => withContact(data, c));
@@ -176,18 +195,7 @@ export function Conversations() {
             pessoa. Chega com a integração do WhatsApp; até lá, nenhuma mensagem passa pelo Pulse.
           </p>
         </header>
-        {asked ? (
-          <section className={ui.panel} aria-labelledby="contato-a-iniciar">
-            <h2 id="contato-a-iniciar" className={ui.label}>
-              Contato a iniciar · {asked.name}
-            </h2>
-            <p className={ui.note}>{asked.draft}</p>
-            <p className={ui.fine}>
-              Quando o WhatsApp estiver conectado, esta conversa começa aqui. Por enquanto, a mensagem fica pronta para você
-              copiar.
-            </p>
-          </section>
-        ) : null}
+        {asked ? <ContactToStart asked={asked} /> : null}
         {access.isDemoMode ? null : (
           <p className={ui.fine}>Enquanto isso, a demonstração mostra como vai funcionar com dados fictícios.</p>
         )}
@@ -827,5 +835,759 @@ function TextField({ value, placeholder, onSave }: { value: string; placeholder:
       onBlur={() => text.trim() !== value && onSave(text.trim())}
       onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
     />
+  );
+}
+
+/**
+ * A real clinic, before WhatsApp is connected: the person "Iniciar contato"
+ * brought here, the message to review, a way to send it from the clinic's own
+ * WhatsApp, and the contact recorded in Vendas. Nothing is sent by the Pulse.
+ */
+function ContactToStart({ asked }: { asked: Extract<Focus, { to: "conversation" }> }) {
+  const { data } = useFlow();
+  const { pending, error, write } = useWrite();
+  const [recorded, setRecorded] = useState(false);
+  const lead = asked.leadId ? data.leads.find((l) => l.id === asked.leadId) : undefined;
+  return (
+    <section className={ui.panel} aria-labelledby="contato-a-iniciar">
+      <h2 id="contato-a-iniciar" className={ui.label}>
+        Contato a iniciar · {asked.name}
+      </h2>
+      <Prepared text={asked.draft} phone={asked.phone}>
+        {lead && lead.stage !== "agendado" ? (
+          <button
+            type="button"
+            className={ui.secondary}
+            disabled={pending || recorded}
+            onClick={() => write(() => contactLead(lead.id), () => setRecorded(true))}
+          >
+            {recorded ? "Contato registrado" : "Registrar contato"}
+          </button>
+        ) : null}
+      </Prepared>
+      <FormError error={error} />
+      <div className={ui.actions}>
+        {asked.patientId ? (
+          <FocusLink focus={{ to: "patient", id: asked.patientId }}>
+            Ver a ficha <span aria-hidden="true">→</span>
+          </FocusLink>
+        ) : lead ? (
+          <FocusLink focus={{ to: "lead", id: lead.id }}>
+            Ver em Vendas <span aria-hidden="true">→</span>
+          </FocusLink>
+        ) : null}
+      </div>
+      <p className={ui.fine}>Quando o WhatsApp estiver conectado ao Pulse, esta conversa passa a acontecer aqui.</p>
+    </section>
+  );
+}
+
+/* ── A real clinic's conversations ─────────────────────────── */
+
+const LIVE_FILTERS = ["todos", "aguardando", "follow_up", "leads", "pacientes", "resolvidas"] as const;
+type LiveFilter = (typeof LIVE_FILTERS)[number];
+const LIVE_FILTER_LABEL: Record<LiveFilter, string> = {
+  todos: "Todos",
+  aguardando: "Aguardando resposta",
+  follow_up: "Follow-up",
+  leads: "Leads",
+  pacientes: "Pacientes",
+  resolvidas: "Resolvidas",
+};
+
+/** "06/10 10:32", in the clinic's clock as stored. */
+const stamp = (iso: string) => `${ddmm(iso)} ${iso.slice(11, 16)}`;
+
+/** Someone brought here from another screen ("Iniciar contato") who has no conversation yet. */
+interface PendingPerson {
+  leadId?: ID;
+  patientId?: ID;
+  name: string;
+  phone: string;
+}
+
+/**
+ * Conversas for a real clinic: the history the team keeps with each person,
+ * saved in the database. Each entry says who spoke (the person, the clinic,
+ * or an internal note), how (WhatsApp, a call, in person), when, and who
+ * registered it. The list shows the latest entry of each conversation; a
+ * thread loads when it is opened, a page at a time. Nothing is sent or
+ * received by the Pulse: messages go from the clinic's own WhatsApp, and
+ * what happened is registered here.
+ */
+function LiveConversations() {
+  const { data } = useFlow();
+  const conversations = data.conversations.map((c) => withContact(data, c));
+  const asked = useFocus("conversation");
+  // The person "Iniciar contato" brought: their conversation if they have one, otherwise a new one on the first entry.
+  const [initial] = useState(() => {
+    if (!asked) return { id: null as ID | null, pending: null as PendingPerson | null };
+    const lead = asked.leadId ? data.leads.find((l) => l.id === asked.leadId) : undefined;
+    const patientId = asked.patientId ?? lead?.patientId;
+    const found = conversations.find(
+      (c) => (patientId && c.participant.patientId === patientId) || (asked.leadId && c.participant.leadId === asked.leadId),
+    );
+    return found
+      ? { id: found.id, pending: null }
+      : { id: null, pending: { leadId: asked.leadId, patientId, name: asked.name, phone: asked.phone ?? "" } };
+  });
+  const [openId, setOpenId] = useState<ID | null>(initial.id);
+  const [pending, setPending] = useState<PendingPerson | null>(initial.pending);
+  const [pane, setPane] = useState<Pane>(asked ? "chat" : "list");
+  const [filter, setFilter] = useState<LiveFilter>("todos");
+  const [query, setQuery] = useState("");
+  const [starting, setStarting] = useState(false);
+  const [booking, setBooking] = useState(false);
+
+  const q = query.trim().toLowerCase();
+  const list = conversations.filter((c) => {
+    const { lead, patient } = personOf(data, c);
+    if (q && !c.participant.name.toLowerCase().includes(q) && !c.participant.phone.includes(q)) return false;
+    switch (filter) {
+      case "aguardando":
+        return c.status !== "resolvida" && c.lastMessage?.direction === "in";
+      case "follow_up":
+        return c.status === "follow_up" || Boolean(c.followUpAt);
+      case "leads":
+        return Boolean(lead) && !patient;
+      case "pacientes":
+        return Boolean(patient);
+      case "resolvidas":
+        return c.status === "resolvida";
+      default:
+        return true;
+    }
+  });
+  const chosen = conversations.find((c) => c.id === openId);
+  // A conversation just created shows once the refreshed list has it; until then, the person stays open.
+  const selected = chosen ?? (pending ? null : (list[0] ?? null));
+  const draft = asked?.draft;
+
+  const open = (id: ID) => {
+    setOpenId(id);
+    setPending(null);
+    setPane("chat");
+  };
+
+  const booked = selected?.participant ?? pending;
+
+  return (
+    <div className={styles.inbox} data-pane={pane}>
+      <section className={styles.listCol} aria-label="Conversas">
+        <header className={styles.listHead}>
+          <h1 className={styles.heading}>Conversas</h1>
+          <button type="button" className={ui.primary} onClick={() => setStarting(true)}>
+            Nova conversa
+          </button>
+          <input
+            className={styles.search}
+            type="search"
+            placeholder="Buscar por nome ou telefone"
+            aria-label="Buscar conversa"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <div className={styles.filters} role="group" aria-label="Filtrar conversas">
+            {LIVE_FILTERS.map((f) => (
+              <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>
+                {LIVE_FILTER_LABEL[f]}
+              </button>
+            ))}
+          </div>
+        </header>
+        {list.length ? (
+          <ol className={styles.list}>
+            {list.map((c) => {
+              const { lead, patient } = personOf(data, c);
+              const owner = data.users.find((u) => u.id === c.assignedUserId);
+              const last = c.lastMessage;
+              const flag =
+                c.followUpAt && c.followUpAt < data.now && c.status !== "resolvida"
+                  ? "Follow-up vencido"
+                  : c.status !== "resolvida" && last?.direction === "in"
+                    ? "Aguardando resposta"
+                    : null;
+              const who = last?.direction === "out" ? "Clínica: " : last?.direction === "note" ? "Nota: " : "";
+              return (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    className={styles.item}
+                    aria-current={selected?.id === c.id ? "true" : undefined}
+                    onClick={() => open(c.id)}
+                  >
+                    <span className={styles.avatar} aria-hidden="true">
+                      {initials(c.participant.name)}
+                    </span>
+                    <span className={styles.itemMain}>
+                      <span className={styles.itemTop}>
+                        <strong>{c.participant.name}</strong>
+                        <span className={styles.itemTime}>{last ? when(data.now, last.at) : ""}</span>
+                      </span>
+                      <span className={styles.preview}>{last ? `${who}${last.text}` : "Sem registros ainda"}</span>
+                      <span className={styles.itemMeta}>
+                        <span>{lead && !patient ? STAGE_LABEL[lead.stage] : patient ? "Paciente" : ""}</span>
+                        {owner ? <span>· {firstName(owner.name)}</span> : null}
+                        {flag ? <span className={styles.flag}>{flag}</span> : null}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className={`${ui.fine} ${styles.empty}`}>
+            {conversations.length
+              ? "Nenhuma conversa neste filtro."
+              : "Nenhuma conversa ainda. Use Nova conversa para registrar o primeiro contato com alguém: o histórico fica salvo aqui."}
+          </p>
+        )}
+      </section>
+
+      {selected || pending ? (
+        <LiveThread
+          key={selected?.id ?? "nova"}
+          conversation={selected ?? undefined}
+          person={selected ? undefined : (pending ?? undefined)}
+          draft={draft && (!selected || selected.id === initial.id) ? draft : undefined}
+          onBack={() => setPane("list")}
+          onInfo={() => setPane("info")}
+          onBook={() => setBooking(true)}
+          onCreated={(id) => setOpenId(id)}
+        />
+      ) : (
+        <section className={styles.chatCol} aria-label="Conversa">
+          <p className={`${ui.fine} ${styles.empty}`}>Escolha uma conversa ou comece uma nova.</p>
+        </section>
+      )}
+      {selected ? <LivePerson conversation={selected} onBack={() => setPane("chat")} onBook={() => setBooking(true)} /> : null}
+
+      <Sheet open={starting} onClose={() => setStarting(false)} title="Nova conversa" kicker="Conversas">
+        {starting ? (
+          <StartConversation
+            onDone={(id) => {
+              setStarting(false);
+              open(id);
+            }}
+          />
+        ) : null}
+      </Sheet>
+      {booked ? (
+        <Sheet open={booking} onClose={() => setBooking(false)} title="Agendar" kicker={booked.name}>
+          {booking ? (
+            <BookingForm
+              draft={booked.patientId ? { patientId: booked.patientId } : { leadId: booked.leadId }}
+              onDone={() => setBooking(false)}
+            />
+          ) : null}
+        </Sheet>
+      ) : null}
+    </div>
+  );
+}
+
+interface LiveThreadProps {
+  conversation?: Conversation;
+  person?: PendingPerson;
+  draft?: string;
+  onBack: () => void;
+  onInfo: () => void;
+  onBook: () => void;
+  onCreated: (id: ID) => void;
+}
+
+/** One conversation's history, oldest at the top, and the form that registers what happened next. */
+function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, onCreated }: LiveThreadProps) {
+  const { data, access, can } = useFlow();
+  const [thread, setThread] = useState<Thread | null>(c ? null : { messages: [], more: false });
+  const [older, setOlder] = useState(false);
+  const [who, setWho] = useState<MessageDirection>(draft ? "out" : "in");
+  const [channel, setChannel] = useState<Channel>("whatsapp_manual");
+  const [text, setText] = useState(draft ?? "");
+  const [tool, setTool] = useState<"templates" | "followup" | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
+  const end = useRef<HTMLDivElement>(null);
+  const participant = c?.participant ?? { leadId: person?.leadId, patientId: person?.patientId, name: person?.name ?? "", phone: person?.phone ?? "" };
+  // The conversation as the suggestions read it, before it exists too.
+  const conv: Conversation = c ?? { id: "nova", organizationId: data.organization.id, participant, status: "aberta", unread: 0 };
+  const procedure = procedureFor(data, conv)?.name;
+  const number = waNumber(participant.phone);
+  const messages = thread?.messages ?? [];
+  const conversationId = c?.id;
+  const latest = c?.lastMessage?.at;
+
+  // The thread from the database: on opening, and again when the list's latest entry moved (someone else added to it).
+  useEffect(() => {
+    if (!conversationId) return;
+    let alive = true;
+    loadThread(conversationId).then((t) => {
+      if (alive) setThread(t);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [conversationId, latest]);
+
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end" });
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 3200);
+    return () => clearTimeout(t);
+  }, [notice]);
+
+  const compose = (value: string) => {
+    setText(value);
+    setWho("out");
+    setChannel("whatsapp_manual");
+    setTool(null);
+    field.current?.focus();
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    const body = text.trim();
+    if (!body || saving) return;
+    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    const form = new FormData();
+    form.set("direction", who);
+    form.set("channel", channel);
+    form.set("body", body);
+    setSaving(true);
+    setError(null);
+    const result = await addEntry(c?.id ?? null, c ? null : { leadId: person?.leadId, patientId: person?.patientId }, form);
+    setSaving(false);
+    if (result.error) return setError(result.error);
+    setText("");
+    if (!c && result.conversationId) return onCreated(result.conversationId);
+    const added = result.message;
+    if (added) setThread((t) => ({ messages: [...(t?.messages ?? []), added], more: t?.more ?? false }));
+  };
+
+  const loadOlder = async () => {
+    if (!c || !messages.length) return;
+    setOlder(true);
+    const page = await loadThread(c.id, messages[0].at);
+    setOlder(false);
+    setThread({ messages: [...page.messages, ...messages], more: page.more });
+  };
+
+  const change = async (patch: Parameters<typeof updateConversation>[1], said: string) => {
+    if (!c) return;
+    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    const result = await updateConversation(c.id, patch);
+    if (result.error) setError(result.error);
+    else setNotice(said);
+  };
+
+  const followUp = (days: number | string) => {
+    const at =
+      typeof days === "number" ? new Date(Date.parse(data.now) + days * 86_400_000).toISOString() : `${days}T09:00:00.000Z`;
+    setTool(null);
+    change({ followUpAt: at }, `Follow-up marcado para ${ddmm(at)}.`);
+  };
+
+  const rows = messages.map((m, i) => {
+    const heading = dayHeading(data.now, m.at);
+    return { m, heading: i === 0 || dayHeading(data.now, messages[i - 1].at) !== heading ? heading : null };
+  });
+
+  return (
+    <section className={styles.chatCol} aria-label={`Conversa com ${participant.name}`}>
+      <header className={styles.chatHead}>
+        <button type="button" className={styles.back} onClick={onBack} aria-label="Voltar às conversas">
+          ←
+        </button>
+        <span className={styles.avatar} aria-hidden="true">
+          {initials(participant.name)}
+        </span>
+        <div className={styles.chatWho}>
+          <strong>{participant.name}</strong>
+          <span>{participant.phone}</span>
+        </div>
+        {c ? (
+          <label className={styles.statusPick}>
+            <span className="sr-only">Status da conversa</span>
+            <select
+              className={ui.input}
+              value={c.status}
+              disabled={!access.canEdit}
+              onChange={(e) => change({ status: e.target.value }, "Status atualizado.")}
+            >
+              {CONVERSATION_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {c ? (
+          <button type="button" className={styles.infoButton} onClick={onInfo}>
+            Detalhes
+          </button>
+        ) : null}
+      </header>
+
+      <div className={styles.thread} aria-live="polite">
+        {thread === null ? <p className={ui.fine}>Carregando o histórico…</p> : null}
+        {thread?.more ? (
+          <button type="button" className={styles.older} disabled={older} onClick={loadOlder}>
+            {older ? "Carregando…" : "Ver registros anteriores"}
+          </button>
+        ) : null}
+        {thread && !messages.length ? (
+          <p className={ui.fine}>Nada registrado ainda. Registre abaixo o primeiro contato com {firstName(participant.name)}.</p>
+        ) : null}
+        {rows.map(({ m, heading }) => {
+          const author = data.users.find((u) => u.id === m.authorId)?.name;
+          return (
+            <div key={m.id} className={styles.row} data-dir={m.direction}>
+              {heading ? <p className={styles.day}>{heading}</p> : null}
+              <div className={styles.bubble} data-dir={m.direction}>
+                {m.direction === "note" ? (
+                  <span className={styles.noteLabel}>Nota interna · só a equipe vê</span>
+                ) : (
+                  <span className={styles.entryLabel}>
+                    {m.direction === "in" ? "Cliente" : "Clínica"} · {CHANNEL_LABEL[m.channel ?? "manual"]}
+                  </span>
+                )}
+                <p>{m.text}</p>
+                <span className={styles.meta}>
+                  {stamp(m.at)}
+                  {author && m.channel !== "whatsapp" ? ` · Registrado por ${author}` : ""}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={end} />
+      </div>
+
+      {notice ? (
+        <p className={styles.toast} role="status">
+          {notice}
+        </p>
+      ) : null}
+
+      {access.canEdit ? (
+        <form className={styles.composer} onSubmit={submit} data-note={who === "note" ? "" : undefined}>
+          <div className={styles.composerRow}>
+            <div className={styles.modes} role="group" aria-label="Quem falou">
+              <button type="button" aria-pressed={who === "in"} onClick={() => setWho("in")}>
+                Cliente disse
+              </button>
+              <button type="button" aria-pressed={who === "out"} onClick={() => setWho("out")}>
+                Clínica disse
+              </button>
+              <button type="button" aria-pressed={who === "note"} onClick={() => setWho("note")}>
+                Nota interna
+              </button>
+            </div>
+            {who === "note" ? null : (
+              <label>
+                <span className="sr-only">Canal</span>
+                <select className={ui.input} value={channel} onChange={(e) => setChannel(e.target.value as Channel)}>
+                  {MANUAL_CHANNELS.map((ch) => (
+                    <option key={ch} value={ch}>
+                      {CHANNEL_LABEL[ch]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+          <textarea
+            ref={field}
+            className={styles.field}
+            rows={2}
+            maxLength={4000}
+            aria-label="O que aconteceu"
+            placeholder={
+              who === "note"
+                ? "Nota para a equipe (a pessoa não vê)…"
+                : who === "in"
+                  ? "O que a pessoa disse ou pediu…"
+                  : "O que a clínica disse ou enviou…"
+            }
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
+          />
+          <div className={styles.tools}>
+            <button type="button" aria-expanded={tool === "templates"} onClick={() => setTool(tool === "templates" ? null : "templates")}>
+              Respostas rápidas
+            </button>
+            <button type="button" onClick={() => compose(suggestReply(data, conv, messages))}>
+              Sugerir resposta
+            </button>
+            {who === "out" && number && text.trim() && access.canReachOut ? (
+              <a href={whatsappHref(number, text.trim())} target="_blank" rel="noopener noreferrer">
+                Abrir no WhatsApp
+              </a>
+            ) : null}
+            {can.book ? (
+              <button type="button" onClick={onBook}>
+                Agendar
+              </button>
+            ) : null}
+            {c ? (
+              <button type="button" aria-expanded={tool === "followup"} onClick={() => setTool(tool === "followup" ? null : "followup")}>
+                Follow-up
+              </button>
+            ) : null}
+            <button type="submit" className={styles.sendButton} disabled={!text.trim() || saving}>
+              {saving ? "Salvando…" : who === "note" ? "Salvar nota" : "Registrar"}
+            </button>
+          </div>
+          {tool === "templates" ? (
+            <ul className={styles.menu}>
+              {TEMPLATES.map((t) => (
+                <li key={t.id}>
+                  <button type="button" onClick={() => compose(fillTemplate(t.text, { name: participant.name, procedure }))}>
+                    <strong>{t.name}</strong>
+                    <span>{fillTemplate(t.text, { name: participant.name, procedure })}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {tool === "followup" ? <FollowUpPicker now={data.now} onPick={followUp} /> : null}
+          <FormError error={error} />
+          <p className={ui.fine}>
+            O Pulse ainda não envia nem recebe pelo WhatsApp: as mensagens saem do WhatsApp da clínica, e aqui fica registrado o
+            que aconteceu.
+          </p>
+        </form>
+      ) : (
+        <p className={`${ui.fine} ${styles.empty}`}>{READ_ONLY_MESSAGE}</p>
+      )}
+    </section>
+  );
+}
+
+/** Who the conversation is with, as the rest of the Pulse knows them, and what to do next. */
+function LivePerson({ conversation: c, onBack, onBook }: { conversation: Conversation; onBack: () => void; onBook: () => void }) {
+  const { data, access, can } = useFlow();
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { lead, patient } = personOf(data, c);
+  const procedure = procedureFor(data, c);
+  const next = patient ? upcomingFor(data, patient.id)[0] : undefined;
+  // Who answers conversations: the front office, active.
+  const team = data.users.filter((u) => (u.status ?? "active") === "active" && u.role !== "professional");
+
+  const change = async (patch: Parameters<typeof updateConversation>[1], said: string) => {
+    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    const result = await updateConversation(c.id, patch);
+    setError(result.error ?? null);
+    if (!result.error) setNotice(said);
+  };
+
+  return (
+    <aside className={styles.infoCol} aria-label={`Sobre ${c.participant.name}`}>
+      <button type="button" className={styles.back} onClick={onBack} aria-label="Voltar à conversa">
+        ←
+      </button>
+      <header className={styles.infoHead}>
+        <span className={`${styles.avatar} ${styles.avatarLarge}`} aria-hidden="true">
+          {initials(c.participant.name)}
+        </span>
+        <strong>{c.participant.name}</strong>
+        <span className={ui.fine}>{c.participant.phone}</span>
+        <span className={styles.kind}>{patient ? (lead ? "Lead e paciente" : "Paciente") : "Lead"}</span>
+      </header>
+
+      <dl className={styles.facts}>
+        {lead ? (
+          <div>
+            <dt>Origem</dt>
+            <dd>{SOURCE_LABEL[lead.source]}</dd>
+          </div>
+        ) : null}
+        {lead && !patient ? (
+          <div>
+            <dt>Etapa em Vendas</dt>
+            <dd>{STAGE_LABEL[lead.stage]}</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt>{lead && !patient ? "Procedimento de interesse" : "Último procedimento"}</dt>
+          <dd>{procedure?.name ?? "—"}</dd>
+        </div>
+        {patient ? (
+          <div>
+            <dt>Última visita</dt>
+            <dd>{patient.lastVisitAt ? relDay(data.now, patient.lastVisitAt) : "Ainda não veio"}</dd>
+          </div>
+        ) : null}
+        {next ? (
+          <div>
+            <dt>Próximo agendamento</dt>
+            <dd>
+              {dayAt(data.now, next.startsAt)} · {procedureOf(data, next.procedureId)?.name ?? "procedimento"}
+            </dd>
+          </div>
+        ) : null}
+        {lead && !patient && lead.potentialValue ? (
+          <div>
+            <dt>Valor potencial</dt>
+            <dd>{brl(lead.potentialValue)}</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt>Responsável</dt>
+          <dd>
+            <select
+              className={ui.input}
+              value={c.assignedUserId ?? ""}
+              disabled={!access.canEdit}
+              onChange={(e) => change({ assignedUserId: e.target.value || null }, "Responsável atualizado.")}
+            >
+              <option value="">Ninguém</option>
+              {team.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </dd>
+        </div>
+        {c.followUpAt ? (
+          <div>
+            <dt>Follow-up</dt>
+            <dd className={c.followUpAt < data.now ? styles.overdue : undefined}>{ddmm(c.followUpAt)}</dd>
+          </div>
+        ) : null}
+      </dl>
+
+      {notice ? (
+        <p className={styles.saved} role="status">
+          {notice}
+        </p>
+      ) : null}
+      <FormError error={error} />
+
+      <div className={styles.infoActions}>
+        {can.book ? (
+          <button type="button" className={ui.primary} onClick={onBook}>
+            Agendar
+          </button>
+        ) : null}
+        {c.status !== "resolvida" && access.canEdit ? (
+          <button type="button" className={ui.secondary} onClick={() => change({ status: "resolvida" }, "Conversa resolvida.")}>
+            Marcar como resolvida
+          </button>
+        ) : null}
+        {patient ? (
+          <FocusLink focus={{ to: "patient", id: patient.id }} className={ui.secondary}>
+            Ver paciente
+          </FocusLink>
+        ) : lead ? (
+          <FocusLink focus={{ to: "lead", id: lead.id }} className={ui.secondary}>
+            Ver em Vendas
+          </FocusLink>
+        ) : null}
+      </div>
+    </aside>
+  );
+}
+
+/**
+ * Starts a conversation: with someone already in the Pulse, or someone new.
+ * A new person with a phone already registered is recognized, so nobody is
+ * registered twice; otherwise they enter Vendas as a new contact.
+ */
+function StartConversation({ onDone }: { onDone: (id: ID) => void }) {
+  const { data, access } = useFlow();
+  const [person, setPerson] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const withConversation = new Set(data.conversations.flatMap((c) => [c.participant.patientId, c.participant.leadId]).filter(Boolean));
+  const patients = [...data.patients].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const leads = data.leads.filter((l) => !l.patientId).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    setSaving(true);
+    setError(null);
+    const result = await startConversation(new FormData(event.currentTarget));
+    setSaving(false);
+    if (result.error || !result.conversationId) return setError(result.error ?? "Não foi possível abrir a conversa.");
+    onDone(result.conversationId);
+  };
+
+  return (
+    <form className={ui.form} onSubmit={submit}>
+      <Field label="Com quem">
+        <select className={ui.input} name="person" required value={person} onChange={(e) => setPerson(e.target.value)}>
+          <option value="" disabled>
+            Escolha a pessoa
+          </option>
+          <option value="novo">+ Pessoa nova</option>
+          {patients.length ? (
+            <optgroup label="Pacientes">
+              {patients.map((p) => (
+                <option key={p.id} value={`patient:${p.id}`}>
+                  {p.name}
+                  {withConversation.has(p.id) ? " · já tem conversa" : ""}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
+          {leads.length ? (
+            <optgroup label="Contatos em Vendas">
+              {leads.map((l) => (
+                <option key={l.id} value={`lead:${l.id}`}>
+                  {l.name}
+                  {withConversation.has(l.id) ? " · já tem conversa" : ""}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
+        </select>
+      </Field>
+      {person === "novo" ? (
+        <>
+          <Field label="Nome">
+            <input className={ui.input} name="name" required maxLength={200} autoComplete="off" />
+          </Field>
+          <Field label="Telefone">
+            <input className={ui.input} name="phone" type="tel" maxLength={40} />
+          </Field>
+          <Field label="Como conheceu a clínica">
+            <select className={ui.input} name="source" defaultValue="whatsapp">
+              {LEAD_SOURCES.map((source) => (
+                <option key={source} value={source}>
+                  {SOURCE_LABEL[source]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <p className={ui.fine}>
+            Se o telefone já estiver no Pulse, a conversa abre com essa pessoa: ninguém é cadastrado duas vezes. Quem é novo
+            entra em Vendas como contato.
+          </p>
+        </>
+      ) : null}
+      <FormError error={error} />
+      <div className={ui.actions}>
+        <button type="submit" className={ui.primary} disabled={saving || !person}>
+          {saving ? "Abrindo…" : "Abrir conversa"}
+        </button>
+      </div>
+    </form>
   );
 }

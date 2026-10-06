@@ -3,15 +3,19 @@ import { dueReturns, expiringLots, openSlots, procedureOf, proceduresUsing, stal
 import type { FlowData, ID, Lead, Patient } from "./types";
 
 /*
-  Conversas: the clinic's WhatsApp, inside the Pulse. Shaped like the tables
-  it will have (conversations, messages, conversation_participants,
-  message_templates), with each conversation tied to the CRM's contact or
-  patient, so the chat, the funnel and the agenda read the same person.
+  Conversas: the clinic's history with each person, tied to the CRM's contact
+  or patient, so the conversation, the funnel and the agenda read the same
+  person. A real clinic's lives in the database (conversations and
+  conversation_messages, migration 0009): one conversation per person, each
+  entry with its direction, channel, time and author. Until WhatsApp is
+  connected, the team registers what happened by hand (a message, a call, a
+  note); the Pulse never presents one of those as received or sent by
+  WhatsApp itself. When the integration comes, its messages enter the same
+  conversations with channel "whatsapp" and their provider id (which keeps a
+  message from entering twice).
 
-  Nothing here talks to WhatsApp yet. Screens read a ConversationSource: the
-  demo's builds believable threads from the demo clinic's own contacts and
-  patients, in memory; a real clinic's has none until the integration exists.
-  Swapping in the real one changes this file, not the screens.
+  The demo builds believable threads from its fictitious clinic, in memory
+  (demoConversations, below).
 */
 
 export const CONVERSATION_STATUSES = ["aberta", "aguardando_cliente", "follow_up", "resolvida"] as const;
@@ -29,6 +33,23 @@ export interface ConversationParticipant {
 export type MessageDirection = "in" | "out" | "note";
 export type MessageStatus = "enviada" | "entregue" | "lida";
 
+/**
+ * How an entry happened. The first three are registered by hand; a note is
+ * internal; "whatsapp" is what the integration itself will write.
+ */
+export const CHANNELS = ["whatsapp_manual", "phone", "manual", "internal_note", "whatsapp"] as const;
+export type Channel = (typeof CHANNELS)[number];
+/** What a person registers: everything but the integration's own channel. */
+export const MANUAL_CHANNELS = ["whatsapp_manual", "phone", "manual"] as const;
+
+export const CHANNEL_LABEL: Record<Channel, string> = {
+  whatsapp_manual: "WhatsApp",
+  phone: "Ligação",
+  manual: "Pessoalmente ou outro",
+  internal_note: "Nota interna",
+  whatsapp: "WhatsApp (automático)",
+};
+
 export interface Message {
   id: ID;
   conversationId: ID;
@@ -37,20 +58,33 @@ export interface Message {
   at: string;
   /** Delivery, for what the clinic sent. */
   status?: MessageStatus;
-  /** The team member who wrote it (sent or noted). */
+  /** The team member who wrote it (sent, registered or noted). */
   authorId?: ID;
+  /** A real clinic's entries say how they happened. */
+  channel?: Channel;
 }
 
 export interface Conversation {
   id: ID;
   organizationId: ID;
-  channel: "whatsapp";
+  channel?: "whatsapp";
   participant: ConversationParticipant;
   status: ConversationStatus;
   assignedUserId?: ID;
   followUpAt?: string;
   unread: number;
+  /** A real clinic's latest entry, for the list (its thread loads when opened). */
+  lastMessage?: { text: string; direction: MessageDirection; at: string };
 }
+
+/** A page of a conversation's history, oldest first, and whether there is more before it. */
+export interface Thread {
+  messages: Message[];
+  more: boolean;
+}
+
+/** How many entries a thread loads at a time. */
+export const THREAD_PAGE = 50;
 
 /** A quick reply. {nome} and {procedimento} are filled from the conversation. */
 export interface MessageTemplate {
@@ -309,7 +343,7 @@ export const demoConversations: ConversationSource = {
   },
 };
 
-/** A real clinic's: none until WhatsApp is connected. */
+/** A real clinic's live in the database and come with its data (FlowData.conversations): nothing in memory. */
 export const liveConversations: ConversationSource = {
   load: () => ({ conversations: [], messages: [] }),
 };

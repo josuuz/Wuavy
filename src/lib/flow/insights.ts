@@ -168,6 +168,21 @@ export function highValueIdle(d: FlowData) {
   return d.patients.filter((p) => p.totalSpent >= bar && !hasUpcoming(d, p.id)).sort((a, b) => b.totalSpent - a.totalSpent);
 }
 
+/** Without a visit for longer than this, a patient counts as gone quiet. */
+export const LAPSED_DAYS = 90;
+
+/**
+ * Patients gone quiet: no visit in over LAPSED_DAYS, nothing booked, and not
+ * already counted as a return due (which has its own front). Those who spent
+ * the most first: they are the clinic's base cooling down.
+ */
+export function lapsedPatients(d: FlowData) {
+  const due = new Set(dueReturns(d).map((p) => p.id));
+  return d.patients
+    .filter((p) => p.lastVisitAt && daysFrom(d.now, p.lastVisitAt) < -LAPSED_DAYS && !hasUpcoming(d, p.id) && !due.has(p.id))
+    .sort((a, b) => b.totalSpent - a.totalSpent);
+}
+
 /** The price of the patient's last procedure: what a return is likely worth. */
 export function returnValue(d: FlowData, p: Patient) {
   const last = history(d, p.id)[0];
@@ -233,7 +248,8 @@ export function lotStatus(d: FlowData, lot: InventoryLot): LotStatus {
 
 export function lotValue(d: FlowData, lot: InventoryLot) {
   const product = d.products.find((p) => p.id === lot.productId);
-  return product ? product.unitCost * lot.quantity : 0;
+  // Costs are the owner's to see: anyone else reads no value.
+  return product?.unitCost ? product.unitCost * lot.quantity : 0;
 }
 
 export function proceduresUsing(d: FlowData, productId: ID) {
@@ -442,9 +458,9 @@ export function weekStart(d: FlowData, week = 0) {
   return (weekday === 0 ? 1 : 1 - weekday) + week * 7;
 }
 
-/** Who sees patients: everyone but the front desk. */
+/** Who sees patients: everyone active but the front desk. */
 export function professionals(d: FlowData) {
-  return d.users.filter((u) => u.role !== "reception");
+  return d.users.filter((u) => u.role !== "reception" && (u.status ?? "active") === "active");
 }
 
 /** Bookings on a day still waiting for the patient's confirmation. */
@@ -550,6 +566,7 @@ export function opportunities(d: FlowData, statuses: Partial<Record<OpportunityK
   const leads = stuckLeads(d);
   const idle = idleLeads(d);
   const returns = dueReturns(d);
+  const lapsed = lapsedPatients(d);
   const noShows = missed(d);
   const lots = expiryOpportunities(d);
   const slots = openSlots(d);
@@ -565,6 +582,7 @@ export function opportunities(d: FlowData, statuses: Partial<Record<OpportunityK
   return [
     make("lead_followup", leads.map((l) => l.id), leads.reduce((s, l) => s + l.potentialValue, 0)),
     make("patient_return", returns.map((p) => p.id), returns.reduce((s, p) => s + returnValue(d, p), 0)),
+    make("patient_lapsed", lapsed.map((p) => p.id), lapsed.reduce((s, p) => s + returnValue(d, p), 0)),
     make("lead_idle", idle.map((l) => l.id), idle.reduce((s, l) => s + l.potentialValue, 0)),
     make("open_slot", slots.map((s) => s.startsAt), slots.length * averageTicket(d)),
     make("stock_expiry", lots.map((x) => x.lot.id), lots.reduce((s, x) => s + x.potential, 0)),
@@ -590,7 +608,8 @@ export function finance(d: FlowData) {
   const price = (a: Appointment) => procedureOf(d, a.procedureId)?.price ?? 0;
   const done = d.appointments.filter((a) => a.status === "concluido" && daysFrom(d.now, a.startsAt) >= -30);
   const ahead = d.appointments.filter((a) => upcoming(a, d.now) && daysFrom(d.now, a.startsAt) <= 30);
-  const realized = done.reduce((s, a) => s + price(a), 0);
+  // What was charged when the visit was finished; the procedure's price for one from before that was recorded.
+  const realized = done.reduce((s, a) => s + (a.priceCharged ?? price(a)), 0);
   return {
     realized,
     visits: done.length,

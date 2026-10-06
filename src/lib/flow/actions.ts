@@ -1,16 +1,12 @@
 "use server";
 
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
-import { refresh } from "next/cache";
+import type { PostgrestError } from "@supabase/supabase-js";
 
-import type { Database } from "@/lib/supabase/database.types";
 import { clinicNow } from "./clock";
 import { dayAt } from "./format";
-import { drawDown, restock, visitSummary } from "./insights";
-import { READ_ONLY_MESSAGE } from "./access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LOGO_ERROR, logoFormat, logoFrom, saveLogo } from "./logo";
-import { getClinicAccess, getSession } from "./session";
+import { getSession } from "./session";
 import {
   APPOINTMENT_STATUSES,
   LEAD_SOURCES,
@@ -18,123 +14,43 @@ import {
   PROCEDURE_CATEGORIES,
   SEGMENTS,
   TEAM_SIZES,
-  type InventoryLot,
+  type AppointmentSupply,
 } from "./types";
+import {
+  Invalid,
+  affected,
+  amount,
+  cents,
+  id,
+  isoDate,
+  oneOf,
+  optionalId,
+  required,
+  text,
+  whole,
+  write,
+  type Db,
+  type Result,
+} from "./write";
 
 /*
   The real Pulse's writes: contacts, patients, procedures, the agenda, the
-  stock, and the clinic's own profile. Each one takes the clinic from the verified session, never from the
-  browser, checks its input, scopes every query to that clinic (row-level
-  security enforces it again) and refreshes the route, so the screen shows
-  the database.
+  stock, and the clinic's own profile. Each one takes the clinic from the
+  verified session, never from the browser, says which roles may make it
+  (lib/flow/roles.ts), checks its input, scopes every query to that clinic
+  (row-level security enforces both again) and refreshes the route, so the
+  screen shows the database (lib/flow/write.ts). A visit's status, its
+  money and its stock change together in the database, in one transaction
+  (migration 0009).
 */
 
-export interface Result {
-  error?: string;
-}
+export type { Result };
 
-type Db = SupabaseClient<Database>;
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The stages a contact can be in before booking: "agendado" is reached by booking. */
 const OPEN_STAGES = LEAD_STAGES.filter((stage) => stage !== "agendado");
 
-/** Input the person can fix: its message goes back to the form. */
-class Invalid extends Error {}
-
-/** Who is writing: the verified session's person and their role at the clinic. */
-interface Writer {
-  userId: string;
-  role: string;
-}
-
-async function write(step: (db: Db, org: string, who: Writer) => Promise<PostgrestError | null>): Promise<Result> {
-  const session = await getSession();
-  if (!session?.member) return { error: "Sua sessão expirou. Entre de novo." };
-  // A subscription that is not active reads, never writes: checked here, whatever the screen showed.
-  if (!(await getClinicAccess())?.canEdit) return { error: READ_ONLY_MESSAGE };
-  try {
-    const error = await step(session.supabase, session.member.organization_id, {
-      userId: session.user.id,
-      role: session.member.role,
-    });
-    if (error) return { error: describe(error) };
-  } catch (error) {
-    if (error instanceof Invalid) return { error: error.message };
-    throw error;
-  }
-  refresh();
-  return {};
-}
-
-function describe(error: PostgrestError) {
-  if (error.code === "23514") return "Algum valor está fora do permitido.";
-  if (error.code === "23503") return "Há outros registros ligados a este.";
-  if (error.code === "42501") return "Sem permissão para esta clínica.";
-  // A column the database does not have yet: the schema is behind the app.
-  if (error.code === "PGRST204" || error.code === "42703") return "Falta atualizar o banco de dados do Pulse (migrations em supabase/migrations).";
-  console.error("Pulse write failed", error);
-  return "Não foi possível salvar. Tente de novo.";
-}
-
-/** An update or delete that matched nothing touched a row this clinic can't see. */
-function affected({ data, error }: { data: unknown[] | null; error: PostgrestError | null }) {
-  if (error) return error;
-  if (!data?.length) throw new Invalid("Registro não encontrado.");
-  return null;
-}
-
 async function log(db: Db, org: string, text: string) {
   return (await db.from("activities").insert({ organization_id: org, at: clinicNow(), text })).error;
-}
-
-/* ── Input ─────────────────────────────────────────────────── */
-
-function text(form: FormData, key: string, max = 200) {
-  const value = form.get(key);
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-
-function required(value: string, what: string) {
-  if (!value) throw new Invalid(`Informe ${what}.`);
-  return value;
-}
-
-function id(value: string) {
-  if (!UUID.test(value)) throw new Invalid("Registro inválido.");
-  return value;
-}
-
-const optionalId = (value: string) => (value ? id(value) : null);
-
-function oneOf<T extends string>(value: string, options: readonly T[], what: string): T {
-  if (!(options as readonly string[]).includes(value)) throw new Invalid(`Escolha ${what}.`);
-  return value as T;
-}
-
-/** "1.240", "1240,50" or "R$ 380" to cents. */
-function cents(value: string, what: string) {
-  const n = Number(value.replace(/[R$\s.]/g, "").replace(",", "."));
-  if (!value || !Number.isFinite(n) || n < 0) throw new Invalid(`Informe ${what} em reais.`);
-  return Math.round(n * 100);
-}
-
-function whole(value: string, what: string) {
-  const n = Number(value);
-  if (!Number.isInteger(n) || n <= 0) throw new Invalid(`Informe ${what}.`);
-  return n;
-}
-
-/** "0,5" or "2" to a quantity of stock, to the thousandth. */
-function amount(value: string, what: string, { zero = false } = {}) {
-  const n = Number(value.replace(",", "."));
-  if (!value || !Number.isFinite(n) || n < 0 || (!zero && n === 0)) throw new Invalid(`Informe ${what}.`);
-  return Math.round(n * 1000) / 1000;
-}
-
-function isoDate(value: string, what: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value))) throw new Invalid(`Informe ${what}.`);
-  return value;
 }
 
 /**
@@ -156,7 +72,9 @@ function depositOf(form: FormData, price: number, startsAt: string) {
   if (value <= 0) throw new Invalid("O sinal precisa ser maior que zero.");
   if (value > price && price > 0) throw new Invalid("O sinal não pode passar do preço do procedimento.");
   const due = text(form, "depositDue") ? isoDate(text(form, "depositDue"), "o vencimento do sinal") : startsAt.slice(0, 10);
-  return { deposit_cents: value, deposit_due: due };
+  const percent = kind === "percent" ? Math.round(Number(text(form, "depositValue").replace(",", "."))) : null;
+  // Marked paid by hand until a payment provider exists (migration 0008).
+  return { deposit_cents: value, deposit_due: due, deposit_percent: percent, deposit_provider: "manual" };
 }
 
 /* ── Contacts (sales) ──────────────────────────────────────── */
@@ -174,7 +92,14 @@ export async function saveLead(leadId: string | null, form: FormData): Promise<R
       next_action: text(form, "nextAction", 300) || null,
     };
     if (leadId) {
-      return affected(await db.from("leads").update(lead).eq("id", id(leadId)).eq("organization_id", org).select("id"));
+      const result = await db.from("leads").update(lead).eq("id", id(leadId)).eq("organization_id", org).select("patient_id");
+      const error = affected(result);
+      if (error) return error;
+      // One person, one name: a contact who is also a patient changes in both places.
+      const patientId = result.data?.[0]?.patient_id;
+      return patientId
+        ? (await db.from("patients").update({ name: lead.name, phone: lead.phone }).eq("id", patientId).eq("organization_id", org)).error
+        : null;
     }
     const now = clinicNow();
     const stage = oneOf(text(form, "stage") || "novo", OPEN_STAGES, "a etapa");
@@ -191,7 +116,7 @@ export async function saveLead(leadId: string | null, form: FormData): Promise<R
         ...(patientId ? { patient_id: patientId } : {}),
       })
     ).error;
-  });
+  }, (can) => can.sales);
 }
 
 /** Any move counts as contact; a contact moved into "Orçamento" has just had their quote sent. */
@@ -206,7 +131,7 @@ export async function moveLead(leadId: string, stage: string): Promise<Result> {
       .eq("organization_id", org)
       .select("name");
     return affected(result) ?? log(db, org, `${result.data![0].name} passou para a etapa seguinte em Vendas.`);
-  });
+  }, (can) => can.sales);
 }
 
 export async function contactLead(leadId: string): Promise<Result> {
@@ -223,12 +148,13 @@ export async function contactLead(leadId: string): Promise<Result> {
     const update = { last_contact_at: now, quote_sent_at: lead.stage === "orcamento" ? now : null };
     const changed = await db.from("leads").update(update).eq("id", leadId).eq("organization_id", org).select("id");
     return affected(changed) ?? log(db, org, `Contato registrado com ${lead.name}.`);
-  });
+  }, (can) => can.sales);
 }
 
 export async function deleteLead(leadId: string): Promise<Result> {
-  return write(async (db, org) =>
-    affected(await db.from("leads").delete().eq("id", id(leadId)).eq("organization_id", org).select("id")),
+  return write(
+    async (db, org) => affected(await db.from("leads").delete().eq("id", id(leadId)).eq("organization_id", org).select("id")),
+    (can) => can.sales,
   );
 }
 
@@ -239,7 +165,9 @@ export async function deleteLead(leadId: string): Promise<Result> {
  * procedure): it is recorded as a finished appointment, so the last visit,
  * the spend and the next return follow from it as from any other, and the
  * return engine has something to work with from the first day. The stock is
- * not touched: that session's products were used long ago.
+ * not touched: that session's products were used long ago. Its money has no
+ * snapshot (nobody knows that day's costs): Indicadores counts it as an
+ * estimate.
  */
 export async function savePatient(patientId: string | null, form: FormData): Promise<Result> {
   return write(async (db, org) => {
@@ -260,6 +188,13 @@ export async function savePatient(patientId: string | null, form: FormData): Pro
         await db.from("patients").update(patient).eq("id", id(patientId)).eq("organization_id", org).select("id"),
       );
       if (error) return error;
+      // The contacts this patient came from carry the same name and phone.
+      const synced = await db
+        .from("leads")
+        .update({ name: patient.name, phone: patient.phone })
+        .eq("patient_id", patientId)
+        .eq("organization_id", org);
+      if (synced.error) return synced.error;
     } else {
       const { data, error } = await db.from("patients").insert({ ...patient, organization_id: org }).select("id").single();
       if (error) return error;
@@ -283,14 +218,15 @@ export async function savePatient(patientId: string | null, form: FormData): Pro
       duration_min: procedure.duration_min,
       status: "concluido",
     });
-    return added.error ?? syncPatient(db, org, saved!);
-  });
+    return added.error ?? (await db.rpc("pulse_refresh_patient", { patient: saved! })).error;
+  }, (can) => can.patients);
 }
 
-/** Their appointments and waiting-list entries go with them (the schema cascades). */
+/** Their appointments, records, conversation and waiting-list entries go with them (the schema cascades). Owner only. */
 export async function deletePatient(patientId: string): Promise<Result> {
-  return write(async (db, org) =>
-    affected(await db.from("patients").delete().eq("id", id(patientId)).eq("organization_id", org).select("id")),
+  return write(
+    async (db, org) => affected(await db.from("patients").delete().eq("id", id(patientId)).eq("organization_id", org).select("id")),
+    (can) => can.deletePatients,
   );
 }
 
@@ -332,7 +268,7 @@ export async function saveProcedure(procedureId: string | null, form: FormData):
         [...uses].map(([product, quantity]) => ({ organization_id: org, procedure_id: saved!, product_id: product, quantity })),
       )
     ).error;
-  });
+  }, (can) => can.procedures);
 }
 
 export async function deleteProcedure(procedureId: string): Promise<Result> {
@@ -342,7 +278,7 @@ export async function deleteProcedure(procedureId: string): Promise<Result> {
       throw new Invalid("Este procedimento tem agendamentos ou lista de espera e não pode ser excluído.");
     }
     return affected(result);
-  });
+  }, (can) => can.procedures);
 }
 
 /* ── Agenda ────────────────────────────────────────────────── */
@@ -463,13 +399,13 @@ export async function book(form: FormData): Promise<Result> {
       if (linked.error) return undo(db, org, created, linked.error);
     }
     if (replaces) {
-      const moved = await db
-        .from("appointments")
-        .update({ status: "cancelado" })
-        .eq("id", replaces)
-        .eq("organization_id", org)
-        .in("status", ["agendado", "confirmado"]);
-      if (moved.error) return moved.error;
+      // The earlier booking is cancelled the way every status changes (migration 0009); an old one that
+      // already happened stays as it is.
+      const { data: old } = await db.from("appointments").select("status").eq("id", replaces).eq("organization_id", org).maybeSingle();
+      if (old && (old.status === "agendado" || old.status === "confirmado")) {
+        const moved = await db.rpc("pulse_set_appointment_status", { appointment: replaces, next_status: "cancelado" });
+        if (moved.error) return moved.error;
+      }
     }
     if (waitlistId) {
       const off = await db.from("waitlist_entries").delete().eq("id", waitlistId).eq("organization_id", org);
@@ -477,7 +413,7 @@ export async function book(form: FormData): Promise<Result> {
     }
     const becomes = created ? " e agora é paciente" : "";
     return log(db, org, `${name} agendou ${procedure.name} para ${dayAt(now, startsAt)}${becomes}.`);
-  });
+  }, (can) => can.book);
 }
 
 async function undo(db: Db, org: string, created: string | null, error: PostgrestError) {
@@ -485,41 +421,45 @@ async function undo(db: Db, org: string, created: string | null, error: Postgres
   return error;
 }
 
-const DONE_TEXT: Record<string, (name: string, procedure: string) => string> = {
-  confirmado: (name) => `${name} confirmou presença.`,
-  concluido: (name, procedure) => `${name}: ${procedure} finalizado. Estoque e próximo retorno atualizados.`,
-  faltou: (name, procedure) => `${name} faltou ao atendimento de ${procedure}.`,
-  cancelado: () => "Um cancelamento abriu um horário na agenda.",
-};
-
 /**
- * The outcome of a booking. Finishing one is where the modules meet: the
- * procedure's products leave the stock and the patient's next return is set.
- * Undoing it puts both back.
+ * The outcome of a booking: confirmed, a no-show, cancelled, or back to open.
+ * The database decides who may (a professional, only their own visits) and
+ * keeps the stock, the patient's summary and the log in step.
  */
 export async function setAppointmentStatus(appointmentId: string, status: string): Promise<Result> {
-  return write(async (db, org) => {
+  return write(async (db) => {
     const next = oneOf(status, APPOINTMENT_STATUSES, "o status");
-    const { data: before, error } = await db
-      .from("appointments")
-      .select("status, patient_id, procedure_id, patients(name), procedures(name)")
-      .eq("id", id(appointmentId))
-      .eq("organization_id", org)
-      .maybeSingle();
-    if (error) return error;
-    if (!before) throw new Invalid("Registro não encontrado.");
-    if (before.status === next) return null;
+    return (await db.rpc("pulse_set_appointment_status", { appointment: id(appointmentId), next_status: next })).error;
+  });
+}
 
-    const changed = await db.from("appointments").update({ status: next }).eq("id", appointmentId).eq("organization_id", org);
-    if (changed.error) return changed.error;
-    if (next === "concluido" || before.status === "concluido") {
-      const stock = await spendStock(db, org, before.procedure_id, next === "concluido" ? -1 : 1);
-      if (stock) return stock;
-    }
-    const synced = await syncPatient(db, org, before.patient_id);
-    if (synced) return synced;
-    const say = DONE_TEXT[next];
-    return say ? log(db, org, say(before.patients?.name ?? "Paciente", before.procedures?.name ?? "procedimento")) : null;
+/**
+ * Finishing a visit, where the modules meet: what was charged (the
+ * procedure's price unless the form says otherwise) and the products used
+ * (the procedure's own unless adjusted). The database takes them from the
+ * stock and freezes the visit's money at today's costs, all at once
+ * (pulse_set_appointment_status, migration 0009): a later change in a
+ * product's cost never touches it.
+ */
+export async function finishAppointment(appointmentId: string, form: FormData): Promise<Result> {
+  return write(async (db) => {
+    const charged = text(form, "charged");
+    const products = form.getAll("supplyProduct").map(String);
+    const quantities = form.getAll("supplyQuantity").map(String);
+    const supplies = products.length
+      ? products.map((product, i) => ({
+          product_id: id(product),
+          quantity: amount(quantities[i] ?? "", "a quantidade de cada produto usado", { zero: true }),
+        }))
+      : null;
+    return (
+      await db.rpc("pulse_set_appointment_status", {
+        appointment: id(appointmentId),
+        next_status: "concluido",
+        charged: charged ? cents(charged, "o valor cobrado") : undefined,
+        supplies: supplies ?? undefined,
+      })
+    ).error;
   });
 }
 
@@ -538,118 +478,65 @@ export async function saveDeposit(appointmentId: string, form: FormData): Promis
     return affected(
       await db
         .from("appointments")
-        .update(deposit ?? { deposit_cents: null, deposit_due: null, deposit_paid_at: null })
+        .update(
+          deposit ?? {
+            deposit_cents: null,
+            deposit_due: null,
+            deposit_paid_at: null,
+            deposit_percent: null,
+            deposit_provider: null,
+            deposit_payment_id: null,
+          },
+        )
         .eq("id", appointmentId)
         .eq("organization_id", org)
         .select("id"),
     );
-  });
+  }, (can) => can.book);
 }
 
 /** The deposit was received (or that was a mistake). Marked by hand until payments run through the Pulse. */
 export async function setDepositPaid(appointmentId: string, paid: boolean): Promise<Result> {
-  return write(async (db, org) =>
-    affected(
-      await db
-        .from("appointments")
-        .update({ deposit_paid_at: paid ? new Date().toISOString() : null })
-        .eq("id", id(appointmentId))
-        .eq("organization_id", org)
-        .not("deposit_cents", "is", null)
-        .select("id"),
-    ),
+  return write(
+    async (db, org) =>
+      affected(
+        await db
+          .from("appointments")
+          .update({ deposit_paid_at: paid ? new Date().toISOString() : null })
+          .eq("id", id(appointmentId))
+          .eq("organization_id", org)
+          .not("deposit_cents", "is", null)
+          .select("id"),
+      ),
+    (can) => can.book,
   );
 }
 
+/** A finished visit only by the owner: its products go back to the stock and its snapshot goes with it. */
 export async function deleteAppointment(appointmentId: string): Promise<Result> {
-  return write(async (db, org) => {
-    const result = await db
-      .from("appointments")
-      .delete()
-      .eq("id", id(appointmentId))
-      .eq("organization_id", org)
-      .select("patient_id, procedure_id, status");
-    const error = affected(result);
-    if (error) return error;
-    const gone = result.data![0];
-    if (gone.status === "concluido") {
-      const stock = await spendStock(db, org, gone.procedure_id, 1);
-      if (stock) return stock;
-    }
-    return syncPatient(db, org, gone.patient_id);
-  });
+  return write(
+    async (db) => (await db.rpc("pulse_delete_appointment", { appointment: id(appointmentId) })).error,
+    (can) => can.book,
+  );
 }
 
-/** Takes one session's products from the stock (-1) or gives them back (+1). */
-async function spendStock(db: Db, org: string, procedureId: string, sign: 1 | -1) {
-  const { data: uses, error } = await db
-    .from("procedure_products")
-    .select("product_id, quantity")
-    .eq("organization_id", org)
-    .eq("procedure_id", procedureId);
-  if (error || !uses.length) return error;
-  const { data: rows, error: lotsError } = await db
-    .from("inventory_lots")
-    .select("id, product_id, lot_code, quantity, expires_at")
-    .eq("organization_id", org)
-    .in(
-      "product_id",
-      uses.map((u) => u.product_id),
-    );
-  if (lotsError) return lotsError;
-
-  const lots = rows.map(
-    (l): InventoryLot => ({
-      id: l.id,
-      organizationId: org,
-      productId: l.product_id,
-      lotCode: l.lot_code,
-      quantity: Number(l.quantity),
-      expiresAt: new Date(l.expires_at).toISOString(),
-    }),
-  );
-  const need = uses.map((u) => ({ productId: u.product_id, quantity: Number(u.quantity) }));
-  const today = clinicNow();
-  const moves = sign < 0 ? drawDown(lots, need, today) : restock(lots, need, today);
-  for (const move of moves) {
-    const lot = lots.find((l) => l.id === move.lotId)!;
-    const quantity = Math.max(0, Math.round((lot.quantity + sign * move.quantity) * 1000) / 1000);
-    lot.quantity = quantity;
-    const saved = await db.from("inventory_lots").update({ quantity }).eq("id", lot.id).eq("organization_id", org);
-    if (saved.error) return saved.error;
-  }
-  return null;
-}
-
-/** A patient's visits, spend and next return, recomputed from their completed appointments. */
-async function syncPatient(db: Db, org: string, patientId: string) {
-  const { data, error } = await db
-    .from("appointments")
-    .select("starts_at, procedures(price, return_days)")
-    .eq("organization_id", org)
-    .eq("patient_id", patientId)
-    .eq("status", "concluido");
-  if (error) return error;
-
-  const summary = visitSummary(
-    data.map((visit) => ({
-      startsAt: new Date(visit.starts_at).toISOString(),
-      price: visit.procedures?.price ?? 0,
-      returnDays: visit.procedures?.return_days ?? 0,
-    })),
-  );
-  return (
-    await db
-      .from("patients")
-      .update({
-        first_visit_at: summary.firstVisitAt ?? null,
-        last_visit_at: summary.lastVisitAt ?? null,
-        next_return_at: summary.nextReturnAt ?? null,
-        total_spent: summary.totalSpent,
-      })
-      .eq("id", patientId)
-      .eq("organization_id", org)
-  ).error;
+/** What a finished visit used and what each product cost that day. The owner's only (the database returns nothing to anyone else). */
+export async function visitSupplies(appointmentId: string): Promise<AppointmentSupply[]> {
+  const session = await getSession();
+  if (!session?.member || !/^[0-9a-f-]{36}$/i.test(appointmentId)) return [];
+  const { data } = await session.supabase
+    .from("appointment_supplies")
+    .select("product_id, product_name, unit, quantity_used, unit_cost_snapshot, total_cost_snapshot")
+    .eq("organization_id", session.member.organization_id)
+    .eq("appointment_id", appointmentId);
+  return (data ?? []).map((s) => ({
+    productId: s.product_id ?? undefined,
+    productName: s.product_name,
+    unit: s.unit,
+    quantity: Number(s.quantity_used),
+    unitCost: s.unit_cost_snapshot,
+    totalCost: s.total_cost_snapshot,
+  }));
 }
 
 /* ── Waiting list ──────────────────────────────────────────── */
@@ -664,12 +551,13 @@ export async function addToWaitlist(form: FormData): Promise<Result> {
       created_at: clinicNow(),
     };
     return (await db.from("waitlist_entries").insert(entry)).error;
-  });
+  }, (can) => can.book);
 }
 
 export async function removeFromWaitlist(entryId: string): Promise<Result> {
-  return write(async (db, org) =>
-    affected(await db.from("waitlist_entries").delete().eq("id", id(entryId)).eq("organization_id", org).select("id")),
+  return write(
+    async (db, org) => affected(await db.from("waitlist_entries").delete().eq("id", id(entryId)).eq("organization_id", org).select("id")),
+    (can) => can.book,
   );
 }
 
@@ -681,27 +569,32 @@ function minimum(form: FormData) {
   return value ? amount(value, "o estoque mínimo", { zero: true }) : null;
 }
 
-/** A product's name, unit, cost and minimum. Its lots stay as they are. */
+/** A product's name, unit and minimum, and its cost when the owner edits it. Its lots stay as they are. */
 export async function saveProduct(productId: string, form: FormData): Promise<Result> {
-  return write(async (db, org) =>
-    affected(
-      await db
-        .from("products")
-        .update({
-          name: required(text(form, "name"), "o nome do produto"),
-          unit: required(text(form, "unit", 30), "a unidade"),
-          unit_cost: cents(text(form, "unitCost"), "o custo por unidade"),
-          min_quantity: minimum(form),
-          brand: text(form, "brand", 80) || null,
-        })
-        .eq("id", id(productId))
-        .eq("organization_id", org)
-        .select("id"),
-    ),
+  return write(
+    async (db, org, who) =>
+      affected(
+        await db
+          .from("products")
+          .update({
+            name: required(text(form, "name"), "o nome do produto"),
+            unit: required(text(form, "unit", 30), "a unidade"),
+            // Only the owner sees and changes costs (the database refuses anyone else's).
+            ...(who.can.finance ? { unit_cost: cents(text(form, "unitCost"), "o custo por unidade") } : {}),
+            min_quantity: minimum(form),
+            brand: text(form, "brand", 80) || null,
+            category: text(form, "category", 60) || null,
+            supplier: text(form, "supplier", 120) || null,
+          })
+          .eq("id", id(productId))
+          .eq("organization_id", org)
+          .select("id"),
+      ),
+    (can) => can.stock,
   );
 }
 
-/** A delivery: a lot of a product the clinic has, or of one it registers now. */
+/** A delivery: a lot of a product the clinic has, or of one it registers now (with its cost, from the invoice). */
 export async function stockIn(form: FormData): Promise<Result> {
   return write(async (db, org) => {
     const lot = {
@@ -726,9 +619,10 @@ export async function stockIn(form: FormData): Promise<Result> {
           name,
           unit: required(text(form, "unit", 30), "a unidade"),
           unit_cost: cents(text(form, "unitCost"), "o custo por unidade"),
-          // Sent only when set: a clinic still before migration 0004 can stock in.
           ...(min === null ? {} : { min_quantity: min }),
           ...(text(form, "brand", 80) ? { brand: text(form, "brand", 80) } : {}),
+          ...(text(form, "category", 60) ? { category: text(form, "category", 60) } : {}),
+          ...(text(form, "supplier", 120) ? { supplier: text(form, "supplier", 120) } : {}),
         })
         .select("id")
         .single();
@@ -737,7 +631,7 @@ export async function stockIn(form: FormData): Promise<Result> {
     }
     const inserted = await db.from("inventory_lots").insert({ ...lot, organization_id: org, product_id: productId });
     return inserted.error ?? log(db, org, `Entrada no estoque: ${name}, lote ${lot.lot_code}.`);
-  });
+  }, (can) => can.stock);
 }
 
 const REASONS = { uso: "uso fora da agenda", perda: "perda ou vencimento", contagem: "contagem" } as const;
@@ -757,7 +651,7 @@ export async function adjustLot(lotId: string, form: FormData): Promise<Result> 
     if (error) return error;
     const lot = result.data![0];
     return log(db, org, `Estoque ajustado (${REASONS[reason]}): ${lot.products?.name ?? "produto"}, lote ${lot.lot_code}.`);
-  });
+  }, (can) => can.stock);
 }
 
 /* ── The clinic and the account (Configurações) ───────────── */
@@ -766,8 +660,7 @@ const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** The clinic's profile, by its owner: the same fields as onboarding. Row-level security checks the owner again (migration 0004). */
 export async function updateClinic(form: FormData): Promise<Result> {
-  return write(async (db, org, who) => {
-    if (who.role !== "owner") throw new Invalid("Só o responsável pela clínica pode mudar estes dados.");
+  return write(async (db, org) => {
     const whatsapp = text(form, "whatsapp", 40);
     if (whatsapp.replace(/\D/g, "").length < 10) throw new Invalid("Informe o WhatsApp da clínica com DDD.");
     const opens = text(form, "opens", 5);
@@ -804,17 +697,18 @@ export async function updateClinic(form: FormData): Promise<Result> {
     }
     if (!saved) throw new Invalid("Os dados foram salvos, mas o logo não. Tente de novo.");
     return null;
-  });
+  }, (can) => can.admin);
 }
 
 /**
  * A clinical record: written and read only by the owner and the professionals
- * (the database refuses anyone else, migration 0007). Edited in place; never
- * deleted from the Pulse.
+ * (the database refuses anyone else, and a professional writes only for the
+ * patients of their own agenda, migration 0009). Edited in place; never
+ * deleted from the Pulse. The author and the last editor are stamped by the
+ * database.
  */
 export async function saveRecord(recordId: string | null, patientId: string, form: FormData): Promise<Result> {
-  return write(async (db, org, who) => {
-    if (who.role !== "owner" && who.role !== "professional") throw new Invalid("Só o responsável e os profissionais registram prontuários.");
+  return write(async (db, org) => {
     const chief_complaint = text(form, "chiefComplaint", 500) || null;
     const notes = text(form, "notes", 8000) || null;
     if (!chief_complaint && !notes) throw new Invalid("Escreva a queixa principal ou a evolução.");
@@ -823,18 +717,14 @@ export async function saveRecord(recordId: string | null, patientId: string, for
       return affected(
         await db
           .from("clinical_records")
-          .update({ chief_complaint, notes, recorded_at, updated_at: new Date().toISOString() })
+          .update({ chief_complaint, notes, recorded_at })
           .eq("id", id(recordId))
           .eq("organization_id", org)
           .select("id"),
       );
     }
-    return (
-      await db
-        .from("clinical_records")
-        .insert({ organization_id: org, patient_id: id(patientId), chief_complaint, notes, recorded_at, author_id: who.userId })
-    ).error;
-  });
+    return (await db.from("clinical_records").insert({ organization_id: org, patient_id: id(patientId), chief_complaint, notes, recorded_at })).error;
+  }, (can) => can.records);
 }
 
 /** The signed-in person's own name at the clinic. Nothing else of the membership can change here (migration 0004). */

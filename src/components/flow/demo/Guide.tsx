@@ -150,7 +150,7 @@ function subscribe(listener: () => void) {
 }
 
 export function GuideProvider({ children }: { children: ReactNode }) {
-  const { data, base, access } = useFlow();
+  const { data, base, access, can } = useFlow();
   const pathname = usePathname();
   const slug = VIEWS.find((v) => viewHref(v.slug, base) === pathname)?.slug ?? "";
   const key = `wuavy-pulse-guide:${data.organization.id}`;
@@ -171,7 +171,8 @@ export function GuideProvider({ children }: { children: ReactNode }) {
   );
   const current = steps.find((s) => !s.done && !s.skipped) ?? null;
   const doneCount = steps.filter((s) => s.done).length;
-  const active = Boolean(saved) && !state.hidden && !state.onboardingCompleted;
+  // Setting the clinic up is the owner's: the rest of the team never gets the guide.
+  const active = can.admin && Boolean(saved) && !state.hidden && !state.onboardingCompleted;
   const currentId = current?.id ?? null;
 
   // Opening the two screens to get to know is what completes them; the current step is kept with the rest.

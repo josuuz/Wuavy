@@ -140,7 +140,19 @@ export function StartContact({ person, draft, className }: { person: Person; dra
         });
       }
     }
-    dispatch({ type: "focus", focus: { to: "conversation", id, name: person.name, draft } });
+    const lead = person.leadId ? data.leads.find((l) => l.id === person.leadId) : undefined;
+    dispatch({
+      type: "focus",
+      focus: {
+        to: "conversation",
+        id,
+        name: person.name,
+        draft,
+        phone: person.phone,
+        leadId: person.leadId,
+        patientId: person.patientId ?? lead?.patientId,
+      },
+    });
   };
 
   if (!access.canEdit) return null;

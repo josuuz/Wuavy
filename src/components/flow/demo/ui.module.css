@@ -3241,6 +3241,11 @@
   color: var(--pulse-success);
 }
 
+.depositStatus[data-status="cancelado"] {
+  background: color-mix(in srgb, var(--pulse-ink) 8%, transparent);
+  color: var(--text-2);
+}
+
 .depositStatus[data-status="vencido"] {
   background: color-mix(in srgb, var(--pulse-danger) 14%, transparent);
   color: var(--pulse-danger);
@@ -3501,4 +3506,32 @@
   text-align: right;
   font-weight: 640;
   font-variant-numeric: tabular-nums;
+}
+
+/* Visão geral: the month in one line, and what the Pulse read in it. */
+.monthStrip {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--pulse-card);
+  box-shadow: var(--pulse-shadow);
+}
+
+.monthStrip .label {
+  margin-right: 0.5rem;
+}
+
+.readingsMini {
+  display: grid;
+  gap: 0.25rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
+.monthStrip .textAction {
+  min-height: 2rem;
 }

@@ -5,10 +5,17 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { asStatus, clinicAccess, releases } from "./access";
 
+/** Where an invitation is accepted (and an ended access explained). */
+export const INVITE = "/pulse/convite";
+
 /*
   Who is signed in and which clinic they work at, verified with Supabase Auth
   (never read from a form or the URL). Every page and write of the real Pulse
-  starts here. `member` is null until the person has created their clinic.
+  starts here. `member` is the person's active membership: null until they
+  have created their clinic or accepted an invitation, and null again once
+  the owner ends their access (the database stops answering them too,
+  migration 0009). `pending` is an invitation not accepted yet; `ended`, an
+  access the owner disabled.
 */
 
 export const getSession = cache(async () => {
@@ -18,15 +25,17 @@ export const getSession = cache(async () => {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // Row-level security only shows the memberships of this user.
-  const { data: member } = await supabase
+  // Row-level security shows a person their own memberships, whatever their status.
+  const { data: memberships } = await supabase
     .from("members")
-    .select("organization_id, name, role")
-    .eq("user_id", user.id)
-    .limit(1)
-    .maybeSingle();
+    .select("organization_id, name, role, status")
+    .eq("user_id", user.id);
+  const rows = memberships ?? [];
+  const member = rows.find((m) => m.status === "active") ?? null;
+  const pending = member ? null : (rows.find((m) => m.status === "invited") ?? null);
+  const ended = member || pending ? null : (rows.find((m) => m.status === "disabled") ?? null);
 
-  return { supabase, user, member };
+  return { supabase, user, member, pending, ended };
 });
 
 /**
@@ -66,6 +75,8 @@ export async function homePath() {
   const session = await getSession();
   if (!session) return "/pulse/entrar";
   if (session.member) return "/pulse/app";
+  // Invited to a clinic, or their access ended: the invitation page says which, and what to do.
+  if (session.pending || session.ended) return INVITE;
   const subscription = await getSubscription();
   return releases(subscription?.status) && !subscription?.organization_id ? "/pulse/comecar" : "/pulse/demo";
 }

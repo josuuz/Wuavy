@@ -5,6 +5,9 @@
   times are ISO strings in the clinic's wall clock (see clock.ts).
 */
 
+import type { Conversation } from "./conversations";
+import type { MemberStatus, Role } from "./roles";
+
 export type ID = string;
 
 /* The clinic's profile, from onboarding (organizations, migration 0003). */
@@ -31,11 +34,15 @@ export interface Organization {
   hours?: { opens: string; closes: string; days: number[] };
 }
 
+/** A member of the clinic's team (migration 0009). Disabled members stay: their name signs what they did. */
 export interface User {
   id: ID;
   organizationId: ID;
   name: string;
-  role: "owner" | "reception" | "professional";
+  role: Role;
+  /** Absent in the demo: everyone there is active. */
+  status?: MemberStatus;
+  email?: string;
 }
 
 /** The sales funnel, first contact to booked. Once booked, the person is a patient. */
@@ -90,7 +97,49 @@ export interface Appointment {
   durationMin: number;
   status: AppointmentStatus;
   /** A deposit asked when booking (migration 0007). Overdue is read from `due`, never stored. */
-  deposit?: { cents: number; due?: string; paidAt?: string };
+  deposit?: {
+    cents: number;
+    due?: string;
+    paidAt?: string;
+    /** When it was asked as a share of the price. */
+    percent?: number;
+    /** Who handles the payment: "manual" (marked paid by hand) until a provider exists (migration 0008). */
+    provider?: "manual";
+  };
+  /** What the patient paid, set when the visit was finished (migration 0009). Absent before it: the procedure's price stands in. */
+  priceCharged?: number;
+  discount?: number;
+  /** Who booked it and who changed it last (members' ids). */
+  createdBy?: ID;
+  updatedBy?: ID;
+  completedBy?: ID;
+}
+
+/**
+ * A finished visit's money, frozen the moment it was finished (migration
+ * 0009): what was charged and what its products cost that day. A later change
+ * in a product's cost never touches it. Only the owner receives these rows.
+ */
+export interface AppointmentFinancial {
+  appointmentId: ID;
+  completedAt: string;
+  listPrice: number;
+  discount: number;
+  priceCharged: number;
+  totalCost: number;
+  grossProfit: number;
+  /** Percent of the price charged; absent when nothing was charged. */
+  grossMargin?: number;
+}
+
+/** One product a finished visit used, at its cost that day. */
+export interface AppointmentSupply {
+  productId?: ID;
+  productName: string;
+  unit: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
 }
 
 export interface WaitlistEntry {
@@ -120,9 +169,11 @@ export interface Product {
   organizationId: ID;
   name: string;
   unit: string;
-  /** The purchase price of one unit. */
-  unitCost: number;
+  /** The purchase price of one unit, today. Absent for whoever may not see costs (only the owner does). */
+  unitCost?: number;
   brand?: string;
+  category?: string;
+  supplier?: string;
   /** At or below this, the Pulse says to buy (migration 0004). Absent: it judges by the sessions left. */
   minQuantity?: number;
 }
@@ -140,6 +191,8 @@ export interface ClinicalRecord {
   chiefComplaint: string;
   notes: string;
   authorId?: ID;
+  /** Who edited it last, when someone did. */
+  updatedBy?: ID;
 }
 
 export interface InventoryLot {
@@ -159,7 +212,14 @@ export interface ProcedureProduct {
   quantity: number;
 }
 
-export type OpportunityKind = "lead_followup" | "lead_idle" | "patient_return" | "no_show" | "stock_expiry" | "open_slot";
+export type OpportunityKind =
+  | "lead_followup"
+  | "lead_idle"
+  | "patient_return"
+  | "patient_lapsed"
+  | "no_show"
+  | "stock_expiry"
+  | "open_slot";
 export type OpportunityStatus = "nova" | "em_andamento" | "resolvida";
 
 /** What the Pulse found. Derived from the data today; stored and tracked once it is real. */
@@ -201,6 +261,8 @@ export interface Activity {
   organizationId: ID;
   at: string;
   text: string;
+  /** Who did it (migration 0009). */
+  actorId?: ID;
 }
 
 /** Everything the Pulse reads for one clinic. `now` is the moment the data describes. */
@@ -221,4 +283,11 @@ export interface FlowData {
   activities: Activity[];
   /** Empty for whoever may not see clinical records. */
   records: ClinicalRecord[];
+  /** Finished visits' frozen money. Empty for whoever may not see costs (only the owner does). */
+  financials: AppointmentFinancial[];
+  /**
+   * A real clinic's conversations, most recent first, without their messages
+   * (a thread loads when it is opened). The demo keeps its own in memory (inbox.tsx).
+   */
+  conversations: Conversation[];
 }
