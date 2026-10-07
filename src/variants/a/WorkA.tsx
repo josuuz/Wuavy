@@ -2,9 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { ChapterHead, Section } from "@/components/layout/Section";
-import { home } from "@/data/home";
 import { publishedCases } from "@/data/cases";
 import { serviceName } from "@/data/services";
+import { localizePath, type Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
 import type { Media } from "@/lib/types";
 import { pad } from "@/lib/utils";
 import styles from "./WorkA.module.css";
@@ -19,8 +20,8 @@ import styles from "./WorkA.module.css";
 const ROWS = 3;
 const still = (media: Media) => (media.kind === "image" ? media.src : media.poster);
 
-export function WorkA() {
-  const { work } = home;
+export function WorkA({ locale }: { locale: Locale }) {
+  const { work } = getDictionary(locale).home;
 
   return (
     <Section id="projetos" surface="black" label={work.chapter} className={`tx-grain ${styles.section}`}>
@@ -30,14 +31,14 @@ export function WorkA() {
       </div>
 
       <ol className={styles.list}>
-        {publishedCases.slice(0, ROWS).map((item, i) => (
+        {publishedCases(locale).slice(0, ROWS).map((item, i) => (
           <li key={item.slug} className={styles.row}>
             <article className={styles.inner}>
               <span className={styles.index}>({pad(i + 1)})</span>
 
               <div className={styles.heading}>
                 <h3 className={styles.name}>
-                  <Link href={`/trabalho/${item.slug}`} className={styles.link}>
+                  <Link href={localizePath(locale, `/trabalho/${item.slug}`)} className={styles.link}>
                     {item.title}
                   </Link>
                 </h3>
@@ -46,7 +47,7 @@ export function WorkA() {
 
               <p className={styles.scope}>
                 {item.scope && item.scope.length > 1 ? <span className={styles.combo}>{work.combo}</span> : null}
-                {(item.scope ?? item.services.map(serviceName)).join(" + ")}
+                {(item.scope ?? item.services.map((id) => serviceName(id, locale))).join(" + ")}
                 <span className={styles.year}>{item.year}</span>
               </p>
 

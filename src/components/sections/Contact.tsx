@@ -2,8 +2,8 @@ import { WaveField } from "@/components/brand/WaveField";
 import { ChapterHead, Section } from "@/components/layout/Section";
 import { WidthWave } from "@/components/motion";
 import { Button } from "@/components/ui/Button";
-import { home } from "@/data/home";
-import { site } from "@/data/site";
+import type { Locale } from "@/i18n/config";
+import { contactChannels, getDictionary, talkHref } from "@/i18n/dictionaries";
 import { contactHref, contactValue, isExternal } from "@/lib/contact";
 import { cn, hasDescender } from "@/lib/utils";
 import styles from "./Contact.module.css";
@@ -17,9 +17,9 @@ import styles from "./Contact.module.css";
   or form is a data change.
 */
 
-export function Contact({ index = 7 }: { index?: number }) {
-  const { chapter, lines, body, cta } = home.contact;
-  const { primary, channels } = site.contact;
+export function Contact({ locale, index = 7 }: { locale: Locale; index?: number }) {
+  const { chapter, lines, body, cta } = getDictionary(locale).home.contact;
+  const channels = contactChannels(locale);
 
   return (
     <Section id="contato" surface="carbon" label={chapter} className={`tx-grain ${styles.section}`}>
@@ -46,7 +46,7 @@ export function Contact({ index = 7 }: { index?: number }) {
 
         <div className={styles.action}>
           <p className={`type-body ${styles.body}`}>{body}</p>
-          <Button href={contactHref(primary)}>{cta}</Button>
+          <Button href={talkHref(locale)}>{cta}</Button>
         </div>
 
         <ul className={styles.channels}>

@@ -3,7 +3,8 @@ import type { ContactChannel, SiteConfig } from "@/lib/types";
 /*
   Site configuration. Contact is decoupled: every CTA on the site resolves
   `contact.primary` through lib/contact.ts, so switching to WhatsApp, a
-  calendar or a form is a change here only.
+  calendar or a form is a change here only. Titles, navigation and the
+  pre-filled messages of each language are in the dictionaries (src/i18n).
 */
 
 // TODO(contato): confirmar o endereço. Vem do brandbook (board "Contato"), não de um cadastro real.
@@ -14,11 +15,17 @@ const email: ContactChannel = {
   subject: "Orçamento",
 };
 
-// O contato principal (todos os CTAs do site) e a entrega do diagnóstico do PASSO.
+/*
+  O WhatsApp Business oficial da WUAVY: todos os CTAs do site, a entrega do
+  diagnóstico do PASSO e o "falar com a Wuavy" do Pulse. Não é o número das
+  clínicas no Pulse (esse é de cada clínica, conectado pela Meta em
+  lib/whatsapp). A mensagem aqui é a pt-BR, que o app Pulse usa; o site troca
+  pela do idioma escolhido (dictionaries → contact.whatsapp).
+*/
 export const whatsapp = {
   kind: "whatsapp",
   label: "WhatsApp",
-  number: "+55 19 99448-7967",
+  number: "+55 19 99912-5046",
   message: "Olá! Vim pelo site da Wuavy.",
 } satisfies ContactChannel;
 
@@ -30,19 +37,6 @@ export const site: SiteConfig = {
   name: "WUAVY",
   // TODO(domínio): definir NEXT_PUBLIC_SITE_URL no deploy. O fallback segue o domínio do e-mail do brandbook.
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://wuavy.com",
-  locale: "pt-BR",
-  title: "WUAVY: sites, tráfego pago e sistemas de crescimento",
-  description:
-    "Agência de crescimento digital. Sites, gestão de tráfego pago e sistemas sob medida com IA, automações e CRM, no mesmo ritmo.",
-  nav: [
-    { label: "Pulse", href: "/pulse", hint: "Crescimento para clínicas" },
-    { label: "Serviços", href: "/#servicos" },
-    { label: "Sistemas", href: "/#sistemas" },
-    { label: "Projetos", href: "/#projetos" },
-    { label: "FAQ", href: "/#faq" },
-    { label: "Contato", href: "/#contato" },
-  ],
-  cta: { label: "Falar sobre meu projeto", short: "WhatsApp" },
   contact: {
     primary: whatsapp,
     channels: [whatsapp, email],

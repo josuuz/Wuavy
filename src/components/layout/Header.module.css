@@ -296,3 +296,20 @@
     display: none;
   }
 }
+
+/* The language switch: beside the action where the bar has room for it and
+   PASSO's spot; narrower, it is in the menu (and always in the footer). */
+.locale {
+  display: none;
+}
+
+@media (min-width: 1180px) {
+  .locale {
+    display: inline-flex;
+    margin-left: clamp(0.5rem, 1.4vw, 1.75rem);
+  }
+
+  .locale + .cta {
+    margin-left: 0;
+  }
+}

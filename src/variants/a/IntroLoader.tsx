@@ -18,7 +18,7 @@ const SLOW_FRAME_MS = 26;
  * While it runs it times its own frames: a machine that cannot hold them
  * gets the light motion tier now and on later visits (html[data-perf]).
  */
-export function IntroLoader() {
+export function IntroLoader({ label }: { label: string }) {
   const root = useRef<HTMLDivElement>(null);
   const count = useRef<HTMLSpanElement>(null);
 
@@ -98,7 +98,7 @@ export function IntroLoader() {
           ))}
         </div>
         <p className={styles.label}>
-          <span>Carregando</span>
+          <span>{label}</span>
           <span ref={count}>000</span>
         </p>
       </div>

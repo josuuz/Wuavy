@@ -1,28 +1,28 @@
 import type { Metadata } from "next";
 
 import { SiteChrome } from "@/components/layout/SiteChrome";
-import { TextLink } from "@/components/ui/TextLink";
+import { NotFound } from "@/components/sections/NotFound";
+import { defaultLocale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+
+/*
+  The 404 outside the public site (an unknown Pulse address), in pt-BR like
+  the Pulse. A missing site address gets (site)/[locale]/not-found instead, in
+  the visitor's language. Static: reading the cookie here would make every
+  page dynamic.
+*/
+
+const t = getDictionary(defaultLocale).notFound;
 
 export const metadata: Metadata = {
-  title: "Página não encontrada",
+  title: t.meta,
   robots: { index: false },
 };
 
-export default function NotFound() {
+export default function RootNotFound() {
   return (
-    <SiteChrome>
-      <section
-        data-surface="black"
-        data-section="Não encontrada"
-        id="nao-encontrada"
-        className="surface frame min-h-[80svh] content-end gap-y-[var(--space-3)] pt-[calc(var(--header-h)+var(--space-5))] pb-[var(--space-4)]"
-      >
-        <p className="type-display col-span-12 text-[clamp(4rem,2rem+14vw,16rem)]">404</p>
-        <h1 className="type-headline col-span-12 text-h2 lg:col-span-8">Esta página não existe.</h1>
-        <p className="col-span-12 text-lead">
-          <TextLink href="/">Voltar ao início</TextLink>
-        </p>
-      </section>
+    <SiteChrome locale={defaultLocale}>
+      <NotFound t={t} />
     </SiteChrome>
   );
 }

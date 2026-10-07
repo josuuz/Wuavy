@@ -9,12 +9,25 @@ import { Button } from "@/components/ui/Button";
 import { subscribeFrame } from "@/lib/motion/frame";
 import type { NavItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { LocaleSwitch, type LanguageSwitchProps } from "./LocaleSwitch";
 import { MobileMenu } from "./MobileMenu";
 import styles from "./Header.module.css";
+
+export interface HeaderLabels {
+  /** The home page in the page's language ("/" or "/pt-pt"). */
+  homeHref: string;
+  home: string;
+  nav: string;
+  menu: string;
+  menuNav: string;
+  close: string;
+}
 
 interface HeaderProps {
   nav: NavItem[];
   cta: { label: string; short: string; href: string };
+  labels: HeaderLabels;
+  language: LanguageSwitchProps;
 }
 
 interface SectionMark {
@@ -28,7 +41,7 @@ interface SectionMark {
  * The frequency index (one line per section, the current one in Signal)
  * shows where you are: density as position.
  */
-export function Header({ nav, cta }: HeaderProps) {
+export function Header({ nav, cta, labels, language }: HeaderProps) {
   const pathname = usePathname();
   const ref = useRef<HTMLElement>(null);
   const [surface, setSurface] = useState("black");
@@ -85,6 +98,15 @@ export function Header({ nav, cta }: HeaderProps) {
     };
   }, [pathname]);
 
+  // The document speaks the site's language; leaving for the Pulse (pt-BR) puts it back.
+  const lang = language.current;
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    return () => {
+      document.documentElement.lang = "pt-BR";
+    };
+  }, [lang]);
+
   return (
     <header
       ref={ref}
@@ -95,9 +117,9 @@ export function Header({ nav, cta }: HeaderProps) {
     >
       <div className={styles.inner}>
         <Link
-          href="/"
+          href={labels.homeHref}
           className={styles.brand}
-          aria-label="WUAVY, página inicial"
+          aria-label={labels.home}
           tabIndex={docked ? 0 : -1}
           data-header-brand=""
         >
@@ -121,7 +143,7 @@ export function Header({ nav, cta }: HeaderProps) {
         {/* PASSO's spot once he has walked up from the hero: he peeks over its bottom edge (PassoJourney). */}
         <span className={styles.passoDock} data-passo-dock="" aria-hidden="true" />
 
-        <nav aria-label="Principal" className={styles.nav}>
+        <nav aria-label={labels.nav} className={styles.nav}>
           <ul>
             {nav.map((item) => (
               <li key={item.href}>
@@ -151,12 +173,14 @@ export function Header({ nav, cta }: HeaderProps) {
           </ul>
         </nav>
 
+        <LocaleSwitch {...language} className={styles.locale} />
+
         <Button href={cta.href} size="sm" className={styles.cta}>
           <span className={styles.ctaFull}>{cta.label}</span>
           <span className={styles.ctaShort}>{cta.short}</span>
         </Button>
 
-        <MobileMenu nav={nav} cta={cta} />
+        <MobileMenu nav={nav} cta={cta} labels={labels} language={language} />
       </div>
     </header>
   );

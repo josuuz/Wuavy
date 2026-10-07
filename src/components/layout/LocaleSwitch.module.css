@@ -1,0 +1,63 @@
+/* Set like the navigation: micro caps. The chosen language at full strength
+   with the Signal rule under it, the other one quieter. */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition: opacity var(--duration-ui) linear;
+}
+
+.switch[data-pending] {
+  opacity: 0.55;
+}
+
+.option {
+  position: relative;
+  padding-block: 0.5rem;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity var(--duration-ui) linear;
+}
+
+.option::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.2rem;
+  height: 1px;
+  background: var(--wuavy-signal);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.option[aria-pressed="true"] {
+  opacity: 1;
+  cursor: default;
+}
+
+.option[aria-pressed="true"]::after {
+  transform: none;
+}
+
+.slash {
+  opacity: 0.35;
+}
+
+/* In the menu: whole names, and a thumb-sized target. */
+.named .option {
+  min-height: 2.75rem;
+  padding-inline: 0.15rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .option:hover {
+    opacity: 1;
+  }
+}

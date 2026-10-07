@@ -6,9 +6,8 @@ import { ChapterHead, Section } from "@/components/layout/Section";
 import { LineReveal } from "@/components/motion";
 import { Button } from "@/components/ui/Button";
 import { TextLink } from "@/components/ui/TextLink";
-import { flow } from "@/data/flow";
-import { site } from "@/data/site";
-import { contactHref } from "@/lib/contact";
+import { isLocale, localizePath, ogLocale, pageAlternates } from "@/i18n/config";
+import { getDictionary, talkHref } from "@/i18n/dictionaries";
 import { pad } from "@/lib/utils";
 import styles from "./page.module.css";
 
@@ -17,19 +16,27 @@ import styles from "./page.module.css";
   aesthetic clinics. Black hero with PASSO as the guide, the four gaps on
   Paper, how it works on Black (the five stages and one worked example), and
   the call on Carbon running into the footer. The demo link waits on
-  flow.close.demo.ready.
+  pulse.close.demo.ready. The words are the dictionaries' `pulse`.
 */
 
-export const metadata: Metadata = {
-  title: flow.meta.title,
-  description: flow.meta.description,
-  alternates: { canonical: "/pulse" },
-  openGraph: { title: flow.meta.title, description: flow.meta.description, url: "/pulse" },
-};
+export async function generateMetadata({ params }: PageProps<"/[locale]/pulse">): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const { title, description } = getDictionary(locale).pulse.meta;
+  return {
+    title,
+    description,
+    alternates: pageAlternates(locale, "/pulse"),
+    openGraph: { title, description, url: localizePath(locale, "/pulse"), locale: ogLocale(locale) },
+  };
+}
 
-export default function FlowPage() {
+export default async function FlowPage({ params }: PageProps<"/[locale]/pulse">) {
+  const { locale } = await params;
+  if (!isLocale(locale)) return null;
+  const flow = getDictionary(locale).pulse;
   const { hero, gaps, how, close } = flow;
-  const talk = contactHref(site.contact.primary, flow.name);
+  const talk = talkHref(locale, flow.name);
 
   return (
     <>
@@ -51,7 +58,7 @@ export default function FlowPage() {
             </div>
             <p className={styles.market}>{hero.market}</p>
           </div>
-          <FlowGuide className={styles.guide} />
+          <FlowGuide guide={flow.guide} className={styles.guide} />
         </div>
       </Section>
 

@@ -1,9 +1,10 @@
 import urbanCrowd from "@/assets/photo/urban-crowd.jpg";
 
 /*
-  Copy and imagery for the home page.
+  Imagery for the home page, and the approved brand lines it draws on (pt-BR,
+  for reference: what the site shows is in the dictionaries, src/i18n).
   Lines marked `deslocamento` come from propostas/c-deslocamento (brand-authored
-  copy of direction C); the rest are the approved Frequência lines in data/home.ts.
+  copy of direction C); the rest are the approved Frequência lines.
 */
 
 export const phrases = {
@@ -23,4 +24,5 @@ export const phrases = {
     "Planejamos a mensagem, construímos o canal e repetimos o sinal com precisão até o mercado se mover junto.", // frequência
 } as const;
 
-export const heroImage = { src: urbanCrowd, alt: "Multidão atravessando uma rua, vista de cima, em preto e branco." };
+// Its description is the dictionaries' home.hero.imageAlt.
+export const heroImage = { src: urbanCrowd };

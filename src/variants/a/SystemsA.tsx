@@ -1,9 +1,8 @@
 import { ChapterHead, Section } from "@/components/layout/Section";
 import { LineReveal } from "@/components/motion";
 import { Button } from "@/components/ui/Button";
-import { home } from "@/data/home";
-import { site } from "@/data/site";
-import { contactHref } from "@/lib/contact";
+import type { Locale } from "@/i18n/config";
+import { getDictionary, talkHref } from "@/i18n/dictionaries";
 import { pad } from "@/lib/utils";
 import styles from "./SystemsA.module.css";
 
@@ -13,11 +12,12 @@ import styles from "./SystemsA.module.css";
   native <details> (click or tap, keyboard for free, one open at a time), and
   a light follows the pointer across the block under it.
 */
-export function SystemsA() {
+export function SystemsA({ locale }: { locale: Locale }) {
+  const { home, ui } = getDictionary(locale);
   const { chapter, headline, lead, cta, examples, items } = home.systems;
 
   return (
-    <Section id="sistemas" surface="carbon" label="Sistemas" className={`tx-grain ${styles.section}`}>
+    <Section id="sistemas" surface="carbon" label={ui.sections.systems} className={`tx-grain ${styles.section}`}>
       <div className={`tx-light ${styles.light}`} data-tone="signal" aria-hidden="true" />
 
       <div className={`frame ${styles.head}`}>
@@ -29,7 +29,7 @@ export function SystemsA() {
 
         <div className={styles.aside}>
           <p className={styles.lead}>{lead}</p>
-          <Button href={contactHref(site.contact.primary, chapter)}>{cta}</Button>
+          <Button href={talkHref(locale, chapter)}>{cta}</Button>
         </div>
       </div>
 

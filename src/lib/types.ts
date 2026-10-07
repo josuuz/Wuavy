@@ -131,12 +131,6 @@ export interface SocialLink {
 export interface SiteConfig {
   name: string;
   url: string;
-  locale: "pt-BR";
-  title: string;
-  description: string;
-  nav: NavItem[];
-  /** `short` stands in for the label in the header on small phones. */
-  cta: { label: string; short: string };
   contact: {
     primary: ContactChannel;
     channels: ContactChannel[];

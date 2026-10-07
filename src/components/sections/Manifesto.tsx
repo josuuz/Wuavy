@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 
 import { Section } from "@/components/layout/Section";
 import { WidthWave } from "@/components/motion";
-import { home } from "@/data/home";
 import { cn, hasDescender } from "@/lib/utils";
 import styles from "./Manifesto.module.css";
 
@@ -19,15 +18,17 @@ import styles from "./Manifesto.module.css";
 */
 
 interface ManifestoProps {
-  /** Display lines; defaults to the approved "Frequência / vence / volume.". */
-  lines?: readonly string[];
+  /** Display lines, e.g. the approved "Crescer / é sair do / lugar.". */
+  lines: readonly string[];
+  /** Its name in the frequency index, in the page's language. */
+  label: string;
   /** Width of the longest line in em (sets the fit to the frame). */
   fit?: number;
 }
 
-export function Manifesto({ lines = home.manifesto.lines, fit }: ManifestoProps) {
+export function Manifesto({ lines, label, fit }: ManifestoProps) {
   return (
-    <Section id="manifesto" surface="black" label="Manifesto" className={`tx-grain ${styles.section}`}>
+    <Section id="manifesto" surface="black" label={label} className={`tx-grain ${styles.section}`}>
       <div className={styles.stage} style={fit ? ({ "--fit": fit } as CSSProperties) : undefined}>
         <span className={styles.plane} aria-hidden="true" />
         <p className={styles.lines}>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
-import { guide } from "@/data/passo";
+import type { PassoCopy } from "@/data/passo";
 import { requestFrame, subscribeFrame } from "@/lib/motion/frame";
 import { PassoFigure } from "./PassoFigure";
 import { PassoGuide } from "./PassoGuide";
@@ -83,7 +83,14 @@ const hop = (lift: number, squash: number) => [
   { transform: "none" },
 ];
 
-export function PassoJourney() {
+interface PassoJourneyProps {
+  /** Everything he says, in the page's language. */
+  copy: PassoCopy;
+  /** The WhatsApp number his recommendation hands over to. */
+  whatsapp: string;
+}
+
+export function PassoJourney({ copy, whatsapp }: PassoJourneyProps) {
   const root = useRef<HTMLDivElement>(null);
   const hit = useRef<HTMLButtonElement>(null);
   const card = useRef<HTMLDivElement>(null);
@@ -461,7 +468,7 @@ export function PassoJourney() {
           type="button"
           className={styles.hit}
           data-passo-hit=""
-          aria-label={guide.open}
+          aria-label={copy.guide.open}
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-controls="passo-guide"
@@ -487,9 +494,9 @@ export function PassoJourney() {
           setOpen(true);
         }}
       >
-        {guide.hint}
+        {copy.guide.hint}
       </button>
-      <PassoGuide ref={card} open={open} onClose={close} onReact={react} />
+      <PassoGuide ref={card} copy={copy} whatsapp={whatsapp} open={open} onClose={close} onReact={react} />
     </>,
     document.body,
   );

@@ -9,15 +9,15 @@ export function absoluteUrl(path = "/"): string {
   return new URL(path, site.url).toString();
 }
 
-/** Organization structured data. Only facts the site already states. */
-export function organizationJsonLd() {
+/** Organization structured data, in the page's language. Only facts the site already states. */
+export function organizationJsonLd(description: string) {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: site.name,
     url: site.url,
     logo: absoluteUrl("/icon.svg"),
-    description: site.description,
+    description,
     email: channel("email")?.address,
     telephone: channel("whatsapp")?.number,
     sameAs: site.social.map((s) => s.href).filter(Boolean),

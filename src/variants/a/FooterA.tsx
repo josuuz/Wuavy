@@ -1,33 +1,36 @@
 import Link from "next/link";
 
 import { Wordmark } from "@/components/brand/Wordmark";
+import { LocaleSwitch } from "@/components/layout/LocaleSwitch";
 import { Button } from "@/components/ui/Button";
-import { home } from "@/data/home";
 import { activeServices } from "@/data/services";
 import { site } from "@/data/site";
+import { localizePath, type Locale } from "@/i18n/config";
+import { contactChannels, getDictionary, languageSwitch, talkHref } from "@/i18n/dictionaries";
 import { contactHref, contactValue, isExternal } from "@/lib/contact";
 import styles from "./FooterA.module.css";
 
 /* The closing panel: the signature and the action, the index, the wordmark at its foot. */
-export function FooterA() {
+export function FooterA({ locale }: { locale: Locale }) {
   const year = new Date().getFullYear();
+  const { home, ui, nav, cta } = getDictionary(locale);
   const { navTitle, servicesTitle, contactTitle, socialTitle, legal } = home.footer;
 
   return (
-    <footer className={styles.footer} data-surface="graphite" data-section="Rodapé" id="rodape">
+    <footer className={styles.footer} data-surface="graphite" data-section={ui.sections.footer} id="rodape">
       <div className={styles.panel}>
         <div className={`frame ${styles.grid}`}>
           <div className={styles.lead}>
             <p className={styles.line}>{home.footer.signature}</p>
-            <Button href={contactHref(site.contact.primary)}>{site.cta.label}</Button>
+            <Button href={talkHref(locale)}>{cta.label}</Button>
           </div>
 
-          <nav aria-label="Rodapé" className={styles.col}>
+          <nav aria-label={ui.footerNav} className={styles.col}>
             <h2 className={styles.title}>{navTitle}</h2>
             <ul>
-              {site.nav.map((n) => (
+              {nav.map((n) => (
                 <li key={n.href}>
-                  <Link href={n.href}>{n.label}</Link>
+                  <Link href={localizePath(locale, n.href)}>{n.label}</Link>
                 </li>
               ))}
             </ul>
@@ -36,9 +39,9 @@ export function FooterA() {
           <div className={styles.col}>
             <h2 className={styles.title}>{servicesTitle}</h2>
             <ul>
-              {activeServices.map((s) => (
+              {activeServices(locale).map((s) => (
                 <li key={s.id}>
-                  <Link href="/#servicos">{s.name}</Link>
+                  <Link href={localizePath(locale, "/#servicos")}>{s.name}</Link>
                 </li>
               ))}
             </ul>
@@ -47,7 +50,7 @@ export function FooterA() {
           <div className={styles.col}>
             <h2 className={styles.title}>{contactTitle}</h2>
             <ul>
-              {site.contact.channels.map((c) => (
+              {contactChannels(locale).map((c) => (
                 <li key={c.kind}>
                   <a href={contactHref(c)} {...(isExternal(contactHref(c)) ? { target: "_blank", rel: "noopener" } : {})}>
                     {contactValue(c)}
@@ -79,11 +82,14 @@ export function FooterA() {
           <ul className={styles.legalLinks}>
             {legal.map((l) => (
               <li key={l.label} className={l.href ? undefined : styles.pending}>
-                {l.href ? <a href={l.href}>{l.label}</a> : l.label}
+                {l.href ? <a href={localizePath(locale, l.href)}>{l.label}</a> : l.label}
               </li>
             ))}
             <li>
-              <a href="#conteudo">Voltar ao topo ↑</a>
+              <LocaleSwitch {...languageSwitch(locale)} variant="name" className={styles.locale} />
+            </li>
+            <li>
+              <a href="#conteudo">{ui.backToTop}</a>
             </li>
           </ul>
         </div>

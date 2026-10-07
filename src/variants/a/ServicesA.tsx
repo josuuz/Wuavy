@@ -1,9 +1,8 @@
 import { ChapterHead, Section } from "@/components/layout/Section";
 import { RollText } from "@/components/motion";
-import { home } from "@/data/home";
 import { activeServices } from "@/data/services";
-import { site } from "@/data/site";
-import { contactHref } from "@/lib/contact";
+import type { Locale } from "@/i18n/config";
+import { getDictionary, talkHref } from "@/i18n/dictionaries";
 import { pad } from "@/lib/utils";
 import styles from "./ServicesA.module.css";
 
@@ -13,9 +12,11 @@ import styles from "./ServicesA.module.css";
   a Paper band runs in along the channel angle and the name rolls.
 */
 
-export function ServicesA() {
+export function ServicesA({ locale }: { locale: Locale }) {
+  const { home, ui } = getDictionary(locale);
+
   return (
-    <Section id="servicos" surface="black" label="Serviços" className={`tx-grain ${styles.section}`}>
+    <Section id="servicos" surface="black" label={ui.sections.services} className={`tx-grain ${styles.section}`}>
       <div className={`frame ${styles.head}`}>
         <ChapterHead index={2} name={home.services.chapter} className={styles.chapter} />
         <p className={styles.headline}>{home.services.headline}</p>
@@ -23,8 +24,8 @@ export function ServicesA() {
       </div>
 
       <ol className={styles.list}>
-        {activeServices.map((service, i) => {
-          const href = service.href ?? contactHref(site.contact.primary, service.name);
+        {activeServices(locale).map((service, i) => {
+          const href = service.href ?? talkHref(locale, service.name);
           const label = service.href ? home.services.more : home.services.cta;
           return (
             <li key={service.id} className={styles.row}>

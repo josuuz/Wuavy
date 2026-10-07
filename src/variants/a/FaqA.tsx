@@ -1,8 +1,7 @@
 import { ChapterHead, Section } from "@/components/layout/Section";
 import { TextLink } from "@/components/ui/TextLink";
-import { home } from "@/data/home";
-import { site } from "@/data/site";
-import { contactHref } from "@/lib/contact";
+import type { Locale } from "@/i18n/config";
+import { getDictionary, talkHref } from "@/i18n/dictionaries";
 import { pad } from "@/lib/utils";
 import styles from "./FaqA.module.css";
 
@@ -11,8 +10,9 @@ import styles from "./FaqA.module.css";
   and screen readers get the accordion for free. The same answers go to
   search engines as FAQPage structured data.
 */
-export function FaqA() {
-  const { chapter, headline, items } = home.faq;
+export function FaqA({ locale }: { locale: Locale }) {
+  const { home, ui, contact } = getDictionary(locale);
+  const { chapter, headline, more, ask, items } = home.faq;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -25,14 +25,13 @@ export function FaqA() {
   };
 
   return (
-    <Section id="faq" surface="fog" label="FAQ" className={`tx-grain ${styles.section}`}>
+    <Section id="faq" surface="fog" label={ui.sections.faq} className={`tx-grain ${styles.section}`}>
       <div className="frame">
         <div className={styles.side}>
           <ChapterHead index={6} name={chapter} className={styles.chapter} />
           <h2 className={styles.headline}>{headline}</h2>
           <p className={styles.more}>
-            Ficou alguma dúvida?{" "}
-            <TextLink href={contactHref(site.contact.primary, "Dúvida")}>Pergunte direto</TextLink>
+            {more} <TextLink href={talkHref(locale, contact.topics.question)}>{ask}</TextLink>
           </p>
         </div>
 

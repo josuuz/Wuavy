@@ -4,18 +4,16 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type Ref } from
 
 import { Button } from "@/components/ui/Button";
 import {
-  guide,
+  fill,
   isQuestion,
-  questions,
   questionsLeft,
-  results,
-  stages,
+  stageOrder,
   whatsappMessage,
   type Answer,
+  type PassoCopy,
   type QuestionId,
   type ResultId,
 } from "@/data/passo";
-import { whatsapp } from "@/data/site";
 import { whatsappHref } from "@/lib/contact";
 import styles from "./PassoGuide.module.css";
 
@@ -31,6 +29,9 @@ type Node = "intro" | QuestionId | ResultId;
 
 interface PassoGuideProps {
   ref: Ref<HTMLDivElement>;
+  copy: PassoCopy;
+  /** The WhatsApp number the recommendation opens, with the story already typed. */
+  whatsapp: string;
   open: boolean;
   /** `back`: return focus to PASSO (keyboard and the card's own buttons). */
   onClose: (back: boolean) => void;
@@ -40,7 +41,8 @@ interface PassoGuideProps {
 
 const PICK_MS = 180;
 
-export function PassoGuide({ ref, open, onClose, onReact }: PassoGuideProps) {
+export function PassoGuide({ ref, copy, whatsapp, open, onClose, onReact }: PassoGuideProps) {
+  const { guide, questions, results, stages } = copy;
   const [node, setNode] = useState<Node>("intro");
   const [steps, setSteps] = useState<Array<{ at: QuestionId; answer: Answer }>>([]);
   const [picked, setPicked] = useState<string | null>(null);
@@ -122,10 +124,10 @@ export function PassoGuide({ ref, open, onClose, onReact }: PassoGuideProps) {
   } else if (isQuestion(node)) {
     const question = questions[node];
     done = steps.length + 1;
-    dots = steps.length + questionsLeft(node);
+    dots = steps.length + questionsLeft(questions, node);
     body = (
       <>
-        {title(question.text, `Pergunta ${done} de ${dots}.`)}
+        {title(question.text, fill(guide.progress, { done, total: dots }))}
         <div className={styles.chips} role="group" aria-labelledby={titleId}>
           {question.answers.map((answer, i) => (
             <button
@@ -142,16 +144,16 @@ export function PassoGuide({ ref, open, onClose, onReact }: PassoGuideProps) {
         </div>
         {steps.length ? (
           <button type="button" className={styles.link} onClick={back}>
-            ← Voltar
+            {guide.back}
           </button>
         ) : null}
       </>
     );
   } else {
     const result = results[node];
-    const last = Math.max(...result.now.map((stage) => stages.findIndex((s) => s.id === stage)));
+    const last = Math.max(...result.now.map((stage) => stageOrder.indexOf(stage)));
     const onlyAutomation = result.now.every((stage) => stage === "automacao");
-    const href = whatsappHref(whatsapp.number, whatsappMessage(steps.map((s) => s.answer), result));
+    const href = whatsappHref(whatsapp, whatsappMessage(copy, steps.map((s) => s.answer), result));
     body = (
       <>
         <p className={styles.label}>{guide.resultKicker}</p>
@@ -162,14 +164,14 @@ export function PassoGuide({ ref, open, onClose, onReact }: PassoGuideProps) {
           <div className={styles.path}>
             <p className={styles.label}>{guide.path}</p>
             <ol className={styles.track}>
-              {stages.map((stage, i) => {
-                const now = result.now.includes(stage.id);
+              {stageOrder.map((stage, i) => {
+                const now = result.now.includes(stage);
                 const next = !now && i === last + 1;
                 return (
-                  <li key={stage.id} className={styles.stage} data-state={now ? "now" : next ? "next" : undefined}>
+                  <li key={stage} className={styles.stage} data-state={now ? "now" : next ? "next" : undefined}>
                     <span className={styles.node} aria-hidden="true" />
-                    {stage.label}
-                    {now ? <span className="sr-only"> (agora)</span> : null}
+                    {stages[stage]}
+                    {now ? <span className="sr-only"> {guide.now}</span> : null}
                     {next ? <span className={styles.later}>{guide.pathNext}</span> : null}
                   </li>
                 );

@@ -8,14 +8,16 @@ import { Contact } from "@/components/sections/Contact";
 import { TextLink } from "@/components/ui/TextLink";
 import { CaseFilm } from "@/components/work/CaseFilm";
 import { CaseMedia } from "@/components/work/CaseMedia";
-import { cases, getCase } from "@/data/cases";
+import { getCase, getCases } from "@/data/cases";
 import { serviceName } from "@/data/services";
+import { isLocale, localizePath, ogLocale, pageAlternates } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import styles from "./page.module.css";
 
 /*
-  Case template. Every case in src/data/cases.ts gets a static page, always
-  in the same order: cover and facts, then Antes e depois, Desafio, O que
+  Case template. Every case in src/data/cases.ts gets a static page per
+  language (its words are in the dictionaries), always in the same order: cover and facts, then Antes e depois, Desafio, O que
   fizemos, Em movimento, Destaques técnicos, O que mudou, gallery, next case.
   A chapter without content is skipped and the numbers close up.
   Placeholder cases render with a notice and are kept out of search (noindex)
@@ -24,21 +26,29 @@ import styles from "./page.module.css";
 
 export const dynamicParams = false;
 
-export function generateStaticParams() {
-  return cases.map((item) => ({ slug: item.slug }));
+export async function generateStaticParams({ params }: { params: { locale: string } }) {
+  if (!isLocale(params.locale)) return [];
+  return getCases(params.locale).map((item) => ({ slug: item.slug }));
 }
 
-export async function generateMetadata(props: PageProps<"/trabalho/[slug]">): Promise<Metadata> {
-  const { slug } = await props.params;
-  const item = getCase(slug);
+export async function generateMetadata(props: PageProps<"/[locale]/trabalho/[slug]">): Promise<Metadata> {
+  const { locale, slug } = await props.params;
+  if (!isLocale(locale)) return {};
+  const item = getCase(slug, locale);
   if (!item) return {};
 
   const cover = item.cover.kind === "image" ? item.cover.src : item.cover.poster;
   return {
     title: item.title,
     description: item.summary,
-    alternates: { canonical: `/trabalho/${item.slug}` },
-    openGraph: { title: item.title, description: item.summary, images: [{ url: cover.src }] },
+    alternates: pageAlternates(locale, `/trabalho/${item.slug}`),
+    openGraph: {
+      title: item.title,
+      description: item.summary,
+      images: [{ url: cover.src }],
+      locale: ogLocale(locale),
+      url: localizePath(locale, `/trabalho/${item.slug}`),
+    },
     robots: item.placeholder ? { index: false, follow: true } : undefined,
   };
 }
@@ -51,10 +61,13 @@ interface Chapter {
   wide?: boolean;
 }
 
-export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
-  const { slug } = await props.params;
-  const item = getCase(slug);
+export default async function CasePage(props: PageProps<"/[locale]/trabalho/[slug]">) {
+  const { locale, slug } = await props.params;
+  if (!isLocale(locale)) notFound();
+  const cases = getCases(locale);
+  const item = cases.find((c) => c.slug === slug);
   if (!item) notFound();
+  const t = getDictionary(locale).caseStudy;
 
   const index = cases.indexOf(item);
   const next = cases[(index + 1) % cases.length];
@@ -65,12 +78,12 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
   // The story, always in this order; a case shows only the chapters it has.
   const text = (value?: string) => (value ? <p className={styles.text}>{value}</p> : null);
   const story: Chapter[] = [
-    { key: "challenge", name: "Desafio", node: text(item.body?.challenge) },
-    { key: "approach", name: "O que fizemos", node: text(item.body?.approach) },
-    { key: "film", name: "Em movimento", node: item.film ? <CaseFilm film={item.film} /> : null, wide: true },
+    { key: "challenge", name: t.challenge, node: text(item.body?.challenge) },
+    { key: "approach", name: t.approach, node: text(item.body?.approach) },
+    { key: "film", name: t.film, node: item.film ? <CaseFilm film={item.film} /> : null, wide: true },
     {
       key: "highlights",
-      name: "Destaques técnicos",
+      name: t.highlights,
       node: item.highlights?.length ? (
         <div className={styles.tech}>
           <ul className={styles.highlights}>
@@ -83,7 +96,7 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
           </ul>
           {item.stack?.length ? (
             <p className={styles.stack}>
-              <span className={styles.stackLabel}>Stack</span>
+              <span className={styles.stackLabel}>{t.stack}</span>
               {item.stack.map((tool) => (
                 <span key={tool}>{tool}</span>
               ))}
@@ -92,48 +105,48 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
         </div>
       ) : null,
     },
-    { key: "outcome", name: "O que mudou", node: text(item.body?.outcome) },
+    { key: "outcome", name: t.outcome, node: text(item.body?.outcome) },
   ];
   const chapters = story.filter((c) => Boolean(c.node));
   const told = chapters.some((c) => c.key === "challenge" || c.key === "approach" || c.key === "outcome");
 
   return (
     <>
-      <Section id="case" surface="black" label="Case" className={styles.intro}>
+      <Section id="case" surface="black" label={t.sections.intro} className={styles.intro}>
         <div className="frame">
           <p className={styles.back}>
-            <TextLink href="/#projetos">Projetos</TextLink>
+            <TextLink href={localizePath(locale, "/#projetos")}>{t.back}</TextLink>
           </p>
           <h1 className={styles.title}>{item.title}</h1>
           <p className={`type-body ${styles.summary}`}>{item.summary}</p>
           {item.url ? (
             <p className={styles.live}>
-              <TextLink href={item.url}>Ver o site no ar ↗</TextLink>
+              <TextLink href={item.url}>{t.live}</TextLink>
             </p>
           ) : null}
 
           <dl className={styles.facts}>
             <div>
-              <dt>Cliente</dt>
+              <dt>{t.client}</dt>
               <dd>{item.client}</dd>
             </div>
             <div>
-              <dt>Segmento</dt>
+              <dt>{t.segment}</dt>
               <dd>{item.segment}</dd>
             </div>
             {combo ? (
               <div>
-                <dt>Combo</dt>
+                <dt>{t.combo}</dt>
                 <dd className={styles.combo}>{item.scope?.join(" + ")}</dd>
               </div>
             ) : (
               <div>
-                <dt>{item.services.length > 1 ? "Serviços" : "Serviço"}</dt>
-                <dd>{(item.scope ?? item.services.map(serviceName)).join(", ")}</dd>
+                <dt>{item.services.length > 1 ? t.services : t.service}</dt>
+                <dd>{(item.scope ?? item.services.map((id) => serviceName(id, locale))).join(", ")}</dd>
               </div>
             )}
             <div>
-              <dt>Ano</dt>
+              <dt>{t.year}</dt>
               <dd>{item.year}</dd>
             </div>
           </dl>
@@ -147,14 +160,14 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
         </ViewTransition>
       </Section>
 
-      <Section id="case-conteudo" surface="paper" label="Conteúdo" className={styles.body}>
+      <Section id="case-conteudo" surface="paper" label={t.sections.content} className={styles.body}>
         <div className="frame">
           {item.before ? (
             <div className={styles.compare}>
-              <ChapterHead index={1} name="Antes e depois" className={styles.label} />
+              <ChapterHead index={1} name={t.beforeAfter} className={styles.label} />
               {[
-                { media: item.before.media, label: "Antes" },
-                { media: item.cover, label: "Depois" },
+                { media: item.before.media, label: t.before },
+                { media: item.cover, label: t.after },
               ].map(({ media, label }) => (
                 <figure key={label} className={styles.shot}>
                   <div className={styles.shotMedia}>
@@ -173,10 +186,8 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
 
           {item.placeholder || !told ? (
             <>
-              <ChapterHead index={1} name="Em preparação" className={styles.label} />
-              <p className={styles.text}>
-                Este case ainda está sendo escrito. Quando publicado, esta página mostra o desafio, o que construímos e o que mudou, com resultados verificados.
-              </p>
+              <ChapterHead index={1} name={t.preparing} className={styles.label} />
+              <p className={styles.text}>{t.preparingText}</p>
             </>
           ) : (
             chapters.map((chapter, i) => (
@@ -203,15 +214,15 @@ export default async function CasePage(props: PageProps<"/trabalho/[slug]">) {
 
         {next && next.slug !== item.slug ? (
           <div className={`frame ${styles.next}`}>
-            <p className={styles.nextLabel}>Próximo case</p>
-            <TextLink href={`/trabalho/${next.slug}`} className={styles.nextLink}>
+            <p className={styles.nextLabel}>{t.next}</p>
+            <TextLink href={localizePath(locale, `/trabalho/${next.slug}`)} className={styles.nextLink}>
               {next.title}
             </TextLink>
           </div>
         ) : null}
       </Section>
 
-      <Contact index={2} />
+      <Contact locale={locale} index={2} />
     </>
   );
 }

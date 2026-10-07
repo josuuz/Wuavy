@@ -1,6 +1,7 @@
 import { ChapterHead, Section } from "@/components/layout/Section";
 import { LineReveal, WidthWave } from "@/components/motion";
-import { home } from "@/data/home";
+import type { Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
 import { pad } from "@/lib/utils";
 import styles from "./DifferentialsA.module.css";
 
@@ -8,8 +9,8 @@ import styles from "./DifferentialsA.module.css";
   Why WUAVY, as a compact grid (like the values). The manifesto's Paper plane
   lands here. Hovering an item passes the width wave through its name.
 */
-export function DifferentialsA() {
-  const { chapter, headline, items } = home.differentials;
+export function DifferentialsA({ locale }: { locale: Locale }) {
+  const { chapter, headline, items } = getDictionary(locale).home.differentials;
 
   return (
     <Section id="diferenciais" surface="paper" label={chapter} className={`tx-grain ${styles.section}`}>

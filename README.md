@@ -21,11 +21,11 @@ Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4. Nenhum
 
 | O quê | Arquivo |
 |---|---|
-| Textos da home | `src/data/home.ts` (cada linha marcada como `approved` ou `new`) |
-| Serviços | `src/data/services.ts` (adicione um item; `status: "soon"` esconde) |
-| Cases | `src/data/cases.ts` (siga o "Padrão de case" abaixo) |
-| Método | `src/data/process.ts` |
-| Contato, navegação, redes | `src/data/site.ts` (troque e-mail por WhatsApp, calendário ou formulário aqui) |
+| Todos os textos do site (pt-BR e pt-PT) | `src/i18n/dictionaries/pt-BR.tsx` e `pt-PT.tsx`: mesma forma, o TypeScript acusa o que faltar em um dos dois |
+| Idiomas e URLs | `src/i18n/config.ts`: pt-BR nas URLs atuais, pt-PT em `/pt-pt`. O `src/proxy.ts` leva para `/pt-pt` quem escolheu pt-PT (cookie) ou, sem escolha, quem está em Portugal (`x-vercel-ip-country`); robôs e o app Pulse nunca são redirecionados |
+| Serviços | `src/data/services.ts` (adicione um item; `status: "soon"` esconde; textos nos dicionários) |
+| Cases | `src/data/cases.ts` (fatos e mídia; textos nos dicionários, em `cases`; siga o "Padrão de case" abaixo) |
+| Contato, redes, WhatsApp oficial | `src/data/site.ts` (troque e-mail por WhatsApp, calendário ou formulário aqui) |
 | Tokens (cor, tipo, grid, motion) | `src/styles/tokens.css` (único lugar com os valores da marca) |
 
 ## Estrutura
@@ -67,7 +67,7 @@ Todo projeto entra do mesmo jeito: uma linha em **Projetos** na home e uma pági
 | Antes (redesign) | print do site antigo, mesmo enquadramento | `src/assets/work/<slug>-antes.jpg` |
 | Vídeos + pôsteres | gerados pelo script abaixo | `public/work/<slug>/`, `src/assets/work/` |
 | Galeria | 2 a 4 prints 16:9 (detalhe, celulares, marca) | `src/assets/work/<slug>-*.jpg` |
-| Texto | resumo, desafio, o que fizemos, o que mudou, destaques, stack | `src/data/cases.ts` |
+| Texto | resumo, desafio, o que fizemos, o que mudou, destaques | `src/i18n/dictionaries/*` (`cases`), nos dois idiomas; stack em `src/data/cases.ts` |
 
 O texto diz o que foi feito de verdade: redesign é redesign, imagem gerada por IA é dita como tal, e nenhum número entra sem ser verificado.
 

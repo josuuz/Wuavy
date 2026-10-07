@@ -3,8 +3,9 @@ import { Mona_Sans } from "next/font/google";
 
 import { CustomCursor, RevealObserver } from "@/components/motion";
 import { site } from "@/data/site";
+import { defaultLocale, ogLocale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
 import { brandColors } from "@/lib/brand";
-import { organizationJsonLd } from "@/lib/seo";
 import "./globals.css";
 
 // One family. Both axes: weight builds hierarchy, width is reserved for motion.
@@ -15,26 +16,29 @@ const mona = Mona_Sans({
   variable: "--font-mona",
 });
 
+// The defaults (pt-BR). The public site's layout restates them in the visitor's language.
+const { meta } = getDictionary(defaultLocale);
+
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: site.title,
+    default: meta.title,
     template: `%s | ${site.name}`,
   },
-  description: site.description,
+  description: meta.description,
   applicationName: site.name,
   openGraph: {
     type: "website",
-    locale: "pt_BR",
+    locale: ogLocale(defaultLocale),
     siteName: site.name,
-    title: site.title,
-    description: site.description,
+    title: meta.title,
+    description: meta.description,
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: site.title,
-    description: site.description,
+    title: meta.title,
+    description: meta.description,
   },
   alternates: {
     canonical: "/",
@@ -62,23 +66,17 @@ export const viewport: Viewport = {
 const bootScript = `document.documentElement.classList.add('js');try{var t=null;try{t=localStorage.getItem('wuavy-pulse-theme')}catch(e){}if(t!=='dark')document.documentElement.setAttribute('data-pulse-theme','light')}catch(e){}try{if(sessionStorage.getItem('wuavy-intro'))document.documentElement.setAttribute('data-intro-done','')}catch(e){}try{var n=navigator,c=n.hardwareConcurrency||8,d=n.deviceMemory||8,s=n.connection&&n.connection.saveData;if(matchMedia('(pointer: coarse)').matches||c<=2||d<=2||(c<=4&&d<=4)||s||localStorage.getItem('wuavy-perf')==='lite')document.documentElement.setAttribute('data-perf','lite')}catch(e){}setTimeout(function(){if(!window.__wuavyReveal)document.documentElement.classList.remove('js')},4000);`;
 
 /*
-  The document only. Page chrome lives in route groups: (site) renders the
-  current site's header and footer; /v renders each variation's own.
+  The document only. Page chrome lives in route groups: (site)/[locale]
+  renders the site's skip link, header and footer in the visitor's language
+  (and sets <html lang> once it runs); (app) is the Pulse's, in pt-BR.
 */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={mona.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: bootScript }} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
-        />
       </head>
       <body>
-        <a href="#conteudo" className="skip-link">
-          Pular para o conteúdo
-        </a>
         {children}
         <RevealObserver />
         <CustomCursor />

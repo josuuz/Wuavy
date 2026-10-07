@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 
-import { flow } from "@/data/flow";
 import { cn } from "@/lib/utils";
 import { PassoFigure } from "@/variants/a/PassoFigure";
 import { STAND } from "@/variants/a/passoRig";
@@ -12,13 +11,22 @@ import styles from "./FlowGuide.module.css";
   PASSO as the Pulse's guide: he stands beside the hero and offers to show one
   forgotten opportunity. Nothing plays on its own: each step waits for a
   press, and he hops once as it changes. One button carries the whole walk
-  (its label changes), so focus never drops.
+  (its label changes), so focus never drops. The words come from the page,
+  in its language (the dictionaries' pulse.guide).
 */
 
-const { guide } = flow;
-const DONE = guide.steps.length;
+export interface FlowGuideCopy {
+  invite: string;
+  start: string;
+  next: string;
+  restart: string;
+  note: string;
+  steps: Array<{ tag: string; text: string; detail: string[] }>;
+  done: string;
+}
 
-export function FlowGuide({ className }: { className?: string }) {
+export function FlowGuide({ guide, className }: { guide: FlowGuideCopy; className?: string }) {
+  const DONE = guide.steps.length;
   const [step, setStep] = useState(-1);
   const figure = useRef<SVGSVGElement>(null);
 

@@ -6,10 +6,10 @@ import { Section } from "@/components/layout/Section";
 import { HeroChoreography } from "@/components/motion";
 import { Button } from "@/components/ui/Button";
 import { TextLink } from "@/components/ui/TextLink";
-import { home } from "@/data/home";
-import { heroImage, phrases } from "@/data/variants";
-import { site } from "@/data/site";
-import { contactHref } from "@/lib/contact";
+import { heroImage } from "@/data/variants";
+import { whatsapp } from "@/data/site";
+import type { Locale } from "@/i18n/config";
+import { getDictionary, talkHref } from "@/i18n/dictionaries";
 import styles from "./HeroA.module.css";
 import { PassoJourney } from "./PassoJourney";
 import { PassoStill } from "./PassoStill";
@@ -22,11 +22,13 @@ import { PassoStill } from "./PassoStill";
   into the header (HeroChoreography).
 */
 
-export function HeroA() {
+export function HeroA({ locale }: { locale: Locale }) {
+  const { home, ui, passo } = getDictionary(locale);
+
   return (
-    <Section id="inicio" surface="black" label="Início" className={styles.hero} data-hero="">
+    <Section id="inicio" surface="black" label={ui.sections.hero} className={styles.hero} data-hero="">
       <div className={styles.photo} data-intro-image="">
-        <Image src={heroImage.src} alt={heroImage.alt} fill priority sizes="100vw" className={styles.image} />
+        <Image src={heroImage.src} alt={home.hero.imageAlt} fill priority sizes="100vw" className={styles.image} />
         <PassoStill />
       </div>
       <div className={styles.scrim} aria-hidden="true" />
@@ -43,11 +45,11 @@ export function HeroA() {
         <div className={styles.card}>
           <h1 className={styles.title}>
             <span className="sr-only">WUAVY. </span>
-            {phrases.frequency}
+            {home.hero.title}
           </h1>
           <p className={styles.lead}>{home.hero.lead}</p>
           <div className={styles.actions}>
-            <Button href={contactHref(site.contact.primary)} size="sm">
+            <Button href={talkHref(locale)} size="sm">
               {home.hero.cta}
             </Button>
             <TextLink href={home.hero.secondary.href} className={styles.secondary}>
@@ -64,7 +66,7 @@ export function HeroA() {
       </div>
 
       <HeroChoreography />
-      <PassoJourney />
+      <PassoJourney copy={passo} whatsapp={whatsapp.number} />
     </Section>
   );
 }
