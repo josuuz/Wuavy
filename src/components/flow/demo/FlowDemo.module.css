@@ -18,7 +18,9 @@
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   gap: 0.6rem;
-  padding: 0.75rem 1rem 0;
+  /* Installed, the rail starts below the status bar instead of under it. */
+  padding: max(0.75rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0
+    max(1rem, env(safe-area-inset-left));
   background: var(--surface);
   border-bottom: var(--rule) solid var(--border);
 }
@@ -178,10 +180,16 @@
   display: none;
 }
 
+/*
+  Installed, the app draws under the notch and the home indicator
+  (viewport-fit=cover), so the padding takes the larger of the design's value
+  and the inset. In a browser every inset is 0 and nothing moves.
+*/
 .content {
   width: 100%;
   max-width: 92rem;
-  padding: 1.5rem 1rem 4rem;
+  padding: 1.5rem max(1rem, env(safe-area-inset-right)) max(4rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -212,7 +220,8 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    padding: 1.4rem 1rem 1.25rem;
+    padding: max(1.4rem, env(safe-area-inset-top)) 1rem max(1.25rem, env(safe-area-inset-bottom))
+      max(1rem, env(safe-area-inset-left));
     overflow-y: auto;
     border-bottom: 0;
     border-right: var(--rule) solid var(--border);

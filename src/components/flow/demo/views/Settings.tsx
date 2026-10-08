@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type ChangeEvent, type FormEvent } from "react";
 
 import { authMessage } from "@/components/flow/auth/messages";
 import auth from "@/components/flow/auth/AuthFrame.module.css";
@@ -62,6 +62,7 @@ export function Settings() {
         <AccountSettings />
         {can.admin ? <PlanSettings /> : null}
         <PrivacySettings />
+        <InstallSettings />
         {can.admin ? <HelpSettings /> : null}
       </div>
     </div>
@@ -363,6 +364,42 @@ function PrivacySettings() {
           </a>
         </li>
       </ul>
+    </section>
+  );
+}
+
+/*
+  How to put the Pulse on the phone's home screen. Only shown in a browser:
+  inside the installed app there is nothing left to do. iOS has no install
+  prompt a site may call, so both paths are written out as steps.
+*/
+const steady = () => () => {};
+
+function installedAlready() {
+  return window.matchMedia("(display-mode: standalone)").matches || "standalone" in navigator;
+}
+
+function InstallSettings() {
+  // Reads the browser once, like ThemeToggle: nothing here changes while the screen is open.
+  const how = useSyncExternalStore(
+    steady,
+    () => (installedAlready() ? null : /iphone|ipad|ipod/i.test(navigator.userAgent) ? "ios" : "android"),
+    () => null,
+  );
+
+  if (!how) return null;
+
+  return (
+    <section className={styles.panel} aria-labelledby="instalar">
+      <h2 id="instalar" className={styles.label}>
+        Instalar no celular
+      </h2>
+      <p className={styles.fine}>
+        {how === "ios"
+          ? "No iPhone: toque em Compartilhar, na barra do Safari, e escolha “Adicionar à Tela de Início”."
+          : "No Android: abra o menu do navegador e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”."}{" "}
+        O Pulse passa a abrir como aplicativo, em tela cheia, sem a barra do navegador.
+      </p>
     </section>
   );
 }
