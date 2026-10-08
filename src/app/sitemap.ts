@@ -25,7 +25,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 
   return pages.flatMap(({ path, ...rest }) => {
-    const languages = Object.fromEntries(locales.map((l) => [l, absoluteUrl(localizePath(l, path))]));
+    // x-default too, so the sitemap says the same as each page's <head>.
+    const languages = {
+      ...Object.fromEntries(locales.map((l) => [l, absoluteUrl(localizePath(l, path))])),
+      "x-default": absoluteUrl(path),
+    };
     return locales.map((locale) => ({
       url: absoluteUrl(localizePath(locale, path)),
       ...rest,

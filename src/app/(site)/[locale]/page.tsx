@@ -22,7 +22,9 @@ import { WorkA } from "@/variants/a/WorkA";
 */
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
-  return isLocale(locale) ? { alternates: pageAlternates(locale, "/") } : {};
+  if (!isLocale(locale)) return {};
+  // `absolute`: the home title already carries the brand, so the layout's "%s | WUAVY" would say it twice.
+  return { title: { absolute: getDictionary(locale).meta.title }, alternates: pageAlternates(locale, "/") };
 }
 
 export default async function Home({ params }: PageProps<"/[locale]">) {

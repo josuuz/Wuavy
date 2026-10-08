@@ -4,6 +4,7 @@ import { LegalArticle } from "@/components/sections/LegalArticle";
 import { isLocale, localizePath, ogLocale, pageAlternates } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { legalContext } from "@/lib/legal";
+import { shareImage } from "@/lib/seo";
 
 /*
   The terms of use of Wuavy Pulse: what the service is, the plan, fair use,
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/termos">
     title,
     description,
     alternates: pageAlternates(locale, "/termos"),
-    openGraph: { title, description, url: localizePath(locale, "/termos"), locale: ogLocale(locale) },
+    openGraph: { title, description, url: localizePath(locale, "/termos"), locale: ogLocale(locale), images: [shareImage] },
   };
 }
 

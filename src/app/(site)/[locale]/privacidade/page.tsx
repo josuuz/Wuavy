@@ -4,6 +4,7 @@ import { LegalArticle } from "@/components/sections/LegalArticle";
 import { isLocale, localizePath, ogLocale, pageAlternates } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { legalContext } from "@/lib/legal";
+import { shareImage } from "@/lib/seo";
 
 /*
   The privacy policy (LGPD), for the site and for Wuavy Pulse: what is
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/privacid
     title,
     description,
     alternates: pageAlternates(locale, "/privacidade"),
-    openGraph: { title, description, url: localizePath(locale, "/privacidade"), locale: ogLocale(locale) },
+    openGraph: { title, description, url: localizePath(locale, "/privacidade"), locale: ogLocale(locale), images: [shareImage] },
   };
 }
 

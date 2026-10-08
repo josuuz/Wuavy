@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { TextLink } from "@/components/ui/TextLink";
 import { isLocale, localizePath, ogLocale, pageAlternates } from "@/i18n/config";
 import { getDictionary, talkHref } from "@/i18n/dictionaries";
+import { shareImage, softwareJsonLd } from "@/lib/seo";
 import { pad } from "@/lib/utils";
 import styles from "./page.module.css";
 
@@ -24,10 +25,11 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/pulse">)
   if (!isLocale(locale)) return {};
   const { title, description } = getDictionary(locale).pulse.meta;
   return {
-    title,
+    // `absolute`: the title already names Wuavy, so the layout's "%s | WUAVY" would repeat it.
+    title: { absolute: title },
     description,
     alternates: pageAlternates(locale, "/pulse"),
-    openGraph: { title, description, url: localizePath(locale, "/pulse"), locale: ogLocale(locale) },
+    openGraph: { title, description, url: localizePath(locale, "/pulse"), locale: ogLocale(locale), images: [shareImage] },
   };
 }
 
@@ -40,6 +42,14 @@ export default async function FlowPage({ params }: PageProps<"/[locale]/pulse">)
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            softwareJsonLd({ name: flow.name, description: flow.meta.description, url: localizePath(locale, "/pulse") }),
+          ),
+        }}
+      />
       <Section id="pulse" surface="black" label={flow.name} className={`tx-grain ${styles.hero}`}>
         <div className={`tx-light ${styles.light}`} data-tone="signal" aria-hidden="true" />
         <div className={`frame ${styles.heroGrid}`}>

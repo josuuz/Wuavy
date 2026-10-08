@@ -453,9 +453,9 @@ const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
 
 export const ptBR = {
   meta: {
-    title: "WUAVY: sites, tráfego pago e sistemas de crescimento",
+    title: "WUAVY: criação de sites, tráfego pago e sistemas de crescimento",
     description:
-      "Agência de crescimento digital. Sites, gestão de tráfego pago e sistemas sob medida com IA, automações e CRM, no mesmo ritmo.",
+      "Agência de crescimento digital. Criação de sites, gestão de tráfego pago e sistemas sob medida com IA, automações e CRM, no mesmo ritmo.",
   },
 
   ui: {
@@ -678,9 +678,9 @@ export const ptBR = {
     name: "Wuavy Pulse",
     pitch: "Sistema operacional de crescimento para clínicas",
     meta: {
-      title: "Wuavy Pulse",
+      title: "Wuavy Pulse: software de gestão para clínicas de estética",
       description:
-        "Wuavy Pulse é o sistema operacional de crescimento para clínicas: agenda, pacientes, vendas e estoque trabalhando juntos para encontrar oportunidades antes que elas virem prejuízo.",
+        "Software de gestão para clínicas de estética: agenda, pacientes, vendas e estoque trabalhando juntos para encontrar oportunidades antes que elas virem prejuízo.",
     },
 
     hero: {

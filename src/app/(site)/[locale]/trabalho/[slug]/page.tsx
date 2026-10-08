@@ -10,8 +10,10 @@ import { CaseFilm } from "@/components/work/CaseFilm";
 import { CaseMedia } from "@/components/work/CaseMedia";
 import { getCase, getCases } from "@/data/cases";
 import { serviceName } from "@/data/services";
+import { site } from "@/data/site";
 import { isLocale, localizePath, ogLocale, pageAlternates } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { breadcrumbJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import styles from "./page.module.css";
 
@@ -69,6 +71,12 @@ export default async function CasePage(props: PageProps<"/[locale]/trabalho/[slu
   if (!item) notFound();
   const t = getDictionary(locale).caseStudy;
 
+  const trail = breadcrumbJsonLd([
+    { name: site.name, path: localizePath(locale, "/") },
+    { name: t.back, path: localizePath(locale, "/#projetos") },
+    { name: item.title, path: localizePath(locale, `/trabalho/${item.slug}`) },
+  ]);
+
   const index = cases.indexOf(item);
   const next = cases[(index + 1) % cases.length];
   const combo = item.scope && item.scope.length > 1;
@@ -112,6 +120,9 @@ export default async function CasePage(props: PageProps<"/[locale]/trabalho/[slu
 
   return (
     <>
+      {item.placeholder ? null : (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(trail) }} />
+      )}
       <Section id="case" surface="black" label={t.sections.intro} className={styles.intro}>
         <div className="frame">
           <p className={styles.back}>

@@ -6,7 +6,7 @@ import { SmoothScroll } from "@/components/motion";
 import { site } from "@/data/site";
 import { isLocale, localizePath, locales, ogLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { organizationJsonLd } from "@/lib/seo";
+import { organizationJsonLd, shareImage } from "@/lib/seo";
 
 /*
   The public site, once per language: pt-BR at the plain addresses, pt-PT
@@ -33,8 +33,9 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
       title,
       description,
       url: localizePath(locale, "/"),
+      images: [shareImage],
     },
-    twitter: { card: "summary_large_image", title, description },
+    twitter: { card: "summary_large_image", title, description, images: [shareImage.url] },
   };
 }
 

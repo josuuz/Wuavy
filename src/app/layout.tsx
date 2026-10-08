@@ -6,6 +6,7 @@ import { site } from "@/data/site";
 import { defaultLocale, ogLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { brandColors } from "@/lib/brand";
+import { shareImage } from "@/lib/seo";
 import "./globals.css";
 
 // One family. Both axes: weight builds hierarchy, width is reserved for motion.
@@ -34,11 +35,13 @@ export const metadata: Metadata = {
     title: meta.title,
     description: meta.description,
     url: "/",
+    images: [shareImage],
   },
   twitter: {
     card: "summary_large_image",
     title: meta.title,
     description: meta.description,
+    images: [shareImage.url],
   },
   alternates: {
     canonical: "/",
