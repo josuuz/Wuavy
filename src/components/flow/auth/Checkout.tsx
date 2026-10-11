@@ -12,6 +12,7 @@ import { PRICE } from "@/lib/flow/access";
 import { brl } from "@/lib/flow/format";
 import { PLAN } from "../demo/copy";
 import { PaymentMethod, Soon } from "../demo/forms";
+import { Crown } from "../demo/Crown";
 import ui from "../demo/ui.module.css";
 import styles from "./AuthFrame.module.css";
 
@@ -69,7 +70,9 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
   // The card form, from Mercado Pago, mounted while the form is shown.
   useEffect(() => {
     if (stage !== "form" || !sdk || !publicKey || !window.MercadoPago) return;
-    const signal = getComputedStyle(document.documentElement).getPropertyValue("--wuavy-signal").trim();
+    // The Pulse's accent as Mercado Pago's button colour: the darker one, since the Brick writes white on it.
+    const frame = document.querySelector("[data-pulse]") ?? document.documentElement;
+    const signal = getComputedStyle(frame).getPropertyValue("--pulse-accent-text").trim();
     let controller: BrickController | undefined;
     let gone = false;
     new window.MercadoPago(publicKey, { locale: "pt-BR" })
@@ -197,7 +200,10 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
     <>
       <Script src={SDK} strategy="afterInteractive" onReady={() => setSdk(true)} />
       <header className={ui.head}>
-        <h1 className={ui.title}>{PLAN.subscribe.title}</h1>
+        <h1 className={`${ui.title} ${ui.offerTitle}`}>
+          <Crown className={ui.offerTitleCrown} />
+          {PLAN.subscribe.title}
+        </h1>
         <p className={ui.price}>
           <strong>{brl(PRICE)}</strong>
           <span>/mês</span>

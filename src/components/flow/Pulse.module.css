@@ -1,0 +1,185 @@
+/* The Pulse's motion: it breathes, floats and leans; never jumps or flashes. */
+.pulse {
+  display: block;
+  flex: none;
+  overflow: visible;
+  /* A warm, soft halo: the approved glow, kept low so it never reads as neon. */
+  /* On a light ground a fine warm edge keeps the cream body from melting into white cards. */
+  filter: drop-shadow(0 4px 10px color-mix(in srgb, #ff7a3d var(--pulse-glow, 22%), transparent))
+    drop-shadow(0 1px 1.5px var(--pulse-edge, transparent));
+}
+
+:global(html[data-perf="lite"]) .pulse {
+  filter: none;
+}
+
+.float,
+.lean,
+.pose,
+.floor {
+  transform-box: fill-box;
+}
+
+/* Idle: a slow float with a breath; the floor light answers it. */
+.float {
+  transform-origin: 50% 100%;
+  animation: pulse-float 5.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.floor {
+  transform-origin: 50% 50%;
+  animation: pulse-floor 5.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/* One expression shows; the others wait, so a change is a soft crossfade. */
+.pose {
+  opacity: 0;
+  transform-origin: 50% 60%;
+  transform: scale(0.97);
+  transition:
+    opacity 320ms ease,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pulse[data-pose="presenca"] .pose[data-pose="presenca"],
+.pulse[data-pose="acolhimento"] .pose[data-pose="acolhimento"],
+.pulse[data-pose="alegria"] .pose[data-pose="alegria"],
+.pulse[data-pose="foco"] .pose[data-pose="foco"],
+.pulse[data-pose="tranquilidade"] .pose[data-pose="tranquilidade"],
+.pulse[data-pose="surpresa"] .pose[data-pose="surpresa"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Attention: a small lean toward whoever reaches for it (pointer or keyboard). */
+.lean {
+  transform-origin: 50% 90%;
+  transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:is(a, button, [data-pulse-host]):is(:hover, :focus-visible) .pulse[data-interactive] .lean,
+.pulse[data-interactive]:hover .lean {
+  transform: rotate(-5deg) translateY(-2px);
+}
+
+/* Welcome: arrives once. */
+.pulse[data-greet] .lean {
+  animation: pulse-arrive 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Thinking: a calmer, slower float while the answer is calculated. */
+.pulse[data-state="thinking"] .float {
+  animation-duration: 7s;
+}
+
+/* Success: a short hop, then back. */
+.pulse[data-state="celebrating"] .lean {
+  animation: pulse-hop 700ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
+@keyframes pulse-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-3.5%) scale(1.012, 0.99);
+  }
+}
+
+@keyframes pulse-floor {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.86);
+    opacity: 0.7;
+  }
+}
+
+@keyframes pulse-arrive {
+  from {
+    transform: translateY(10%) scale(0.86);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-hop {
+  0%,
+  100% {
+    transform: none;
+  }
+  40% {
+    transform: translateY(-9%) rotate(-3deg);
+  }
+}
+
+/*
+  Motion turned down: the decorative loops stop altogether — the float, the
+  breath, the blinking floor light. What is left is the short move that
+  carries meaning, a greeting arriving or an action finishing, and even those
+  are smaller. Nothing repeats on its own.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .floor,
+  .eyes {
+    animation: none;
+  }
+
+  .pulse[data-greet] .lean {
+    animation-name: pulse-arrive-soft;
+  }
+
+  .pulse[data-state="celebrating"] .lean {
+    animation-name: pulse-hop-soft;
+  }
+}
+
+/* With the model on top, the drawing underneath is hidden: it should not go
+   on animating where no one can see it. */
+.solid[data-model] .pulse * {
+  animation: none;
+}
+
+@keyframes pulse-arrive-soft {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-hop-soft {
+  0%,
+  100% {
+    transform: none;
+  }
+  40% {
+    transform: translateY(-3%);
+  }
+}
+
+/* Where the model is asked for: the drawing holds the space and waits
+   underneath, so there is never a gap and never two Pulses at once. */
+.solid {
+  position: relative;
+  display: block;
+}
+
+.solid .pulse {
+  width: 100%;
+  height: 100%;
+  transition: opacity 320ms ease;
+}
+
+.solid[data-model] .pulse {
+  opacity: 0;
+}

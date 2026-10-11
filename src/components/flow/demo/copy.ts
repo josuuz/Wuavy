@@ -122,7 +122,7 @@ export const PLAN = {
 };
 
 /**
- * The first-run guide, told by PASSO: a short list the clinic can follow,
+ * The first-run guide, told by the Pulse: a short list the clinic can follow,
  * skip or leave for later. `go` is said away from the step's screen, `here`
  * on it. Six steps everywhere; in the demo the first is already done (its
  * clinic comes configured, and the demo has no settings).
@@ -148,7 +148,7 @@ export const GUIDE = {
       `Você pulou ${n === 1 ? "1 etapa" : `${n} etapas`}. Ela${n === 1 ? "" : "s"} continua${n === 1 ? "" : "m"} aqui: dá para rever o tutorial em Configurações.`,
     cta: "Concluir",
   },
-  restart: { title: "Ajuda e tutorial", text: "Reveja os primeiros passos com o PASSO quando quiser.", cta: "Rever o tutorial" },
+  restart: { title: "Ajuda e tutorial", text: "Reveja os primeiros passos com o Pulse quando quiser.", cta: "Rever o tutorial" },
   steps: [
     {
       id: "clinica",
@@ -205,7 +205,7 @@ export const GUIDE = {
 
 export type GuideStepId = (typeof GUIDE.steps)[number]["id"];
 
-/** PASSO's one-time tip on a screen's first visit. */
+/** The Pulse's one-time tip on a screen's first visit. */
 export const SCREEN_TIPS: Record<string, string> = {
   procedimentos: "Cadastre os serviços da clínica para o Pulse conseguir cruzar agenda, pacientes e estoque.",
   estoque: "Depois vamos relacionar produtos aos procedimentos para identificar oportunidades.",

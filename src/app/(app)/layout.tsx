@@ -48,7 +48,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // Installed, the app owns the whole screen; the shell pads itself back off the notch.
   viewportFit: "cover",
-  themeColor: "#f3f3f0",
+  themeColor: "#f6f4ee",
 };
 
 export default function AppLayout({ children }: { children: ReactNode }) {

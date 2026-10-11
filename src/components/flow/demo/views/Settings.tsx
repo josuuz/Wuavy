@@ -81,7 +81,7 @@ function ClinicSettings() {
   const locked = !owner || !access.canEdit;
   const guide = useGuide();
   const guided = guide.active && !guide.saved.minimized && guide.current?.id === "clinica";
-  // PASSO points at each field the first step asks for: still empty, or already done.
+  // The Pulse's guide points at each field the first step asks for: still empty, or already done.
   const checklist = clinicChecklist(org);
   const mark = (key: ClinicField) =>
     guided ? (checklist.find((f) => f.key === key)?.filled ? "ok" : "todo") : undefined;
@@ -404,7 +404,7 @@ function InstallSettings() {
   );
 }
 
-/** The first-run guide, again: PASSO walks the first steps from the start. */
+/** The first-run guide, again: the Pulse walks the first steps from the start. */
 function HelpSettings() {
   const { restart } = useGuide();
   return (

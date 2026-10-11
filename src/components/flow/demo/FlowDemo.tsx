@@ -6,22 +6,23 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { markSubscribeIntent } from "@/app/(app)/pulse/demo/actions";
-import { Wordmark } from "@/components/brand/Wordmark";
 import { site } from "@/data/site";
 import { contactHref } from "@/lib/contact";
 import { PRICE, type Access } from "@/lib/flow/access";
 import { brl } from "@/lib/flow/format";
 import { potentialOf } from "@/lib/flow/insights";
 import type { FlowData } from "@/lib/flow/types";
-import { pad } from "@/lib/utils";
 import "../pulse-theme.css";
+import { PulseLogo } from "../PulseLogo";
 import { ThemeToggle } from "../ThemeToggle";
 import { AskFlow } from "./AskFlow";
+import { Crown } from "./Crown";
 import { APP_BASE, BASE, CHECKOUT, MENU, ONLINE_CHECKOUT, PLAN, VIEWS, viewHref } from "./copy";
 import { Intro, PaymentMethod, SignOut, Soon } from "./forms";
 import { Sheet } from "./Sheet";
 import { GuideCard, GuidePill, GuideProvider, ScreenTip, useGuide } from "./Guide";
 import { InboxProvider } from "./inbox";
+import { NavIcon } from "./NavIcon";
 import { FlowProvider, useFlow, type Account } from "./store";
 import ui from "./ui.module.css";
 import styles from "./FlowDemo.module.css";
@@ -82,8 +83,7 @@ function Shell({ children }: { children: ReactNode }) {
       <aside className={styles.side} data-pulse-surface="rail">
         <div className={styles.brandRow}>
           <Link href="/pulse" className={styles.brand} aria-label="Wuavy Pulse: voltar à página do produto">
-            <Wordmark size="small" decorative />
-            <span className={styles.product}>Pulse</span>
+            <PulseLogo />
           </Link>
           <div className={styles.rowTools}>
             <ThemeToggle />
@@ -107,7 +107,7 @@ function Shell({ children }: { children: ReactNode }) {
         </p>
         <nav aria-label="Telas do Pulse" className={styles.nav}>
           <ol>
-            {menu.map((view, i) => {
+            {menu.map((view) => {
               const href = viewHref(view.slug, base);
               const here = href === pathname;
               const pointed = guide.target === view.slug;
@@ -119,9 +119,7 @@ function Shell({ children }: { children: ReactNode }) {
                     aria-current={here ? "page" : undefined}
                     data-guide={pointed ? "" : undefined}
                   >
-                    <span className={styles.navIndex} aria-hidden="true">
-                      {pad(i + 1)}
-                    </span>
+                    <NavIcon slug={view.slug} className={styles.navIcon} />
                     {view.label}
                     {view.slug === "oportunidades" && open ? (
                       <span className={styles.badge} aria-label={`${open} frentes abertas`}>
@@ -173,6 +171,7 @@ function Shell({ children }: { children: ReactNode }) {
             ) : null}
             {canSubscribe ? (
               <button type="button" className={styles.subscribe} onClick={subscribe} aria-haspopup="dialog">
+                <Crown />
                 {PLAN.subscribe.open}
               </button>
             ) : null}
@@ -223,6 +222,7 @@ function PlanNotice({ onSubscribe }: { onSubscribe: () => void }) {
           {PLAN.demo.cta} <span aria-hidden="true">→</span>
         </a>
         <button type="button" className={`${styles.subscribe} ${styles.noticeSubscribe}`} onClick={onSubscribe} aria-haspopup="dialog">
+          <Crown />
           {PLAN.subscribe.open}
         </button>
       </aside>
@@ -258,12 +258,25 @@ function Subscribe({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { access } = useFlow();
   const offer = PLAN.subscribe;
   return (
-    <Sheet centered open={open} onClose={onClose} title={offer.title}>
-      <p className={ui.price}>
-        <strong>{brl(PRICE)}</strong>
-        <span>/mês</span>
-      </p>
-      <p className={ui.priceText}>{offer.text}</p>
+    <Sheet
+      centered
+      open={open}
+      onClose={onClose}
+      title={offer.title}
+      kicker="Assinatura"
+      icon={
+        <span className={ui.offerCrown}>
+          <Crown />
+        </span>
+      }
+    >
+      <div className={ui.offerPrice}>
+        <p className={ui.price}>
+          <strong>{brl(PRICE)}</strong>
+          <span>/mês</span>
+        </p>
+        <p className={ui.priceText}>{offer.text}</p>
+      </div>
       <ul className={ui.includes} aria-label="O que a assinatura inclui">
         {offer.includes.map((item) => (
           <li key={item}>{item}</li>
@@ -280,16 +293,18 @@ function Subscribe({ open, onClose }: { open: boolean; onClose: () => void }) {
       {ONLINE_CHECKOUT ? <PaymentMethod /> : <p className={ui.fine}>{offer.offline.note}</p>}
       <div className={ui.modalActions}>
         {ONLINE_CHECKOUT ? (
-          <Link href={CHECKOUT} className={ui.primary} data-checkout="">
+          <Link href={CHECKOUT} className={`${ui.primary} ${ui.offerCta}`} data-checkout="">
+            <Crown />
             {offer.cta}
           </Link>
         ) : (
           <a
             href={contactHref(site.contact.primary, offer.topic)}
-            className={ui.primary}
+            className={`${ui.primary} ${ui.offerCta}`}
             target="_blank"
             rel="noopener noreferrer"
           >
+            <Crown />
             {offer.offline.cta}
           </a>
         )}

@@ -5,14 +5,13 @@ import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import type { FlowData, Organization } from "@/lib/flow/types";
-import { PassoFigure } from "@/variants/a/PassoFigure";
-import { STAND, type PassoPose } from "@/variants/a/passoRig";
+import { Pulse } from "../Pulse";
 import { GUIDE, SCREEN_TIPS, VIEWS, viewHref, type GuideStepId } from "./copy";
 import { useFlow } from "./store";
 import styles from "./Guide.module.css";
 
 /*
-  The first-run guide. PASSO greets a clinic on its first visit, points at
+  The first-run guide. The Pulse greets a clinic on its first visit, points at
   where to start (Configurações, in a real clinic) and walks a short list:
   each step is done when the data says so (a procedure exists, a patient,
   a booking) or, for the two screens to get to know, when they were opened.
@@ -206,16 +205,9 @@ export function GuideProvider({ children }: { children: ReactNode }) {
   return <Context value={value}>{children}</Context>;
 }
 
-/** PASSO pointing up, at the menu above him. */
-const POINT: PassoPose = { ...STAND, armR: [196, 150, 200, 112] };
-
-function Passo({ point }: { point?: boolean }) {
-  return (
-    <svg className={styles.passo} viewBox="0 40 216 252" aria-hidden="true" focusable="false">
-      <PassoFigure pose={point ? POINT : STAND} variant="outline" />
-      <PassoFigure pose={point ? POINT : STAND} mode="idle" />
-    </svg>
-  );
+/** The Pulse beside the guide: welcoming while there is a next step to show, at ease otherwise. */
+function GuidePulse({ point, calm }: { point?: boolean; calm?: boolean }) {
+  return <Pulse className={styles.pulse} state={calm ? "calm" : point ? "welcome" : "idle"} interactive />;
 }
 
 /**
@@ -313,7 +305,7 @@ export function GuideCard({ inline }: { inline?: boolean }) {
 
   return (
     <aside className={styles.card} aria-label={GUIDE.title} aria-live="polite" {...place}>
-      <Passo point={guide.target !== null || !guide.saved.onboardingStarted} />
+      <GuidePulse point={guide.target !== null || !guide.saved.onboardingStarted} />
       <div className={styles.body}>
         {body}
         <p className={styles.progress}>
@@ -353,7 +345,7 @@ export function GuidePill({ inline }: { inline?: boolean }) {
 /** Tips shown during this page load: they stay until dismissed, though already marked as seen. */
 const shownThisVisit = new Set<string>();
 
-/** PASSO's tip on a screen's first visit: shown once, gone for good once seen. */
+/** The Pulse's tip on a screen's first visit: shown once, gone for good once seen. */
 export function ScreenTip() {
   const { slug, ready, saved, seeTip } = useGuide();
   const tip = SCREEN_TIPS[slug];
@@ -370,8 +362,9 @@ export function ScreenTip() {
 
   if (!tip || !shownThisVisit.has(slug) || dismissed.includes(slug)) return null;
   return (
-    <aside className={styles.tip} aria-label="Dica do PASSO">
-      <Passo />
+    <aside className={styles.tip} aria-label="Dica do Pulse">
+      {/* A tip is for reading: the Pulse settles while it is on screen. */}
+      <GuidePulse calm />
       <p>{tip}</p>
       <button type="button" className={styles.quiet} onClick={() => setDismissed((d) => [...d, slug])}>
         Entendi
