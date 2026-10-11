@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Playwright MCP captures
 /.playwright-mcp
+
+# python bytecode (scripts/pulse-model.py)
+__pycache__/

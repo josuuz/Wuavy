@@ -1,0 +1,26 @@
+/* The model's stage: it fills the space the drawn Pulse would have taken. */
+.stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* The same warm halo the drawing has, so the swap is not a jump. */
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, #ff7a3d var(--pulse-glow, 22%), transparent));
+  animation: pulse-arrive-3d 520ms ease-out both;
+}
+
+@keyframes pulse-arrive-3d {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

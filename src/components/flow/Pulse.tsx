@@ -1,19 +1,23 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { PULSE_POSES, type PulsePose } from "./pulse-poses";
 import styles from "./Pulse.module.css";
 
+/** The model and three.js are fetched only where `solid` asks for them. */
+const Pulse3D = lazy(() => import("./Pulse3D").then((m) => ({ default: m.Pulse3D })));
+
 /*
   The Pulse, the Wuavy Pulse assistant (Direction 6).
 
-  The silhouettes and faces are traced from the approved renders
-  (pulse-poses.ts) and the volume is painted on as light: a creamy body, a
-  warm glow rising from below, a soft highlight, the floor's light. Where the
-  Pulse is shown large, `solid` gives it a stage of its own, which for now the
-  drawing fills by itself.
+  Two bodies, one character. This drawing is traced from the approved renders
+  (pulse-poses.ts), its volume painted on as light: a creamy body, a warm glow
+  rising from below, a soft highlight, the floor's light. Where the Pulse is
+  shown large, the real model (Pulse3D) fades in over it. The drawing paints
+  at once and stays underneath, so it is also what is left wherever the model
+  cannot run — no WebGL, a modest device, a failed fetch.
 
   States, each one of the approved expressions:
   · idle: the main pose, floating and breathing;
@@ -50,7 +54,7 @@ interface PulseProps {
   still?: boolean;
   /** Leans toward the pointer or keyboard focus of its parent. */
   interactive?: boolean;
-  /** Where the Pulse is shown large: give it a stage of its own. */
+  /** Where the Pulse is shown large: bring in the model, with this drawing as the fallback. */
   solid?: boolean;
   className?: string;
   /** A name for assistive tech; omitted, the figure is decorative. */
@@ -68,6 +72,19 @@ export function Pulse({
 }: PulseProps) {
   const id = useId().replace(/:/g, "");
   const [greeting, setGreeting] = useState(greet);
+  // The model is asked for after the first paint, and only where it can run.
+  const [model, setModel] = useState<"no" | "loading" | "on">("no");
+
+  useEffect(() => {
+    if (!solid) return;
+    let gone = false;
+    void import("./Pulse3D").then(({ supports3D }) => {
+      if (!gone && supports3D()) setModel("loading");
+    });
+    return () => {
+      gone = true;
+    };
+  }, [solid]);
 
   useEffect(() => {
     if (!greeting) return;
@@ -145,6 +162,17 @@ export function Pulse({
 
   if (!solid) return drawing;
 
-  // Shown large, the Pulse gets a stage of its own: the drawing fills it.
-  return <span className={cn(styles.solid, className)}>{drawing}</span>;
+  // The drawing shows at once and stays underneath; the model fades in over
+  // it once three.js and the file have arrived, and is simply never there if
+  // they cannot be (no WebGL, a modest device, a failed fetch).
+  return (
+    <span className={cn(styles.solid, className)} data-model={model === "on" ? "" : undefined}>
+      {drawing}
+      {model === "no" ? null : (
+        <Suspense fallback={null}>
+          <Pulse3D state={shown} interactive={interactive} onReady={() => setModel("on")} onFail={() => setModel("no")} />
+        </Suspense>
+      )}
+    </span>
+  );
 }
