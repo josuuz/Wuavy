@@ -1,9 +1,10 @@
 "use client";
 
-import { lazy, Suspense, useEffect, useId, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { PULSE_POSES, type PulsePose } from "./pulse-poses";
+import { supports3D } from "./supports-3d";
 import styles from "./Pulse.module.css";
 
 /** The model and three.js are fetched only where `solid` asks for them. */
@@ -73,24 +74,33 @@ export function Pulse({
   const id = useId().replace(/:/g, "");
   const [greeting, setGreeting] = useState(greet);
   // The model is asked for after the first paint, and only where it can run.
+  // Where it cannot, Pulse3D's chunk is never fetched either: the question is
+  // answered by a module that costs nothing.
   const [model, setModel] = useState<"no" | "loading" | "on">("no");
+  const showModel = useCallback(() => setModel("on"), []);
+  const dropModel = useCallback(() => setModel("no"), []);
 
   useEffect(() => {
-    if (!solid) return;
+    if (!solid || !supports3D()) return;
     let gone = false;
-    void import("./Pulse3D").then(({ supports3D }) => {
-      if (!gone && supports3D()) setModel("loading");
+    // Asked for once the code that draws it has arrived: the drawing is never
+    // stood down before the model is in a position to take over.
+    void import("./Pulse3D").then(() => {
+      if (!gone) setModel("loading");
     });
     return () => {
       gone = true;
     };
   }, [solid]);
 
+  // The welcome has its moment and goes. Anything real ends it there and
+  // then, so it cannot return once that has passed: without this the Pulse
+  // celebrates an answer and only afterwards says hello.
   useEffect(() => {
     if (!greeting) return;
-    const t = window.setTimeout(() => setGreeting(false), 1800);
-    return () => window.clearTimeout(t);
-  }, [greeting]);
+    const over = window.setTimeout(() => setGreeting(false), state === "idle" ? 1800 : 0);
+    return () => window.clearTimeout(over);
+  }, [greeting, state]);
 
   // The welcome yields to anything real: a question asked during it shows thinking at once.
   const shown: PulseState = greeting && state === "idle" ? "welcome" : state;
@@ -170,7 +180,7 @@ export function Pulse({
       {drawing}
       {model === "no" ? null : (
         <Suspense fallback={null}>
-          <Pulse3D state={shown} interactive={interactive} onReady={() => setModel("on")} onFail={() => setModel("no")} />
+          <Pulse3D state={shown} interactive={interactive} onReady={showModel} onFail={dropModel} />
         </Suspense>
       )}
     </span>

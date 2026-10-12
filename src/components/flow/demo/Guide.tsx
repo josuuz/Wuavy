@@ -211,10 +211,11 @@ function GuidePulse({ point, calm }: { point?: boolean; calm?: boolean }) {
 }
 
 /**
- * Screens whose content a floating card would cover on a phone (Configurações' team list): there, below the rail
- * layout, the guide sits inside the page, at its top, instead of floating over it.
+ * Screens whose content a floating card would cover on a phone: Configurações' team list, and the overview (""),
+ * where the card lands squarely on the Pulse's own card — the guide hiding the character it is talking about.
+ * There, below the rail layout, the guide sits inside the page, at its top, instead of floating over it.
  */
-const IN_PAGE = new Set(["configuracoes"]);
+const IN_PAGE = new Set(["", "configuracoes"]);
 
 /**
  * Where the guide is drawn: `inline` is its copy inside the page, used only on the IN_PAGE screens and only on a

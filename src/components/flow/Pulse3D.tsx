@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import type { PulseState } from "./Pulse";
+import { loadPulseModel } from "./pulse-model";
 import styles from "./Pulse3D.module.css";
 
 /*
@@ -38,26 +39,6 @@ const COLUMNS = 7;
 const MAX_LIVE = 1;
 let live = 0;
 
-/*
-  Whether this device should carry the model. A phone is not excluded for
-  being a phone — the model is small and the canvas smaller — but a machine
-  that is short of cores or memory, or is saving data, keeps the drawing,
-  and so does anything without WebGL.
-*/
-export function supports3D(): boolean {
-  if (typeof document === "undefined" || typeof navigator === "undefined") return false;
-  const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
-  if (nav.connection?.saveData) return false;
-  if ((nav.hardwareConcurrency ?? 8) <= 2) return false;
-  if ((nav.deviceMemory ?? 8) <= 2) return false;
-  try {
-    const probe = document.createElement("canvas");
-    return Boolean(probe.getContext("webgl2") ?? probe.getContext("webgl"));
-  } catch {
-    return false;
-  }
-}
-
 interface Pulse3DProps {
   state: PulseState;
   interactive?: boolean;
@@ -72,11 +53,20 @@ export function Pulse3D({ state, interactive = false, className, onReady, onFail
   const host = useRef<HTMLDivElement>(null);
   // The loop reads these each frame, so they live in a ref and never restart it.
   const wanted = useRef({ state, interactive });
+  // The same goes for the callbacks. They are told things; they never decide
+  // when the stage is built. Were the effect to depend on them, a parent
+  // passing fresh arrows on each render — the ordinary way to write this —
+  // would tear down the WebGL context and fetch the model again every time
+  // anything above changed.
+  const told = useRef({ onReady, onFail });
   const [failed, setFailed] = useState(false);
 
+  // Refreshed after every render, with no dependency list of its own: there
+  // is nothing here that could restart the stage, by construction.
   useEffect(() => {
     wanted.current = { state, interactive };
-  }, [state, interactive]);
+    told.current = { onReady, onFail };
+  });
 
   useEffect(() => {
     if (failed) return;
@@ -92,7 +82,11 @@ export function Pulse3D({ state, interactive = false, className, onReady, onFail
       const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
       if (gone) return;
 
-      const gltf = await new GLTFLoader().loadAsync("/pulse.glb");
+      // The bytes are fetched once per page; the scene is this mount's own,
+      // so disposing it on the way out cannot reach another mount's.
+      const bytes = await loadPulseModel();
+      if (gone) return;
+      const gltf = await new GLTFLoader().parseAsync(bytes.slice(0), "/");
       if (gone) return;
 
       const model = gltf.scene;
@@ -259,7 +253,7 @@ export function Pulse3D({ state, interactive = false, className, onReady, onFail
         renderer.render(scene, camera);
       };
       frame = requestAnimationFrame(tick);
-      onReady?.();
+      told.current.onReady?.();
 
       stop = () => {
         cancelAnimationFrame(frame);
@@ -286,7 +280,7 @@ export function Pulse3D({ state, interactive = false, className, onReady, onFail
     })().catch(() => {
       if (gone) return;
       setFailed(true);
-      onFail?.();
+      told.current.onFail?.();
     });
 
     return () => {
@@ -294,7 +288,8 @@ export function Pulse3D({ state, interactive = false, className, onReady, onFail
       live -= 1;
       stop();
     };
-  }, [failed, onFail, onReady]);
+    // Only a failure may build the stage again: see `told` above.
+  }, [failed]);
 
   if (failed) return null;
   return <div ref={host} className={cn(styles.stage, className)} aria-hidden="true" />;
