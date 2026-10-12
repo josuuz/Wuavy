@@ -696,6 +696,136 @@ export type Database = {
           },
         ]
       }
+      maintenance_clients: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          plan_name: string
+          price_cents: number
+          site_url: string | null
+          token: string
+          whatsapp: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          plan_name?: string
+          price_cents?: number
+          site_url?: string | null
+          token: string
+          whatsapp?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          plan_name?: string
+          price_cents?: number
+          site_url?: string | null
+          token?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      maintenance_payments: {
+        Row: {
+          amount_cents: number
+          charged_at: string | null
+          created_at: string
+          id: string
+          paid: boolean
+          provider_payment_id: string
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          amount_cents: number
+          charged_at?: string | null
+          created_at?: string
+          id?: string
+          paid?: boolean
+          provider_payment_id: string
+          status: string
+          subscription_id: string
+        }
+        Update: {
+          amount_cents?: number
+          charged_at?: string | null
+          created_at?: string
+          id?: string
+          paid?: boolean
+          provider_payment_id?: string
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_subscriptions: {
+        Row: {
+          amount_cents: number
+          client_id: string
+          created_at: string
+          current_period_end: string | null
+          id: string
+          provider: string
+          provider_subscription_id: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          client_id: string
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          provider?: string
+          provider_subscription_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          client_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          provider?: string
+          provider_subscription_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           created_at: string | null
