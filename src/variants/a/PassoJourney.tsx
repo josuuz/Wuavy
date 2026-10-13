@@ -58,6 +58,8 @@ const HINT_KEY = "wuavy-passo-hint"; // set once he has been talked to: no more 
 const HINT_FIRST_MS = 700; // after he settles into his peek
 const HINT_SHOW_MS = 4000;
 const HINT_GAP_MS = [6000, 10000]; // hidden between two appearances
+const HINT_MAX = 3; // appearances per visit: an offer, never a nag
+const NOTICE_GAP_MS = 1400; // the shortest time between two attention leans
 
 // The portal needs document.body, so the walk renders on the client only.
 const noSubscribe = () => () => {};
@@ -99,6 +101,21 @@ export function PassoJourney({ copy, whatsapp }: PassoJourneyProps) {
   const placeCard = useRef<() => void>(null);
   const [open, setOpen] = useState(false);
   const mounted = useSyncExternalStore(noSubscribe, onClient, onServer);
+
+  // Attention: when a pointer or the keyboard reaches him, he leans in a little. Rare by design.
+  const noticed = useRef(0);
+  const notice = useCallback(() => {
+    const svg = root.current?.querySelector("svg");
+    const now = performance.now();
+    if (!svg || open || now - noticed.current < NOTICE_GAP_MS) return;
+    noticed.current = now;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const tilt = reduced ? 1.5 : 4;
+    svg.animate(
+      [{ transform: "none" }, { transform: `rotate(${-tilt}deg) translateY(-1.5%)`, offset: 0.4 }, { transform: "none" }],
+      { duration: reduced ? 900 : 700, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },
+    );
+  }, [open]);
 
   const react = useCallback((kind: "open" | "answer" | "result") => {
     const svg = root.current?.querySelector("svg");
@@ -245,12 +262,13 @@ export function PassoJourney({ copy, whatsapp }: PassoJourneyProps) {
 
     // The hint: while he peeks from the header and nobody has talked to him, a
     // small bubble says he can help, leaves, and comes back 6–10 s later (he
-    // hops the first time). Talking to him ends it for the visit; climbing out
-    // of the header pauses it.
+    // hops the first time), at most HINT_MAX times. Talking to him ends it for
+    // the visit; climbing out of the header pauses it.
     const bubble = hint.current;
     let hintDone = false;
     let hintOn = false;
     let hintTimer = 0;
+    let hintShown = 0;
     try {
       hintDone = Boolean(sessionStorage.getItem(HINT_KEY));
     } catch {}
@@ -272,11 +290,13 @@ export function PassoJourney({ copy, whatsapp }: PassoJourneyProps) {
       const x = Math.min(Math.max(spot.x, 90), html.clientWidth - 90);
       bubble.style.transform = `translate3d(${x.toFixed(0)}px, ${(spot.feet + 12).toFixed(0)}px, 0) translateX(-50%)`;
       bubble.setAttribute("data-show", "");
+      hintShown += 1;
       if (first) react("answer");
       hintTimer = window.setTimeout(hideHint, HINT_SHOW_MS);
     };
     const hideHint = () => {
       bubble?.removeAttribute("data-show");
+      if (hintShown >= HINT_MAX) return retireHint();
       const [min, max] = HINT_GAP_MS;
       hintTimer = window.setTimeout(() => showHint(false), min + Math.random() * (max - min));
     };
@@ -472,6 +492,8 @@ export function PassoJourney({ copy, whatsapp }: PassoJourneyProps) {
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-controls="passo-guide"
+          onPointerEnter={notice}
+          onFocus={notice}
           onClick={() => {
             if (!open) react("open");
             setOpen(!open);
