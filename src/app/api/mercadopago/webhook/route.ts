@@ -26,6 +26,11 @@ export async function POST(request: NextRequest) {
   const dataId = query.get("data.id") ?? (body?.data?.id != null ? String(body.data.id) : null);
 
   if (!verifySignature(request.headers.get("x-signature"), request.headers.get("x-request-id"), dataId)) {
+    // Without the secret every notice is refused and recurrence silently stops:
+    // say so, by name only. The value is never read into a message.
+    if (!process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim()) {
+      console.error("Mercado Pago webhook refused every notice: MERCADOPAGO_WEBHOOK_SECRET is not set");
+    }
     return new Response(null, { status: 401 });
   }
 
