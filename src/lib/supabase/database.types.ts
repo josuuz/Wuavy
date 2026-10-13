@@ -472,6 +472,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "conversation_messages_connection_fkey"
+            columns: ["organization_id", "connection_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_connections"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "conversation_messages_organization_id_conversation_id_fkey"
             columns: ["organization_id", "conversation_id"]
             isOneToOne: false
@@ -1367,7 +1374,15 @@ export type Database = {
           updated_at?: string | null
           waba_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_credentials: {
         Row: {
@@ -1388,7 +1403,15 @@ export type Database = {
           pin_secret_id?: string | null
           token_secret_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_credentials_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: true
+            referencedRelation: "whatsapp_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1455,6 +1478,7 @@ export type Database = {
         }[]
       }
       pulse_now: { Args: never; Returns: string }
+      pulse_phone_key: { Args: { phone: string }; Returns: string }
       pulse_product_costs: {
         Args: { org: string }
         Returns: {
@@ -1516,7 +1540,7 @@ export type Database = {
           media?: Json
           message_id: string
           phone_display: string
-          profile_name: string | null
+          profile_name: string
           sent_at: string
           wa_id: string
         }
