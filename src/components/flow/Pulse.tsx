@@ -3,7 +3,7 @@
 import { lazy, Suspense, useCallback, useEffect, useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { PULSE_POSES, type PulsePose } from "./pulse-poses";
+import { PULSE_POSES, PULSE_WIRE, type PulsePose } from "./pulse-poses";
 import { supports3D } from "./supports-3d";
 import styles from "./Pulse.module.css";
 
@@ -15,7 +15,9 @@ const Pulse3D = lazy(() => import("./Pulse3D").then((m) => ({ default: m.Pulse3D
 
   Two bodies, one character. This drawing is traced from the approved renders
   (pulse-poses.ts), its volume painted on as light: a creamy body, a warm glow
-  rising from below, a soft highlight, the floor's light. Where the Pulse is
+  rising from below, a soft highlight, the floor's light. The glasses are laid
+  on each pose's own eyes, so every head wears them at its own tilt, and the
+  model wears the same pair, printed into its face strip. Where the Pulse is
   shown large, the real model (Pulse3D) fades in over it. The drawing paints
   at once and stays underneath, so it is also what is left wherever the model
   cannot run — no WebGL, a modest device, a failed fetch.
@@ -144,6 +146,12 @@ export function Pulse({
         {poses.map((p) => (
           <path key={p} id={`${id}${p}`} d={PULSE_POSES[p].body} />
         ))}
+        {/* An arm that runs past the head is cut by it, as it is on the model. */}
+        {poses.map((p) => (
+          <clipPath key={p} id={`${id}clip${p}`}>
+            <use href={`#${id}${p}`} />
+          </clipPath>
+        ))}
       </defs>
 
       <ellipse className={styles.floor} cx={FRAME / 2} cy="111" rx="40" ry="5" fill={`url(#${id}floor)`} />
@@ -159,6 +167,18 @@ export function Pulse({
                 <use href={href} fill="none" stroke={`url(#${id}rim)`} strokeWidth="1.4" />
                 <g fill="#3a281d">
                   {PULSE_POSES[p].face.map((d, i) => (
+                    <path key={i} d={d} />
+                  ))}
+                </g>
+                <g
+                  clipPath={`url(#${id}clip${p})`}
+                  fill="none"
+                  stroke="#3a281d"
+                  strokeWidth={PULSE_WIRE}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {PULSE_POSES[p].glasses.map((d, i) => (
                     <path key={i} d={d} />
                   ))}
                 </g>

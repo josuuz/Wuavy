@@ -119,14 +119,21 @@ export function Pulse3D({ state, interactive = false, className, onReady, onFail
         The same body, lit for the room it is in. On the light ground it is
         read against white, so the daylight carries it and the warm bounce
         stays a hint; on the dark ground that bounce is what separates it
-        from the background, so it comes up and the daylight steps back.
+        from the background, so it comes up a little, but stays a hint too —
+        the hemisphere's ground colour used to be a saturated brown, which
+        painted every downward-facing curve orange regardless of the point
+        light; neutral grey lets that surface read as shadow, the way the
+        2.5D drawing's shading does, and leaves the warm colour to the one
+        light actually meant to carry it.
       */
       const relight = () => {
         const bright = document.documentElement.getAttribute("data-pulse-theme") === "light";
-        sky.intensity = bright ? 1.5 : 1.1;
+        sky.color.setHex(0xfff6ec);
+        sky.groundColor.setHex(bright ? 0xb0aca4 : 0x7a7266);
+        sky.intensity = bright ? 1.4 : 1.1;
         key.intensity = bright ? 1.65 : 1.3;
-        warm.intensity = bright ? 2.1 : 3.4;
-        renderer.toneMappingExposure = bright ? 1.1 : 1.22;
+        warm.intensity = bright ? 0.5 : 0.7;
+        renderer.toneMappingExposure = bright ? 1.0 : 1.05;
       };
       relight();
       const theme = new MutationObserver(() => {

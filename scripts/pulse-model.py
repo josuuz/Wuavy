@@ -13,7 +13,11 @@ because the distance field says so.
 The face is not geometry: like the renders, the eyes and mouth are marks on
 the surface. They go into one texture, a strip with a column per expression
 (and a blank column the back of the body uses), so a state change is a UV
-shift, not another model.
+shift, not another model. The glasses are marks too, and they are not drawn
+by hand either: a pair of glasses sits on the line between the eyes, so
+taking that line from the traced face gives each pose the tilt of its own
+head. They are written back into pulse-poses.ts so the 2.5D Pulse wears the
+same pair.
 
 Run: python scripts/pulse-model.py   (needs numpy and Pillow)
 """
@@ -48,12 +52,24 @@ INK = (58, 40, 29)
 # The strip's columns, in order. Pulse3D.tsx maps its states onto these.
 ORDER = ["presenca", "acolhimento", "alegria", "foco", "tranquilidade", "surpresa"]
 
+# ── Glasses ──────────────────────────────────────────────────────────────
+# Laid on the eyes, so all but one of these is a share of something the art
+# already decided: the lens of the span between the eyes, the arms of the
+# lens. Only the frame's weight is a measure of its own, in pose units.
+LENS = 0.34
+ARM = 0.45              # the near arm, the one the turn of the head leaves in view
+STUB = 0.30             # the far one, which that same turn cuts short
+WIRE = 2.4
+
 
 # ── The traced poses ─────────────────────────────────────────────────────
 def read_poses() -> dict[str, dict]:
     src = POSES_TS.read_text(encoding="utf-8").replace("\r\n", "\n")
+    # The glasses are not read back: they are laid on the eyes every run, so
+    # the face is the only thing a pose is remembered by.
     block = re.compile(
-        r"^  (\w+): \{\s*\n\s*w: ([\d.]+),\s*\n\s*body: \"([^\"]+)\",\s*\n\s*face: \[(.*?)\],\s*\n\s*\},",
+        r"^  (\w+): \{\s*\n\s*w: ([\d.]+),\s*\n\s*body: \"([^\"]+)\",\s*\n\s*face: \[(.*?)\],\s*\n"
+        r"(?:\s*glasses: \[.*?\],\s*\n)?\s*\},",
         re.S | re.M,
     )
     poses = {}
@@ -439,6 +455,89 @@ def surprise(poses: dict) -> dict:
     return {"w": poses["presenca"]["w"], "body": poses["presenca"]["body"], "face": face}
 
 
+# ── The glasses ──────────────────────────────────────────────────────────
+def eyes_of(pose: dict) -> list[tuple[float, float, float, float]]:
+    """
+    Which of a pose's marks are the eyes.
+
+    A mouth is a fraction of an eye, so it is the smallest — but
+    `tranquilidade` has no mouth at all, only two closed eyes, so this has to
+    be a comparison and not a rank: the smallest of three marks is a mouth
+    when it is a fraction of the next one, and an eye when it is not.
+    """
+    boxes = [_bbox(d) for d in pose["face"]]
+    size = lambda b: (b[2] - b[0]) * (b[3] - b[1])  # noqa: E731
+    rank = sorted(range(len(boxes)), key=lambda i: size(boxes[i]))
+    mouth = rank[0] if len(boxes) >= 3 and size(boxes[rank[0]]) < 0.4 * size(boxes[rank[1]]) else -1
+    eyes = sorted((b for i, b in enumerate(boxes) if i != mouth), key=size, reverse=True)[:2]
+    return sorted(eyes, key=lambda b: b[0] + b[2])
+
+
+def glasses(pose: dict) -> list[str]:
+    """
+    A pair of glasses, laid on the eyes the pose was traced with.
+
+    Nothing is placed by hand. A pair of glasses sits on the line between the
+    two eyes, so taking that line from the art gives each pose the tilt of
+    its own head for free — and the nearer eye, which the three-quarter turn
+    leaves larger, gets the larger lens and the one arm still in view. They
+    come out as centre lines, stroked rather than filled: a frame is a wire,
+    and a wire drawn as a filled ring would have to carry its own hole.
+    """
+    (lx0, ly0, lx1, ly1), (rx0, ry0, rx1, ry1) = eyes_of(pose)
+    cl = ((lx0 + lx1) / 2, (ly0 + ly1) / 2)
+    cr = ((rx0 + rx1) / 2, (ry0 + ry1) / 2)
+    span = math.dist(cl, cr)
+    u = ((cr[0] - cl[0]) / span, (cr[1] - cl[1]) / span)  # along the eye line
+    p = (-u[1], u[0])                                     # square to it, downwards
+    r = LENS * span
+    al, ar = (lx1 - lx0) * (ly1 - ly0), (rx1 - rx0) * (ry1 - ry0)
+    kl, kr = (al / max(al, ar)) ** 0.18, (ar / max(al, ar)) ** 0.18
+
+    def at(c: tuple[float, float], radius: float, angle: float) -> tuple[float, float]:
+        cos, sin = math.cos(angle) * radius, math.sin(angle) * radius
+        return (c[0] + u[0] * cos + p[0] * sin, c[1] + u[1] * cos + p[1] * sin)
+
+    def path(pts: list[tuple[float, float]], close: bool = False) -> str:
+        return "M" + "L".join(f"{x:.1f},{y:.1f}" for x, y in pts) + ("Z" if close else "")
+
+    out = [
+        path([at(c, r * k, i / 44 * 2 * math.pi) for i in range(44)], True)
+        for c, k in ((cl, kl), (cr, kr))
+    ]
+
+    # The bridge, from the inner rim of one lens to the other, bowed up.
+    a, b = at(cl, r * kl, -0.42), at(cr, r * kr, math.pi + 0.42)
+    mid = ((a[0] + b[0]) / 2 - p[0] * r * 0.17, (a[1] + b[1]) / 2 - p[1] * r * 0.17)
+    out.append(
+        path(
+            [
+                (
+                    (1 - t) ** 2 * a[0] + 2 * (1 - t) * t * mid[0] + t * t * b[0],
+                    (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * mid[1] + t * t * b[1],
+                )
+                for t in (i / 12 for i in range(13))
+            ]
+        )
+    )
+
+    # Each arm leaves its lens at the widest point and rises a little, the way
+    # a temple does towards an ear. Where it runs past the silhouette it is
+    # simply cut: on the model there is no surface out there to print it on,
+    # and the drawing clips it to the same outline.
+    near = 1 if ar >= al else -1
+    for c, k, way, reach in (
+        (cl, kl, -1, STUB if near == 1 else ARM),
+        (cr, kr, 1, ARM if near == 1 else STUB),
+    ):
+        root = at(c, r * k, 0.0 if way > 0 else math.pi)
+        far = r * reach
+        out.append(
+            path([root, (root[0] + (u[0] * way - p[0] * 0.18) * far, root[1] + (u[1] * way - p[1] * 0.18) * far)])
+        )
+    return out
+
+
 # ── The face strip ───────────────────────────────────────────────────────
 def face_atlas(poses: dict, box: dict) -> Image.Image:
     """One column per expression plus a blank one; the back of the body uses the blank."""
@@ -456,24 +555,31 @@ def face_atlas(poses: dict, box: dict) -> Image.Image:
         )
 
     base_cx, base_cy = centre(poses["presenca"])
-    poses = {**poses, "surpresa": surprise(poses)}
+    wire = max(1, round(WIRE / bh * CELL))
 
     for col, name in enumerate(ORDER):
         pose = poses[name]
         cx, cy = centre(pose)
         # Each expression's face sits where the main pose's face sits, so the
-        # eyes never wander across the body when the state changes.
+        # eyes never wander across the body when the state changes. The
+        # glasses were laid on those same eyes, so they travel with them.
         dx, dy = base_cx - cx, base_cy - cy
+        place = lambda x, y: (  # noqa: E731
+            (x + dx - box["minx"]) / bw * cell_w + cell_w,
+            (y + dy - box["miny"]) / bh * CELL + CELL,
+        )
         layer = Image.new("RGB", (cell_w * 3, CELL * 3), CREAM)
         draw = ImageDraw.Draw(layer)
         for path in pose["face"]:
-            draw.polygon(
-                [
-                    ((x + dx - box["minx"]) / bw * cell_w + cell_w, (y + dy - box["miny"]) / bh * CELL + CELL)
-                    for x, y in flatten(path, 6)
-                ],
-                fill=INK,
-            )
+            draw.polygon([place(x, y) for x, y in flatten(path, 6)], fill=INK)
+        for path in pose["glasses"]:
+            pts = [place(x, y) for x, y in flatten(path, 6)]
+            shut = path.endswith("Z")
+            draw.line(pts + pts[:1] if shut else pts, fill=INK, width=wire, joint="curve")
+            if not shut:
+                # A drawn line ends square; the frame's ends are round.
+                for x, y in (pts[0], pts[-1]):
+                    draw.ellipse((x - wire / 2, y - wire / 2, x + wire / 2, y + wire / 2), fill=INK)
         img.paste(layer.crop((cell_w, CELL, cell_w * 2, CELL * 2)), (col * cell_w, 0))
     return img
 
@@ -571,38 +677,44 @@ def write_glb(P, N, UV, idx, png: bytes, cols: int) -> bytes:
     return bytes(out)
 
 
-def publish_surprise(pose: dict) -> None:
+def publish(poses: dict) -> None:
     """
-    Put the assembled face into pulse-poses.ts as well, so the drawn Pulse —
-    the one small marks use, and the one that stands in where the model
-    cannot run — has the same six expressions the model has.
+    Write the poses back out, so the drawn Pulse — the one small marks use,
+    and the one that stands in wherever the model cannot run — is the same
+    character the model is: the same six expressions, wearing the same
+    glasses, down to the weight of their frame.
+
+    Everything above the first export is prose and the list of pose names,
+    and is left alone; everything from there down is this file's to write.
     """
     src = POSES_TS.read_text(encoding="utf-8")
     nl = "\r\n" if "\r\n" in src else "\n"
-    if '"surpresa"' not in src:
-        src = src.replace(
-            '| "tranquilidade";',
-            '| "tranquilidade" | "surpresa";',
-        )
-    block = (
-        f'  surpresa: {{{nl}    w: {pose["w"]},{nl}    body: "{pose["body"]}",{nl}    face: [{nl}'
-        + "".join(f'      "{d}",{nl}' for d in pose["face"])
-        + f"    ],{nl}  }},{nl}"
-    )
-    start = src.find("  surpresa: {")
-    if start >= 0:
-        end = src.find("  },", start) + len(f"  }},{nl}")
-        src = src[:start] + block + src[end:]
-    else:
-        src = src.replace(f"}};{nl}", block + f"}};{nl}", 1) if f"}};{nl}" in src else src
-    POSES_TS.write_text(src, encoding="utf-8")
+    out = [
+        f"export const PULSE_WIRE = {WIRE};",
+        "",
+        "export const PULSE_POSES: Record<",
+        "  PulsePose,",
+        "  { w: number; body: string; face: string[]; glasses: string[] }",
+        "> = {",
+    ]
+    for name, pose in poses.items():
+        body = pose["body"]
+        out += [f"  {name}: {{", f"    w: {pose['w']},", f'    body: "{body}",']
+        for field in ("face", "glasses"):
+            out += [f"    {field}: ["] + [f'      "{d}",' for d in pose[field]] + ["    ],"]
+        out.append("  },")
+    out.append("};")
+    POSES_TS.write_text(src[: src.index("export const ")] + nl.join(out) + nl, encoding="utf-8")
 
 
 def main() -> None:
     poses = read_poses()
+    poses["surpresa"] = surprise(poses)
+    for pose in poses.values():
+        pose["glasses"] = glasses(pose)
     P, N, UV, idx, box = build_mesh(poses["presenca"])
     atlas = face_atlas(poses, box)
-    publish_surprise(surprise(poses))
+    publish(poses)
     cols = len(ORDER) + 1
 
     # Front vertices take their expression's column; the back takes the blank one.
