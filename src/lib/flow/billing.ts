@@ -3,7 +3,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { checkoutDecision, decide, payerEmailFor, REFUSAL } from "@/lib/maintenance/environment";
+import { checkoutDecision, decide, payerEmailFor, REFUSAL } from "./mercadopago-environment";
 import { PRICE, type SubscriptionStatus } from "./access";
 
 /*
@@ -45,9 +45,9 @@ export class MercadoPagoError extends Error {
 
 /*
   Whether, and against which Mercado Pago account, anything may be charged is
-  decided in one place shared with the maintenance billing: maintenance/
-  environment.ts. The key's format proves nothing (a test account's token also
-  starts with APP_USR-), so the environment is declared (MERCADOPAGO_ENV=test)
+  decided in one place shared with the maintenance billing:
+  mercadopago-environment.ts. The key's format proves nothing (a test
+  account's token also starts with APP_USR-), so the environment is declared (MERCADOPAGO_ENV=test)
   and checked against where the code runs (VERCEL_ENV), and in doubt it closes:
   test credentials in the production deploy, live ones anywhere else, a test
   setup without its test buyer, or no credentials at all.
@@ -80,7 +80,7 @@ export const payerEmail = (email: string) => payerEmailFor(process.env, email);
 export function describeError(error: MercadoPagoError): string {
   const body = error.body as { message?: string; cause?: { description?: string }[] } | null;
   const cause = body?.cause?.map((c) => c.description).filter(Boolean).join("; ");
-  return `Mercado Pago (${error.status}): ${[body?.message, cause].filter(Boolean).join(" â€” ") || "recusou a assinatura"}`;
+  return `Mercado Pago (${error.status}): ${[body?.message, cause].filter(Boolean).join(" — ") || "recusou a assinatura"}`;
 }
 
 async function mp<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; idempotencyKey?: string } = {}): Promise<T> {
@@ -205,7 +205,7 @@ export async function syncCharge(chargeId: string) {
 }
 
 /**
- * A webhook's x-signature ("ts=â€¦,v1=â€¦"): HMAC-SHA256, with the secret from
+ * A webhook's x-signature ("ts=…,v1=…"): HMAC-SHA256, with the secret from
  * the Mercado Pago panel, of "id:{data.id};request-id:{x-request-id};ts:{ts};"
  * (a part left out when its value is missing). No secret, no signature, or a
  * mismatch: not from Mercado Pago.

@@ -5,7 +5,7 @@ import { randomBytes } from "node:crypto";
 import { MercadoPagoError } from "@/lib/flow/billing";
 import { absoluteUrl } from "@/lib/seo";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decide, payerEmailFor, REFUSAL } from "./environment";
+import { decide, payerEmailFor, REFUSAL } from "@/lib/flow/mercadopago-environment";
 import { asMaintenanceStatus, chargeFailed, statusFrom, type MaintenanceStatus } from "./plan";
 
 /*

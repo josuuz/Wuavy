@@ -1,4 +1,4 @@
-// What decides whether the Pulse may charge anyone: maintenance/environment.ts,
+// What decides whether the Pulse may charge anyone: flow/mercadopago-environment.ts,
 // which src/lib/flow/billing.ts asks before every call to Mercado Pago. The
 // key's format proves nothing (a test account's token also starts with
 // APP_USR-), so the environment is declared and checked against where the
@@ -7,7 +7,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { checkoutDecision, declaredMode, decide, payerEmailFor, REFUSAL } from "../src/lib/maintenance/environment.ts";
+import { checkoutDecision, declaredMode, decide, payerEmailFor, REFUSAL } from "../src/lib/flow/mercadopago-environment.ts";
 
 const TOKEN = "APP_USR-0000000000000000-000000-synthetic";
 const BUYER = "test_user_0000@testuser.com";
