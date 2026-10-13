@@ -26,7 +26,13 @@
 
 export type Env = Record<string, string | undefined>;
 
-export type Refusal = "no-credentials" | "test-in-production" | "live-outside-production" | "no-test-payer";
+export type Refusal =
+  | "no-credentials"
+  | "invalid-env"
+  | "test-in-production"
+  | "live-outside-production"
+  | "no-test-payer"
+  | "test-key-in-live";
 
 export type Decision = { allowed: true; mode: "test" | "live" } | { allowed: false; reason: Refusal };
 
@@ -35,20 +41,41 @@ const flag = (value: string | undefined) => (value ?? "").trim().toLowerCase();
 /** Esta execução é o deploy de produção da Vercel. Nenhum outro lugar é. */
 export const isProductionDeploy = (env: Env) => flag(env.VERCEL_ENV) === "production";
 
-/** O que a configuração diz ser a conta do Mercado Pago em uso. */
-export const declaredMode = (env: Env): "test" | "live" => (flag(env.MERCADOPAGO_ENV) === "test" ? "test" : "live");
+/**
+ * O que a configuração diz ser a conta do Mercado Pago em uso. Vazio é "live"
+ * (a produção não declara nada); "test" e "live" são as duas declarações. Qualquer
+ * outra coisa ("sandbox", "tset", "production") não é nenhuma das duas, e adivinhar
+ * que é "live" abriria a cobrança por causa de um erro de digitação.
+ */
+export const declaredMode = (env: Env): "test" | "live" | "invalid" => {
+  const declared = flag(env.MERCADOPAGO_ENV);
+  return declared === "" || declared === "live" ? "live" : declared === "test" ? "test" : "invalid";
+};
 
 /** Se a cobrança pode falar com o Mercado Pago agora, e em que modo. */
 export function decide(env: Env): Decision {
   if (!env.MERCADOPAGO_ACCESS_TOKEN?.trim()) return { allowed: false, reason: "no-credentials" };
 
   const mode = declaredMode(env);
+  if (mode === "invalid") return { allowed: false, reason: "invalid-env" };
   if (isProductionDeploy(env)) {
     return mode === "test" ? { allowed: false, reason: "test-in-production" } : { allowed: true, mode: "live" };
   }
   if (mode !== "test") return { allowed: false, reason: "live-outside-production" };
   if (!env.MERCADOPAGO_TEST_PAYER_EMAIL?.trim()) return { allowed: false, reason: "no-test-payer" };
   return { allowed: true, mode: "test" };
+}
+
+/**
+ * A decisão para o checkout do Pulse, que usa a chave pública no navegador:
+ * além de `decide`, uma chave pública "TEST-" (essa sim prova ser de teste)
+ * não convive com um ambiente declarado como real. A cobrança da manutenção
+ * não usa a chave pública e continua decidindo só por `decide`.
+ */
+export function checkoutDecision(env: Env): Decision {
+  const decision = decide(env);
+  const testKey = (env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? "").trim().startsWith("TEST-");
+  return decision.allowed && decision.mode === "live" && testKey ? { allowed: false, reason: "test-key-in-live" } : decision;
 }
 
 /**
@@ -65,7 +92,9 @@ export function payerEmailFor(env: Env, email: string): string {
 /** O que dizer a quem administra quando a cobrança está fechada. */
 export const REFUSAL: Record<Refusal, string> = {
   "no-credentials": "Mercado Pago não configurado: faltam as credenciais.",
+  "invalid-env": "Cobrança fechada: MERCADOPAGO_ENV só aceita \"test\" ou \"live\" (ou vazio). Qualquer outro valor é recusado.",
   "test-in-production": "Cobrança fechada: MERCADOPAGO_ENV=test na produção. Credenciais de teste não podem estar aqui.",
   "live-outside-production": "Cobrança fechada fora da produção: declare MERCADOPAGO_ENV=test e use as credenciais de uma conta de teste.",
   "no-test-payer": "Cobrança fechada em teste: falta MERCADOPAGO_TEST_PAYER_EMAIL, o e-mail do comprador de teste.",
+  "test-key-in-live": "Checkout fechado: a chave pública é de teste (TEST-), mas o ambiente declarado é real.",
 };

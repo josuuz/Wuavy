@@ -3,6 +3,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkoutDecision, decide, payerEmailFor, REFUSAL } from "@/lib/maintenance/environment";
 import { PRICE, type SubscriptionStatus } from "./access";
 
 /*
@@ -42,21 +43,38 @@ export class MercadoPagoError extends Error {
   }
 }
 
-export const billingReady = () => Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN);
-
 /*
-  Test mode: Mercado Pago only accepts a test seller's subscription with a test
-  buyer's e-mail as payer. MERCADOPAGO_TEST_PAYER_EMAIL stands in for the
-  signed-in person's e-mail at Mercado Pago only (the account keeps the real
-  one). Leave it unset in production: the checkout says "ambiente de teste"
-  whenever it is set or the public key starts with TEST-.
+  Whether, and against which Mercado Pago account, anything may be charged is
+  decided in one place shared with the maintenance billing: maintenance/
+  environment.ts. The key's format proves nothing (a test account's token also
+  starts with APP_USR-), so the environment is declared (MERCADOPAGO_ENV=test)
+  and checked against where the code runs (VERCEL_ENV), and in doubt it closes:
+  test credentials in the production deploy, live ones anywhere else, a test
+  setup without its test buyer, or no credentials at all.
 */
-const testPayer = () => process.env.MERCADOPAGO_TEST_PAYER_EMAIL?.trim() || null;
+
+/**
+ * Checkout may go ahead here, with these credentials. Besides the environment
+ * check it refuses a test public key (TEST-) under a live declaration: the card
+ * form would be built for one account and the subscription made on another.
+ * The server's own calls (`mp`) do not use the public key and ask `decide` alone.
+ */
+export const billingReady = () => checkoutDecision(process.env).allowed;
+
+/**
+ * Test mode: Mercado Pago only accepts a test seller's subscription with a
+ * test buyer's e-mail as payer. In test mode MERCADOPAGO_TEST_PAYER_EMAIL
+ * stands in for the signed-in person's e-mail at Mercado Pago only (the
+ * account keeps the real one); in production it is ignored, even if left set.
+ * The checkout says "ambiente de teste" exactly when this is on.
+ */
+export const testMode = () => {
+  const decision = checkoutDecision(process.env);
+  return decision.allowed && decision.mode === "test";
+};
 
 /** The e-mail the card form is created with: in test mode the test buyer's, so the card token and the subscription name the same payer. */
-export const payerEmail = (email: string) => testPayer() ?? email;
-
-export const testMode = () => Boolean(testPayer()) || Boolean(process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY?.startsWith("TEST-"));
+export const payerEmail = (email: string) => payerEmailFor(process.env, email);
 
 /** What Mercado Pago said was wrong, in a line (shown only in test mode). */
 export function describeError(error: MercadoPagoError): string {
@@ -66,8 +84,11 @@ export function describeError(error: MercadoPagoError): string {
 }
 
 async function mp<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; idempotencyKey?: string } = {}): Promise<T> {
-  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!token) throw new BillingUnavailable("MERCADOPAGO_ACCESS_TOKEN is not set");
+  // Every call passes here, reads included: a token that does not match where
+  // the code runs does not talk to Mercado Pago, full stop.
+  const decision = decide(process.env);
+  if (!decision.allowed) throw new BillingUnavailable(REFUSAL[decision.reason]);
+  const token = process.env.MERCADOPAGO_ACCESS_TOKEN as string;
   const response = await fetch(`${API}${path}`, {
     method: init.method ?? "GET",
     headers: {
@@ -127,7 +148,7 @@ export async function createSubscription(input: { reference: string; email: stri
     body: {
       reason: "Wuavy Pulse",
       external_reference: input.reference,
-      payer_email: testPayer() ?? input.email,
+      payer_email: payerEmail(input.email),
       card_token_id: input.cardToken,
       auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: PRICE / 100, currency_id: "BRL" },
       back_url: input.backUrl,
