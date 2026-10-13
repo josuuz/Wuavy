@@ -80,7 +80,7 @@ export const payerEmail = (email: string) => payerEmailFor(process.env, email);
 export function describeError(error: MercadoPagoError): string {
   const body = error.body as { message?: string; cause?: { description?: string }[] } | null;
   const cause = body?.cause?.map((c) => c.description).filter(Boolean).join("; ");
-  return `Mercado Pago (${error.status}): ${[body?.message, cause].filter(Boolean).join(" — ") || "recusou a assinatura"}`;
+  return `Mercado Pago (${error.status}): ${[body?.message, cause].filter(Boolean).join(" â€” ") || "recusou a assinatura"}`;
 }
 
 async function mp<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; idempotencyKey?: string } = {}): Promise<T> {
@@ -205,7 +205,7 @@ export async function syncCharge(chargeId: string) {
 }
 
 /**
- * A webhook's x-signature ("ts=…,v1=…"): HMAC-SHA256, with the secret from
+ * A webhook's x-signature ("ts=â€¦,v1=â€¦"): HMAC-SHA256, with the secret from
  * the Mercado Pago panel, of "id:{data.id};request-id:{x-request-id};ts:{ts};"
  * (a part left out when its value is missing). No secret, no signature, or a
  * mismatch: not from Mercado Pago.
