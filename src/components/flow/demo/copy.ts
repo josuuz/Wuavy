@@ -103,6 +103,57 @@ export const PLAN = {
     pending: "Pagamento em processamento",
     cancelled: "Assinatura cancelada",
   } satisfies Record<SubscriptionStatus, string>,
+  /*
+    Gerenciar a assinatura em Configurações: só o responsável vê esta parte
+    (lib/flow/subscription-actions.ts confere de novo no servidor). A troca de
+    cartão e o cancelamento não prometem nada: o que a tela diz depois vem do
+    estado lido de volta do Mercado Pago.
+  */
+  manage: {
+    title: "Assinatura",
+    per: "/mês",
+    next: "Próxima cobrança",
+    card: {
+      open: "Trocar o cartão",
+      title: "Novo cartão",
+      submit: "Salvar cartão",
+      close: "Agora não",
+      safe: "Os dados do cartão vão direto para o Mercado Pago: o Pulse não vê nem guarda o número do cartão.",
+      test: "Ambiente de teste: use um cartão de teste do Mercado Pago; nada é cobrado.",
+      /*
+        O cartão foi aceito e a assinatura foi lida de volta. Ainda assim a
+        frase não promete as próximas cobranças: o Mercado Pago responde que
+        recebeu o cartão, não que vai cobrar nele — isso só se sabe na
+        cobrança. Dizer menos aqui é o que impede uma promessa que a tela não
+        tem como garantir.
+      */
+      done: "Cartão enviado ao Mercado Pago, e a assinatura segue ativa.",
+      /*
+        Enviado, sem confirmação: o Mercado Pago aceitou a troca mas a leitura
+        seguinte não respondeu (um 429, uma indisponibilidade). A troca pode já
+        valer, então a tela não diz que falhou nem manda tentar de novo — uma
+        segunda tentativa trocaria o cartão outra vez às cegas.
+      */
+      unconfirmed:
+        "Cartão enviado ao Mercado Pago, que ainda não confirmou o estado da assinatura. Não envie de novo: abra esta tela outra vez em alguns minutos para ver como ficou.",
+      loading: "Carregando o formulário seguro do Mercado Pago…",
+      off: "A troca de cartão online está indisponível agora. Fale com a Wuavy.",
+    },
+    cancel: {
+      open: "Cancelar assinatura",
+      ask: "Cancelar a assinatura do Pulse?",
+      /** O que acontece, dito antes de confirmar: sem surpresa depois. */
+      what: [
+        "As próximas cobranças param. Nada mais é cobrado no cartão.",
+        "O mês já pago continua valendo: o Pulse funciona normalmente até o fim dele.",
+        "Depois disso o Pulse fica só para consulta. Nenhum dado é apagado.",
+        "Você pode assinar de novo quando quiser — pelo preço em vigor naquele momento.",
+      ],
+      confirm: "Sim, cancelar a assinatura",
+      keep: "Manter minha assinatura",
+      done: "Assinatura cancelada. Nada mais será cobrado.",
+    },
+  },
   /** Above the work, when the subscription asks for attention. Active says nothing. */
   notice: {
     past_due: {

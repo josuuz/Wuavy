@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { releases, type SubscriptionStatus } from "@/lib/flow/access";
 import { billingReady, createSubscription, describeError, MercadoPagoError, syncSubscription, testMode } from "@/lib/flow/billing";
 import { getSession, getSubscription } from "@/lib/flow/session";
-import { absoluteUrl } from "@/lib/seo";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /*
@@ -26,6 +25,18 @@ export interface Subscribed {
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CARD_TOKEN = /^[\w-]{8,128}$/;
+
+/*
+  Not every "no" from Mercado Pago is a refused card. 401 and 403 are our own
+  credentials (a wrong or expired token, an account without permission) and 429
+  is a rate limit: the person's card is fine, and answering "check the card
+  details" on the first real sale would hide the very misconfiguration that
+  has to show. Those become "unavailable" — the screen that says to contract
+  with Wuavy — and the pending row stays, so a retry reuses its idempotency
+  key. Every other 4xx is the refusal itself.
+*/
+const OURS = new Set([401, 403, 429]);
+const refusedTheCard = (status: number) => status < 500 && !OURS.has(status);
 
 const outcome = (status: SubscriptionStatus | null): CheckoutOutcome =>
   releases(status) ? "active" : status === "cancelled" ? "rejected" : "pending";
@@ -73,12 +84,18 @@ export async function subscribe(input: { token: string; email: string }): Promis
       reference: rowId,
       email,
       cardToken: input.token,
-      backUrl: absoluteUrl("/pulse/assinar"),
+      backPath: "/pulse/assinar",
     });
     await admin.from("subscriptions").update({ provider_subscription_id: created.id }).eq("id", rowId);
     return { outcome: outcome(await syncSubscription(created.id)) };
   } catch (error) {
-    if (error instanceof MercadoPagoError && error.status < 500) {
+    if (error instanceof MercadoPagoError && OURS.has(error.status)) {
+      // Ours, not theirs: credentials or rate limit. Nothing was charged and the
+      // row stays, so a retry reuses its key. Logged by status, never the body.
+      console.error("subscribe: Mercado Pago refused our credentials or rate-limited us", error.status);
+      return { outcome: "unavailable" };
+    }
+    if (error instanceof MercadoPagoError && refusedTheCard(error.status)) {
       // Refused (card, data): the attempt never became a subscription. A new one gets a new row and key.
       console.warn("subscribe: refused by Mercado Pago", error.status, JSON.stringify(error.body));
       await admin.from("subscriptions").delete().eq("id", rowId).is("provider_subscription_id", null);

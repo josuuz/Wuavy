@@ -390,12 +390,32 @@ const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
     {
       title: "Plano e pagamento",
       body: (
-        <p>
-          O plano Wuavy Pulse custa {price} por mês, cobrados mensalmente. A contratação é feita com a Wuavy ou, quando
-          disponível, online, com cobrança recorrente no cartão pelo Mercado Pago. Com a assinatura em atraso ou cancelada, o
-          Pulse fica disponível só para consulta: nenhum dado é apagado por isso. O cancelamento interrompe as cobranças
-          seguintes.
-        </p>
+        <>
+          <p>
+            O plano Wuavy Pulse custa {price} por mês, cobrados mensalmente. A contratação é feita com a Wuavy ou, quando
+            disponível, online, com cobrança recorrente no cartão pelo Mercado Pago. A primeira cobrança acontece na
+            contratação e as seguintes a cada mês, na mesma data, no mesmo cartão, até o cancelamento.
+          </p>
+          <p>
+            <strong>Preço das cinco primeiras clínicas.</strong> As cinco primeiras clínicas a assinar mantêm {price} por
+            mês enquanto a assinatura seguir ativa, mesmo que o valor do plano suba para quem assinar depois. A garantia
+            acompanha a assinatura, não a clínica: se ela for cancelada, uma nova contratação passa a valer pelo preço
+            vigente naquele momento. Qualquer mudança de valor é avisada com antecedência e nunca se aplica a uma cobrança
+            já feita.
+          </p>
+          <p>
+            <strong>Cancelamento.</strong> O responsável pela clínica cancela a assinatura a qualquer momento, sozinho, em
+            Configurações → Plano, sem precisar falar com ninguém. O cancelamento interrompe as cobranças seguintes e vale
+            a partir do pedido; o mês já cobrado não é devolvido e, em troca, o Pulse continua funcionando normalmente até
+            o fim dele. Depois disso o Pulse fica disponível só para consulta: nenhum dado é apagado por isso. O cartão
+            também é trocado na mesma tela, a qualquer momento.
+          </p>
+          <p>
+            Com a assinatura em atraso, o Pulse continua liberado enquanto o Mercado Pago tenta cobrar de novo. Se as
+            tentativas falharem, a assinatura é encerrada e o Pulse passa a ficar só para consulta — também sem apagar
+            nada.
+          </p>
+        </>
       ),
     },
     {

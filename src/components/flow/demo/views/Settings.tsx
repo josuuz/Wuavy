@@ -2,15 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useSyncExternalStore, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition, type ChangeEvent, type FormEvent } from "react";
 
 import { authMessage } from "@/components/flow/auth/messages";
 import auth from "@/components/flow/auth/AuthFrame.module.css";
+import { CardBrick } from "@/components/flow/auth/CardBrick";
 import { site } from "@/data/site";
 import { contactHref } from "@/lib/contact";
 import { PRICE } from "@/lib/flow/access";
 import { updateAccount, updateClinic } from "@/lib/flow/actions";
-import { brl } from "@/lib/flow/format";
+import { brl, fullDate } from "@/lib/flow/format";
+import { cancelPlan, cardForm, replaceCard, type CardForm, type SubscriptionResult } from "@/lib/flow/subscription-actions";
 import { LOGO_MAX, LOGO_TYPES, SEGMENTS, TEAM_SIZES } from "@/lib/flow/types";
 import { createClient } from "@/lib/supabase/client";
 import { GUIDE, PLAN, SEGMENT_LABEL, TEAM_LABEL, WEEK } from "../copy";
@@ -30,6 +32,9 @@ import { WhatsAppSettings } from "./WhatsAppSettings";
 */
 
 const DEFAULT_HOURS = { opens: "08:00", closes: "19:00", days: [1, 2, 3, 4, 5, 6] };
+
+/** A palavra que o segundo passo do cancelamento manda; o servidor exige exatamente esta. */
+const CANCEL_WORD = "CANCELAR";
 
 /** A form's "Salvo." that stays until the next change. */
 function useSaved() {
@@ -288,10 +293,29 @@ function AccountSettings() {
   );
 }
 
+/*
+  O plano da clínica: onde a assinatura está, quanto custa, quando é a próxima
+  cobrança, e — para o responsável — trocar o cartão e cancelar.
+
+  Nada aqui decide nada. Cada ação devolve o estado lido de volta do Mercado
+  Pago (lib/flow/subscription-actions.ts) e a tela repete o que ele disse; uma
+  falha diz que nada mudou, em vez de fingir que mudou. O servidor confere
+  outra vez quem está pedindo: o painel só aparece para o responsável, e para
+  qualquer outra pessoa a ação é recusada de todo modo.
+*/
 function PlanSettings() {
-  const { access } = useFlow();
+  const { access, account } = useFlow();
   const status = access.subscriptionStatus;
   const notice = status && status !== "active" ? PLAN.notice[status] : null;
+  // Esta seção já só é montada sob `can.admin` (hoje, só o responsável). O
+  // papel é conferido de novo aqui e uma terceira vez no servidor: se a tabela
+  // de permissões mudar um dia, trocar o cartão e cancelar não vão junto.
+  const owner = account?.role === "owner";
+  const next = fullDate(access.nextCharge);
+  const paidUntil = fullDate(access.paidUntil);
+  // Uma clínica de antes das assinaturas (sem linha) e uma já cancelada não têm o que gerenciar.
+  const manageable = owner && status !== null && status !== "cancelled";
+
   return (
     <section className={styles.panel} aria-labelledby="plano">
       <h2 id="plano" className={styles.label}>
@@ -299,13 +323,23 @@ function PlanSettings() {
       </h2>
       <div className={styles.settingsRow}>
         <strong>Wuavy Pulse</strong>
-        <span>{brl(PRICE)}/mês</span>
+        <span>
+          {brl(PRICE)}
+          {PLAN.manage.per}
+        </span>
       </div>
       <p>
         <span className={styles.status} data-status={status === "active" || !status ? undefined : "em_andamento"}>
           {status ? PLAN.chip[status] : PLAN.chip.active}
         </span>
       </p>
+      {next ? (
+        <div className={styles.settingsRow}>
+          <span>{PLAN.manage.next}</span>
+          <span>{next}</span>
+        </div>
+      ) : null}
+      {paidUntil ? <p className={styles.fine}>O Pulse funciona normalmente até {paidUntil}, o fim do mês já pago.</p> : null}
       {notice ? <p className={styles.fine}>{notice.text}</p> : null}
       <ul className={styles.soonList} aria-label="Em breve no plano">
         {PLAN.subscribe.coming.map((item) => (
@@ -315,15 +349,169 @@ function PlanSettings() {
           </li>
         ))}
       </ul>
+      {manageable ? <ManagePlan /> : null}
       <a
         href={contactHref(site.contact.primary, PLAN.subscribe.topic)}
         className={styles.textAction}
         target="_blank"
         rel="noopener noreferrer"
       >
-        Trocar o cartão, mudar ou cancelar o plano: fale com a Wuavy <span aria-hidden="true">→</span>
+        Outra dúvida sobre o plano: fale com a Wuavy <span aria-hidden="true">→</span>
       </a>
     </section>
+  );
+}
+
+/**
+ * Trocar o cartão e cancelar, um de cada vez. Não usa `useWrite`: ele barra
+ * quem está só para consulta, e é exatamente quem mais precisa chegar aqui —
+ * uma assinatura em atraso que quer trocar o cartão.
+ */
+function ManagePlan() {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const [panel, setPanel] = useState<"none" | "card" | "cancel">("none");
+
+  const run = (action: () => Promise<SubscriptionResult>, ok: string) => {
+    setError(null);
+    setDone(null);
+    start(async () => {
+      const result = await action().catch((): SubscriptionResult => ({ state: "failed", error: PLAN.manage.card.off }));
+      /*
+        Só um `done` do servidor — que vem do estado lido de volta do Mercado
+        Pago — vira a frase de sucesso. `unconfirmed` fecha o painel do mesmo
+        jeito, porque a mudança já foi aceita lá e reabrir o formulário
+        convidaria a mandar outro cartão por cima; só o que a tela diz é outro.
+        Qualquer outra coisa é o erro do servidor.
+      */
+      if (result.state === "failed") {
+        setError(result.error);
+        return;
+      }
+      setDone(result.state === "unconfirmed" ? PLAN.manage.card.unconfirmed : ok);
+      setPanel("none");
+    });
+  };
+
+  return (
+    <div className={styles.planManage}>
+      {panel === "card" ? (
+        <NewCard
+          pending={pending}
+          onClose={() => setPanel("none")}
+          onToken={(token) => run(() => replaceCard({ token }), PLAN.manage.card.done)}
+        />
+      ) : panel === "cancel" ? (
+        <div className={styles.planConfirm} role="group" aria-labelledby="cancelar-assinatura">
+          <p id="cancelar-assinatura" className={styles.label}>
+            {PLAN.manage.cancel.ask}
+          </p>
+          <ul className={styles.fine}>
+            {PLAN.manage.cancel.what.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.secondary}
+              disabled={pending}
+              onClick={() => run(() => cancelPlan({ confirm: CANCEL_WORD }), PLAN.manage.cancel.done)}
+            >
+              {pending ? "Cancelando…" : PLAN.manage.cancel.confirm}
+            </button>
+            <button type="button" className={styles.quiet} disabled={pending} onClick={() => setPanel("none")}>
+              {PLAN.manage.cancel.keep}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.actions}>
+          <button type="button" className={styles.secondary} disabled={pending} onClick={() => setPanel("card")}>
+            {PLAN.manage.card.open}
+          </button>
+          <button type="button" className={styles.quiet} disabled={pending} onClick={() => setPanel("cancel")}>
+            {PLAN.manage.cancel.open}
+          </button>
+        </div>
+      )}
+      <FormError error={error} />
+      {done ? (
+        <p className={styles.done} role="status">
+          {done}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * O formulário do cartão novo, que é o do Mercado Pago. O que o servidor
+ * precisa dizer para ele existir (a chave pública, o pagador, se é ambiente de
+ * teste) é pedido só agora, quando o responsável abre — não vai em cada página.
+ */
+function NewCard({ pending, onToken, onClose }: { pending: boolean; onToken: (token: string) => void; onClose: () => void }) {
+  const [form, setForm] = useState<CardForm | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    cardForm()
+      .then((answer) => {
+        if (alive) setForm(answer);
+      })
+      .catch(() => {
+        if (alive) setFailed(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (failed || (form && !form.ready)) {
+    return (
+      <div className={styles.planConfirm}>
+        <p className={styles.fine}>{PLAN.manage.card.off}</p>
+        <button type="button" className={styles.quiet} onClick={onClose}>
+          {PLAN.manage.card.close}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.planConfirm} aria-busy={!ready || pending}>
+      <p className={styles.label}>{PLAN.manage.card.title}</p>
+      {!form || !ready ? (
+        <p className={styles.fine}>
+          <span className="pulse-dot" aria-hidden="true" />
+          {PLAN.manage.card.loading}
+        </p>
+      ) : null}
+      {form ? (
+        <div hidden={pending}>
+          <CardBrick
+            id="pulse-new-card-brick"
+            publicKey={form.publicKey}
+            email={form.email}
+            amount={form.amount}
+            submitLabel={PLAN.manage.card.submit}
+            onToken={async (token) => onToken(token)}
+            onReady={() => setReady(true)}
+            onFail={() => setFailed(true)}
+          />
+        </div>
+      ) : null}
+      <p className={styles.fine}>
+        {PLAN.manage.card.safe}
+        {form?.test ? ` ${PLAN.manage.card.test}` : ""}
+      </p>
+      <button type="button" className={styles.quiet} disabled={pending} onClick={onClose}>
+        {PLAN.manage.card.close}
+      </button>
+    </div>
   );
 }
 

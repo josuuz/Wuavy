@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
 import { check, subscribe, type CheckoutOutcome, type Subscribed } from "@/app/(app)/pulse/assinar/actions";
@@ -13,6 +12,7 @@ import { brl } from "@/lib/flow/format";
 import { PLAN } from "../demo/copy";
 import { PaymentMethod, Soon } from "../demo/forms";
 import ui from "../demo/ui.module.css";
+import { CardBrick } from "./CardBrick";
 import styles from "./AuthFrame.module.css";
 
 /*
@@ -26,23 +26,6 @@ import styles from "./AuthFrame.module.css";
 
 type Stage = "form" | "processing" | CheckoutOutcome;
 
-interface BrickController {
-  unmount: () => void;
-}
-interface CardFormData {
-  token: string;
-  payer?: { email?: string };
-}
-interface MercadoPagoSdk {
-  bricks: () => { create: (brick: "cardPayment", containerId: string, settings: object) => Promise<BrickController> };
-}
-declare global {
-  interface Window {
-    MercadoPago?: new (publicKey: string, options?: { locale?: string }) => MercadoPagoSdk;
-  }
-}
-
-const SDK = "https://sdk.mercadopago.com/js/v2";
 const BRICK = "pulse-card-brick";
 const POLL_MS = 2500;
 /** About twenty seconds of asking; then the page says the payment is being processed. */
@@ -60,61 +43,19 @@ interface CheckoutProps {
 
 export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: CheckoutProps) {
   const [stage, setStage] = useState<Stage>(initial === "pending" ? "processing" : initial);
-  const [sdk, setSdk] = useState(false);
   const [ready, setReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [detail, setDetail] = useState<string>();
 
-  // The card form, from Mercado Pago, mounted while the form is shown.
-  useEffect(() => {
-    if (stage !== "form" || !sdk || !publicKey || !window.MercadoPago) return;
-    const signal = getComputedStyle(document.documentElement).getPropertyValue("--wuavy-signal").trim();
-    let controller: BrickController | undefined;
-    let gone = false;
-    new window.MercadoPago(publicKey, { locale: "pt-BR" })
-      .bricks()
-      .create("cardPayment", BRICK, {
-        initialization: { amount: PRICE / 100, payer: { email } },
-        customization: {
-          visual: {
-            hideFormTitle: true,
-            texts: { formSubmit: PLAN.subscribe.cta },
-            // Always the light theme: the card, expiry and CVV are Mercado Pago's own
-            // cross-origin iframes, and its dark theme turns their text white while
-            // leaving the field white — what is typed becomes invisible.
-            style: { theme: "default", ...(signal ? { customVariables: { baseColor: signal } } : {}) },
-          },
-          paymentMethods: { maxInstallments: 1, types: { excluded: ["debit_card", "prepaid_card"] } },
-        },
-        callbacks: {
-          onReady: () => setReady(true),
-          onSubmit: async (card: CardFormData) => {
-            setSubmitting(true);
-            const result = await subscribe({ token: card.token, email: card.payer?.email ?? email }).catch(
-              (): Subscribed => ({ outcome: "pending" }),
-            );
-            setSubmitting(false);
-            setDetail(result.detail);
-            setStage(result.outcome === "pending" ? "processing" : result.outcome);
-          },
-          // The Brick shows its own field errors; nothing technical reaches the person.
-          onError: (error: unknown) => console.error("Mercado Pago Brick", error),
-        },
-      })
-      .then((brick) => {
-        if (gone) brick.unmount();
-        else controller = brick;
-      })
-      .catch((error: unknown) => {
-        console.error("Mercado Pago Brick", error);
-        setStage("unavailable");
-      });
-    return () => {
-      gone = true;
-      controller?.unmount();
-    };
-  }, [stage, sdk, publicKey, email, attempt]);
+  // The card, as a token from Mercado Pago's own form (CardBrick): the number never comes here.
+  const sent = async (token: string, payer: string) => {
+    setSubmitting(true);
+    const result = await subscribe({ token, email: payer }).catch((): Subscribed => ({ outcome: "pending" }));
+    setSubmitting(false);
+    setDetail(result.detail);
+    setStage(result.outcome === "pending" ? "processing" : result.outcome);
+  };
 
   // Not final yet: ask the server again, a few times, then say it is being processed.
   useEffect(() => {
@@ -195,7 +136,6 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
 
   return (
     <>
-      <Script src={SDK} strategy="afterInteractive" onReady={() => setSdk(true)} />
       <header className={ui.head}>
         <h1 className={ui.title}>{PLAN.subscribe.title}</h1>
         <p className={ui.price}>
@@ -213,7 +153,19 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
             Carregando o pagamento seguro do Mercado Pago…
           </p>
         ) : null}
-        <div id={BRICK} key={attempt} hidden={submitting} />
+        <div hidden={submitting}>
+          <CardBrick
+            key={attempt}
+            id={BRICK}
+            publicKey={publicKey}
+            email={email}
+            amount={PRICE / 100}
+            submitLabel={PLAN.subscribe.cta}
+            onToken={sent}
+            onReady={() => setReady(true)}
+            onFail={() => setStage("unavailable")}
+          />
+        </div>
         {submitting ? <Processing /> : null}
       </div>
       <p className={ui.fine}>

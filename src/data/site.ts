@@ -33,10 +33,19 @@ export const whatsapp = {
 // const calendar: ContactChannel = { kind: "calendar", label: "Agendar conversa", url: "https://…" };
 // const form: ContactChannel = { kind: "form", label: "Formulário", href: "/contato" };
 
+/*
+  O domínio público, fixo no código. NEXT_PUBLIC_SITE_URL troca a URL do site
+  onde o código roda (http://localhost:3000 no desenvolvimento, o endereço de
+  um preview), nunca este: o que precisa do domínio de verdade mesmo rodando
+  fora da produção — o back_url que vai ao Mercado Pago, que recusa um
+  endereço que não seja https — pede este.
+*/
+export const CANONICAL_URL = "https://wuavy.com";
+
 export const site: SiteConfig = {
   name: "WUAVY",
   // TODO(domínio): definir NEXT_PUBLIC_SITE_URL no deploy. O fallback segue o domínio do e-mail do brandbook.
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://wuavy.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? CANONICAL_URL,
   contact: {
     primary: whatsapp,
     channels: [whatsapp, email],

@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
-import { asStatus, clinicAccess, releases } from "./access";
+import { asStatus, clinicAccess, needsReread, releases, type Standing } from "./access";
 
 /** Where an invitation is accepted (and an ended access explained). */
 export const INVITE = "/pulse/convite";
@@ -58,13 +58,39 @@ export const getSubscription = cache(async () => {
   return data ? { ...data, status: asStatus(data.status) } : null;
 });
 
-/** What the signed-in clinic may do (lib/flow/access.ts), from its subscription. */
+/**
+ * What the signed-in clinic may do (lib/flow/access.ts), from its
+ * subscription. The status comes from the row the webhook keeps; when that row
+ * is older than the date Mercado Pago gave for the next charge (needsReread),
+ * no notice arrived and it is read back from Mercado Pago once — the safety
+ * net behind a webhook that was never configured or stopped arriving. Mercado
+ * Pago being unreachable keeps the stored status.
+ */
 export const getClinicAccess = cache(async () => {
   const session = await getSession();
   if (!session?.member) return null;
   const subscription = await getSubscription();
-  return clinicAccess(subscription?.status ?? null);
+  return clinicAccess(await standing(subscription));
 });
+
+/**
+ * Where the subscription stands, read back from Mercado Pago only when the
+ * stored row has outlived its period. The billing module is imported here and
+ * not at the top of the file so that it (and its credentials) is loaded by the
+ * request that actually has to ask.
+ */
+async function standing(subscription: Awaited<ReturnType<typeof getSubscription>>): Promise<Standing> {
+  const stored = { status: subscription?.status ?? null, current_period_end: subscription?.current_period_end ?? null };
+  if (!subscription?.provider_subscription_id || !needsReread(subscription)) return stored;
+  try {
+    const { syncStanding } = await import("./billing");
+    return (await syncStanding(subscription.provider_subscription_id)) ?? stored;
+  } catch (error) {
+    // An outage, or no credentials: the stored row stands. Never a lock-out.
+    console.error("getClinicAccess: Mercado Pago", error);
+    return stored;
+  }
+}
 
 /**
  * Where a signed-in person belongs, by the one rule of the journey: a clinic

@@ -11,6 +11,25 @@ const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL
 /** Cents to "R$ 1.240". */
 export const brl = (cents: number) => money.format(Math.round(cents / 100));
 
+/*
+  A billing date, as "13 de novembro de 2026". Unlike the dates above it is
+  not relative to the data's `now`: a charge date comes from Mercado Pago and
+  is read in the clinic's time zone, so the day printed is the day they are
+  charged. An unreadable date prints nothing rather than "Invalid Date".
+*/
+const billingDay = new Intl.DateTimeFormat("pt-BR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "America/Sao_Paulo",
+});
+
+export function fullDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const at = Date.parse(iso);
+  return Number.isFinite(at) ? billingDay.format(at) : null;
+}
+
 /** Whole calendar days from `now` to `iso` (negative in the past). */
 export function daysFrom(now: string, iso: string): number {
   const a = new Date(now);
