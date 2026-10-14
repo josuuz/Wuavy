@@ -222,11 +222,21 @@
   .bar {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1.75rem;
     flex: none;
-    padding: 0.75rem clamp(1.25rem, 2.5vw, 2rem);
+    padding: 1.1rem clamp(1.5rem, 2.5vw, 2.25rem);
     background: color-mix(in srgb, var(--surface) 94%, transparent);
     border-bottom: var(--rule) solid var(--border);
+  }
+
+  /* The brand stands in the bar now, top-left, next to the menu it used to sit below. */
+  .bar .brand {
+    flex: none;
+  }
+
+  /* The rail no longer carries the brand: the bar does. */
+  .brandRow {
+    display: none;
   }
 
   .topnav {
@@ -245,8 +255,8 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    padding: 1.25rem 1rem max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+    gap: 1.5rem;
+    padding: 1.75rem 1.25rem max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
     overflow-y: auto;
     border-bottom: 0;
     border-right: var(--rule) solid var(--border);

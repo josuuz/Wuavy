@@ -133,6 +133,9 @@ function Shell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.app} data-pulse="">
       <header className={styles.bar} data-pulse-surface="rail">
+        <Link href="/pulse" className={styles.brand} aria-label="Wuavy Pulse: voltar à página do produto">
+          <PulseLogo />
+        </Link>
         <nav aria-label="Telas do Pulse" className={styles.topnav}>
           <ol>{menu.map((view) => navItem(view))}</ol>
         </nav>
