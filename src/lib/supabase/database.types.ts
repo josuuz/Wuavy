@@ -829,6 +829,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "conversation_messages_connection_fkey"
+            columns: ["organization_id", "connection_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_connections"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "conversation_messages_organization_id_conversation_id_fkey"
             columns: ["organization_id", "conversation_id"]
             isOneToOne: false
@@ -1050,6 +1057,136 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "procedures"
             referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      maintenance_clients: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          plan_name: string
+          price_cents: number
+          site_url: string | null
+          token: string
+          whatsapp: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          plan_name?: string
+          price_cents?: number
+          site_url?: string | null
+          token: string
+          whatsapp?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          plan_name?: string
+          price_cents?: number
+          site_url?: string | null
+          token?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      maintenance_payments: {
+        Row: {
+          amount_cents: number
+          charged_at: string | null
+          created_at: string
+          id: string
+          paid: boolean
+          provider_payment_id: string
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          amount_cents: number
+          charged_at?: string | null
+          created_at?: string
+          id?: string
+          paid?: boolean
+          provider_payment_id: string
+          status: string
+          subscription_id: string
+        }
+        Update: {
+          amount_cents?: number
+          charged_at?: string | null
+          created_at?: string
+          id?: string
+          paid?: boolean
+          provider_payment_id?: string
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_subscriptions: {
+        Row: {
+          amount_cents: number
+          client_id: string
+          created_at: string
+          current_period_end: string | null
+          id: string
+          provider: string
+          provider_subscription_id: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          client_id: string
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          provider?: string
+          provider_subscription_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          client_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          provider?: string
+          provider_subscription_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_clients"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1594,7 +1731,15 @@ export type Database = {
           updated_at?: string | null
           waba_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_credentials: {
         Row: {
@@ -1615,7 +1760,15 @@ export type Database = {
           pin_secret_id?: string | null
           token_secret_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_credentials_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: true
+            referencedRelation: "whatsapp_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1682,6 +1835,7 @@ export type Database = {
         }[]
       }
       pulse_now: { Args: never; Returns: string }
+      pulse_phone_key: { Args: { phone: string }; Returns: string }
       pulse_product_costs: {
         Args: { org: string }
         Returns: {
@@ -1743,7 +1897,7 @@ export type Database = {
           media?: Json
           message_id: string
           phone_display: string
-          profile_name: string | null
+          profile_name: string
           sent_at: string
           wa_id: string
         }

@@ -1,33 +1,59 @@
 /*
-  Wuavy Pulse: the product's colours, in one place. Every Pulse root carries
-  data-pulse (the app shell, the sign-in frame); its surfaces inside carry
-  data-pulse-surface. Light is the product's default: html[data-pulse-theme="light"]
-  is set before first paint by the boot script in app/layout.tsx unless the
-  person chose dark (the theme switch). Without the attribute (no script, or
-  dark chosen) the tokens below are dark. The site's semantic tokens
-  (--surface, --text, --text-2, --border, --mark, --focus) are mapped onto
-  these, so the screens' CSS never names a raw colour.
+  Wuavy Pulse: the product's colours, shape and depth, in one place. Every
+  Pulse root carries data-pulse (the app shell, the sign-in frame); its
+  surfaces inside carry data-pulse-surface. Light is the product's default:
+  html[data-pulse-theme="light"] is set before first paint by the boot script
+  in app/layout.tsx unless the person chose dark (the theme switch). Without
+  the attribute (no script, or dark chosen) the tokens below are dark. The
+  site's semantic tokens (--surface, --text, --text-2, --border, --mark,
+  --focus) are mapped onto these, so the screens' CSS never names a raw colour.
+
+  Direction 6 — Pulse Pulse: the Wuavy palette (black #0B0B0B, graphite
+  #2A2A2A, off-white #F6F4EE, Pulse orange #FF7A3D), softened. Black is lifted
+  off pure black, contrasts are calmer than the agency site's, and the orange
+  is an accent, never a field behind words. As words it shifts to
+  --pulse-accent-text, which holds WCAG AA on every surface here; on an orange
+  fill the words are dark (white would not read). Field borders
+  (--pulse-field) hold 3:1 against card and ground.
 */
 
 [data-pulse] {
-  --pulse-bg: var(--wuavy-black);
-  --pulse-rail: var(--wuavy-carbon); /* the screens' rail */
-  --pulse-raised: var(--wuavy-carbon); /* fields, blocks on the agenda */
-  --pulse-card: color-mix(in srgb, var(--wuavy-paper) 3%, transparent);
-  --pulse-sheet: var(--wuavy-graphite); /* side panels and dialogs */
-  --pulse-ink: var(--wuavy-paper); /* what tints and hairlines are mixed from */
-  --pulse-fg: var(--wuavy-paper);
-  --pulse-muted: var(--wuavy-stone);
-  --pulse-border: color-mix(in srgb, var(--pulse-ink) 20%, transparent);
-  --pulse-border-soft: color-mix(in srgb, var(--pulse-ink) 16%, transparent);
-  --pulse-accent: var(--wuavy-signal);
-  --pulse-accent-text: var(--wuavy-signal); /* Signal as words, not as a field */
-  --pulse-on-accent: var(--wuavy-black);
-  --pulse-success: #4fbf7f;
-  --pulse-warning: #f2b13c;
-  --pulse-danger: #ff5a4e;
-  --pulse-shadow: none;
-  --pulse-backdrop: rgb(0 0 0 / 0.55);
+  --pulse-bg: #0e0e0e;
+  --pulse-rail: #121212; /* the screens' rail */
+  --pulse-raised: #1f1f1f; /* fields, blocks on the agenda */
+  --pulse-card: #171717;
+  --pulse-sheet: #191919; /* side panels and dialogs */
+  --pulse-sand: #222222; /* quiet fills: the active item, tags */
+  --pulse-ink: #f6f4ee; /* what tints and hairlines are mixed from */
+  --pulse-fg: #f6f4ee;
+  --pulse-muted: #a8a59e;
+  --pulse-border: #2a2a2a;
+  --pulse-border-soft: #222222;
+  --pulse-field: #6e6b65; /* the edge of a field: 3:1 */
+  --pulse-accent: #ff7a3d;
+  --pulse-accent-soft: color-mix(in srgb, #ff7a3d 13%, #171717);
+  --pulse-accent-text: #ff8f5e; /* orange as words, not as a field */
+  --pulse-on-accent: #0b0b0b;
+  --pulse-sage: #86c29c;
+  --pulse-success: #86c29c;
+  --pulse-warning: #e8b96a;
+  --pulse-danger: #f2907f;
+  --pulse-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 36px -20px rgb(0 0 0 / 0.7);
+  --pulse-backdrop: rgb(8 8 8 / 0.62);
+  --pulse-glow: 26%;
+  --pulse-crown: #f2c27b; /* champagne: the subscription mark */
+
+  /* Shape: soft, never sharp. Controls are pills, cards are cushions. */
+  --pulse-r-xs: 6px; /* tags, small marks */
+  --pulse-r-sm: 10px; /* fields, buttons in rows */
+  --pulse-r-md: 16px; /* cards, bubbles */
+  --pulse-r-lg: 24px; /* panels, sheets */
+  --pulse-r-pill: 999px;
+
+  /* Type: Mona Sans, the Wuavy family, as in the approved board. Headlines
+     sit lighter than the agency site's 800: calm, not loud. */
+  --pulse-display: var(--font-mona), system-ui, sans-serif;
+  --wuavy-headline: 700;
 
   --surface: var(--pulse-bg);
   --text: var(--pulse-fg);
@@ -39,25 +65,34 @@
   color-scheme: dark;
 }
 
-/* Light: off-white ground, white cards that sit apart from it, near-black
-   words. Signal stays the accent; as text it darkens enough to be read. */
+/* Light: the Wuavy off-white ground, white cards on a soft shadow, a
+   softened black for words. */
 :root[data-pulse-theme="light"] [data-pulse] {
-  --pulse-bg: #f3f3f0;
-  --pulse-rail: #ebebe7;
+  --pulse-bg: #f6f4ee;
+  --pulse-rail: #faf9f5;
   --pulse-raised: #ffffff;
   --pulse-card: #ffffff;
-  --pulse-sheet: #fbfbf9;
-  --pulse-ink: #121312;
-  --pulse-fg: #121312;
-  --pulse-muted: #5b5d58;
-  --pulse-border: color-mix(in srgb, var(--pulse-ink) 13%, transparent);
-  --pulse-border-soft: color-mix(in srgb, var(--pulse-ink) 10%, transparent);
-  --pulse-accent-text: #c4300a;
-  --pulse-success: #1d8a52;
-  --pulse-warning: #a86a00;
-  --pulse-danger: #c8281c;
-  --pulse-shadow: 0 1px 2px rgb(18 19 18 / 0.04), 0 8px 24px -14px rgb(18 19 18 / 0.16);
-  --pulse-backdrop: rgb(18 19 18 / 0.3);
+  --pulse-sheet: #fcfbf8;
+  --pulse-sand: #efece4;
+  --pulse-ink: #1c1b19;
+  --pulse-fg: #1c1b19;
+  --pulse-muted: #5e5b55;
+  --pulse-border: #e4e0d7;
+  --pulse-border-soft: #ece9e1;
+  --pulse-field: #8c8880;
+  --pulse-accent: #ff7a3d;
+  --pulse-accent-soft: #ffeee5;
+  --pulse-accent-text: #b4441a;
+  --pulse-on-accent: #1c1b19; /* dark words on orange: white would not read */
+  --pulse-sage: #86c29c;
+  --pulse-success: #2f6e48;
+  --pulse-warning: #8a5a00;
+  --pulse-danger: #b3261e;
+  --pulse-shadow: 0 1px 2px rgb(28 27 25 / 0.04), 0 14px 32px -20px rgb(28 27 25 / 0.18);
+  --pulse-backdrop: rgb(28 27 25 / 0.32);
+  --pulse-glow: 16%;
+  --pulse-crown: #a3661b;
+  --pulse-edge: rgb(150 82 40 / 0.28);
   --focus: var(--pulse-ink);
   color-scheme: light;
 }

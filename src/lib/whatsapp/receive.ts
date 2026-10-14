@@ -47,7 +47,10 @@ export async function handleEvents(events: WebhookEvent[]) {
         connection,
         message_id: event.messageId,
         wa_id: event.waId,
-        profile_name: event.profileName,
+        // O gerador de tipos da Supabase marca todo argumento de função como
+        // não-nulo; profile_name é `text` e aceita NULL, que é o que uma
+        // mensagem de saída manda (webhook.ts). O valor enviado não muda.
+        profile_name: event.profileName as string,
         phone_display: displayPhone(event.waId),
         sent_at: event.at.toISOString(),
         kind: event.kind,
