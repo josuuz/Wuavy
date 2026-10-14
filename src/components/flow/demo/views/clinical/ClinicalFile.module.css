@@ -1,0 +1,260 @@
+/*
+  The patient's clinical file: five sections behind one strip of tabs, so the
+  whole file is one tap away from any other part of it and nothing is buried.
+  Built narrow-first — on a phone the tabs scroll sideways and every field is
+  full width; the two-column reading grid only appears where there is room.
+*/
+
+/*
+  The file sits inside the shared `.costs` disclosure, which is a grid whose
+  implicit track is `auto` — and an `auto` track grows to its content's
+  max-content width, which is the whole tab strip laid flat. That pushes the
+  patient's card wider than the phone, and the card, not the strip, is what
+  ends up scrolling sideways. Flooring the track at zero lets the strip
+  overflow inside itself, which is what `overflow-x` on .tabs was always for.
+  Declared here rather than on `.costs`, which Procedimentos, Estoque and
+  Equipe also use.
+*/
+.file {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tabs {
+  display: flex;
+  min-width: 0;
+  gap: 2px;
+  margin: 10px 0 14px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex: none;
+  scroll-snap-align: start;
+  padding: 7px 13px;
+  border: 0;
+  border-radius: var(--pulse-r-pill);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: var(--pulse-field);
+}
+
+.tab[aria-selected="true"] {
+  background: var(--mark);
+  color: var(--on-mark);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* A number beside a tab: how many sheets, how many entries. Quiet, not a badge. */
+.count {
+  opacity: 0.62;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel {
+  display: grid;
+  gap: 12px;
+}
+
+/* ── Reading a filled sheet ─────────────────────────────────── */
+
+.pairs {
+  display: grid;
+  gap: 10px 20px;
+  margin: 0;
+}
+
+@media (min-width: 620px) {
+  .pairs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* The health history runs long; it gets the full width. */
+  .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.pair {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pairLabel {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.pairValue {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Something worth seeing before anything else. */
+.flag .pairValue {
+  color: var(--pulse-danger);
+  font-weight: 600;
+}
+
+.sheet {
+  padding: 12px 0;
+  border-top: 1px solid var(--pulse-border-soft);
+}
+
+.sheet:first-of-type {
+  border-top: 0;
+}
+
+/* A write that went through, said once and quietly. role="status" reads it out. */
+.saved {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--pulse-success);
+}
+
+.stamp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: 0.76rem;
+  color: var(--text-2);
+}
+
+/* ── Waiting on the database ────────────────────────────────── */
+/*
+  Shown wherever a section needs tables that are not in the database yet. It
+  says so plainly instead of offering a form that would throw the writing away.
+*/
+.waiting {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px dashed var(--pulse-border);
+  border-radius: var(--pulse-r-md);
+  background: var(--pulse-field);
+}
+
+.waitingTitle {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.waitingText {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+/* What a section will hold, drawn flat so nobody mistakes it for working. */
+.preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.slot {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px dashed var(--pulse-border);
+  border-radius: var(--pulse-r-sm);
+  background: var(--pulse-card);
+  color: var(--text-2);
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 6px;
+}
+
+/* ── The form builder ───────────────────────────────────────── */
+
+.question {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: var(--pulse-r-sm);
+  background: var(--pulse-card);
+}
+
+.questionHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.questionHead > :first-child {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.questionFoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--text-2);
+}
+
+.inline {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ── Answering ──────────────────────────────────────────────── */
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.choice {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.86rem;
+  color: var(--text);
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-2);
+}

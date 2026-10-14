@@ -1,5 +1,7 @@
 // Generated from the database (`supabase gen types typescript --linked --schema public`).
 // Regenerate after every migration.
+// Last generated from: Wuavy Pulse Teste (wazxofdzvzfgonmwsdhs), 2026-10-13.
+// Includes clinical tables from migrations 0014–0016.
 
 export type Json =
   | string
@@ -42,6 +44,223 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "activities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      anamneses: {
+        Row: {
+          allergies: string | null
+          answers: Json
+          author_id: string | null
+          contraindications: string | null
+          created_at: string
+          fields_snapshot: Json
+          goals: string | null
+          health_history: string | null
+          id: string
+          medications: string | null
+          organization_id: string
+          patient_id: string
+          recorded_at: string
+          updated_at: string | null
+          updated_by: string | null
+          version_id: string | null
+        }
+        Insert: {
+          allergies?: string | null
+          answers?: Json
+          author_id?: string | null
+          contraindications?: string | null
+          created_at?: string
+          fields_snapshot?: Json
+          goals?: string | null
+          health_history?: string | null
+          id?: string
+          medications?: string | null
+          organization_id: string
+          patient_id: string
+          recorded_at?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          allergies?: string | null
+          answers?: Json
+          author_id?: string | null
+          contraindications?: string | null
+          created_at?: string
+          fields_snapshot?: Json
+          goals?: string | null
+          health_history?: string | null
+          id?: string
+          medications?: string | null
+          organization_id?: string
+          patient_id?: string
+          recorded_at?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamneses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anamneses_organization_id_patient_id_fkey"
+            columns: ["organization_id", "patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "anamneses_organization_id_version_id_fkey"
+            columns: ["organization_id", "version_id"]
+            isOneToOne: false
+            referencedRelation: "anamnesis_form_versions"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      anamnesis_form_versions: {
+        Row: {
+          fields: Json
+          form_id: string
+          id: string
+          organization_id: string
+          published_at: string
+          published_by: string | null
+          version: number
+        }
+        Insert: {
+          fields: Json
+          form_id: string
+          id?: string
+          organization_id: string
+          published_at?: string
+          published_by?: string | null
+          version: number
+        }
+        Update: {
+          fields?: Json
+          form_id?: string
+          id?: string
+          organization_id?: string
+          published_at?: string
+          published_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_form_versions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anamnesis_form_versions_organization_id_form_id_fkey"
+            columns: ["organization_id", "form_id"]
+            isOneToOne: false
+            referencedRelation: "anamnesis_forms"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      anamnesis_forms: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          organization_id: string
+          procedure_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          procedure_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          procedure_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_forms_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anamnesis_forms_organization_id_procedure_id_fkey"
+            columns: ["organization_id", "procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      anamnesis_revisions: {
+        Row: {
+          anamnesis_id: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          organization_id: string
+          snapshot: Json
+        }
+        Insert: {
+          anamnesis_id: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          organization_id: string
+          snapshot: Json
+        }
+        Update: {
+          anamnesis_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          organization_id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_revisions_organization_id_anamnesis_id_fkey"
+            columns: ["organization_id", "anamnesis_id"]
+            isOneToOne: false
+            referencedRelation: "anamneses"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "anamnesis_revisions_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -354,41 +573,172 @@ export type Database = {
           },
         ]
       }
+      clinical_attachments: {
+        Row: {
+          bytes: number
+          caption: string | null
+          consent_signed_at: string | null
+          consent_signer: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          mime_type: string
+          organization_id: string
+          patient_id: string
+          record_id: string | null
+          storage_path: string
+          taken_at: string | null
+          uploaded_at: string | null
+        }
+        Insert: {
+          bytes: number
+          caption?: string | null
+          consent_signed_at?: string | null
+          consent_signer?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          mime_type: string
+          organization_id: string
+          patient_id: string
+          record_id?: string | null
+          storage_path: string
+          taken_at?: string | null
+          uploaded_at?: string | null
+        }
+        Update: {
+          bytes?: number
+          caption?: string | null
+          consent_signed_at?: string | null
+          consent_signer?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string
+          organization_id?: string
+          patient_id?: string
+          record_id?: string | null
+          storage_path?: string
+          taken_at?: string | null
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_attachments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_attachments_organization_id_patient_id_fkey"
+            columns: ["organization_id", "patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "clinical_attachments_organization_id_record_id_fkey"
+            columns: ["organization_id", "record_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_records"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      clinical_record_revisions: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          organization_id: string
+          record_id: string
+          snapshot: Json
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          organization_id: string
+          record_id: string
+          snapshot: Json
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          organization_id?: string
+          record_id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_record_revisions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_record_revisions_organization_id_record_id_fkey"
+            columns: ["organization_id", "record_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_records"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
       clinical_records: {
         Row: {
+          appointment_id: string | null
           author_id: string | null
           chief_complaint: string | null
           id: string
           notes: string | null
           organization_id: string
           patient_id: string
+          procedure_id: string | null
           recorded_at: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          appointment_id?: string | null
           author_id?: string | null
           chief_complaint?: string | null
           id?: string
           notes?: string | null
           organization_id: string
           patient_id: string
+          procedure_id?: string | null
           recorded_at?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          appointment_id?: string | null
           author_id?: string | null
           chief_complaint?: string | null
           id?: string
           notes?: string | null
           organization_id?: string
           patient_id?: string
+          procedure_id?: string | null
           recorded_at?: string
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clinical_records_appointment_fkey"
+            columns: ["organization_id", "appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["organization_id", "id"]
+          },
           {
             foreignKeyName: "clinical_records_author_id_fkey"
             columns: ["author_id"]
@@ -408,6 +758,13 @@ export type Database = {
             columns: ["organization_id", "patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "clinical_records_procedure_fkey"
+            columns: ["organization_id", "procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
             referencedColumns: ["organization_id", "id"]
           },
         ]

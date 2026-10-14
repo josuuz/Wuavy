@@ -8,12 +8,22 @@ import type { ClinicalRecord, FlowData, Patient } from "@/lib/flow/types";
 import { Field, FormError, useWrite } from "../forms";
 import { useFlow } from "../store";
 import styles from "../ui.module.css";
+import { Anamnesis } from "./clinical/Anamnesis";
+import own from "./clinical/ClinicalFile.module.css";
+import { Consents, Documents } from "./clinical/Shelf";
 
 /*
-  The patient's clinical record, inside their own file: the chief complaint
-  in sight, the records one tap away. Only the owner and the professionals
-  see any of it (the front desk gets nothing, and the database refuses them
-  too, migration 0007). The demo shows it with fictitious records.
+  The patient's clinical file, inside their own file: the chief complaint in
+  sight, and the rest behind one strip of tabs — what was written today, the
+  whole history, the anamnesis, the photographs and the consent. Only the owner
+  and the professionals see any of it (the front desk gets nothing, and the
+  database refuses them too, migration 0007). The demo shows it with
+  fictitious records.
+
+  Two of the five tabs are drawn and not open, and one needs tables that are
+  not in the database yet. Each says so in its own words rather than offering
+  something that would not save. Evolução and Histórico are the records that
+  have always worked, rearranged: writing in one place, reading in the other.
 */
 
 export function useCanRecord() {
@@ -43,64 +53,150 @@ export function ChiefComplaint({ patient }: { patient: Patient }) {
   );
 }
 
+/** How many entries Evolução shows beside the form before Histórico takes over. */
 const SHOWN = 4;
 
+const TABS = [
+  { id: "evolucao", label: "Evolução" },
+  { id: "historico", label: "Histórico" },
+  { id: "anamnese", label: "Anamnese" },
+  { id: "fotos", label: "Fotos e documentos" },
+  { id: "termos", label: "Consentimentos" },
+] as const;
+
+type Tab = (typeof TABS)[number]["id"];
+
 export function ClinicalRecords({ patient }: { patient: Patient }) {
-  const { data, access } = useFlow();
+  const { data } = useFlow();
   const can = useCanRecord();
-  const [editing, setEditing] = useState<string | null>(null);
-  const [all, setAll] = useState(false);
+  const [tab, setTab] = useState<Tab>("evolucao");
   if (!can) return null;
   const records = recordsOf(data, patient.id);
-  const shown = all ? records : records.slice(0, SHOWN);
 
   return (
-    <details className={styles.costs}>
+    <details className={`${styles.costs} ${own.file}`}>
       <summary>
         Prontuário{records.length ? ` · ${records.length} ${records.length === 1 ? "registro" : "registros"}` : ""}
       </summary>
       <p className={styles.fine}>Visível só para o responsável e os profissionais da clínica.</p>
-      {editing === "novo" ? (
-        <RecordForm patient={patient} onDone={() => setEditing(null)} />
+
+      {/*
+        Declaring role="tab" promises the keyboard behaviour that goes with it:
+        one stop for the whole strip, and the arrows to move between the tabs.
+        Without that a screen reader announces five tabs and the keyboard walks
+        into them one at a time, which is worse than plain buttons would be.
+      */}
+      <div className={own.tabs} role="tablist" aria-label="Prontuário">
+        {TABS.map((item, index) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            id={`tab-${item.id}`}
+            aria-selected={tab === item.id}
+            aria-controls={`panel-${item.id}`}
+            tabIndex={tab === item.id ? 0 : -1}
+            className={own.tab}
+            onClick={() => setTab(item.id)}
+            onKeyDown={(event) => {
+              const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+              const to = step ? (index + step + TABS.length) % TABS.length : event.key === "Home" ? 0 : event.key === "End" ? TABS.length - 1 : -1;
+              if (to < 0) return;
+              event.preventDefault();
+              setTab(TABS[to].id);
+              document.getElementById(`tab-${TABS[to].id}`)?.focus();
+            }}
+          >
+            {item.label}
+            {item.id === "historico" && records.length ? <span className={own.count}> {records.length}</span> : null}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === "evolucao" ? <Evolution patient={patient} records={records} /> : null}
+        {tab === "historico" ? <History patient={patient} records={records} /> : null}
+        {tab === "anamnese" ? <Anamnesis patient={patient} /> : null}
+        {tab === "fotos" ? <Documents /> : null}
+        {tab === "termos" ? <Consents /> : null}
+      </div>
+    </details>
+  );
+}
+
+/** Writing today's entry, and the few most recent beside it. */
+function Evolution({ patient, records }: { patient: Patient; records: ClinicalRecord[] }) {
+  const { access } = useFlow();
+  const [writing, setWriting] = useState(false);
+
+  return (
+    <div className={own.panel}>
+      {writing ? (
+        <RecordForm patient={patient} onDone={() => setWriting(false)} />
       ) : access.canEdit ? (
-        <button type="button" className={styles.secondary} onClick={() => setEditing("novo")}>
-          Novo registro
-        </button>
+        <div className={styles.actions}>
+          <button type="button" className={styles.secondary} onClick={() => setWriting(true)}>
+            Novo registro
+          </button>
+        </div>
       ) : null}
       {records.length ? (
-        <ol className={styles.records}>
-          {shown.map((r) =>
-            editing === r.id ? (
-              <li key={r.id}>
-                <RecordForm patient={patient} record={r} onDone={() => setEditing(null)} />
-              </li>
-            ) : (
-              <li key={r.id}>
-                <span className={styles.when}>
-                  {shortDate(r.recordedAt)}
-                  {authorOf(data, r.authorId) ? ` · ${authorOf(data, r.authorId)}` : ""}
-                  {r.updatedBy && r.updatedBy !== r.authorId && authorOf(data, r.updatedBy) ? ` · editado por ${authorOf(data, r.updatedBy)}` : ""}
-                </span>
-                {r.chiefComplaint ? <strong>{r.chiefComplaint}</strong> : null}
-                {r.notes ? <p>{r.notes}</p> : null}
-                {access.canEdit ? (
-                  <button type="button" className={styles.quiet} onClick={() => setEditing(r.id)}>
-                    Editar
-                  </button>
-                ) : null}
-              </li>
-            ),
-          )}
-        </ol>
-      ) : editing ? null : (
-        <p className={styles.fine}>Nenhum registro ainda.</p>
+        <Entries patient={patient} records={records.slice(0, SHOWN)} />
+      ) : writing ? null : (
+        <p className={own.empty}>Nenhum registro ainda.</p>
       )}
-      {records.length > SHOWN && !all ? (
+    </div>
+  );
+}
+
+/** Everything written about this patient, newest first. */
+function History({ patient, records }: { patient: Patient; records: ClinicalRecord[] }) {
+  const [all, setAll] = useState(false);
+  if (!records.length) return <p className={own.empty}>Nenhum registro ainda.</p>;
+  const shown = all ? records : records.slice(0, SHOWN * 2);
+  return (
+    <div className={own.panel}>
+      <Entries patient={patient} records={shown} />
+      {records.length > shown.length ? (
         <button type="button" className={styles.more} onClick={() => setAll(true)}>
           Ver os {records.length} registros
         </button>
       ) : null}
-    </details>
+    </div>
+  );
+}
+
+function Entries({ patient, records }: { patient: Patient; records: ClinicalRecord[] }) {
+  const { data, access } = useFlow();
+  const [editing, setEditing] = useState<string | null>(null);
+
+  return (
+    <ol className={styles.records}>
+      {records.map((r) =>
+        editing === r.id ? (
+          <li key={r.id}>
+            <RecordForm patient={patient} record={r} onDone={() => setEditing(null)} />
+          </li>
+        ) : (
+          <li key={r.id}>
+            <span className={styles.when}>
+              {shortDate(r.recordedAt)}
+              {authorOf(data, r.authorId) ? ` · ${authorOf(data, r.authorId)}` : ""}
+              {r.updatedBy && r.updatedBy !== r.authorId && authorOf(data, r.updatedBy)
+                ? ` · editado por ${authorOf(data, r.updatedBy)}`
+                : ""}
+            </span>
+            {r.chiefComplaint ? <strong>{r.chiefComplaint}</strong> : null}
+            {r.notes ? <p>{r.notes}</p> : null}
+            {access.canEdit ? (
+              <button type="button" className={styles.quiet} onClick={() => setEditing(r.id)}>
+                Editar
+              </button>
+            ) : null}
+          </li>
+        ),
+      )}
+    </ol>
   );
 }
 
@@ -114,17 +210,34 @@ function RecordForm({ patient, record, onDone }: { patient: Patient; record?: Cl
     const notes = String(form.get("notes") ?? "").trim();
     if (!chiefComplaint && !notes) return { error: "Escreva a queixa principal ou a evolução." };
     const day = String(form.get("recordedAt") || data.now.slice(0, 10));
-    dispatch({ type: "record", record: { id: record?.id, patientId: patient.id, recordedAt: `${day}T12:00:00.000Z`, chiefComplaint, notes } });
+    dispatch({
+      type: "record",
+      record: { id: record?.id, patientId: patient.id, recordedAt: `${day}T12:00:00.000Z`, chiefComplaint, notes },
+    });
     return {};
   };
 
   return (
-    <form className={styles.form} onSubmit={submit(live ? (form) => saveRecord(record?.id ?? null, patient.id, form) : demoSave, onDone)}>
+    <form
+      className={styles.form}
+      onSubmit={submit(live ? (form) => saveRecord(record?.id ?? null, patient.id, form) : demoSave, onDone)}
+    >
       <Field label="Data">
-        <input className={styles.input} type="date" name="recordedAt" defaultValue={(record?.recordedAt ?? data.now).slice(0, 10)} />
+        <input
+          className={styles.input}
+          type="date"
+          name="recordedAt"
+          defaultValue={(record?.recordedAt ?? data.now).slice(0, 10)}
+        />
       </Field>
       <Field label="Queixa principal">
-        <textarea className={styles.input} name="chiefComplaint" rows={2} maxLength={500} defaultValue={record?.chiefComplaint} />
+        <textarea
+          className={styles.input}
+          name="chiefComplaint"
+          rows={2}
+          maxLength={500}
+          defaultValue={record?.chiefComplaint}
+        />
       </Field>
       <Field label="Evolução e anotações">
         <textarea className={styles.input} name="notes" rows={4} maxLength={8000} defaultValue={record?.notes} />
