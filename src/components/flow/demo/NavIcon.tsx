@@ -54,6 +54,14 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="10" cy="17" r="2.3" />
     </>
   ),
+  /** "Mais": the rest of the screens, on a phone. Not one of the VIEWS, so it has its own key. */
+  mais: (
+    <>
+      <circle cx="5.5" cy="12" r="1.4" />
+      <circle cx="12" cy="12" r="1.4" />
+      <circle cx="18.5" cy="12" r="1.4" />
+    </>
+  ),
 };
 
 export function NavIcon({ slug, className }: { slug: string; className?: string }) {

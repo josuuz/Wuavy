@@ -42,6 +42,9 @@ export const VIEWS: readonly { slug: string; label: string; live?: boolean; need
 
 export const MENU = VIEWS;
 
+/** On a phone the bottom bar keeps only these within thumb's reach; the rest sit behind "Mais". */
+export const PRIORITY_MOBILE = ["", "agenda", "pacientes", "conversas"];
+
 export const viewHref = (slug: string, base = BASE) => (slug ? `${base}/${slug}` : base);
 
 const FOCUS_VIEW: Record<Focus["to"], string> = {
