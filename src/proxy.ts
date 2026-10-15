@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { LOCALE_COOKIE, localizePath, PT_PREFIX, resolveLocale } from "@/i18n/config";
 
 /*
-  Two jobs, on separate paths.
+  Three jobs, on separate paths.
 
   The public site: rendered once per language (app/(site)/[locale]). pt-BR
   keeps the plain addresses, pt-PT lives under /pt-pt; both are indexable and
@@ -18,10 +18,19 @@ import { LOCALE_COOKIE, localizePath, PT_PREFIX, resolveLocale } from "@/i18n/co
   access token is refreshed here and the new cookies go out with the response
   (Server Components can read cookies but not write them). The rest of the
   Pulse app passes through untouched.
+
+  A manutenção de sites (/manutencao): nunca localizada. O painel
+  (/manutencao/admin) tem a sessão renovada como as rotas do Pulse; a página
+  de assinatura de um cliente passa direto, porque o que a abre é o token na
+  própria URL.
 */
 
 const PULSE_SESSION = /^\/pulse\/(?:(?:app|demo)(?:\/.*)?|entrar|comecar|assinar|convite)$/;
 const PULSE_APP = /^\/pulse\/./;
+// A manutenção de sites: o painel precisa da sessão de um administrador; a
+// página de um cliente abre pelo token da URL e não tem sessão nenhuma.
+const CARE_SESSION = /^\/manutencao\/admin(?:\/.*)?$/;
+const CARE = /^\/manutencao(?:\/|$)/;
 // pt-PT's public addresses, exactly as written.
 const PT_SPACE = new RegExp(`^${PT_PREFIX}(?=/|$)`);
 // Any other spelling of a language segment (/pt-PT, /pt-BR…): one address per page.
@@ -85,8 +94,8 @@ async function refreshSession(request: NextRequest): Promise<NextResponse> {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (PULSE_SESSION.test(pathname)) return refreshSession(request);
-  if (PULSE_APP.test(pathname)) return NextResponse.next();
+  if (PULSE_SESSION.test(pathname) || CARE_SESSION.test(pathname)) return refreshSession(request);
+  if (PULSE_APP.test(pathname) || CARE.test(pathname)) return NextResponse.next();
   return localize(request);
 }
 
