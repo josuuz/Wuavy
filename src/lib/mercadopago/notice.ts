@@ -117,6 +117,43 @@ export function httpsUrl(path: string, siteUrl: string, canonical: string): stri
   return url.protocol === "https:" ? url.toString() : new URL(path, canonical).toString();
 }
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+/**
+ * A mesma regra de httpsUrl, mas recusando o domínio de produção quando quem
+ * pergunta diz estar em teste. Achado real ao validar a manutenção contra a
+ * API (Tarefa 6): o fallback de httpsUrl por si só manda o aviso de uma
+ * assinatura de teste para o webhook de PRODUÇÃO, de verdade — o domínio
+ * canônico é sempre um domínio real, teste nenhum o alcança de volta.
+ *
+ * Em teste: localhost (ou qualquer http) falha aqui, antes de qualquer
+ * chamada ao Mercado Pago, em vez de cair em produção silenciosamente; um
+ * endereço https que seja o próprio domínio canônico (ou um subdomínio dele)
+ * também falha. Qualquer outro https é um endereço de teste válido. Fora do
+ * modo de teste, o comportamento é idêntico ao de httpsUrl — isto não muda
+ * nada em produção nem no Pulse, que continua chamando httpsUrl direto.
+ */
+export function testSafeUrl(path: string, siteUrl: string, canonical: string, isTestMode: boolean): string {
+  if (!isTestMode) return httpsUrl(path, siteUrl, canonical);
+
+  let url: URL;
+  try {
+    url = new URL(path, siteUrl);
+  } catch {
+    throw new Error(`Cobrança de teste fechada: endereço de site inválido (${siteUrl}).`);
+  }
+  if (url.protocol !== "https:" || LOCAL_HOSTS.has(url.hostname)) {
+    throw new Error(
+      `Cobrança de teste fechada: defina um endereço https alcançável e específico para teste (nunca localhost) antes de validar contra a API real do Mercado Pago. Recebido: ${siteUrl}`,
+    );
+  }
+  const productionHost = new URL(canonical).hostname;
+  if (url.hostname === productionHost || url.hostname.endsWith(`.${productionHost}`)) {
+    throw new Error(`Cobrança de teste fechada: o endereço aponta para o domínio de produção (${productionHost}). Use um endereço de teste.`);
+  }
+  return url.toString();
+}
+
 /*
   O que vai no corpo de um PUT /preapproval/{id}. Montado aqui, puro, porque é
   onde está o risco que nenhum tipo pega: um campo a mais muda a cobrança de

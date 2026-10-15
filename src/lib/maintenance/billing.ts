@@ -3,9 +3,9 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 
 import { MercadoPagoError } from "@/lib/flow/billing";
-import { absoluteUrl } from "@/lib/seo";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { confirmedStatus, PROVIDER_ID as SHARED_PROVIDER_ID, runCancel, statusFrom } from "@/lib/mercadopago/notice";
+import { CANONICAL_URL, site } from "@/data/site";
+import { confirmedStatus, PROVIDER_ID as SHARED_PROVIDER_ID, runCancel, statusFrom, testSafeUrl } from "@/lib/mercadopago/notice";
 import { decide, payerEmailFor, REFUSAL } from "@/lib/mercadopago/environment";
 import { asMaintenanceStatus, chargeFailed, type MaintenanceStatus } from "./plan";
 
@@ -57,6 +57,22 @@ export const closedReason = () => {
 
 /** O endereço do webhook desta cobrança, que vai em cada assinatura criada. */
 export const WEBHOOK_PATH = "/api/mercadopago/manutencao/webhook";
+
+/**
+ * O endereço que vai ao Mercado Pago, sempre alcançável. Achado ao validar
+ * contra a API real (Tarefa 6): o Mercado Pago recusa um back_url que não
+ * seja um endereço público de verdade — nem "http://localhost", nem
+ * "https://localhost" servem — e absoluteUrl() sozinho não tinha essa
+ * proteção, diferente do Pulse (lib/flow/billing.ts, returnUrl).
+ *
+ * Em produção, cai para o domínio canônico quando necessário (o mesmo que
+ * o Pulse já faz). Em teste (testMode()), o fallback de produção é recusado
+ * de propósito: foi validando a manutenção de verdade que uma assinatura de
+ * teste mandou seu aviso para o webhook de PRODUÇÃO, porque o domínio
+ * canônico é sempre um domínio real. testSafeUrl (mercadopago/notice.ts)
+ * fecha isso antes de qualquer chamada ao Mercado Pago.
+ */
+const returnUrl = (path: string) => testSafeUrl(path, site.url, CANONICAL_URL, testMode());
 
 /** O link individual de um cliente: um token aleatório, e nada mais abre a página. */
 export const newToken = () => randomBytes(16).toString("hex");
@@ -130,8 +146,8 @@ export async function createSubscription(input: {
         transaction_amount: input.amountCents / 100,
         currency_id: "BRL",
       },
-      back_url: absoluteUrl(input.backPath),
-      notification_url: absoluteUrl(WEBHOOK_PATH),
+      back_url: returnUrl(input.backPath),
+      notification_url: returnUrl(WEBHOOK_PATH),
       status: "pending",
     },
   });
