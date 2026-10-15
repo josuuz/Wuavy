@@ -211,26 +211,20 @@ function GuidePulse({ point, calm }: { point?: boolean; calm?: boolean }) {
 }
 
 /**
- * Screens whose content a floating card would cover on a phone: Configurações' team list, and the overview (""),
- * where the card lands squarely on the Pulse's own card — the guide hiding the character it is talking about.
- * There, below the rail layout, the guide sits inside the page, at its top, instead of floating over it.
+ * Where the guide is drawn: `inline` is its copy inside the page, shown below the rail layout, where the rail's
+ * own copy steps aside (both through CSS, so the layout decides, not the script). A fixed card there would land
+ * on ordinary page content — not only the overview's Pulse card or Configurações' team list, but on every
+ * screen's own top (Pacientes' filters, for one) — so the in-page copy is used everywhere, not just those two.
  */
-const IN_PAGE = new Set(["", "configuracoes"]);
-
-/**
- * Where the guide is drawn: `inline` is its copy inside the page, used only on the IN_PAGE screens and only on a
- * phone; the rail's copy steps aside there (both through CSS, so the layout decides, not the script).
- */
-function placement(slug: string, inline?: boolean) {
-  if (inline) return IN_PAGE.has(slug) ? { "data-inline": "" } : null;
-  return IN_PAGE.has(slug) ? { "data-defer": "" } : {};
+function placement(inline?: boolean) {
+  return inline ? { "data-inline": "" } : { "data-defer": "" };
 }
 
 /** The guide's card, in the rail under the menu (low on the screen on a phone): the welcome, the current step, or the end. */
 export function GuideCard({ inline }: { inline?: boolean }) {
   const guide = useGuide();
   const { base, data } = useFlow();
-  const place = placement(guide.slug, inline);
+  const place = placement(inline);
   if (!guide.active || guide.saved.minimized || !place) return null;
   const { current, steps, doneCount, slug } = guide;
   const total = steps.length;
@@ -325,7 +319,7 @@ export function GuideCard({ inline }: { inline?: boolean }) {
 /** The guide left for later: a small way back, with its progress. */
 export function GuidePill({ inline }: { inline?: boolean }) {
   const guide = useGuide();
-  const place = placement(guide.slug, inline);
+  const place = placement(inline);
   if (!guide.active || !guide.saved.minimized || !place) return null;
   return (
     <div className={styles.pill} {...place}>

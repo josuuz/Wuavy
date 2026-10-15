@@ -300,8 +300,9 @@
   }
 }
 
-/* Below the rail layout, on the screens a floating card would cover (Guide.tsx, IN_PAGE): the guide sits at the top
-   of the page, in the flow, and the floating copy steps aside. From the rail layout up, only the rail's copy shows. */
+/* Below the rail layout, on every screen: the guide sits at the top of the page, in the flow, and the rail's own
+   (fixed) copy steps aside instead of floating over whatever the page scrolled to. From the rail layout up, only
+   the rail's copy shows (Guide.tsx picks which one of the two gets drawn, through the data-inline/data-defer pair). */
 @media (max-width: 1023px) {
   .card[data-defer],
   .pill[data-defer] {
