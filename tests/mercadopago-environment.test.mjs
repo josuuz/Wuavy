@@ -7,7 +7,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { checkoutDecision, declaredMode, decide, payerEmailFor, REFUSAL } from "../src/lib/flow/mercadopago-environment.ts";
+import { checkoutDecision, declaredMode, decide, payerEmailFor, REFUSAL } from "../src/lib/mercadopago/environment.ts";
 
 const TOKEN = "APP_USR-0000000000000000-000000-synthetic";
 const BUYER = "test_user_0000@testuser.com";

@@ -1,6 +1,7 @@
 /*
-  Em que ambiente a cobrança da manutenção pode falar com o Mercado Pago, e
-  com quais credenciais.
+  Em que ambiente a cobrança pode falar com o Mercado Pago, e com quais
+  credenciais. Compartilhado pelo Pulse e pelas Assinaturas de Sites: os dois
+  usam a mesma conta do Mercado Pago, então a regra é uma só.
 
   O formato da chave não diz nada: o Access Token de uma conta de teste
   também começa com APP_USR-, igual ao de produção. Por isso o ambiente não
