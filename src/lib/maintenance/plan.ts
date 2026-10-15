@@ -3,15 +3,16 @@
   painel e o que vai ao Mercado Pago leem daqui.
 
   Este é um produto separado do Wuavy Pulse. O preço do Pulse está em
-  src/lib/flow/access.ts e não tem relação com o desta página. O estado da
-  assinatura (statusFrom, MaintenanceStatus) vem de src/lib/mercadopago/notice.ts,
-  a mesma regra que o Pulse usa — reexportado daqui, para quem já importa
-  "./plan" não precisar mudar nada.
+  src/lib/flow/access.ts e não tem relação com o desta página. MaintenanceStatus
+  é o mesmo tipo que o Pulse usa (src/lib/mercadopago/notice.ts), só o nome
+  muda — mas statusFrom não é reexportado daqui: um reexport de valor faria
+  este arquivo (importado por ClientForm.tsx, um componente de cliente) puxar
+  node:crypto para o pacote do navegador por causa de verifyNotice, do outro
+  lado do mesmo módulo. Quem precisa de statusFrom importa de
+  "@/lib/mercadopago/notice" direto (maintenance/billing.ts já faz isso).
 */
 
-import type { BillingStatus } from "../mercadopago/notice.ts";
-
-export { statusFrom } from "../mercadopago/notice.ts";
+import type { BillingStatus } from "@/lib/mercadopago/notice";
 
 /** O plano padrão. O administrador pode definir outro valor por cliente. */
 export const PLAN = {

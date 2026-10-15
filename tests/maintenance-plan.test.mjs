@@ -1,15 +1,20 @@
 /*
-  O estado da manutenção, a partir do que o Mercado Pago relata — a mesma
-  regra do Pulse (src/lib/mercadopago/notice.ts), reexportada por plan.ts.
-  Antes desta dedup, plan.ts tinha a sua própria statusFrom que só reconhecia
-  "cancelled" (duas letras L); "canceled" (uma letra L) caía no `else` e virava
-  "active". Este arquivo prova que isso não acontece mais.
+  O estado da manutenção, a partir do que o Mercado Pago relata. statusFrom
+  vem direto de src/lib/mercadopago/notice.ts — a mesma regra do Pulse, e é
+  o que maintenance/billing.ts chama; não é reexportado por plan.ts (um
+  reexport de valor puxaria node:crypto para o pacote do ClientForm, um
+  componente de cliente que importa plan.ts só pelo preço e pelos rótulos).
+
+  Antes desta dedup, a manutenção tinha a sua própria statusFrom que só
+  reconhecia "cancelled" (duas letras L); "canceled" (uma letra L) caía no
+  `else` e virava "active". Este arquivo prova que isso não acontece mais.
 */
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { asMaintenanceStatus, MAINTENANCE_STATUSES, statusFrom } from "../src/lib/maintenance/plan.ts";
+import { asMaintenanceStatus, MAINTENANCE_STATUSES } from "../src/lib/maintenance/plan.ts";
+import { statusFrom } from "../src/lib/mercadopago/notice.ts";
 
 test("as duas grafias de cancelado viram 'cancelled'", () => {
   assert.equal(statusFrom({ status: "cancelled" }), "cancelled");

@@ -5,9 +5,9 @@ import { randomBytes } from "node:crypto";
 import { MercadoPagoError } from "@/lib/flow/billing";
 import { absoluteUrl } from "@/lib/seo";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { cancelBodies, confirmedStatus, PROVIDER_ID as SHARED_PROVIDER_ID, retryOtherSpelling } from "@/lib/mercadopago/notice";
+import { confirmedStatus, PROVIDER_ID as SHARED_PROVIDER_ID, runCancel, statusFrom } from "@/lib/mercadopago/notice";
 import { decide, payerEmailFor, REFUSAL } from "@/lib/mercadopago/environment";
-import { asMaintenanceStatus, chargeFailed, statusFrom, type MaintenanceStatus } from "./plan";
+import { asMaintenanceStatus, chargeFailed, type MaintenanceStatus } from "./plan";
 
 /*
   A cobrança da manutenção, no servidor e em nenhum outro lugar.
@@ -157,32 +157,22 @@ const CONFIRM_WAIT_MS = 1200;
  * disse. Devolve o status lido de volta, que quem chama precisa conferir: só
  * "cancelled" é um cancelamento.
  *
- * O valor do status é mandado nas duas grafias, em ordem, porque a
- * referência não fixa o enum (mercadopago/notice.ts). Uma recusa de
- * validação na primeira (400) tenta a segunda; qualquer outra recusa sobe
- * como veio. Depois que o PUT é aceito, nada é relatado como falha: a
- * releitura (confirmedStatus) tenta mais uma vez sozinha antes de devolver
- * null — "ainda não confirmado", nunca "falhou".
+ * A ordem dos passos, as duas grafias, e a regra de nada ser falha depois de
+ * um PUT aceito moram em runCancel (mercadopago/notice.ts, testado com
+ * chamadas injetadas) — o mesmo laço que o Pulse usa. Isto só liga as
+ * chamadas de verdade.
  */
-export async function cancelSubscription(providerId: string): Promise<MaintenanceStatus | null> {
-  if (!PROVIDER_ID.test(providerId)) return null;
-  let refusal: MercadoPagoError | undefined;
-  for (const body of cancelBodies()) {
-    try {
+export const cancelSubscription = (providerId: string): Promise<MaintenanceStatus | null> =>
+  runCancel(providerId, {
+    send: async (body) => {
       await mp<Preapproval>(`/preapproval/${providerId}`, { method: "PUT", body });
-      refusal = undefined;
-      break;
-    } catch (error) {
-      if (!(error instanceof MercadoPagoError) || !retryOtherSpelling(error.status)) throw error;
-      refusal = error;
-    }
-  }
-  if (refusal) throw refusal;
-  return confirmedStatus(
-    () => syncSubscription(providerId),
-    () => new Promise((resolve) => setTimeout(resolve, CONFIRM_WAIT_MS)),
-  );
-}
+    },
+    confirm: () =>
+      confirmedStatus(
+        () => syncSubscription(providerId),
+        () => new Promise((resolve) => setTimeout(resolve, CONFIRM_WAIT_MS)),
+      ),
+  });
 
 /**
  * Pergunta ao Mercado Pago por uma assinatura e pelas suas cobranças e

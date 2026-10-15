@@ -202,6 +202,44 @@ export async function confirmedStatus(
 }
 
 /**
+ * Cancela uma assinatura, passo a passo, sem rede: tenta cada grafia de
+ * cancelamento via PUT, e um 400 (valor recusado) tenta a seguinte; qualquer
+ * outra recusa sobe como veio, sem tentar a outra grafia nem confirmar.
+ * Depois que uma tentativa é aceita, nada mais é relatado como falha — a
+ * releitura (`confirm`) já é segura (confirmedStatus).
+ *
+ * `send` recebe um corpo e levanta um erro com `status` quando o Mercado
+ * Pago recusa — o mesmo contrato que o erro de cada produto já tem, sem este
+ * módulo precisar conhecer a classe de erro de nenhum dos dois.
+ *
+ * O Pulse (flow/billing.ts) e as Assinaturas de Sites (maintenance/billing.ts)
+ * ligam as chamadas de verdade; só a ordem e a decisão de repetir moram aqui.
+ */
+export async function runCancel(
+  providerId: string,
+  calls: {
+    send: (body: { status: string }) => Promise<void>;
+    confirm: () => Promise<BillingStatus | null>;
+  },
+): Promise<BillingStatus | null> {
+  if (!PROVIDER_ID.test(providerId)) return null;
+  let refusal: unknown;
+  for (const body of cancelBodies()) {
+    try {
+      await calls.send(body);
+      refusal = undefined;
+      break;
+    } catch (error) {
+      const status = (error as { status?: unknown } | null)?.status;
+      if (typeof status !== "number" || !retryOtherSpelling(status)) throw error;
+      refusal = error;
+    }
+  }
+  if (refusal) throw refusal;
+  return calls.confirm();
+}
+
+/**
  * Aponta a assinatura para outro cartão. `read` e `send` falhando levantam o
  * erro, porque aí nada saiu daqui; de `send` em diante o erro não existe mais
  * como resposta: ou a assinatura é lida de volta (`changed`), ou fica
