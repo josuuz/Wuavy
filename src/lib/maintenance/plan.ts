@@ -3,8 +3,15 @@
   painel e o que vai ao Mercado Pago leem daqui.
 
   Este é um produto separado do Wuavy Pulse. O preço do Pulse está em
-  src/lib/flow/access.ts e não tem relação com o desta página.
+  src/lib/flow/access.ts e não tem relação com o desta página. O estado da
+  assinatura (statusFrom, MaintenanceStatus) vem de src/lib/mercadopago/notice.ts,
+  a mesma regra que o Pulse usa — reexportado daqui, para quem já importa
+  "./plan" não precisar mudar nada.
 */
+
+import type { BillingStatus } from "../mercadopago/notice.ts";
+
+export { statusFrom } from "../mercadopago/notice.ts";
 
 /** O plano padrão. O administrador pode definir outro valor por cliente. */
 export const PLAN = {
@@ -31,8 +38,8 @@ export const DEFAULT_PRICE = PLAN.priceCents;
 export const MIN_PRICE = 500;
 export const MAX_PRICE = 1_000_000;
 
-export const MAINTENANCE_STATUSES = ["pending", "active", "past_due", "cancelled"] as const;
-export type MaintenanceStatus = (typeof MAINTENANCE_STATUSES)[number];
+export const MAINTENANCE_STATUSES = ["pending", "active", "past_due", "cancelled"] as const satisfies readonly BillingStatus[];
+export type MaintenanceStatus = BillingStatus;
 
 export const STATUS_LABEL: Record<MaintenanceStatus, string> = {
   pending: "Aguardando autorização",
@@ -47,25 +54,6 @@ export const isEarning = (status: MaintenanceStatus | null | undefined) => statu
 /** Uma cobrança que não entrou: o Mercado Pago a recusou, cancelou, ou está retentando. */
 export const chargeFailed = (charge?: { status?: string; payment?: { status?: string } }) =>
   charge?.status === "recycling" || charge?.payment?.status === "rejected" || charge?.payment?.status === "cancelled";
-
-/**
- * O status que guardamos, a partir do que o Mercado Pago relata. Uma
- * assinatura autorizada está ativa: o Mercado Pago validou o cartão e cobra
- * sozinho todo mês. A última cobrança falhar, ou a assinatura estar pausada,
- * deixa a assinatura atrasada.
- *
- * Função pura, e de propósito: é a regra que decide se um cliente está em
- * dia, e ela se lê e se testa sem rede nem banco.
- */
-export function statusFrom(
-  subscription: { status: string },
-  last?: { status?: string; payment?: { status?: string } },
-): MaintenanceStatus {
-  if (subscription.status === "cancelled") return "cancelled";
-  if (subscription.status === "pending") return "pending";
-  if (subscription.status === "paused") return "past_due";
-  return chargeFailed(last) ? "past_due" : "active";
-}
 
 /** Um status do banco, ou null quando o valor não é um. */
 export function asMaintenanceStatus(value: string | null | undefined): MaintenanceStatus | null {
