@@ -1,0 +1,24 @@
+/* WUAVY and the PULSE tag, as on the approved board: the agency's mark, the product outlined in orange. */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text);
+}
+
+.wordmark {
+  display: block;
+  width: 5.25rem;
+  flex: none;
+}
+
+.tag {
+  padding: 0.24rem 0.42rem 0.2rem;
+  border: 1.5px solid var(--pulse-accent);
+  border-radius: var(--pulse-r-xs);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--pulse-accent-text);
+}

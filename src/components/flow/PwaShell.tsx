@@ -13,7 +13,7 @@ import { useEffect } from "react";
 */
 
 const THEME_ATTR = "data-pulse-theme";
-const SURFACE = { light: "#f3f3f0", dark: "#000000" } as const; // --pulse-bg, both themes
+const SURFACE = { light: "#f6f4ee", dark: "#0e0e0e" } as const; // --pulse-bg, both themes
 
 export function PwaShell() {
   useEffect(() => {

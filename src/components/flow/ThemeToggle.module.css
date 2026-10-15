@@ -6,7 +6,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-sm);
   color: var(--text-2);
   cursor: pointer;
   transition:

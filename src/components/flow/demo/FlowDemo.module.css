@@ -1,25 +1,75 @@
 /* ── The app: Black ground, Carbon rail, hairlines, Signal only where the Pulse points ── */
 .app {
   min-height: 100svh;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
   background: var(--surface);
   color: var(--text);
   font-size: 0.9375rem;
 }
 
-/* Phones: the rail is a sticky strip (brand, clinic, the eight screens). */
+/* ── The top bar: the main menu, horizontal. Hidden on a phone — the bottom bar carries it there ── */
+.bar {
+  display: none;
+}
+
+.topnav ol {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  gap: 0.3rem;
+}
+
+/*
+  Before TopNav.tsx's first measurement, every screen renders (there is no
+  "visible count" to trust yet) and the row's own overflow:hidden would cut
+  whichever one lands on its right edge mid-word. The fade reads as the row
+  simply continuing rather than a name cut in half; it is gone the instant
+  the real count is known, which for most visits is well under one frame.
+*/
+.topnavGuess {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent 100%);
+}
+
+.barTools {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: none;
+}
+
+/* The "Mais" pill, present but out of the way (not just invisible) until something overflows. */
+.moreHidden {
+  display: none;
+}
+
+/*
+  TopNav.tsx marks what does not fit this way: the list stays nowrap so
+  every item keeps its true width for measuring, so clipping at the
+  container's edge alone would cut an item off mid-word instead of hiding
+  it whole. Taking it out of flow is what actually hides it.
+*/
+.navLink[aria-hidden="true"] {
+  display: none;
+}
+
+/* Below the bar: the rail on the left, the work on the right. */
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+/* Phones: the rail is a sticky strip (brand, clinic). The screens live in the bottom bar instead. */
 .side {
   position: sticky;
   top: 0;
   z-index: 20;
   display: grid;
-  /* The screen strip scrolls inside the rail; it must never widen it. */
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
-  gap: 0.6rem;
+  gap: 0.75rem;
   /* Installed, the rail starts below the status bar instead of under it. */
-  padding: max(0.75rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0
+  padding: max(0.75rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.75rem
     max(1rem, env(safe-area-inset-left));
   background: var(--surface);
   border-bottom: var(--rule) solid var(--border);
@@ -38,24 +88,6 @@
   gap: 0.6rem;
 }
 
-.brand svg {
-  width: 5.25rem;
-  height: auto;
-}
-
-/* The product mark, as in the site's menu: outlined in Signal. */
-.product {
-  padding: 0.22rem 0.4rem;
-  border: 1px solid var(--pulse-accent);
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--pulse-accent) 14%, transparent);
-  font-size: var(--fs-micro);
-  font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  line-height: 1;
-}
-
 .org {
   display: flex;
   flex-wrap: wrap;
@@ -66,8 +98,7 @@
 .org span {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   align-self: center;
 }
@@ -83,49 +114,47 @@
   gap: 0.5rem;
 }
 
-.nav ol {
-  display: flex;
-  gap: 0.25rem;
-  margin-inline: -1rem;
-  padding-inline: 1rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.nav ol::-webkit-scrollbar {
+/* The Pulse, kept in reach beside the clinic's own numbers. Desktop only: a phone already carries
+   the quick "Pergunte" in the brand row and the full button in the top bar once it shows. */
+.mascot {
   display: none;
 }
 
 .navLink {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
   min-height: 2.75rem;
-  padding: 0 0.6rem;
+  padding: 0 0.75rem;
+  border-radius: var(--pulse-r-pill);
   white-space: nowrap;
   color: var(--text-2);
-  transition: color var(--duration-ui) linear;
+  transition:
+    color var(--duration-ui) linear,
+    background-color var(--duration-ui) linear;
 }
 
+/* Here: a soft salmon cushion, the icon in the accent. */
 .navLink[aria-current] {
   color: var(--text);
-  box-shadow: inset 0 -2px 0 var(--pulse-accent);
+  background: var(--pulse-accent-soft);
+  font-weight: 560;
 }
 
-.navIndex {
-  font-size: var(--fs-micro);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-2);
+.navIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
 }
 
-.navLink[aria-current] .navIndex {
+.navLink[aria-current] .navIcon {
   color: var(--pulse-accent-text);
 }
 
 .badge {
   min-width: 1.3rem;
   padding: 0.18rem 0.35rem;
-  border-radius: 2px;
+  border-radius: var(--pulse-r-pill);
   background: var(--pulse-accent);
   color: var(--pulse-on-accent);
   font-size: var(--fs-micro);
@@ -143,8 +172,7 @@
   min-height: 1.5rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   text-decoration: underline;
   text-underline-offset: 0.25em;
@@ -166,7 +194,7 @@
   min-height: 2.5rem;
   padding: 0 0.75rem;
   border: 1px solid var(--pulse-accent);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-sm);
   background: color-mix(in srgb, var(--pulse-accent) 14%, transparent);
   font-size: 0.8125rem;
   font-weight: 640;
@@ -174,10 +202,6 @@
 
 .main {
   min-width: 0;
-}
-
-.bar {
-  display: none;
 }
 
 /*
@@ -188,13 +212,18 @@
 .content {
   width: 100%;
   max-width: 92rem;
-  padding: 1.5rem max(1rem, env(safe-area-inset-right)) max(4rem, env(safe-area-inset-bottom))
+  padding: 1.5rem max(1rem, env(safe-area-inset-right)) max(6rem, calc(4.5rem + env(safe-area-inset-bottom)))
     max(1rem, env(safe-area-inset-left));
 }
 
 @media (hover: hover) and (pointer: fine) {
   .navLink:hover {
     color: var(--text);
+    background: var(--pulse-sand);
+  }
+
+  .navLink[aria-current]:hover {
+    background: var(--pulse-accent-soft);
   }
 
   .ask:hover,
@@ -209,23 +238,89 @@
   outline-offset: 2px;
 }
 
-/* ── Desktop: the rail stands on the left, the bar sits over the work ── */
+/* ── Desktop: the bar stands full-width on top; below it, the rail on the left, the work on the right ── */
 @media (min-width: 1024px) {
   .app {
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /*
+    One row when the brand, the menu and the actions all fit beside each
+    other; the menu's own full-width row the moment they do not
+    (TopNav.tsx measures this, [data-stacked] is its verdict). Never a
+    third row: past that, screens wait behind "Mais" instead.
+  */
+  .bar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "brand nav tools";
+    align-items: center;
+    column-gap: 1.75rem;
+    row-gap: 0.75rem;
+    flex: none;
+    padding: 1.1rem clamp(1.5rem, 2.5vw, 2.25rem);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-bottom: var(--rule) solid var(--border);
+  }
+
+  /*
+    Same three columns in both states — the middle one stays `1fr` so it
+    always absorbs whatever is left over, which is what makes "nav" read
+    as the bar's true full width once it spans every column, row of its
+    own. Dropping to two columns here left that middle sliver unclaimed:
+    the grid shrank to just the brand and the actions, and the row below
+    quietly inherited that same width instead of the whole bar.
+  */
+  .bar[data-stacked] {
+    grid-template-areas:
+      "brand . tools"
+      "nav nav nav";
+  }
+
+  /* The brand stands in the bar now, top-left, next to the menu it used to sit below. */
+  .bar .brand {
+    grid-area: brand;
+    flex: none;
+  }
+
+  /* The rail no longer carries the brand: the bar does. */
+  .brandRow {
+    display: none;
+  }
+
+  .topnav {
+    grid-area: nav;
+    min-width: 0;
+  }
+
+  .barTools {
+    grid-area: tools;
+  }
+
+  .body {
+    flex: 1;
+    min-height: 0;
     grid-template-columns: 15.5rem minmax(0, 1fr);
   }
 
   .side {
-    height: 100svh;
+    position: static;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    padding: max(1.4rem, env(safe-area-inset-top)) 1rem max(1.25rem, env(safe-area-inset-bottom))
-      max(1rem, env(safe-area-inset-left));
+    gap: 1.5rem;
+    padding: 1.75rem 1.25rem max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
     overflow-y: auto;
     border-bottom: 0;
     border-right: var(--rule) solid var(--border);
     background: var(--surface);
+  }
+
+  .main {
+    height: 100%;
+    overflow-y: auto;
   }
 
   .askSmall {
@@ -242,21 +337,34 @@
     align-self: start;
   }
 
-  .nav ol {
-    flex-direction: column;
-    margin: 0;
-    padding: 0;
+  .mascot {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem;
+    border: 1px solid var(--pulse-border);
+    border-radius: var(--pulse-r-md);
+    background: var(--pulse-card);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--duration-ui) linear;
+  }
+
+  .mascotFigure {
+    width: 2.75rem;
+    height: auto;
+    flex: none;
     overflow: visible;
   }
 
-  .navLink {
-    min-height: 2.5rem;
-    border-radius: 2px;
+  .mascotLabel {
+    font-size: 0.8125rem;
+    font-weight: 640;
   }
 
-  .navLink[aria-current] {
-    background: color-mix(in srgb, var(--pulse-ink) 7%, transparent);
-    box-shadow: inset 2px 0 0 var(--pulse-accent);
+  .navLink {
+    min-height: 2.6rem;
+    border-radius: var(--pulse-r-sm);
   }
 
   .badge {
@@ -272,41 +380,15 @@
     color: var(--text-2);
   }
 
-  .bar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.9rem clamp(1.5rem, 3vw, 2.75rem);
-    background: color-mix(in srgb, var(--surface) 94%, transparent);
-    border-bottom: var(--rule) solid var(--border);
-  }
-
-  .crumb {
-    margin-right: auto;
-    font-size: var(--fs-micro);
-    font-weight: var(--wuavy-micro);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text);
-  }
-
-  .crumb span {
-    color: var(--text-2);
-  }
-
   /* The demo's watermark: one word in Signal, where the work is named. */
   .demoChip,
   .planChip {
     padding: 0.35rem 0.55rem;
     border: 1px dashed var(--border);
-    border-radius: 2px;
+    border-radius: var(--pulse-r-pill);
     font-size: var(--fs-micro);
     font-weight: var(--wuavy-micro);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.01em;
     color: var(--text-2);
   }
 
@@ -327,9 +409,10 @@
     gap: 0.55rem;
     min-height: 2.5rem;
     padding: 0 0.95rem;
-    border: 1px solid var(--pulse-accent);
-    border-radius: 2px;
-    background: color-mix(in srgb, var(--pulse-accent) 14%, transparent);
+    border: 1px solid var(--pulse-border);
+    border-radius: var(--pulse-r-pill);
+    background: var(--pulse-card);
+    box-shadow: var(--pulse-shadow);
     font-size: 0.875rem;
     font-weight: 640;
     transition:
@@ -339,6 +422,10 @@
 
   .content {
     padding: clamp(1.75rem, 3vw, 2.75rem) clamp(1.5rem, 3vw, 2.75rem) 5rem;
+  }
+
+  .bottomNav {
+    display: none;
   }
 }
 
@@ -352,6 +439,10 @@
   .ask:hover :global(.pulse-dot)::after {
     border-color: var(--pulse-on-accent);
   }
+
+  .mascot:hover {
+    background: var(--pulse-raised);
+  }
 }
 
 /* ── The plan, above the work: the demo's notice, an ended trial's ── */
@@ -363,18 +454,17 @@
   margin: 1rem 1rem 0;
   padding: 0.7rem 0.9rem;
   border: 1px dashed var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   font-size: 0.875rem;
 }
 
 .noticeBadge {
   padding: 0.22rem 0.45rem;
   border: 1px solid var(--pulse-accent);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-pill);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.01em;
   line-height: 1;
   color: var(--pulse-accent-text);
 }
@@ -416,7 +506,7 @@
   align-items: center;
   min-height: 2.75rem;
   padding: 0 1.1rem;
-  border-radius: 2px;
+  border-radius: var(--pulse-r-sm);
   background: var(--pulse-accent);
   color: var(--pulse-on-accent);
   font-weight: 640;
@@ -433,12 +523,14 @@
   gap: 0.5rem;
 }
 
+/* Assinar carries the crown: the offer, never a status. */
 .subscribe {
   display: inline-flex;
   align-items: center;
+  gap: 0.4rem;
   min-height: 2.25rem;
   padding: 0 0.9rem;
-  border-radius: 2px;
+  border-radius: var(--pulse-r-sm);
   background: var(--pulse-accent);
   color: var(--pulse-on-accent);
   font-size: 0.8125rem;
@@ -458,7 +550,7 @@
 .logo {
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 3px;
+  border-radius: var(--pulse-r-sm);
   object-fit: contain;
   background: var(--pulse-raised);
 }
@@ -510,13 +602,14 @@
   .railLabel {
     font-size: var(--fs-micro);
     font-weight: var(--wuavy-micro);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.01em;
     color: var(--text-2);
   }
 
   .railAmount {
     font-size: 1.625rem;
+    font-family: var(--pulse-display);
+
     font-weight: var(--wuavy-headline);
     letter-spacing: -0.03em;
     line-height: 1.05;
@@ -536,11 +629,11 @@
   }
 }
 
-/* PASSO's guide points here: a ring on the entry, and a nudging arrow. */
+/* The Pulse's guide points here: a ring on the entry, and a nudging arrow. */
 .navLink[data-guide] {
   color: var(--text);
   box-shadow: inset 0 0 0 1px var(--pulse-accent);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-sm);
 }
 
 /* Positioned, so its screen-reader text stays inside the phone's scrolling menu. */
@@ -591,4 +684,97 @@
     max-width: none;
     padding-bottom: 1.5rem;
   }
+}
+
+/* Press: a control gives a little under the finger, then springs back. */
+:is(.subscribe, .ask, .askSmall, .noticeAction, .navLink):active {
+  transform: scale(0.97);
+}
+
+/* ── The bottom bar: on a phone, the screens within thumb's reach, and "Mais" for the rest ── */
+.bottomNav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  background: var(--surface);
+  border-top: var(--rule) solid var(--border);
+}
+
+.bottomNav ol {
+  display: flex;
+  padding: 0.3rem max(0.5rem, env(safe-area-inset-right)) max(0.3rem, env(safe-area-inset-bottom))
+    max(0.5rem, env(safe-area-inset-left));
+}
+
+.bottomNav li {
+  flex: 1;
+  min-width: 0;
+}
+
+.bottomNav .navLink {
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.3rem 0.2rem;
+  border-radius: var(--pulse-r-sm);
+  font-size: 0.6875rem;
+  font-weight: 560;
+  text-align: center;
+  white-space: normal;
+}
+
+.bottomNav .navLink[aria-current] {
+  background: transparent;
+}
+
+.bottomNav .navIcon {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.bottomNav .badge {
+  position: absolute;
+  top: 0;
+  right: calc(50% - 1.1rem);
+  min-width: 1.1rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.625rem;
+}
+
+.bottomNav .guideArrow {
+  position: absolute;
+  top: -0.3rem;
+  right: -0.1rem;
+  margin: 0;
+  padding: 0;
+}
+
+/* Below 360px "Visão geral" has no room to spare: only there, it reads "Início" instead. */
+.bottomNav .labelShort {
+  display: none;
+}
+
+@media (max-width: 360px) {
+  .bottomNav .labelFull {
+    display: none;
+  }
+
+  .bottomNav .labelShort {
+    display: inline;
+  }
+}
+
+/* The list behind "Mais": every other screen, one per row. */
+.moreList {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.moreList .navLink {
+  border-radius: var(--pulse-r-sm);
 }

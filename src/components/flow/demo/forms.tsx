@@ -45,7 +45,7 @@ export function useWrite() {
   return { pending, error, write, submit };
 }
 
-/** A labelled field. `guide`: PASSO's first-run guide points at it ("todo" still empty, "ok" filled). */
+/** A labelled field. `guide`: the Pulse's first-run guide points at it ("todo" still empty, "ok" filled). */
 export function Field({ label, children, guide }: { label: string; children: ReactNode; guide?: "todo" | "ok" }) {
   return (
     <label className={styles.field} data-guide-field={guide}>

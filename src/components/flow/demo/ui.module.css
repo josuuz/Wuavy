@@ -11,6 +11,8 @@
 
 .title {
   font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.75rem);
+  font-family: var(--pulse-display);
+
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.025em;
   line-height: 1;
@@ -25,8 +27,7 @@
 .kicker {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -58,10 +59,14 @@
 .when {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   white-space: nowrap;
+}
+
+/* Relative dates are written in lower case ("ontem"); as a label they open with a capital. */
+.when::first-letter {
+  text-transform: uppercase;
 }
 
 .time {
@@ -77,7 +82,7 @@
   justify-content: center;
   min-height: 2.5rem;
   padding: 0 1rem;
-  border-radius: 2px;
+  border-radius: var(--pulse-r-sm);
   font-size: 0.875rem;
   font-weight: 640;
   white-space: nowrap;
@@ -188,9 +193,9 @@
 .input {
   min-height: 2.75rem;
   padding: 0 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--pulse-ink) 5%, transparent);
+  border: 1px solid var(--pulse-field);
+  border-radius: var(--pulse-r-sm);
+  background: var(--pulse-raised);
   color: var(--text);
   font: inherit;
 }
@@ -234,11 +239,12 @@
 
 /* ── Overview ── */
 .greet {
-  max-width: 22ch;
-  font-size: clamp(2rem, 1.2rem + 3vw, 4rem);
+  max-width: 20ch;
+  font-size: clamp(1.9rem, 1.3rem + 1.9vw, 3.1rem);
+  font-family: var(--pulse-display);
   font-weight: var(--wuavy-headline);
-  letter-spacing: -0.03em;
-  line-height: 1;
+  letter-spacing: -0.025em;
+  line-height: 1.06;
   text-wrap: balance;
 }
 
@@ -257,7 +263,7 @@
   align-content: start;
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -269,7 +275,7 @@
   padding: 1.25rem;
   border: 1px solid var(--border);
   border-top: 2px solid var(--pulse-accent);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -280,8 +286,7 @@
   gap: 0.7rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -308,6 +313,8 @@
 
 .valueGrid dd {
   font-size: clamp(1.75rem, 1.3rem + 1.4vw, 2.5rem);
+  font-family: var(--pulse-display);
+
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.03em;
   line-height: 1;
@@ -375,8 +382,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.45rem;
-  margin-top: -0.5rem;
+  gap: 0.5rem;
 }
 
 .askStripLabel {
@@ -386,8 +392,7 @@
   margin-right: 0.35rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -429,8 +434,7 @@
 .miniStatus {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   white-space: nowrap;
 }
@@ -464,7 +468,7 @@
 .procedure,
 .rule {
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-sm);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -483,8 +487,7 @@
 .tag {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--pulse-accent-text);
 }
 
@@ -511,11 +514,10 @@
 .status {
   padding: 0.25rem 0.45rem;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-pill);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   white-space: nowrap;
 }
@@ -568,7 +570,7 @@
 .chain {
   display: grid;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
 }
 
 .chain li {
@@ -620,8 +622,7 @@
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
   text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -668,8 +669,7 @@
   margin-left: 0.6rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: var(--pulse-accent-text);
   white-space: nowrap;
 }
@@ -710,8 +710,7 @@
     content: attr(data-label);
     font-size: var(--fs-micro);
     font-weight: var(--wuavy-micro);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.01em;
     color: var(--text-2);
     padding-top: 0.2em;
   }
@@ -780,7 +779,7 @@
   gap: 0.25rem;
   padding: 0.7rem 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--pulse-r-sm);
   background: var(--pulse-raised);
   text-align: left;
   cursor: pointer;
@@ -821,8 +820,7 @@
 .flag {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: var(--pulse-accent-text);
 }
 
@@ -842,8 +840,7 @@
 .facts dt {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -866,7 +863,7 @@
   padding: 0;
   border: 0;
   border-top: 1px solid var(--border);
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--pulse-r-lg) var(--pulse-r-lg) 0 0;
   background: var(--surface);
   color: var(--text);
 }
@@ -905,6 +902,8 @@
 
 .sheetTitle {
   font-size: 1.5rem;
+  font-family: var(--pulse-display);
+
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -915,8 +914,7 @@
   padding: 0 0.5rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   cursor: pointer;
 }
@@ -962,7 +960,7 @@
   margin: auto;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--pulse-r-lg);
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 28px 70px -30px rgb(0 0 0 / 0.6);
@@ -1030,6 +1028,8 @@
 
 .price strong {
   font-size: clamp(2.5rem, 2.1rem + 1.6vw, 3.25rem);
+  font-family: var(--pulse-display);
+
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.035em;
   line-height: 1;
@@ -1067,11 +1067,53 @@
 .includes li::before {
   content: "";
   flex: none;
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 1px;
-  background: var(--pulse-accent);
-  transform: translateY(-0.1em);
+  width: 0.3rem;
+  height: 0.6rem;
+  border-right: 2px solid var(--pulse-accent-text);
+  border-bottom: 2px solid var(--pulse-accent-text);
+  transform: translateY(-0.15em) rotate(45deg);
+}
+
+/* ── The subscription dialog: the crown, the price, what it includes ── */
+.offerCrown {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--pulse-crown) 16%, transparent);
+  color: var(--pulse-crown);
+  font-size: 1.35rem;
+}
+
+.offerPrice {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--pulse-r-md);
+  background: var(--pulse-sand);
+}
+
+.offerPrice .priceText {
+  margin-top: 0;
+}
+
+.offerCta {
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 3rem;
+  border-radius: var(--pulse-r-pill);
+}
+
+.offerTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.offerTitleCrown {
+  color: var(--pulse-crown);
+  font-size: 0.8em;
 }
 
 .modalActions {
@@ -1103,7 +1145,7 @@
   gap: 0.2rem;
   padding: 0.8rem 0.95rem;
   border: 1px solid var(--pulse-accent-text);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: color-mix(in srgb, var(--pulse-accent) 8%, transparent);
 }
 
@@ -1128,13 +1170,12 @@
 .methodBadge {
   margin-left: auto;
   padding: 0.18rem 0.4rem;
-  border-radius: 2px;
+  border-radius: var(--pulse-r-pill);
   background: var(--pulse-accent);
   color: var(--pulse-on-accent);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   line-height: 1.2;
 }
 
@@ -1159,7 +1200,7 @@
   min-height: 5.5rem;
   padding: 0.7rem 0.85rem;
   border: 1px solid transparent;
-  border-radius: 8px 8px 8px 2px;
+  border-radius: var(--pulse-r-md) var(--pulse-r-md) var(--pulse-r-md) var(--pulse-r-xs);
   background: color-mix(in srgb, var(--pulse-ink) 8%, transparent);
   color: var(--text);
   font: inherit;
@@ -1184,7 +1225,7 @@
 }
 
 /* ── Ask the Pulse ── */
-.askPasso {
+.askPulse {
   width: 2.25rem;
   height: auto;
   flex: none;
@@ -1211,17 +1252,39 @@
   justify-self: end;
   max-width: 85%;
   padding: 0.6rem 0.8rem;
-  border-radius: 8px 8px 2px 8px;
-  background: color-mix(in srgb, var(--pulse-ink) 9%, transparent);
+  border-radius: var(--pulse-r-md) var(--pulse-r-md) var(--pulse-r-xs) var(--pulse-r-md);
+  background: var(--pulse-accent-soft);
 }
 
+/* The Pulse's answer: a soft card, the figures inside it as rows. */
 .answer {
   display: grid;
   gap: 0.6rem;
   justify-items: start;
-  padding-left: 0.85rem;
-  border-left: 2px solid var(--pulse-accent);
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: var(--pulse-r-md) var(--pulse-r-md) var(--pulse-r-md) var(--pulse-r-xs);
+  background: var(--pulse-card);
+  box-shadow: var(--pulse-shadow);
   animation: rise var(--duration-element) var(--wuavy-ease-out) both;
+}
+
+.answerRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.answerRow > :not(svg) {
+  flex: 1 1 auto;
+}
+
+.answerPulse {
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.15rem;
 }
 
 .answerItems {
@@ -1264,13 +1327,24 @@
 }
 
 .chipButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   min-height: 2.25rem;
-  padding: 0 0.7rem;
+  padding: 0 0.85rem;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-pill);
+  background: var(--pulse-card);
   font-size: 0.8125rem;
   cursor: pointer;
   transition: border-color var(--duration-ui) linear;
+}
+
+.chipIcon {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  color: var(--pulse-accent-text);
 }
 
 .chipButton:not(:disabled):hover {
@@ -1310,23 +1384,29 @@
   width: min(100%, 20rem);
 }
 
+/* A soft track with the chosen option raised on it. */
 .segmented {
   display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: 2px;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border-radius: var(--pulse-r-pill);
+  background: var(--pulse-sand);
 }
 
 .segmented button {
-  min-height: 2.5rem;
-  padding: 0 0.85rem;
+  min-height: 2.25rem;
+  padding: 0 1rem;
+  border-radius: var(--pulse-r-pill);
   font-size: 0.875rem;
   color: var(--text-2);
   cursor: pointer;
 }
 
 .segmented button[aria-pressed="true"] {
-  background: var(--text);
-  color: var(--surface);
+  background: var(--pulse-card);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--pulse-shadow);
 }
 
 .history li {
@@ -1349,7 +1429,7 @@
   justify-items: start;
   padding: 1rem 1.1rem;
   border: 1px solid var(--pulse-accent);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
   animation: rise var(--duration-element) var(--wuavy-ease-out) both;
 }
@@ -1392,6 +1472,8 @@
 
 .procedureName {
   font-size: 1.25rem;
+  font-family: var(--pulse-display);
+
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.015em;
   line-height: 1.1;
@@ -1434,11 +1516,10 @@
   display: inline-block;
   padding: 0.2rem 0.4rem;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-pill);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
@@ -1465,7 +1546,7 @@
 .preview {
   padding: 0.85rem 1rem;
   border: 1px dashed var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   color: var(--text-2);
 }
 
@@ -1511,8 +1592,7 @@
   min-height: 2.5rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   cursor: pointer;
 }
@@ -1521,7 +1601,7 @@
   position: relative;
   width: 2rem;
   height: 1.1rem;
-  border-radius: 999px;
+  border-radius: var(--pulse-r-pill);
   background: color-mix(in srgb, var(--pulse-ink) 20%, transparent);
   transition: background-color var(--duration-ui) linear;
 }
@@ -1557,7 +1637,7 @@
   gap: 0.3rem;
   padding: 0.7rem 0.8rem;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--pulse-r-sm);
 }
 
 .flowSteps > li + li {
@@ -1576,8 +1656,7 @@
 .stepLabel {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--pulse-accent-text);
 }
 
@@ -1624,7 +1703,7 @@
   justify-items: start;
   padding: 1.25rem 1.35rem;
   border: 1px dashed color-mix(in srgb, var(--pulse-accent) 55%, transparent);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: color-mix(in srgb, var(--pulse-accent) 5%, transparent);
 }
 
@@ -1645,7 +1724,7 @@
   min-height: 2.25rem;
   padding: 0 0.8rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--pulse-r-pill);
   font-size: 0.8125rem;
   color: var(--text-2);
   cursor: pointer;
@@ -1708,11 +1787,10 @@
 .stages li {
   padding: 0.3rem 0.5rem;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-xs);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -1750,6 +1828,8 @@
 
 .todoCount {
   font-size: 1.75rem;
+  font-family: var(--pulse-display);
+
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.03em;
   line-height: 1;
@@ -1816,7 +1896,7 @@
   padding: 1.1rem;
   border: 1px solid var(--border);
   border-top: 2px solid var(--pulse-accent);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -1831,6 +1911,8 @@
 
 .foundTitle {
   font-size: clamp(1.25rem, 1.05rem + 0.6vw, 1.625rem);
+  font-family: var(--pulse-display);
+
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -1847,8 +1929,7 @@
   margin-right: 0.3em;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -2076,7 +2157,7 @@
   justify-items: start;
   padding: 1.1rem 1.2rem;
   border: 1px solid color-mix(in srgb, var(--pulse-accent) 40%, transparent);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: color-mix(in srgb, var(--pulse-accent) 8%, transparent);
 }
 
@@ -2119,8 +2200,7 @@
 .factsRow dt {
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -2151,8 +2231,7 @@
   margin-left: 0.5rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   white-space: nowrap;
 }
@@ -2186,7 +2265,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-sm);
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
@@ -2228,7 +2307,7 @@
   width: 0.7rem;
   height: 0.7rem;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-xs);
 }
 
 .legend li[data-status="confirmado"]::before {
@@ -2296,7 +2375,7 @@
   align-items: baseline;
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--pulse-r-sm);
   background: var(--pulse-raised);
   text-align: left;
   cursor: pointer;
@@ -2315,7 +2394,7 @@
   height: 0.55rem;
   margin-right: 0.5rem;
   border: 1px solid var(--apt-mark-line);
-  border-radius: 1px;
+  border-radius: var(--pulse-r-xs);
   background: var(--apt-mark);
   vertical-align: 0.05em;
 }
@@ -2332,8 +2411,7 @@
   align-self: center;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   white-space: nowrap;
 }
@@ -2405,7 +2483,7 @@
   min-height: 3.25rem;
   padding: 0.6rem 0.8rem;
   border: 1px dashed var(--border);
-  border-radius: 3px;
+  border-radius: var(--pulse-r-sm);
   text-align: left;
   cursor: pointer;
   transition:
@@ -2452,8 +2530,7 @@
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
   text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -2499,7 +2576,7 @@
   height: 100%;
   min-height: 2.9rem;
   border: 1px dashed transparent;
-  border-radius: 3px;
+  border-radius: var(--pulse-r-sm);
   font-size: 0.75rem;
   color: color-mix(in srgb, var(--text-2) 55%, transparent);
   cursor: pointer;
@@ -2516,7 +2593,7 @@
   justify-items: start;
   padding: 1.1rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -2543,7 +2620,7 @@
   gap: 0.15rem;
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--pulse-r-sm);
 }
 
 .bookFor strong {
@@ -2595,7 +2672,7 @@
 .linked li {
   padding: 0.25rem 0.55rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--pulse-r-pill);
   font-size: 0.75rem;
   color: var(--text-2);
 }
@@ -2618,7 +2695,7 @@
   justify-items: start;
   padding: 1.1rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -2874,12 +2951,11 @@
   margin-left: 0.5em;
   padding: 0.25rem 0.45rem;
   border: 1px dashed color-mix(in srgb, var(--text-2) 75%, transparent);
-  border-radius: 2px;
+  border-radius: var(--pulse-r-pill);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   line-height: 1;
-  text-transform: uppercase;
   white-space: nowrap;
   vertical-align: middle;
   color: var(--text-2);
@@ -2924,12 +3000,13 @@
 .stats a {
   display: grid;
   align-content: start;
-  gap: 0.35rem;
+  gap: 0.4rem;
   height: 100%;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  padding: 1rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
+  box-shadow: var(--pulse-shadow);
   color: inherit;
   text-decoration: none;
   transition: border-color var(--duration-ui) var(--wuavy-ease-out);
@@ -2937,6 +3014,8 @@
 
 .statValue {
   font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+  font-family: var(--pulse-display);
+
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.03em;
   line-height: 1;
@@ -2951,6 +3030,174 @@
   font-size: 0.8125rem;
   line-height: 1.3;
   color: var(--text-2);
+}
+
+/* The number's screen, in a soft round. */
+.statIcon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: 0.2rem;
+  border-radius: 50%;
+  background: var(--pulse-accent-soft);
+  color: var(--pulse-accent-text);
+}
+
+.statIcon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* ── Visão geral: the greeting and the questions, the Pulse beside them ── */
+.overviewTop {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.overviewLead {
+  display: grid;
+  gap: 1.25rem;
+  align-content: start;
+}
+
+.pulseCard {
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr);
+  gap: 0.75rem 1rem;
+  align-items: center;
+  padding: 1.25rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: var(--pulse-r-lg);
+  background: var(--pulse-card);
+  box-shadow: var(--pulse-shadow);
+}
+
+.pulseCardFigure {
+  width: 6.25rem;
+  height: 6.25rem;
+}
+
+.pulseCardBody {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+}
+
+.pulseBadge {
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--pulse-r-pill);
+  background: var(--pulse-accent-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pulse-accent-text);
+}
+
+.pulseCardTitle {
+  font-family: var(--pulse-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* Opens "Pergunte ao Pulse": shaped like the field it will be with Pulse AI, honest that today it is a list of questions. */
+.pulseAsk {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3rem;
+  padding: 0 0.35rem 0 1.1rem;
+  border: 1px solid var(--pulse-field);
+  border-radius: var(--pulse-r-pill);
+  background: var(--pulse-raised);
+  font-size: 0.9375rem;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: border-color var(--duration-ui) linear;
+}
+
+.pulseSend {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 50%;
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
+}
+
+.pulseSend svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.pulseAsk:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pulseAsk:hover {
+    border-color: var(--pulse-accent-text);
+  }
+}
+
+@media (min-width: 1100px) {
+  .overviewTop {
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem);
+  }
+}
+
+/* Today in four numbers, read off the agenda. */
+.daySummary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.daySummary > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--pulse-r-sm);
+  background: var(--pulse-sand);
+}
+
+.daySummary dt {
+  order: 2;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.daySummary dd {
+  font-family: var(--pulse-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A card's heading: a title, not a tag. */
+.panel > h2.label,
+.foundBlock > h2.label {
+  font-family: var(--pulse-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.panel > h2.label span,
+.foundBlock > h2.label span {
+  font-family: var(--font-mona), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-2);
+  opacity: 1;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -3037,7 +3284,7 @@
   }
 }
 
-/* PASSO's guide highlights the panel to fill: a Signal edge, nothing louder. */
+/* The Pulse's guide highlights the panel to fill: a Signal edge, nothing louder. */
 .panel[data-guide] {
   border-color: var(--pulse-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--pulse-accent) 18%, transparent);
@@ -3079,8 +3326,7 @@
   gap: 0.4rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
   cursor: pointer;
   list-style: none;
@@ -3148,8 +3394,7 @@
   padding: 0 0.3rem 0.25rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--text-2);
 }
 
@@ -3162,7 +3407,7 @@
   min-height: 4.25rem;
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--pulse-border-soft);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-sm);
   background: color-mix(in srgb, var(--pulse-accent) calc(var(--load, 0) * 18%), var(--pulse-card));
   text-align: left;
   cursor: pointer;
@@ -3249,17 +3494,16 @@
   align-items: center;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--pulse-border-soft);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-sm);
   font-size: 0.875rem;
 }
 
 .depositStatus {
   padding: 0.15rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--pulse-r-pill);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
   background: color-mix(in srgb, var(--pulse-warning) 14%, transparent);
   color: var(--pulse-warning);
 }
@@ -3340,7 +3584,7 @@
   align-content: start;
   padding: 1rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -3374,6 +3618,7 @@
 }
 
 .readings li {
+  border-radius: var(--pulse-r-md);
   display: flex;
   gap: 0.7rem;
   align-items: baseline;
@@ -3409,7 +3654,7 @@
   align-content: start;
   padding: 1.1rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -3447,7 +3692,7 @@
   max-width: 2.25rem;
   width: 100%;
   margin: 0 auto;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--pulse-r-xs) var(--pulse-r-xs) 0 0;
   background: var(--pulse-accent);
 }
 
@@ -3485,7 +3730,7 @@
   translate: -50% 0;
   z-index: 1;
   padding: 0.2rem 0.4rem;
-  border-radius: 3px;
+  border-radius: var(--pulse-r-sm);
   background: var(--text);
   color: var(--surface);
   font-size: 0.6875rem;
@@ -3526,7 +3771,7 @@
   height: 100%;
   width: calc(var(--w) * 100%);
   min-width: 2px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--pulse-r-xs) var(--pulse-r-xs) 0;
   background: var(--pulse-accent);
 }
 
@@ -3542,7 +3787,7 @@
   gap: 0.5rem;
   padding: 0.9rem 1rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--pulse-r-md);
   background: var(--pulse-card);
   box-shadow: var(--pulse-shadow);
 }
@@ -3686,4 +3931,134 @@
     grid-template-columns: minmax(0, 1fr) minmax(12rem, 18rem);
     align-items: center;
   }
+}
+
+/* ── Últimos 30 dias: four numbers with their six weeks ── */
+.trends {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.trends > h2.label {
+  font-family: var(--pulse-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.trends > h2.label span {
+  margin-left: 0.5em;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.trendList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16.5rem, 1fr));
+  gap: 0.6rem;
+}
+
+.trend {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: var(--pulse-r-md);
+  background: var(--pulse-card);
+  box-shadow: var(--pulse-shadow);
+  transition: transform var(--duration-ui) var(--wuavy-ease-out), border-color var(--duration-ui) linear;
+}
+
+.trendIcon {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: var(--pulse-accent-soft);
+  color: var(--pulse-accent-text);
+}
+
+.trendIcon[data-tone="sage"] {
+  background: color-mix(in srgb, var(--pulse-sage) 22%, var(--pulse-card));
+  color: var(--pulse-success);
+}
+
+.trendIcon[data-tone="sand"] {
+  background: var(--pulse-sand);
+  color: var(--text-2);
+}
+
+.trendIcon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.trendBody {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.trendLabel {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.trendValue {
+  font-family: var(--pulse-display);
+  font-size: 1.25rem;
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trendDelta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.trendDelta[data-dir="up"] {
+  color: var(--pulse-success);
+}
+
+.trendDelta[data-dir="down"] {
+  color: var(--pulse-danger);
+}
+
+.spark {
+  align-self: end;
+  width: 4rem;
+  height: 1.75rem;
+  overflow: visible;
+}
+
+.sparkLine {
+  fill: none;
+  stroke: var(--pulse-accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sparkArea {
+  fill: color-mix(in srgb, var(--pulse-accent) 12%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .trend:hover {
+    transform: translateY(-2px);
+    border-color: var(--pulse-border);
+  }
+}
+
+/* Press: a control gives a little under the finger, then springs back. */
+:is(.primary, .secondary, .chipButton, .askOption, .pulseAsk, .stepButton):active:not(:disabled) {
+  transform: scale(0.97);
 }

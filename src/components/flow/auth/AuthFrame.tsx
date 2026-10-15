@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Wordmark } from "@/components/brand/Wordmark";
 import ui from "../demo/ui.module.css";
+import { PulseLogo } from "../PulseLogo";
 import "../pulse-theme.css";
 import { ThemeToggle } from "../ThemeToggle";
 import styles from "./AuthFrame.module.css";
@@ -19,8 +19,7 @@ export function AuthFrame({ title, lead, children }: { title?: string; lead?: st
       <div className={styles.card}>
         <div className={styles.top}>
           <Link href="/pulse" className={styles.brand} aria-label="Wuavy Pulse: página do produto">
-            <Wordmark size="small" decorative />
-            <span className={styles.product}>Pulse</span>
+            <PulseLogo />
           </Link>
           <ThemeToggle />
         </div>

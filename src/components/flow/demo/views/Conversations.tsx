@@ -36,6 +36,8 @@ import { LEAD_SOURCES, LEAD_STAGES, type FlowData, type ID } from "@/lib/flow/ty
 import { SOURCE_LABEL, STAGE_LABEL } from "../copy";
 import { Field, FocusLink, Prepared, Soon, reais, useWrite, FormError, waNumber } from "../forms";
 import { useInbox, type InboxChange } from "../inbox";
+import { AskConversation } from "../AskFlow";
+import { Pulse, type PulseState } from "../../Pulse";
 import { Sheet } from "../Sheet";
 import { useFlow, useFocus, type Focus } from "../store";
 import { contactLead } from "@/lib/flow/actions";
@@ -136,6 +138,8 @@ function DemoConversations() {
   const [booking, setBooking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [note, setNote] = useState(false);
+  // The Pulse, the pinned internal thread: when open, the chat column is its.
+  const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
     if (!notice) return;
@@ -183,6 +187,7 @@ function DemoConversations() {
   const open = (id: ID) => {
     setOpenId(id);
     setNote(false);
+    setPulse(false);
     setPane("chat");
     send({ type: "read", id });
   };
@@ -208,7 +213,7 @@ function DemoConversations() {
   }
 
   return (
-    <div className={styles.inbox} data-pane={pane}>
+    <div className={styles.inbox} data-pane={pane} data-assistant={pulse ? "" : undefined}>
       <section className={styles.listCol} aria-label="Conversas">
         <header className={styles.listHead}>
           <h1 className={styles.heading}>Conversas</h1>
@@ -228,6 +233,13 @@ function DemoConversations() {
             ))}
           </div>
         </header>
+        <PulsePinned
+          current={pulse}
+          onOpen={() => {
+            setPulse(true);
+            setPane("chat");
+          }}
+        />
         {list.length ? (
           <ol className={styles.list}>
             {list.map((c) => {
@@ -241,7 +253,7 @@ function DemoConversations() {
                   <button
                     type="button"
                     className={styles.item}
-                    aria-current={selected?.id === c.id ? "true" : undefined}
+                    aria-current={!pulse && selected?.id === c.id ? "true" : undefined}
                     onClick={() => open(c.id)}
                   >
                     <span className={styles.avatar} aria-hidden="true">
@@ -277,7 +289,8 @@ function DemoConversations() {
         )}
       </section>
 
-      {selected ? (
+      {pulse ? <PulsePane onBack={() => setPane("list")} /> : null}
+      {selected && !pulse ? (
         <Chat
           key={selected.id}
           conversation={selected}
@@ -294,7 +307,7 @@ function DemoConversations() {
           authorId={data.users.find((u) => u.name === account?.name)?.id ?? data.users[0]?.id}
         />
       ) : null}
-      {selected ? (
+      {selected && !pulse ? (
         <Context
           conversation={selected}
           send={send}
@@ -942,6 +955,7 @@ function LiveConversations() {
   const [query, setQuery] = useState("");
   const [starting, setStarting] = useState(false);
   const [booking, setBooking] = useState(false);
+  const [pulse, setPulse] = useState(false);
   const tick = useLiveMessages();
 
   const q = query.trim().toLowerCase();
@@ -971,13 +985,14 @@ function LiveConversations() {
   const open = (id: ID) => {
     setOpenId(id);
     setPending(null);
+    setPulse(false);
     setPane("chat");
   };
 
   const booked = selected?.participant ?? pending;
 
   return (
-    <div className={styles.inbox} data-pane={pane}>
+    <div className={styles.inbox} data-pane={pane} data-assistant={pulse ? "" : undefined}>
       <section className={styles.listCol} aria-label="Conversas">
         <header className={styles.listHead}>
           <h1 className={styles.heading}>Conversas</h1>
@@ -1000,6 +1015,13 @@ function LiveConversations() {
             ))}
           </div>
         </header>
+        <PulsePinned
+          current={pulse}
+          onOpen={() => {
+            setPulse(true);
+            setPane("chat");
+          }}
+        />
         {list.length ? (
           <ol className={styles.list}>
             {list.map((c) => {
@@ -1018,7 +1040,7 @@ function LiveConversations() {
                   <button
                     type="button"
                     className={styles.item}
-                    aria-current={selected?.id === c.id ? "true" : undefined}
+                    aria-current={!pulse && selected?.id === c.id ? "true" : undefined}
                     onClick={() => open(c.id)}
                   >
                     <span className={styles.avatar} aria-hidden="true">
@@ -1050,7 +1072,9 @@ function LiveConversations() {
         )}
       </section>
 
-      {selected || pending ? (
+      {pulse ? (
+        <PulsePane onBack={() => setPane("list")} />
+      ) : selected || pending ? (
         <LiveThread
           key={selected?.id ?? "nova"}
           conversation={selected ?? undefined}
@@ -1067,7 +1091,7 @@ function LiveConversations() {
           <p className={`${ui.fine} ${styles.empty}`}>Escolha uma conversa ou comece uma nova.</p>
         </section>
       )}
-      {selected ? <LivePerson conversation={selected} onBack={() => setPane("chat")} onBook={() => setBooking(true)} /> : null}
+      {selected && !pulse ? <LivePerson conversation={selected} onBack={() => setPane("chat")} onBook={() => setBooking(true)} /> : null}
 
       <Sheet open={starting} onClose={() => setStarting(false)} title="Nova conversa" kicker="Conversas">
         {starting ? (
@@ -1707,5 +1731,48 @@ function StartConversation({ onDone }: { onDone: (id: ID) => void }) {
         </button>
       </div>
     </form>
+  );
+}
+
+/*
+  The Pulse in Conversas: the clinic's internal thread with its assistant, pinned
+  above the people. It is never a WhatsApp conversation and says so; what it
+  answers is calculated from the clinic's own data (AskConversation).
+*/
+function PulsePinned({ current, onOpen }: { current: boolean; onOpen: () => void }) {
+  return (
+    <div className={styles.pinned}>
+      <button type="button" className={styles.item} data-assistant="" aria-current={current ? "true" : undefined} onClick={onOpen}>
+        <Pulse className={styles.pulseAvatar} still />
+        <span className={styles.itemMain}>
+          <span className={styles.itemTop}>
+            <strong>Pulse</strong>
+            <span className={styles.kind}>Interno</span>
+          </span>
+          <span className={styles.preview}>Pergunte sobre agenda, vendas, pacientes e estoque.</span>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function PulsePane({ onBack }: { onBack: () => void }) {
+  const [state, setState] = useState<PulseState>("idle");
+  return (
+    <section className={styles.chatCol} aria-label="Conversa com o Pulse">
+      <header className={styles.chatHead}>
+        <button type="button" className={styles.back} onClick={onBack} aria-label="Voltar às conversas">
+          ←
+        </button>
+        <Pulse className={styles.pulseHead} state={state} greet />
+        <div className={styles.chatWho}>
+          <strong>Pulse</strong>
+          <span>Assistente da clínica · conversa interna, nada é enviado a pacientes</span>
+        </div>
+      </header>
+      <div className={styles.pulseBody}>
+        <AskConversation variant="pane" onState={setState} />
+      </div>
+    </section>
   );
 }

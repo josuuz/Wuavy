@@ -28,11 +28,14 @@ import {
   valueDelivered,
 } from "@/lib/flow/insights";
 import { APPOINTMENT_LABEL, KIND, RECOVERED_FRONTS, STATUS_LABEL, viewHref } from "../copy";
+import { Pulse } from "../../Pulse";
 import { FocusLink, Soon } from "../forms";
+import { NavIcon } from "../NavIcon";
 import { useFlow, type Focus } from "../store";
 import styles from "../ui.module.css";
 import { insights, numbers } from "@/lib/flow/indicators";
 import { Indicators } from "./Indicators";
+import { Trends } from "./Trends";
 import { selection } from "./Opportunities";
 
 /*
@@ -50,8 +53,9 @@ const greeting = () => {
   return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
 };
 
-/** Questions the overview hands straight to "Pergunte ao Pulse". */
+/** Questions the overview hands straight to "Pergunte ao Pulse", each with the icon of the screen it reads. */
 const QUICK = ["O que preciso fazer hoje?", "Onde estou perdendo dinheiro?", "Quanto tenho de receita potencial?"];
+const QUICK_ICON = ["agenda", "vendas", "oportunidades"];
 
 /** Coming, and part of the plan: listed under the first steps, never as one of them. */
 const COMING = [
@@ -84,6 +88,8 @@ export function Overview() {
   const reading = insights(data, thisMonth).slice(0, 3);
   const today = daySlots(data, 0);
   const booked = today.filter((s) => s.status === "ocupado").map((s) => s.appointment!);
+  const confirmed = booked.filter((a) => a.status === "confirmado").length;
+  const finished = booked.filter((a) => a.status === "concluido").length;
   const patientName = (id: string) => data.patients.find((p) => p.id === id)?.name ?? "";
 
   // A real clinic's first steps, checked off as they happen. Until there is real data, they are the screen.
@@ -254,13 +260,13 @@ export function Overview() {
   const alerts = low.length + expiring.length;
 
   // The numbers of now, each one a door to where it is acted on.
-  const stats: { value: string; label: string; focus?: Focus; view?: string; main?: boolean; need?: keyof Permissions }[] = [
-    { value: brl(potential), label: "Receita potencial em oportunidades", view: "oportunidades", main: true, need: "sales" },
-    { value: String(dueReturns(data).length), label: "Pacientes para retornar", focus: { to: "patients", filter: "retorno" }, need: "book" },
-    { value: String(slots.length), label: "Horários vagos até amanhã", focus: { to: "agenda", day: 0 }, need: "book" },
-    { value: String(openLeads(data).length), label: "Leads em aberto", view: "vendas", need: "sales" },
-    { value: String(stuck.length), label: "Orçamentos sem resposta", focus: { to: "sales", filter: "sem_resposta" }, need: "sales" },
-    { value: String(alerts), label: alerts === 1 ? "Alerta de estoque" : "Alertas de estoque", view: "estoque" },
+  const stats: { value: string; label: string; icon: string; focus?: Focus; view?: string; main?: boolean; need?: keyof Permissions }[] = [
+    { value: brl(potential), label: "Receita potencial em oportunidades", icon: "oportunidades", view: "oportunidades", main: true, need: "sales" },
+    { value: String(dueReturns(data).length), label: "Pacientes para retornar", icon: "pacientes", focus: { to: "patients", filter: "retorno" }, need: "book" },
+    { value: String(slots.length), label: "Horários vagos até amanhã", icon: "agenda", focus: { to: "agenda", day: 0 }, need: "book" },
+    { value: String(openLeads(data).length), label: "Leads em aberto", icon: "vendas", view: "vendas", need: "sales" },
+    { value: String(stuck.length), label: "Orçamentos sem resposta", icon: "conversas", focus: { to: "sales", filter: "sem_resposta" }, need: "sales" },
+    { value: String(alerts), label: alerts === 1 ? "Alerta de estoque" : "Alertas de estoque", icon: "estoque", view: "estoque" },
   ];
 
   const checklist = (
@@ -316,6 +322,8 @@ export function Overview() {
 
   return (
     <div className={styles.page}>
+      <div className={styles.overviewTop}>
+      <div className={styles.overviewLead}>
       <h1 className={styles.greet}>
         {hello}. <span>{tab === "agora" ? "O que precisa da sua atenção agora?" : "Como a clínica está indo?"}</span>
       </h1>
@@ -331,22 +339,56 @@ export function Overview() {
         </div>
       ) : null}
 
+      {tab === "agora" ? (
+        <div className={styles.askStrip}>
+          <p className={styles.askStripLabel}>
+            <span className="pulse-dot" aria-hidden="true" />
+            Pergunte ao Pulse
+          </p>
+          {(can.sales ? QUICK : QUICK.slice(0, 1)).map((q, i) => (
+            <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)}>
+              <NavIcon slug={QUICK_ICON[i]} className={styles.chipIcon} />
+              {q}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      </div>
+
+      {tab === "agora" ? (
+        <aside className={styles.pulseCard} aria-labelledby="pulse-card" data-pulse-host="">
+          {/* Pleased when the clinic has nothing waiting; that is read off the
+              same list the panel below shows, never set for effect. */}
+          <Pulse
+            className={styles.pulseCardFigure}
+            state={shown.length ? "idle" : "happy"}
+            greet
+            interactive
+            solid
+          />
+          <div className={styles.pulseCardBody}>
+            <span className={styles.pulseBadge}>Assistente da clínica</span>
+            <h2 id="pulse-card" className={styles.pulseCardTitle}>
+              Olá! Sou o Pulse.
+            </h2>
+            <p className={styles.fine}>Escolha uma pergunta e eu calculo a resposta com os dados {live ? "da clínica" : "da demo"}.</p>
+          </div>
+          <button type="button" className={styles.pulseAsk} onClick={() => ask()}>
+            Pergunte ao Pulse
+            <span className={styles.pulseSend} aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 10h11M11 5.5 15.5 10 11 14.5" />
+              </svg>
+            </span>
+          </button>
+        </aside>
+      ) : null}
+      </div>
+
       {tab === "indicadores" ? (
         <Indicators />
       ) : (
         <>
-
-      <div className={styles.askStrip}>
-        <p className={styles.askStripLabel}>
-          <span className="pulse-dot" aria-hidden="true" />
-          Pergunte ao Pulse
-        </p>
-        {(can.sales ? QUICK : QUICK.slice(0, 1)).map((q) => (
-          <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)}>
-            {q}
-          </button>
-        ))}
-      </div>
 
       {preparing && can.admin ? checklist : null}
 
@@ -354,6 +396,9 @@ export function Overview() {
         {stats.filter((stat) => !stat.need || can[stat.need]).map((stat) => {
           const body = (
             <>
+              <span className={styles.statIcon}>
+                <NavIcon slug={stat.icon} />
+              </span>
               <span className={styles.statValue}>{stat.value}</span>
               <span className={styles.statLabel}>{stat.label}</span>
             </>
@@ -371,6 +416,8 @@ export function Overview() {
           );
         })}
       </ul>
+
+          {can.finance ? <Trends data={data} /> : null}
 
           {can.finance ? <section className={styles.monthStrip} aria-label="Este mês">
             <p>
@@ -425,16 +472,28 @@ export function Overview() {
           <h2 id="hoje" className={styles.label}>
             Hoje <span>{dayLabel(data.now)}</span>
           </h2>
-          <p className={styles.todayLine}>
-            {booked.length ? plural(booked.length, "atendimento", "atendimentos") : "Nenhum atendimento marcado"}
-            {booked.length ? (
-              <span>
-                {" · "}
-                {plural(booked.filter((a) => a.status === "confirmado").length, "confirmado", "confirmados")}
-                {confirmToday.length ? ` · ${confirmToday.length} aguardando` : ""}
-              </span>
-            ) : null}
-          </p>
+          {booked.length ? (
+            <dl className={styles.daySummary}>
+              <div>
+                <dt>{booked.length === 1 ? "Atendimento" : "Atendimentos"}</dt>
+                <dd>{booked.length}</dd>
+              </div>
+              <div>
+                <dt>{confirmed === 1 ? "Confirmado" : "Confirmados"}</dt>
+                <dd>{confirmed}</dd>
+              </div>
+              <div>
+                <dt>Aguardando</dt>
+                <dd>{confirmToday.length}</dd>
+              </div>
+              <div>
+                <dt>{finished === 1 ? "Finalizado" : "Finalizados"}</dt>
+                <dd>{finished}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className={styles.todayLine}>Nenhum atendimento marcado</p>
+          )}
           <ol className={styles.miniDay}>
             {today.map((slot) => {
               const a = slot.status === "ocupado" ? slot.appointment! : undefined;
