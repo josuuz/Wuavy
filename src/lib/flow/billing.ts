@@ -2,7 +2,7 @@ import "server-only";
 
 import { CANONICAL_URL, site } from "@/data/site";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { checkoutDecision, decide, payerEmailFor, REFUSAL } from "./mercadopago-environment";
+import { checkoutDecision, decide, payerEmailFor, REFUSAL } from "@/lib/mercadopago/environment";
 import {
   cancelBodies,
   confirmedStatus,
@@ -16,7 +16,7 @@ import {
   type CardChange,
   type Charge,
   type Preapproval,
-} from "./mercadopago-notice";
+} from "@/lib/mercadopago/notice";
 import { PRICE, type Standing, type SubscriptionStatus } from "./access";
 
 /*
@@ -121,8 +121,8 @@ async function mp<T>(path: string, init: { method?: "GET" | "POST" | "PUT"; body
 // The subscription and the charge as Mercado Pago reports them, the status
 // they mean and a notice's signature: lib/flow/mercadopago-notice.ts, pure and
 // tested. Re-exported from here, where they have always been asked for.
-export { statusFrom, type Charge, type Preapproval } from "./mercadopago-notice";
-export { CANCEL_STATES } from "./mercadopago-notice";
+export { statusFrom, type Charge, type Preapproval } from "@/lib/mercadopago/notice";
+export { CANCEL_STATES } from "@/lib/mercadopago/notice";
 
 /** Where Mercado Pago sends the person back, always over https (the rule, and why, in mercadopago-notice.ts). */
 export const returnUrl = (path: string) => httpsUrl(path, site.url, CANONICAL_URL);
