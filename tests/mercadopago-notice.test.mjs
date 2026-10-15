@@ -15,7 +15,7 @@ import {
   retryOtherSpelling,
   statusFrom,
   verifyNotice,
-} from "../src/lib/flow/mercadopago-notice.ts";
+} from "../src/lib/mercadopago/notice.ts";
 
 const SECRET = "segredo-sintetico-do-painel";
 

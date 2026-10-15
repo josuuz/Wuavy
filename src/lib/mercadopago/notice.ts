@@ -3,17 +3,18 @@
   sua última cobrança significam, e a conferência da assinatura HMAC de um
   aviso (webhook).
 
-  Estas duas regras ficam fora de lib/flow/billing.ts de propósito. São as
-  únicas puras daquele módulo — nada de credenciais, de fetch e de Supabase —
-  e são as que decidem o que entra: a primeira diz se uma clínica está em dia,
-  a segunda é o que separa um aviso do Mercado Pago de um aviso de qualquer
-  um. Aqui elas podem ser testadas (tests/mercadopago-notice.test.mjs);
-  billing.ts as reexporta, e quem as usa não muda.
+  Módulo compartilhado: o Pulse (lib/flow/billing.ts) e as Assinaturas de
+  Sites (lib/maintenance/billing.ts) importam daqui, em vez de cada um ter a
+  sua própria cópia de statusFrom e companhia. Puro de propósito — nada de
+  credenciais, de fetch e de Supabase — para poder ser testado sem rede
+  (tests/mercadopago-notice.test.mjs, tests/card-change.test.mjs) e para
+  nenhum dos dois produtos precisar confiar no outro para ficar certo.
 */
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import type { SubscriptionStatus } from "./access";
+/** O estado que os dois produtos guardam: quatro valores, nunca mais. */
+export type BillingStatus = "pending" | "active" | "past_due" | "cancelled";
 
 /*
   O estado de cancelamento vem nas duas grafias. A referência da API não fixa
@@ -22,7 +23,8 @@ import type { SubscriptionStatus } from "./access";
   que impede o pior caso: uma grafia não reconhecida cairia no `else` de
   statusFrom e uma assinatura cancelada seria lida como ativa.
 
-  Para escrever, CANCEL_STATES é a ordem de tentativa (lib/flow/billing.ts).
+  Para escrever, CANCEL_STATES é a ordem de tentativa (lib/flow/billing.ts,
+  lib/maintenance/billing.ts).
 */
 export const CANCEL_STATES = ["cancelled", "canceled"] as const;
 const isCancelled = (status: string) => (CANCEL_STATES as readonly string[]).includes(status);
@@ -46,14 +48,14 @@ export interface Charge {
 }
 
 /**
- * O estado que o Pulse guarda. Uma assinatura autorizada está ativa: o
- * Mercado Pago validou o cartão e o cobra sozinho. A última cobrança ter
- * falhado, ou a assinatura estar pausada, deixa em atraso.
+ * O estado que guardamos. Uma assinatura autorizada está ativa: o Mercado
+ * Pago validou o cartão e o cobra sozinho. A última cobrança ter falhado, ou
+ * a assinatura estar pausada, deixa em atraso.
  */
 export function statusFrom(
   subscription: Pick<Preapproval, "status">,
   last?: Pick<Charge, "status" | "payment">,
-): SubscriptionStatus {
+): BillingStatus {
   if (isCancelled(subscription.status)) return "cancelled";
   if (subscription.status === "pending") return "pending";
   if (subscription.status === "paused") return "past_due";
@@ -118,8 +120,8 @@ export function httpsUrl(path: string, siteUrl: string, canonical: string): stri
 /*
   O que vai no corpo de um PUT /preapproval/{id}. Montado aqui, puro, porque é
   onde está o risco que nenhum tipo pega: um campo a mais muda a cobrança de
-  uma clínica. Em particular `auto_recurring` nunca aparece — é ele que guarda
-  os R$ 297 das cinco primeiras clínicas.
+  uma clínica ou de um cliente de site. Em particular `auto_recurring` nunca
+  aparece — é ele que guarda o valor de cada assinatura, de cada produto.
 */
 
 /** Os corpos a tentar para cancelar, na ordem (as duas grafias do enum). */
@@ -171,7 +173,7 @@ export type CardChange =
   /** O Mercado Pago tem esta assinatura cancelada e não aceita mudanças. Nada foi mandado. */
   | { outcome: "cancelled" }
   /** Aceito, e a assinatura lida de volta depois. */
-  | { outcome: "changed"; status: SubscriptionStatus }
+  | { outcome: "changed"; status: BillingStatus }
   /** Aceito, mas o Mercado Pago não respondeu à releitura (um 429, uma indisponibilidade). */
   | { outcome: "unconfirmed" };
 
@@ -184,9 +186,9 @@ export type CardChange =
  * confirmado", nunca como "falhou".
  */
 export async function confirmedStatus(
-  read: () => Promise<SubscriptionStatus | null>,
+  read: () => Promise<BillingStatus | null>,
   wait: () => Promise<void>,
-): Promise<SubscriptionStatus | null> {
+): Promise<BillingStatus | null> {
   try {
     return await read();
   } catch {
@@ -211,7 +213,7 @@ export async function runCardChange(
   calls: {
     read: () => Promise<Pick<Preapproval, "status">>;
     send: (body: Record<string, string>) => Promise<void>;
-    confirm: () => Promise<SubscriptionStatus | null>;
+    confirm: () => Promise<BillingStatus | null>;
   },
 ): Promise<CardChange> {
   if (!PROVIDER_ID.test(providerId) || !CARD_TOKEN.test(cardToken)) return { outcome: "refused" };

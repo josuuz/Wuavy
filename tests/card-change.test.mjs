@@ -18,7 +18,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { confirmedStatus, runCardChange } from "../src/lib/flow/mercadopago-notice.ts";
+import { confirmedStatus, runCardChange } from "../src/lib/mercadopago/notice.ts";
 
 const ID = "f87361b4e1294597be3d0305c46e40c5";
 const TOKEN = "abcdefgh12345678";
