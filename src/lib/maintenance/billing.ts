@@ -5,7 +5,8 @@ import { randomBytes } from "node:crypto";
 import { MercadoPagoError } from "@/lib/flow/billing";
 import { absoluteUrl } from "@/lib/seo";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decide, payerEmailFor, REFUSAL } from "@/lib/flow/mercadopago-environment";
+import { cancelBodies, confirmedStatus, PROVIDER_ID as SHARED_PROVIDER_ID, retryOtherSpelling } from "@/lib/mercadopago/notice";
+import { decide, payerEmailFor, REFUSAL } from "@/lib/mercadopago/environment";
 import { asMaintenanceStatus, chargeFailed, statusFrom, type MaintenanceStatus } from "./plan";
 
 /*
@@ -34,7 +35,7 @@ import { asMaintenanceStatus, chargeFailed, statusFrom, type MaintenanceStatus }
 
 const API = "https://api.mercadopago.com";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const PROVIDER_ID = /^[\w-]{1,64}$/;
+const PROVIDER_ID = SHARED_PROVIDER_ID;
 
 /** A cobrança está fechada: sem credenciais, ou o ambiente não bate com elas (environment.ts). */
 export class BillingUnavailable extends Error {}
@@ -60,7 +61,7 @@ export const WEBHOOK_PATH = "/api/mercadopago/manutencao/webhook";
 /** O link individual de um cliente: um token aleatório, e nada mais abre a página. */
 export const newToken = () => randomBytes(16).toString("hex");
 
-async function mp<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; idempotencyKey?: string } = {}): Promise<T> {
+async function mp<T>(path: string, init: { method?: "GET" | "POST" | "PUT"; body?: unknown; idempotencyKey?: string } = {}): Promise<T> {
   // Toda chamada passa aqui, a de leitura também: um token de produção num
   // ambiente de desenvolvimento não fala com o Mercado Pago, ponto.
   const decision = decide(process.env);
@@ -148,11 +149,39 @@ export async function authorizationLink(providerId: string) {
   return subscription.status === "pending" ? (subscription.init_point ?? null) : null;
 }
 
-/** Cancela a assinatura no Mercado Pago. O sync seguinte escreve o cancelamento. */
-export async function cancelSubscription(providerId: string) {
+/** Quanto esperar antes de ler de novo, quando a releitura não respondeu. */
+const CONFIRM_WAIT_MS = 1200;
+
+/**
+ * Cancela a assinatura no Mercado Pago, então escreve o que o Mercado Pago
+ * disse. Devolve o status lido de volta, que quem chama precisa conferir: só
+ * "cancelled" é um cancelamento.
+ *
+ * O valor do status é mandado nas duas grafias, em ordem, porque a
+ * referência não fixa o enum (mercadopago/notice.ts). Uma recusa de
+ * validação na primeira (400) tenta a segunda; qualquer outra recusa sobe
+ * como veio. Depois que o PUT é aceito, nada é relatado como falha: a
+ * releitura (confirmedStatus) tenta mais uma vez sozinha antes de devolver
+ * null — "ainda não confirmado", nunca "falhou".
+ */
+export async function cancelSubscription(providerId: string): Promise<MaintenanceStatus | null> {
   if (!PROVIDER_ID.test(providerId)) return null;
-  await mp<Preapproval>(`/preapproval/${providerId}`, { method: "POST", body: { status: "cancelled" } });
-  return syncSubscription(providerId);
+  let refusal: MercadoPagoError | undefined;
+  for (const body of cancelBodies()) {
+    try {
+      await mp<Preapproval>(`/preapproval/${providerId}`, { method: "PUT", body });
+      refusal = undefined;
+      break;
+    } catch (error) {
+      if (!(error instanceof MercadoPagoError) || !retryOtherSpelling(error.status)) throw error;
+      refusal = error;
+    }
+  }
+  if (refusal) throw refusal;
+  return confirmedStatus(
+    () => syncSubscription(providerId),
+    () => new Promise((resolve) => setTimeout(resolve, CONFIRM_WAIT_MS)),
+  );
 }
 
 /**
