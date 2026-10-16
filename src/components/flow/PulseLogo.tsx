@@ -3,17 +3,21 @@ import { cn } from "@/lib/utils";
 import styles from "./PulseLogo.module.css";
 
 /*
-  The Pulse's name inside the product, as on the approved board: the
-  WUAVY wordmark and the PULSE tag outlined in the Pulse orange. The link
-  around it names the product for assistive tech, so the drawing is quiet.
+  The Pulse's name, PULSE first: the product leads the mark, in the Pulse
+  orange; WUAVY signs it underneath, small, the way an agency signs its
+  work. The link around it names the product for assistive tech, so the
+  drawing itself stays quiet.
 */
 export function PulseLogo({ className }: { className?: string }) {
   return (
     <span className={cn(styles.logo, className)} aria-hidden="true">
-      <span className={styles.wordmark}>
-        <Wordmark size="small" decorative />
+      <span className={styles.pulse}>PULSE</span>
+      <span className={styles.by}>
+        by
+        <span className={styles.wordmark}>
+          <Wordmark size="small" decorative />
+        </span>
       </span>
-      <span className={styles.tag}>PULSE</span>
     </span>
   );
 }
