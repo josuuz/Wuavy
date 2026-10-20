@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Playwright MCP captures
 /.playwright-mcp
+
+# Supabase CLI local link state (per-machine, never shared)
+/supabase/.temp/
