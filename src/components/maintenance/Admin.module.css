@@ -133,11 +133,13 @@
   background: currentColor;
 }
 
-.status[data-status="active"] {
+.status[data-status="active"],
+.status[data-status="approved"] {
   color: var(--text);
 }
 
-.status[data-status="past_due"] {
+.status[data-status="past_due"],
+.status[data-status="rejected"] {
   color: var(--mark);
 }
 
@@ -146,7 +148,9 @@
   color: var(--text-2);
 }
 
-.status[data-status="cancelled"] {
+.status[data-status="cancelled"],
+.status[data-status="inactive"],
+.status[data-status="refunded"] {
   color: var(--text-2);
   text-decoration: line-through;
 }
