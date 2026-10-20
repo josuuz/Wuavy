@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { LOCALE_COOKIE, localizePath, PT_PREFIX, resolveLocale } from "@/i18n/config";
+import { CARE, CARE_SESSION, PULSE_APP, PULSE_SESSION } from "@/lib/care-routing";
 
 /*
   Three jobs, on separate paths.
@@ -19,18 +20,15 @@ import { LOCALE_COOKIE, localizePath, PT_PREFIX, resolveLocale } from "@/i18n/co
   (Server Components can read cookies but not write them). The rest of the
   Pulse app passes through untouched.
 
-  A manutenção de sites (/manutencao): nunca localizada. O painel
-  (/manutencao/admin) tem a sessão renovada como as rotas do Pulse; a página
-  de assinatura de um cliente passa direto, porque o que a abre é o token na
-  própria URL.
+  A manutenção de sites (/manutencao) e o Wuavy Cobranças (/cobrancas):
+  nenhum dos dois é localizado. O painel de manutenção (/manutencao/admin) e
+  todo o /cobrancas (só painel, sem página pública) têm a sessão renovada
+  como as rotas do Pulse; a página de assinatura de um cliente de manutenção
+  passa direto, porque o que a abre é o token na própria URL. Os regex que
+  decidem isso vivem em lib/care-routing.ts, puros, para poderem ser
+  testados sem o runtime do Next.
 */
 
-const PULSE_SESSION = /^\/pulse\/(?:(?:app|demo)(?:\/.*)?|entrar|comecar|assinar|convite)$/;
-const PULSE_APP = /^\/pulse\/./;
-// A manutenção de sites: o painel precisa da sessão de um administrador; a
-// página de um cliente abre pelo token da URL e não tem sessão nenhuma.
-const CARE_SESSION = /^\/manutencao\/admin(?:\/.*)?$/;
-const CARE = /^\/manutencao(?:\/|$)/;
 // pt-PT's public addresses, exactly as written.
 const PT_SPACE = new RegExp(`^${PT_PREFIX}(?=/|$)`);
 // Any other spelling of a language segment (/pt-PT, /pt-BR…): one address per page.
