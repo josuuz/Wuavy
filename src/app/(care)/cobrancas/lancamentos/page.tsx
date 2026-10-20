@@ -78,6 +78,9 @@ export default async function LancamentosPage({ searchParams }: { searchParams: 
         <Link href="/cobrancas/lancamentos" className={styles.ghost} aria-current="page">
           Cobranças
         </Link>
+        <Link href="/cobrancas/financeiro" className={styles.ghost}>
+          Financeiro
+        </Link>
       </nav>
 
       <p className={`type-body ${styles.muted}`}>

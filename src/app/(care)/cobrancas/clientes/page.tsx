@@ -53,6 +53,9 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
         <Link href="/cobrancas/lancamentos" className={styles.ghost}>
           Cobranças
         </Link>
+        <Link href="/cobrancas/financeiro" className={styles.ghost}>
+          Financeiro
+        </Link>
       </nav>
 
       <form method="get" className={styles.rowActions}>

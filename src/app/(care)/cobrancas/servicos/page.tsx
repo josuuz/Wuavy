@@ -51,6 +51,9 @@ export default async function ServicosPage() {
         <Link href="/cobrancas/lancamentos" className={styles.ghost}>
           Cobranças
         </Link>
+        <Link href="/cobrancas/financeiro" className={styles.ghost}>
+          Financeiro
+        </Link>
       </nav>
 
       <section className={styles.block}>
