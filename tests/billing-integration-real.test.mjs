@@ -23,6 +23,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import { installFetchFirewall } from "./helpers/fetch-firewall.mjs";
+import { TEST_COLLECTOR_ID, withMpIdentity } from "./helpers/mp-identity.mjs";
 
 // -- 1. Credenciais do projeto de TESTE, lidas do arquivo local; nunca impressas. --
 const ENV_PATH = "C:\\Users\\User\\wuavy-secrets\\supabase-test.env";
@@ -211,18 +212,19 @@ test("E) investigateBlockedCharge recupera uma Preference válida encontrada na 
   if (error) throw error;
 
   const preferenceId = `pref-recuperado-${runTag}`;
-  firewall.setMpHandler(async (url) => {
+  firewall.setMpHandler(withMpIdentity(async (url) => {
     if (url.includes("/checkout/preferences/search")) return jsonResponse(200, { elements: [{ id: preferenceId }], total: 1, next_offset: 1 });
     if (url.includes(`/checkout/preferences/${preferenceId}`)) {
       return jsonResponse(200, {
         id: preferenceId,
         init_point: "https://mp.example/" + preferenceId,
+        collector_id: TEST_COLLECTOR_ID,
         external_reference: id,
         items: [{ unit_price: 150, quantity: 1, currency_id: "BRL" }],
       });
     }
     throw new Error("URL de Mercado Pago inesperada: " + url);
-  });
+  }));
 
   const result = await charges.investigateBlockedCharge(id);
   assert.equal(result.verdict, "recovered");
@@ -293,13 +295,13 @@ test("H) criação com resposta perdida: 1 única chamada de criação em toda a
   assert.equal(await charges.claimCreation(id), "claimed");
 
   const preferenceId = `pref-perdido-${runTag}`;
-  firewall.setMpHandler(async (url, init) => {
+  firewall.setMpHandler(withMpIdentity(async (url, init) => {
     if (url.includes("/checkout/preferences") && init?.method === "POST") {
       createCalls += 1;
-      return jsonResponse(201, { id: preferenceId, init_point: "https://mp.example/" + preferenceId });
+      return jsonResponse(201, { id: preferenceId, init_point: "https://mp.example/" + preferenceId, collector_id: TEST_COLLECTOR_ID });
     }
     throw new Error("URL inesperada no handler H (criação): " + url);
-  });
+  }));
   const created = await charges.createPreference({ chargeId: id, description: "Serviço", amountCents: 15000, payerEmail: null });
   assert.equal(created.id, preferenceId);
 
@@ -308,7 +310,7 @@ test("H) criação com resposta perdida: 1 única chamada de criação em toda a
   if (error) throw error;
   assert.equal(await charges.claimCreation(id), "blocked", "trava sozinha, nunca reivindica de novo");
 
-  firewall.setMpHandler(async (url, init) => {
+  firewall.setMpHandler(withMpIdentity(async (url, init) => {
     if (url.includes("/checkout/preferences") && init?.method === "POST") {
       createCalls += 1; // se isto disparar, o teste abaixo falha — é a prova.
       return jsonResponse(201, { id: "outra-preference-que-nao-deveria-existir" });
@@ -318,12 +320,13 @@ test("H) criação com resposta perdida: 1 única chamada de criação em toda a
       return jsonResponse(200, {
         id: preferenceId,
         init_point: "https://mp.example/" + preferenceId,
+        collector_id: TEST_COLLECTOR_ID,
         external_reference: id,
         items: [{ unit_price: 150, quantity: 1, currency_id: "BRL" }],
       });
     }
     throw new Error("URL inesperada no handler H (investigação): " + url);
-  });
+  }));
 
   const result = await charges.investigateBlockedCharge(id);
   assert.equal(result.verdict, "recovered");

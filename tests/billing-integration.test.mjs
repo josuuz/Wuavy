@@ -24,6 +24,8 @@ import assert from "node:assert/strict";
 
 register("./helpers/charges-loader.mjs", import.meta.url);
 
+const { withMpIdentity, TEST_COLLECTOR_ID } = await import("./helpers/mp-identity.mjs");
+
 // Credenciais FICTÍCIAS, só para passar a checagem de ambiente — antes de
 // importar qualquer módulo que as leia no topo do arquivo (@/data/site
 // captura NEXT_PUBLIC_SITE_URL na primeira importação). fetch é substituído
@@ -118,11 +120,11 @@ test("3) Preference criada no Mercado Pago, mas a gravação local falha: bloque
 
   let mpCalls = 0;
   const created = await withFetchMock(
-    async (url) => {
+    withMpIdentity(async (url) => {
       mpCalls += 1;
       assert.match(String(url), /\/checkout\/preferences$/);
-      return jsonResponse(201, { id: "pref-real-1", init_point: "https://mp.example/pref-real-1" });
-    },
+      return jsonResponse(201, { id: "pref-real-1", init_point: "https://mp.example/pref-real-1", collector_id: TEST_COLLECTOR_ID });
+    }),
     () => charges.createPreference({ chargeId: CHARGE_C, description: "Serviço", amountCents: 15000, payerEmail: null }),
   );
   assert.equal(mpCalls, 1, "o Mercado Pago foi chamado exatamente uma vez");
@@ -162,15 +164,16 @@ test("4) reconciliação com referência, valor e moeda corretos: aceita e liber
   setFakeAdminClient(admin);
 
   const result = await withFetchMock(
-    async (url) => {
+    withMpIdentity(async (url) => {
       assert.match(String(url), /\/checkout\/preferences\/pref-certo$/);
       return jsonResponse(200, {
         id: "pref-certo",
         init_point: "https://mp.example/pref-certo",
+        collector_id: TEST_COLLECTOR_ID,
         external_reference: CHARGE_D,
         items: [{ unit_price: 150, quantity: 1, currency_id: "BRL" }],
       });
-    },
+    }),
     () => charges.reconcilePreference(CHARGE_D, "pref-certo"),
   );
 
@@ -305,19 +308,20 @@ test("6e) release() recupera de verdade: só agora o estado devolvido é ok:true
   setFakeAdminClient(admin);
 
   const state = await withFetchMock(
-    async (url) => {
+    withMpIdentity(async (url) => {
       const s = String(url);
       if (s.includes("/checkout/preferences/search")) return jsonResponse(200, { elements: [{ id: "pref-ok" }], total: 1, next_offset: 1 });
       if (s.includes("/checkout/preferences/pref-ok")) {
         return jsonResponse(200, {
           id: "pref-ok",
           init_point: "https://mp.example/pref-ok",
+          collector_id: TEST_COLLECTOR_ID,
           external_reference: CHARGE_D,
           items: [{ unit_price: 150, quantity: 1, currency_id: "BRL" }],
         });
       }
       throw new Error("URL inesperada: " + s);
-    },
+    }),
     () => actions.release(null, formWith({ id: CHARGE_D })),
   );
 
@@ -358,19 +362,20 @@ test("7a) busca encontra exatamente uma Preference válida: recupera sozinha, se
   });
   setFakeAdminClient(admin);
 
-  const result = await withFetchMock(async (url) => {
+  const result = await withFetchMock(withMpIdentity(async (url) => {
     const s = String(url);
     if (s.includes("/checkout/preferences/search")) return jsonResponse(200, { elements: [{ id: "pref-recuperado" }], total: 1, next_offset: 1 });
     if (s.includes("/checkout/preferences/pref-recuperado")) {
       return jsonResponse(200, {
         id: "pref-recuperado",
         init_point: "https://mp.example/pref-recuperado",
+        collector_id: TEST_COLLECTOR_ID,
         external_reference: CHARGE_D,
         items: [{ unit_price: 150, quantity: 1, currency_id: "BRL" }],
       });
     }
     throw new Error("URL inesperada: " + s);
-  }, () => charges.investigateBlockedCharge(CHARGE_D));
+  }), () => charges.investigateBlockedCharge(CHARGE_D));
 
   assert.equal(result.verdict, "recovered");
   const row = admin.row("billing_charges", CHARGE_D);
@@ -456,10 +461,10 @@ test("7f) criação com resposta perdida: Preference criada, processo nunca cheg
   // chama persistPreference nem blockCreation. A reserva fica órfã.
   let mpCalls = 0;
   await withFetchMock(
-    async () => {
+    withMpIdentity(async () => {
       mpCalls += 1;
-      return jsonResponse(201, { id: "pref-perdido", init_point: "https://mp.example/pref-perdido" });
-    },
+      return jsonResponse(201, { id: "pref-perdido", init_point: "https://mp.example/pref-perdido", collector_id: TEST_COLLECTOR_ID });
+    }),
     () => charges.createPreference({ chargeId: CHARGE_D, description: "Serviço", amountCents: 15000, payerEmail: null }),
   );
   assert.equal(mpCalls, 1);
@@ -471,19 +476,20 @@ test("7f) criação com resposta perdida: Preference criada, processo nunca cheg
   // Alguém investiga a cobrança travada: a busca encontra a Preference que o
   // Mercado Pago aceitou de verdade, e ela é recuperada — sem chamar
   // createPreference de novo.
-  const result = await withFetchMock(async (url) => {
+  const result = await withFetchMock(withMpIdentity(async (url) => {
     const s = String(url);
     if (s.includes("/checkout/preferences/search")) return jsonResponse(200, { elements: [{ id: "pref-perdido" }], total: 1, next_offset: 1 });
     if (s.includes("/checkout/preferences/pref-perdido")) {
       return jsonResponse(200, {
         id: "pref-perdido",
         init_point: "https://mp.example/pref-perdido",
+        collector_id: TEST_COLLECTOR_ID,
         external_reference: CHARGE_D,
         items: [{ unit_price: 150, quantity: 1, currency_id: "BRL" }],
       });
     }
     throw new Error("URL inesperada: " + s);
-  }, () => charges.investigateBlockedCharge(CHARGE_D));
+  }), () => charges.investigateBlockedCharge(CHARGE_D));
 
   assert.equal(result.verdict, "recovered");
   assert.equal(admin.row("billing_charges", CHARGE_D).provider_preference_id, "pref-perdido");
@@ -563,6 +569,156 @@ test("7k) limite de páginas estourado sem fechar a conta com 'total': falha fec
 
   assert.equal(result.verdict, "stay_blocked");
   assert.ok(calls <= 5, "nunca pagina além do limite de segurança");
+});
+
+// ── 10. paymentUrl: init_point sempre, nunca sandbox_init_point, só depois
+//        de confirmar a identidade da conta de teste pelo Mercado Pago ────
+//
+// Achado na homologação de 2026-10-19: sandbox_init_point não funciona com
+// o token de uma conta de teste (só com credenciais TEST- de aplicação).
+// Estes testes provam o código de verdade (createPreference,
+// reconcilePreference, investigateBlockedCharge), não só a função pura
+// resolvePaymentUrl (já coberta, sem rede, em billing-create-charge.test.mjs).
+
+test("10a) conta vendedora de teste válida e collector_id batendo: devolve init_point", async () => {
+  const admin = new FakeAdmin({ billing_charges: [freshCharge(CHARGE_A)] });
+  setFakeAdminClient(admin);
+  assert.equal(await charges.claimCreation(CHARGE_A), "claimed");
+
+  const created = await withFetchMock(
+    withMpIdentity(async () => jsonResponse(201, { id: "pref-10a", init_point: "https://mp.example/pref-10a", collector_id: TEST_COLLECTOR_ID })),
+    () => charges.createPreference({ chargeId: CHARGE_A, description: "Serviço", amountCents: 15000, payerEmail: null }),
+  );
+  assert.equal(created.url, "https://mp.example/pref-10a");
+});
+
+test("10b) conta de produção usada indevidamente no Preview (sem a tag test_user): fecha, nunca devolve link", async () => {
+  const admin = new FakeAdmin({ billing_charges: [freshCharge(CHARGE_B)] });
+  setFakeAdminClient(admin);
+  assert.equal(await charges.claimCreation(CHARGE_B), "claimed");
+
+  await assert.rejects(
+    withFetchMock(
+      withMpIdentity(
+        async () => jsonResponse(201, { id: "pref-10b", init_point: "https://mp.example/pref-10b", collector_id: TEST_COLLECTOR_ID }),
+        { id: TEST_COLLECTOR_ID, tags: ["user_product_seller", "normal"] }, // sem "test_user"
+      ),
+      () => charges.createPreference({ chargeId: CHARGE_B, description: "Serviço", amountCents: 15000, payerEmail: null }),
+    ),
+    /não confirma esta conta como conta de teste/,
+  );
+});
+
+test("10c) collector_id divergente (Preference de outra conta): fecha, nunca devolve o link de outra conta", async () => {
+  const admin = new FakeAdmin({ billing_charges: [freshCharge(CHARGE_C)] });
+  setFakeAdminClient(admin);
+  assert.equal(await charges.claimCreation(CHARGE_C), "claimed");
+
+  await assert.rejects(
+    withFetchMock(
+      withMpIdentity(async () => jsonResponse(201, { id: "pref-10c", init_point: "https://mp.example/pref-10c", collector_id: 999999 })),
+      () => charges.createPreference({ chargeId: CHARGE_C, description: "Serviço", amountCents: 15000, payerEmail: null }),
+    ),
+    /pertence a uma conta diferente/,
+  );
+});
+
+test("10d) falha na verificação de identidade (GET /users/me indisponível): fecha, nunca devolve um link não confirmado", async () => {
+  const admin = new FakeAdmin({ billing_charges: [freshCharge(CHARGE_D, { creation_blocked_at: isoMsAgo(60_000) })] });
+  setFakeAdminClient(admin);
+
+  const result = await withFetchMock(
+    async (url) => {
+      const s = String(url);
+      if (s.endsWith("/users/me")) throw new TypeError("fetch failed");
+      if (s.includes("/checkout/preferences/search")) return jsonResponse(200, { elements: [{ id: "pref-10d" }], total: 1, next_offset: 1 });
+      if (s.includes("/checkout/preferences/pref-10d")) {
+        return jsonResponse(200, {
+          id: "pref-10d",
+          init_point: "https://mp.example/pref-10d",
+          collector_id: TEST_COLLECTOR_ID,
+          external_reference: CHARGE_D,
+          items: [{ unit_price: 150, quantity: 1, currency_id: "BRL" }],
+        });
+      }
+      throw new Error("URL inesperada: " + s);
+    },
+    () => charges.investigateBlockedCharge(CHARGE_D),
+  );
+  assert.equal(result.verdict, "stay_blocked");
+  assert.match(result.reason, /não foi possível confirmar/i);
+  assert.equal(admin.row("billing_charges", CHARGE_D).provider_preference_id, null);
+});
+
+test("10e) Preference sem init_point, mesmo com identidade correta: fecha", async () => {
+  const admin = new FakeAdmin({ billing_charges: [freshCharge(CHARGE_A, { creation_blocked_at: isoMsAgo(60_000) })] });
+  setFakeAdminClient(admin);
+
+  const result = await withFetchMock(
+    withMpIdentity(async (url) => {
+      const s = String(url);
+      if (s.includes("/checkout/preferences/search")) return jsonResponse(200, { elements: [{ id: "pref-10e" }], total: 1, next_offset: 1 });
+      if (s.includes("/checkout/preferences/pref-10e")) {
+        return jsonResponse(200, {
+          id: "pref-10e",
+          collector_id: TEST_COLLECTOR_ID, // sem init_point
+          external_reference: CHARGE_A,
+          items: [{ unit_price: 150, quantity: 1, currency_id: "BRL" }],
+        });
+      }
+      throw new Error("URL inesperada: " + s);
+    }),
+    () => charges.investigateBlockedCharge(CHARGE_A),
+  );
+  assert.equal(result.verdict, "stay_blocked");
+  assert.match(result.reason, /não tem link de pagamento/i);
+});
+
+test("10f) sandbox_init_point presente: o link escolhido é sempre init_point, nunca o sandbox", async () => {
+  const admin = new FakeAdmin({ billing_charges: [freshCharge(CHARGE_B)] });
+  setFakeAdminClient(admin);
+  assert.equal(await charges.claimCreation(CHARGE_B), "claimed");
+
+  const created = await withFetchMock(
+    withMpIdentity(async () =>
+      jsonResponse(201, {
+        id: "pref-10f",
+        init_point: "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=pref-10f",
+        sandbox_init_point: "https://sandbox.mercadopago.com.br/checkout/v1/redirect?pref_id=pref-10f",
+        collector_id: TEST_COLLECTOR_ID,
+      }),
+    ),
+    () => charges.createPreference({ chargeId: CHARGE_B, description: "Serviço", amountCents: 15000, payerEmail: null }),
+  );
+  assert.doesNotMatch(created.url, /sandbox/);
+  assert.match(created.url, /^https:\/\/www\.mercadopago\.com\.br/);
+});
+
+test("10g) uma falha de identidade no meio do caminho não libera uma segunda Preference: a reserva fica, nada novo é criado", async () => {
+  const admin = new FakeAdmin({ billing_charges: [freshCharge(CHARGE_C)] });
+  setFakeAdminClient(admin);
+  assert.equal(await charges.claimCreation(CHARGE_C), "claimed");
+
+  let createCalls = 0;
+  const outcome = await withFetchMock(
+    async (url, init) => {
+      const s = String(url);
+      if (s.endsWith("/users/me")) return jsonResponse(200, { id: 1, tags: ["user_product_seller", "normal"] }); // não é test_user
+      if (s.includes("/checkout/preferences") && init?.method === "POST") {
+        createCalls += 1;
+        return jsonResponse(201, { id: "pref-10g", init_point: "https://mp.example/pref-10g", collector_id: TEST_COLLECTOR_ID });
+      }
+      throw new Error("URL inesperada: " + s);
+    },
+    async () => {
+      const create = () => charges.createPreference({ chargeId: CHARGE_C, description: "Serviço", amountCents: 15000, payerEmail: null });
+      const { runCreateCharge } = await import("../src/lib/billing/create-charge.ts");
+      return runCreateCharge(null, create);
+    },
+  );
+  // Preference foi criada no Mercado Pago (createCalls=1), mas sem link confirmado — "unconfirmed", nunca "ready".
+  assert.equal(outcome.outcome, "unconfirmed");
+  assert.equal(createCalls, 1, "o Mercado Pago foi chamado uma vez; a falha de identidade não insiste numa segunda chamada sozinha");
 });
 
 // ── Ponto central: nem tempo, nem busca vazia, nem confirmação manual

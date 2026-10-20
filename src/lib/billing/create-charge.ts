@@ -190,6 +190,50 @@ export function classifyPreferenceSearch(elements: { id: string }[] | null): Pre
   return { kind: "candidate", id: elements[0].id };
 }
 
+/*
+  Qual link de pagamento é seguro usar — pura aqui, puxada pelas três
+  chamadas de rede em charges.ts (criação, reconciliação, recuperação) que
+  antes escolhiam sandbox_init_point em teste. Achado na homologação de
+  2026-10-19: sandbox_init_point não funciona com o token de uma conta de
+  teste (só com credenciais TEST- de aplicação, que não é o nosso caso) —
+  init_point é o link certo em qualquer ambiente, inclusive teste, desde que
+  a conta seja mesmo de teste. Essa é a verificação que esta função garante
+  antes de devolver o link, em vez de confiar só em MERCADOPAGO_ENV=test.
+*/
+
+export type PaymentUrlRefusal = "missing-init-point" | "identity-unverified" | "not-test-account" | "collector-mismatch";
+
+export const PAYMENT_URL_REFUSAL: Record<PaymentUrlRefusal, string> = {
+  "missing-init-point": "Essa Preference não tem link de pagamento (init_point).",
+  "identity-unverified": "Cobrança fechada: não foi possível confirmar agora a identidade da conta do Mercado Pago.",
+  "not-test-account": "Cobrança fechada: MERCADOPAGO_ENV=test, mas o Mercado Pago não confirma esta conta como conta de teste (test_user).",
+  "collector-mismatch": "Cobrança fechada: esta Preference pertence a uma conta diferente da conta de teste verificada.",
+};
+
+export type PaymentUrlResult = { ok: true; url: string } | { ok: false; reason: PaymentUrlRefusal };
+
+/**
+ * Fora do modo de teste, idêntico a sempre usar init_point. Em modo de
+ * teste, só devolve o link depois de `collector` confirmar, pelo próprio
+ * Mercado Pago (não por declaração nossa), que a conta é test_user E que o
+ * seu id bate com o collector_id desta Preference especificamente —
+ * `collector: null` (a própria verificação falhou) fecha a cobrança do
+ * mesmo jeito que uma divergência encontrada. Nunca sandbox_init_point.
+ */
+export function resolvePaymentUrl(
+  preference: { init_point?: string; collector_id?: number },
+  testMode: boolean,
+  collector: { id: number; tags?: string[] } | null,
+): PaymentUrlResult {
+  if (testMode) {
+    if (!collector) return { ok: false, reason: "identity-unverified" };
+    if (!(collector.tags ?? []).includes("test_user")) return { ok: false, reason: "not-test-account" };
+    if (preference.collector_id !== collector.id) return { ok: false, reason: "collector-mismatch" };
+  }
+  if (!preference.init_point) return { ok: false, reason: "missing-init-point" };
+  return { ok: true, url: preference.init_point };
+}
+
 export type InvestigationVerdict = { verdict: "recovered"; preferenceId: string; url: string } | { verdict: "stay_blocked"; reason: string };
 
 /**

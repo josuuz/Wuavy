@@ -11,6 +11,8 @@ import {
   classifyPreferenceSearch,
   decideInvestigation,
   isWithinSearchWindow,
+  PAYMENT_URL_REFUSAL,
+  resolvePaymentUrl,
   runPersistPreference,
   type ClaimOutcome,
   type InvestigationVerdict,
@@ -87,6 +89,34 @@ interface Preference {
   id: string;
   init_point?: string;
   sandbox_init_point?: string;
+  collector_id?: number;
+}
+
+/**
+ * O link de pagamento de uma Preference — sempre init_point, nunca
+ * sandbox_init_point (achado na homologação de 2026-10-19: não funciona com
+ * o token de uma conta de teste, só com credenciais TEST- de aplicação).
+ * Fora do modo de teste, devolve direto. Em teste, confirma primeiro pelo
+ * próprio Mercado Pago (GET /users/me, sem cache — uma chamada por decisão,
+ * nunca guardada entre processos ou requisições) que a conta é test_user e
+ * que o seu id bate com o collector_id desta Preference especificamente;
+ * qualquer divergência, ausência de init_point, ou falha nessa verificação
+ * lança BillingUnavailable — a cobrança fecha, nunca abre com um link não
+ * confirmado.
+ */
+async function paymentUrl(preference: { init_point?: string; collector_id?: number }): Promise<string> {
+  const isTest = testMode();
+  let collector: { id: number; tags?: string[] } | null = null;
+  if (isTest) {
+    try {
+      collector = await mp<{ id: number; tags?: string[] }>("/users/me");
+    } catch {
+      collector = null;
+    }
+  }
+  const result = resolvePaymentUrl(preference, isTest, collector);
+  if (!result.ok) throw new BillingUnavailable(PAYMENT_URL_REFUSAL[result.reason]);
+  return result.url;
 }
 
 /**
@@ -117,8 +147,7 @@ export async function createPreference(input: {
       ...(input.payerEmail ? { payer: { email: input.payerEmail } } : {}),
     },
   });
-  const url = testMode() ? preference.sandbox_init_point ?? preference.init_point : preference.init_point;
-  if (!url) throw new MercadoPagoError(502, preference);
+  const url = await paymentUrl(preference);
   return { id: preference.id, url };
 }
 
@@ -361,8 +390,12 @@ export async function reconcilePreference(chargeId: string, preferenceId: string
   const check = checkReconciliation(charge, preference, chargeId);
   if (!check.ok) return check;
 
-  const url = testMode() ? preference.sandbox_init_point ?? preference.init_point : preference.init_point;
-  if (!url) return { ok: false, error: "Essa Preference não tem link de pagamento." };
+  let url: string;
+  try {
+    url = await paymentUrl(preference);
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Essa Preference não tem link de pagamento confiável." };
+  }
 
   const { error } = await admin
     .from("billing_charges")
@@ -474,11 +507,12 @@ export async function investigateBlockedCharge(chargeId: string): Promise<Invest
     try {
       const detail = await fetchPreference(searchOutcome.id);
       candidateCheck = checkReconciliation(charge, detail, chargeId);
-      const url = testMode() ? detail.sandbox_init_point ?? detail.init_point : detail.init_point;
-      if (candidateCheck.ok && !url) {
-        candidateCheck = { ok: false, error: "A Preference encontrada não tem link de pagamento." };
-      } else if (candidateCheck.ok && url) {
-        candidateDetail = { id: detail.id, url };
+      if (candidateCheck.ok) {
+        try {
+          candidateDetail = { id: detail.id, url: await paymentUrl(detail) };
+        } catch (urlError) {
+          candidateCheck = { ok: false, error: urlError instanceof Error ? urlError.message : "A Preference encontrada não tem link de pagamento." };
+        }
       }
     } catch (error) {
       if (!(error instanceof MercadoPagoError && error.status === 404)) throw error;
