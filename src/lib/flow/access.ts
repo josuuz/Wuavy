@@ -1,3 +1,5 @@
+import type { BillingStatus } from "@/lib/mercadopago/notice";
+
 /*
   What a clinic can do in the Pulse, decided here and nowhere else. Two
   things set it:
@@ -14,8 +16,8 @@
   browser is never the only check.
 */
 
-export const SUBSCRIPTION_STATUSES = ["pending", "active", "past_due", "cancelled"] as const;
-export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+export const SUBSCRIPTION_STATUSES = ["pending", "active", "past_due", "cancelled"] as const satisfies readonly BillingStatus[];
+export type SubscriptionStatus = BillingStatus;
 
 /*
   The monthly price, in cents. One number, read by the checkout, the Mercado

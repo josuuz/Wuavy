@@ -1,0 +1,227 @@
+/*
+  A página de assinatura de um cliente da manutenção. A identidade do site:
+  Preto, Paper, Signal, Mona Sans, a diagonal do logotipo. Nada de cor nova —
+  tudo sai dos tokens (styles/tokens.css).
+*/
+
+.page {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--margin) var(--space-4);
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  position: relative;
+  z-index: 3;
+}
+
+.mark {
+  width: clamp(4.5rem, 10vw, 7rem);
+  color: var(--text);
+}
+
+.label {
+  color: var(--text-2);
+}
+
+/* ── O plano ────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: var(--space-2);
+  max-width: 54rem;
+}
+
+.client {
+  color: var(--mark);
+}
+
+.title {
+  font-size: var(--fs-h2);
+  max-width: 24ch;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin-block-start: var(--space-1);
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.12em;
+  font-size: var(--fs-h1);
+  font-weight: var(--wuavy-display);
+  letter-spacing: -0.04em;
+  line-height: 0.84;
+  font-variant-numeric: tabular-nums;
+}
+
+.currency {
+  font-size: 0.38em;
+  font-weight: var(--wuavy-headline);
+  letter-spacing: 0;
+  transform: translateY(-0.9em);
+}
+
+.per {
+  font-size: var(--fs-lead);
+  font-weight: var(--wuavy-body);
+  letter-spacing: -0.01em;
+  color: var(--text-2);
+}
+
+.lead {
+  color: var(--text-2);
+  max-width: 48ch;
+}
+
+/* ── O que entra e o que não entra ─────────────────────────── */
+.lists {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: var(--space-3);
+  border-block-start: var(--rule) solid var(--border);
+  padding-block-start: var(--space-2);
+}
+
+@media (min-width: 52rem) {
+  .lists {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+}
+
+.listHead {
+  color: var(--text-2);
+  margin-block-end: var(--space-1);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 1.1em 1fr;
+  gap: 0.6em;
+  align-items: start;
+}
+
+/* A marca de inclusão: a diagonal do logotipo, em Signal. */
+.item[data-in="yes"]::before {
+  content: "";
+  width: 0.5em;
+  height: 0.9em;
+  margin-block-start: 0.28em;
+  background: var(--mark);
+  transform: skewX(calc(-1 * var(--wuavy-angle)));
+}
+
+.item[data-in="no"]::before {
+  content: "";
+  width: 0.7em;
+  height: var(--rule);
+  margin-block-start: 0.72em;
+  background: color-mix(in srgb, var(--text) 40%, transparent);
+}
+
+.item[data-in="no"] {
+  color: var(--text-2);
+}
+
+/* ── A ação e o estado ─────────────────────────────────────── */
+.action {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: var(--space-2);
+  border-block-start: var(--rule) solid var(--border);
+  padding-block-start: var(--space-2);
+  margin-block-start: auto;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fine {
+  color: var(--text-2);
+  max-width: 56ch;
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 24rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: var(--rule) solid var(--border);
+  border-radius: var(--radius-button);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* O estado da assinatura: uma faixa, não um alerta. */
+.state {
+  display: grid;
+  gap: 0.35rem;
+  border-inline-start: 2px solid var(--mark);
+  padding-inline-start: var(--space-2);
+}
+
+.state[data-tone="wait"] {
+  border-color: color-mix(in srgb, var(--text) 40%, transparent);
+}
+
+.state[data-tone="late"] {
+  border-color: var(--mark);
+}
+
+.stateTitle {
+  font-weight: var(--wuavy-chapter);
+}
+
+.error {
+  color: var(--mark);
+}
+
+.footer {
+  position: relative;
+  z-index: 3;
+  color: var(--text-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  justify-content: space-between;
+}

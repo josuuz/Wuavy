@@ -2,9 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { LOCALE_COOKIE, localizePath, PT_PREFIX, resolveLocale } from "@/i18n/config";
+import { CARE, CARE_SESSION, PULSE_APP, PULSE_SESSION } from "@/lib/care-routing";
 
 /*
-  Two jobs, on separate paths.
+  Three jobs, on separate paths.
 
   The public site: rendered once per language (app/(site)/[locale]). pt-BR
   keeps the plain addresses, pt-PT lives under /pt-pt; both are indexable and
@@ -18,10 +19,16 @@ import { LOCALE_COOKIE, localizePath, PT_PREFIX, resolveLocale } from "@/i18n/co
   access token is refreshed here and the new cookies go out with the response
   (Server Components can read cookies but not write them). The rest of the
   Pulse app passes through untouched.
+
+  A manutenção de sites (/manutencao) e o Wuavy Cobranças (/cobrancas):
+  nenhum dos dois é localizado. O painel de manutenção (/manutencao/admin) e
+  todo o /cobrancas (só painel, sem página pública) têm a sessão renovada
+  como as rotas do Pulse; a página de assinatura de um cliente de manutenção
+  passa direto, porque o que a abre é o token na própria URL. Os regex que
+  decidem isso vivem em lib/care-routing.ts, puros, para poderem ser
+  testados sem o runtime do Next.
 */
 
-const PULSE_SESSION = /^\/pulse\/(?:(?:app|demo)(?:\/.*)?|entrar|comecar|assinar|convite)$/;
-const PULSE_APP = /^\/pulse\/./;
 // pt-PT's public addresses, exactly as written.
 const PT_SPACE = new RegExp(`^${PT_PREFIX}(?=/|$)`);
 // Any other spelling of a language segment (/pt-PT, /pt-BR…): one address per page.
@@ -85,8 +92,8 @@ async function refreshSession(request: NextRequest): Promise<NextResponse> {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (PULSE_SESSION.test(pathname)) return refreshSession(request);
-  if (PULSE_APP.test(pathname)) return NextResponse.next();
+  if (PULSE_SESSION.test(pathname) || CARE_SESSION.test(pathname)) return refreshSession(request);
+  if (PULSE_APP.test(pathname) || CARE.test(pathname)) return NextResponse.next();
   return localize(request);
 }
 

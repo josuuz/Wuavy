@@ -573,6 +573,184 @@ export type Database = {
           },
         ]
       }
+      billing_charges: {
+        Row: {
+          amount_cents: number
+          client_id: string
+          created_at: string
+          creation_blocked_at: string | null
+          creation_claimed_at: string | null
+          description: string
+          id: string
+          kind: string
+          payment_url: string | null
+          provider: string
+          provider_preference_id: string | null
+          service_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          client_id: string
+          created_at?: string
+          creation_blocked_at?: string | null
+          creation_claimed_at?: string | null
+          description: string
+          id?: string
+          kind?: string
+          payment_url?: string | null
+          provider?: string
+          provider_preference_id?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          client_id?: string
+          created_at?: string
+          creation_blocked_at?: string | null
+          creation_claimed_at?: string | null
+          description?: string
+          id?: string
+          kind?: string
+          payment_url?: string | null
+          provider?: string
+          provider_preference_id?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_charges_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "billing_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_charges_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "billing_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_clients: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          email: string | null
+          id: string
+          maintenance_client_id: string | null
+          name: string
+          notes: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          maintenance_client_id?: string | null
+          name: string
+          notes?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          maintenance_client_id?: string | null
+          name?: string
+          notes?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_clients_maintenance_client_id_fkey"
+            columns: ["maintenance_client_id"]
+            isOneToOne: true
+            referencedRelation: "maintenance_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_payments: {
+        Row: {
+          amount_cents: number
+          charge_id: string
+          created_at: string
+          id: string
+          provider_payment_id: string
+          status: string
+          status_detail: string | null
+        }
+        Insert: {
+          amount_cents: number
+          charge_id: string
+          created_at?: string
+          id?: string
+          provider_payment_id: string
+          status: string
+          status_detail?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          charge_id?: string
+          created_at?: string
+          id?: string
+          provider_payment_id?: string
+          status?: string
+          status_detail?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_payments_charge_id_fkey"
+            columns: ["charge_id"]
+            isOneToOne: false
+            referencedRelation: "billing_charges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_services: {
+        Row: {
+          active: boolean
+          created_at: string
+          default_price_cents: number
+          description: string | null
+          id: string
+          kind: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          default_price_cents: number
+          description?: string | null
+          id?: string
+          kind: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          default_price_cents?: number
+          description?: string | null
+          id?: string
+          kind?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clinical_attachments: {
         Row: {
           bytes: number

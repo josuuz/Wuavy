@@ -2,21 +2,20 @@ import "server-only";
 
 import { CANONICAL_URL, site } from "@/data/site";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { checkoutDecision, decide, payerEmailFor, REFUSAL } from "./mercadopago-environment";
+import { checkoutDecision, decide, payerEmailFor, REFUSAL } from "@/lib/mercadopago/environment";
 import {
-  cancelBodies,
   confirmedStatus,
   httpsUrl,
   latestCharge,
   PROVIDER_ID,
-  retryOtherSpelling,
+  runCancel,
   runCardChange,
   statusFrom,
   verifyNotice,
   type CardChange,
   type Charge,
   type Preapproval,
-} from "./mercadopago-notice";
+} from "@/lib/mercadopago/notice";
 import { PRICE, type Standing, type SubscriptionStatus } from "./access";
 
 /*
@@ -121,8 +120,8 @@ async function mp<T>(path: string, init: { method?: "GET" | "POST" | "PUT"; body
 // The subscription and the charge as Mercado Pago reports them, the status
 // they mean and a notice's signature: lib/flow/mercadopago-notice.ts, pure and
 // tested. Re-exported from here, where they have always been asked for.
-export { statusFrom, type Charge, type Preapproval } from "./mercadopago-notice";
-export { CANCEL_STATES } from "./mercadopago-notice";
+export { statusFrom, type Charge, type Preapproval } from "@/lib/mercadopago/notice";
+export { CANCEL_STATES } from "@/lib/mercadopago/notice";
 
 /** Where Mercado Pago sends the person back, always over https (the rule, and why, in mercadopago-notice.ts). */
 export const returnUrl = (path: string) => httpsUrl(path, site.url, CANONICAL_URL);
@@ -171,31 +170,22 @@ export async function createSubscription(input: { reference: string; email: stri
  * then says. Returns the status read back, which the caller must check: only
  * "cancelled" is a cancellation.
  *
- * The status value is sent in both spellings, in order, because the reference
- * does not fix the enum (mercadopago-notice.ts). A validation refusal of the
- * first (400) tries the second; any other refusal is raised as it came.
+ * The order of the steps, both spellings, and the rule that nothing after an
+ * accepted PUT is a failure live in runCancel (mercadopago/notice.ts, tested
+ * with injected calls). This only wires the real ones to it — the same shape
+ * maintenance/billing.ts uses for its own cancelSubscription.
  */
-export async function cancelSubscription(providerId: string): Promise<SubscriptionStatus | null> {
-  if (!PROVIDER_ID.test(providerId)) return null;
-  let refusal: MercadoPagoError | undefined;
-  for (const body of cancelBodies()) {
-    try {
+export const cancelSubscription = (providerId: string): Promise<SubscriptionStatus | null> =>
+  runCancel(providerId, {
+    send: async (body) => {
       await mp<Preapproval>(`/preapproval/${providerId}`, { method: "PUT", body });
-      refusal = undefined;
-      break;
-    } catch (error) {
-      if (!(error instanceof MercadoPagoError) || !retryOtherSpelling(error.status)) throw error;
-      refusal = error;
-    }
-  }
-  if (refusal) throw refusal;
-  // The same read-back as a card change: the PUT above already went through,
-  // so only the reading is repeated (mercadopago-notice.ts).
-  return confirmedStatus(
-    () => syncSubscription(providerId),
-    () => new Promise((resolve) => setTimeout(resolve, CONFIRM_WAIT_MS)),
-  );
-}
+    },
+    confirm: () =>
+      confirmedStatus(
+        () => syncSubscription(providerId),
+        () => new Promise((resolve) => setTimeout(resolve, CONFIRM_WAIT_MS)),
+      ),
+  });
 
 /** How long to wait before asking a second time, when the read-back did not answer. */
 const CONFIRM_WAIT_MS = 1200;

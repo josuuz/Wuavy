@@ -1,0 +1,261 @@
+/*
+  O painel da manutenção. Interno, não público: a identidade do site em
+  superfície clara, porque aqui se lê tabela e número, não cartaz.
+*/
+
+.page {
+  min-height: 100dvh;
+  padding: var(--space-3) var(--margin) var(--space-4);
+  background-color: var(--surface);
+  color: var(--text);
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.mark {
+  width: clamp(4rem, 8vw, 5.5rem);
+  color: var(--text);
+}
+
+.muted {
+  color: var(--text-2);
+}
+
+.title {
+  font-size: var(--fs-h3);
+}
+
+/* ── Os números ─────────────────────────────────────────────── */
+.figures {
+  display: grid;
+  gap: var(--rule);
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  background: var(--border);
+  border: var(--rule) solid var(--border);
+}
+
+.figure {
+  background: var(--surface);
+  padding: var(--space-2);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.figureValue {
+  font-size: var(--fs-h3);
+  font-weight: var(--wuavy-display);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.figure[data-mark=""] .figureValue {
+  color: var(--mark);
+}
+
+/* ── Tabelas ────────────────────────────────────────────────── */
+.block {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.blockHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-block-end: var(--rule) solid var(--border);
+  padding-block-end: 0.6rem;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.7rem 0.9rem 0.7rem 0;
+  border-block-end: var(--rule) solid var(--border);
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.table th {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.table td:last-child,
+.table th:last-child {
+  padding-right: 0;
+  text-align: right;
+}
+
+.name {
+  font-weight: var(--wuavy-chapter);
+}
+
+.wrap {
+  white-space: normal;
+}
+
+/* O estado de uma assinatura: uma palavra com um ponto. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.status::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status[data-status="active"],
+.status[data-status="approved"] {
+  color: var(--text);
+}
+
+.status[data-status="past_due"],
+.status[data-status="rejected"] {
+  color: var(--mark);
+}
+
+.status[data-status="pending"],
+.status[data-status="none"] {
+  color: var(--text-2);
+}
+
+.status[data-status="cancelled"],
+.status[data-status="inactive"],
+.status[data-status="refunded"] {
+  color: var(--text-2);
+  text-decoration: line-through;
+}
+
+/* ── Formulários ────────────────────────────────────────────── */
+.form {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  align-items: end;
+  border: var(--rule) solid var(--border);
+  padding: var(--space-2);
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field[data-wide=""] {
+  grid-column: 1 / -1;
+}
+
+.input {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: var(--rule) solid var(--border);
+  border-radius: var(--radius-button);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  color: var(--text);
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.hint {
+  color: var(--text-2);
+}
+
+.notice {
+  border-inline-start: 2px solid var(--mark);
+  padding-inline-start: var(--space-2);
+  display: grid;
+  gap: 0.3rem;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+/* Um link copiável: o texto do token, pequeno e quebrável. */
+.link {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: var(--fs-micro);
+  word-break: break-all;
+  white-space: normal;
+  color: var(--text-2);
+}
+
+.ghost {
+  border: var(--rule) solid var(--border);
+  border-radius: var(--radius-button);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  transition: background var(--duration-ui) var(--wuavy-ease-out);
+}
+
+.ghost:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.ghost:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.empty {
+  color: var(--text-2);
+  padding-block: var(--space-2);
+}
+
+/* ── A porta ────────────────────────────────────────────────── */
+.door {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-3) var(--margin);
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.doorCard {
+  width: min(26rem, 100%);
+  display: grid;
+  gap: var(--space-2);
+}
