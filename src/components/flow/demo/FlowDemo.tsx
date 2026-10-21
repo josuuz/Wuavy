@@ -25,7 +25,6 @@ import { GuideCard, GuidePill, GuideProvider, ScreenTip, useGuide } from "./Guid
 import { InboxProvider } from "./inbox";
 import { NavIcon } from "./NavIcon";
 import { FlowProvider, useFlow, type Account } from "./store";
-import { TopNav } from "./TopNav";
 import ui from "./ui.module.css";
 import styles from "./FlowDemo.module.css";
 
@@ -133,28 +132,30 @@ function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.app} data-pulse="">
-      <TopNav menu={menu} base={base} openCount={open} guideTarget={guide.target ?? undefined}>
-        <div className={styles.planGroup}>
-          {access.isDemoMode ? (
-            <span className={styles.demoChip}>{PLAN.demo.badge}</span>
-          ) : plan ? (
-            <span className={styles.planChip} data-tone={tone}>
-              {plan}
-            </span>
-          ) : null}
-          {canSubscribe ? (
-            <button type="button" className={styles.subscribe} onClick={subscribe} aria-haspopup="dialog">
-              <Crown />
-              {PLAN.subscribe.open}
-            </button>
-          ) : null}
+      <header className={styles.bar} data-pulse-surface="rail">
+        <div className={styles.barTools}>
+          <div className={styles.planGroup}>
+            {access.isDemoMode ? (
+              <span className={styles.demoChip}>{PLAN.demo.badge}</span>
+            ) : plan ? (
+              <span className={styles.planChip} data-tone={tone}>
+                {plan}
+              </span>
+            ) : null}
+            {canSubscribe ? (
+              <button type="button" className={styles.subscribe} onClick={subscribe} aria-haspopup="dialog">
+                <Crown />
+                {PLAN.subscribe.open}
+              </button>
+            ) : null}
+          </div>
+          <ThemeToggle className={styles.barToggle} />
+          <button type="button" className={styles.ask} onClick={() => ask()} data-cursor="action">
+            <span className="pulse-dot" aria-hidden="true" />
+            Pergunte ao Pulse
+          </button>
         </div>
-        <ThemeToggle className={styles.barToggle} />
-        <button type="button" className={styles.ask} onClick={() => ask()} data-cursor="action">
-          <span className="pulse-dot" aria-hidden="true" />
-          Pergunte ao Pulse
-        </button>
-      </TopNav>
+      </header>
 
       <div className={styles.body}>
         <aside className={styles.side} data-pulse-surface="rail">
@@ -182,6 +183,9 @@ function Shell({ children }: { children: ReactNode }) {
             ) : null}
             {account ? <SignOut className={styles.signOut} /> : null}
           </p>
+          <nav aria-label="Telas do Pulse" className={styles.sideNav}>
+            <ol>{menu.map((view) => navItem(view))}</ol>
+          </nav>
           <button type="button" className={styles.mascot} onClick={() => ask()} aria-haspopup="dialog">
             <Pulse interactive className={styles.mascotFigure} />
             <span className={styles.mascotLabel}>Pergunte ao Pulse</span>
