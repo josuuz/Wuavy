@@ -1,4 +1,4 @@
-/* ── Hero: the promise on the left, PASSO and his bubble on the right ── */
+/* ── Hero: the promise on the left, the number and PASSO on the right ── */
 .hero {
   overflow: clip;
   padding-block: calc(var(--header-h) + var(--space-4)) var(--space-4);
@@ -17,7 +17,7 @@
 }
 
 .heroText,
-.guide {
+.heroSide {
   grid-column: 1 / -1;
 }
 
@@ -56,7 +56,7 @@
 }
 
 .title {
-  max-width: 16ch;
+  max-width: 18ch;
   font-size: clamp(2.5rem, 1rem + 4vw, 5rem);
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.03em;
@@ -65,7 +65,7 @@
 }
 
 .lead {
-  max-width: 44ch;
+  max-width: 46ch;
   font-size: var(--fs-lead);
   line-height: 1.35;
   color: var(--text-2);
@@ -80,6 +80,12 @@
   margin-top: var(--space-1);
 }
 
+.talk {
+  margin-top: 0.9rem;
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
 .market {
   margin-top: var(--space-2);
   padding-top: 0.8rem;
@@ -90,11 +96,47 @@
   letter-spacing: 0.06em;
 }
 
+/* The number the whole page stands on: identified, not recovered. */
+.heroSide {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.stat {
+  display: grid;
+  gap: 0.3rem;
+  padding: var(--space-2);
+  border: 1px solid color-mix(in srgb, var(--wuavy-paper) 16%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--wuavy-paper) 5%, transparent);
+}
+
+.statValue {
+  font-size: clamp(2rem, 1.2rem + 2.4vw, 3rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--wuavy-signal);
+}
+
+.statLabel {
+  max-width: 24ch;
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+
+.statNote {
+  font-size: var(--fs-micro);
+  color: var(--text-2);
+}
+
 .guide {
   justify-self: start;
 }
 
-/* ── Shared ─────────────────────────────────────────────────── */
+/* ── Shared across sections ─────────────────────────────────── */
 .chapter {
   grid-column: 1 / -1;
   margin-bottom: var(--space-2);
@@ -102,7 +144,7 @@
 
 .h2 {
   grid-column: 1 / -1;
-  max-width: 18ch;
+  max-width: 20ch;
   font-size: var(--fs-h2);
   font-weight: var(--wuavy-headline);
   letter-spacing: -0.025em;
@@ -129,148 +171,104 @@
   }
 }
 
-/* ── The four gaps ──────────────────────────────────────────── */
-.gaps {
+/* ── The seven fronts ───────────────────────────────────────── */
+.fronts {
   padding-block: var(--space-4);
 }
 
-.gapList {
+.frontsLead {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3) var(--gutter);
-  margin-top: var(--space-3);
-}
-
-.gap {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-content: start;
-  align-items: baseline;
-  gap: 0.5rem 0.6rem;
-  padding-top: 0.8rem;
-  border-top: var(--rule) solid var(--text);
-}
-
-.gapName {
-  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.75rem);
-  font-weight: var(--wuavy-headline);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.gapText,
-.gapAction {
-  grid-column: 2;
-}
-
-.gapText {
-  max-width: 32ch;
-  font-size: max(0.9375rem, var(--fs-micro));
-  line-height: 1.4;
-  color: var(--text-2);
-}
-
-.gapAction {
-  font-size: var(--fs-micro);
-  font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.gapAction span {
-  color: var(--wuavy-signal);
-}
-
-/* ── How it works: six stages, then one worked example ─────── */
-.how {
-  padding-block: var(--space-4);
-}
-
-.howLead {
-  grid-column: 1 / -1;
-  max-width: 40ch;
+  max-width: 48ch;
   margin-top: var(--space-2);
   font-size: var(--fs-lead);
   line-height: 1.35;
   color: var(--text-2);
 }
 
-.stages {
+.frontList {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2) var(--gutter);
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
 }
 
-.stage {
-  position: relative;
+.front {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: baseline;
-  gap: 0.4rem 0.6rem;
-  padding-top: 0.9rem;
-  border-top: var(--rule) solid var(--border);
+  gap: 0.45rem;
+  align-content: start;
+  padding-top: 0.8rem;
+  border-top: var(--rule) solid var(--text);
 }
 
-/* The stages fill with Signal one after another as the flow scrolls by. */
-.stage::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(var(--rule) * -1);
-  height: 2px;
-  background: var(--wuavy-signal);
-  transform-origin: 0 50%;
+.frontTag {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wuavy-signal);
 }
 
-.stageName {
-  font-size: clamp(1.5rem, 1rem + 1.4vw, 2.5rem);
+.frontName {
+  font-size: clamp(1.0625rem, 0.9rem + 0.5vw, 1.25rem);
   font-weight: var(--wuavy-headline);
-  letter-spacing: -0.025em;
-  line-height: 1;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
-.stageText {
-  grid-column: 2;
-  max-width: 28ch;
+.frontText {
+  max-width: 30ch;
   font-size: max(0.875rem, var(--fs-micro));
   line-height: 1.4;
   color: var(--text-2);
 }
 
-.example {
-  grid-column: 1 / -1;
-  margin-top: var(--space-4);
-}
-
-.exampleHead {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  margin-bottom: var(--space-2);
-  font-size: var(--fs-micro);
-  font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.note {
+.frontExample {
+  margin-top: 0.2rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
   color: var(--text-2);
 }
 
-/* A hairline sheet of five cells, each handing over to the next. */
-.chain {
+.frontExample span {
+  color: var(--wuavy-signal);
+}
+
+.caveat {
+  grid-column: 1 / -1;
+  max-width: 56ch;
+  margin-top: var(--space-3);
+  padding-top: 0.8rem;
+  border-top: var(--rule) solid var(--border);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+/* ── How the Pulse prioritises ──────────────────────────────── */
+.priority {
+  padding-block: var(--space-4);
+}
+
+.priorityLead {
+  grid-column: 1 / -1;
+  max-width: 44ch;
+  margin-top: var(--space-2);
+  font-size: var(--fs-lead);
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.priorityChain {
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  margin-top: var(--space-4);
   border-top: var(--rule) solid var(--border);
   border-left: var(--rule) solid var(--border);
 }
 
-.link {
+.priorityStep {
   position: relative;
   display: grid;
   gap: 0.6rem;
@@ -280,7 +278,7 @@
   border-bottom: var(--rule) solid var(--border);
 }
 
-.link:not(:last-child)::after {
+.priorityStep:not(:last-child)::after {
   content: "↓";
   position: absolute;
   z-index: 1;
@@ -293,7 +291,164 @@
   line-height: 1;
 }
 
-.linkLabel {
+.priorityLabel {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wuavy-signal);
+}
+
+.priorityText {
+  max-width: 32ch;
+  font-size: max(1rem, var(--fs-body));
+  line-height: 1.4;
+}
+
+.priorityNote {
+  grid-column: 1 / -1;
+  max-width: 52ch;
+  margin-top: var(--space-3);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+/* ── The real interface ─────────────────────────────────────── */
+.interfaces {
+  padding-block: var(--space-4);
+}
+
+.interfacesLead {
+  grid-column: 1 / -1;
+  max-width: 44ch;
+  margin-top: var(--space-2);
+  font-size: var(--fs-lead);
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.screens {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.screen {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.chrome {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 0.6rem 0.6rem 0 0;
+  background: var(--wuavy-carbon);
+}
+
+.chrome span {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--wuavy-paper) 22%, transparent);
+}
+
+.screenImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 0 0 0.6rem 0.6rem;
+}
+
+.screenCaption {
+  display: grid;
+  gap: 0.3rem;
+  max-width: 42ch;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.screenLabel {
+  font-weight: 640;
+  color: var(--text);
+}
+
+/* ── Pricing ─────────────────────────────────────────────────── */
+.pricing {
+  padding-block: var(--space-4);
+}
+
+.pricingLead {
+  grid-column: 1 / -1;
+  max-width: 42ch;
+  margin-top: var(--space-2);
+  font-size: var(--fs-lead);
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.plan {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--surface);
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.priceValue {
+  font-size: clamp(2.5rem, 1.8rem + 2.4vw, 3.5rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.pricePer {
+  font-size: 1.125rem;
+  color: var(--text-2);
+}
+
+.includes,
+.coming {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.includes li {
+  position: relative;
+  padding-left: 1.3rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.includes li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 0.55rem;
+  height: 2px;
+  background: var(--wuavy-signal);
+}
+
+.comingLabel {
+  margin-top: 0.4rem;
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
   text-transform: uppercase;
@@ -301,42 +456,115 @@
   color: var(--text-2);
 }
 
-.linkText {
-  max-width: 30ch;
-  font-size: max(1rem, var(--fs-body));
-  line-height: 1.35;
+.coming li {
+  font-size: 0.875rem;
+  color: var(--text-2);
 }
 
-/* The outcome carries the Signal. */
-.link:last-child {
-  background: color-mix(in srgb, var(--wuavy-signal) 9%, transparent);
+.founder {
+  max-width: 52ch;
+  margin-top: 0.4rem;
+  padding-top: 0.8rem;
+  border-top: var(--rule) solid var(--border);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-2);
 }
 
-.link:last-child .linkLabel {
-  color: var(--wuavy-signal);
+/* ── FAQ: native <details>, same idiom as the agency site's ─── */
+.faqSection {
+  padding-block: var(--space-4);
 }
 
-@supports (animation-timeline: view()) {
-  .stage::before {
-    animation: fill linear both;
-    animation-timeline: view();
-    animation-range: entry calc(40% + var(--i) * 18%) cover calc(30% + var(--i) * 6%);
-  }
-
-  .gap,
-  .link {
-    animation: rise var(--wuavy-ease-soft) both;
-    animation-timeline: view();
-    animation-range: entry calc(var(--i, 0) * 12%) entry calc(70% + var(--i, 0) * 12%);
-  }
+.faqList {
+  grid-column: 1 / -1;
+  margin-top: var(--space-3);
+  border-bottom: var(--rule) solid var(--border);
 }
 
-@keyframes fill {
+.faqItem {
+  border-top: var(--rule) solid var(--border);
+}
+
+.faqQuestion {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 1.5rem;
+  align-items: baseline;
+  gap: var(--gutter);
+  padding-block: var(--space-2);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--fs-lead);
+  font-weight: 640;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-wrap: pretty;
+}
+
+.faqQuestion::-webkit-details-marker {
+  display: none;
+}
+
+.faqAnswer {
+  max-width: 58ch;
+  padding: 0 0 var(--space-2) calc(2.5rem + var(--gutter));
+  color: var(--text-2);
+}
+
+.faqItem[open] .faqAnswer {
+  animation: faqOpen var(--duration-element) var(--wuavy-ease-out) both;
+}
+
+@keyframes faqOpen {
   from {
-    transform: scaleX(0);
+    opacity: 0;
+    transform: translateY(-0.5rem);
   }
   to {
+    opacity: 1;
     transform: none;
+  }
+}
+
+/* Plus → minus: the vertical stroke folds away. */
+.faqIcon {
+  position: relative;
+  align-self: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  justify-self: end;
+}
+
+.faqIcon::before,
+.faqIcon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  translate: -50% -50%;
+  transition:
+    transform var(--duration-element) var(--wuavy-ease-out),
+    background-color var(--duration-ui) linear;
+}
+
+.faqIcon::after {
+  transform: rotate(90deg);
+}
+
+.faqItem[open] .faqIcon::after {
+  transform: rotate(180deg) scaleX(0);
+}
+
+.faqItem[open] .faqIcon::before {
+  background: var(--wuavy-signal);
+}
+
+@media (hover: hover) {
+  .faqQuestion:hover .index {
+    color: var(--text);
   }
 }
 
@@ -390,7 +618,7 @@
 }
 
 @media (min-width: 640px) {
-  .gapList {
+  .frontList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -399,66 +627,45 @@
   .hero {
     display: grid;
     align-content: center;
-    min-height: min(100svh, 58rem);
+    min-height: min(100svh, 60rem);
   }
 
   .heroText {
-    grid-column: 1 / span 8;
+    grid-column: 1 / span 7;
   }
 
-  .guide {
+  .heroSide {
     grid-column: 9 / span 4;
     align-self: end;
-    justify-self: end;
-  }
-
-  .gapList {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
   }
 
   .h2 {
     grid-column: 1 / span 8;
   }
 
-  .howLead {
+  .frontsLead,
+  .priorityLead,
+  .interfacesLead,
+  .pricingLead {
     grid-column: 9 / span 4;
     align-self: end;
     margin-top: 0;
   }
 
-  /* Six stages: two rows of three, until the width holds all six in one. */
-  .stages {
+  .frontList {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .priorityChain {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .stage {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .stageText {
-    grid-column: 1;
-  }
-
-  /* Side by side, each stage points on to the next. */
-  .stage:not(:last-child) .stageName::after {
-    content: "→";
-    margin-left: 0.3em;
-    font-size: 0.6em;
-    font-weight: 400;
-    vertical-align: 0.2em;
-    color: var(--wuavy-signal);
-  }
-
-  .chain {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .link {
+  .priorityStep {
     min-height: 11rem;
   }
 
-  .link:not(:last-child)::after {
-    content: "→";
+  .priorityStep:not(:last-child)::after {
     left: auto;
     right: 0;
     top: 50%;
@@ -466,6 +673,18 @@
     padding-inline: 0;
     padding-block: 0.35rem;
     translate: 50% -50%;
+  }
+
+  .screens {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .plan {
+    grid-column: 1 / span 7;
+  }
+
+  .faqList {
+    grid-column: 1 / span 9;
   }
 
   .closeTitle {
@@ -479,19 +698,18 @@
   }
 }
 
-/* Each row ends on its own: the third stage points nowhere. */
-@media (min-width: 1024px) and (max-width: 1279.98px) {
-  .stage:nth-child(3) .stageName::after {
-    content: none;
-  }
-}
-
-@media (min-width: 1280px) {
-  .stages {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+@supports (animation-timeline: view()) {
+  .front,
+  .priorityStep,
+  .screen {
+    animation: rise var(--wuavy-ease-soft) both;
+    animation-timeline: view();
+    animation-range: entry calc(var(--i, 0) * 12%) entry calc(70% + var(--i, 0) * 12%);
   }
 
-  .stageName {
-    font-size: clamp(1.375rem, 0.45rem + 1.2vw, 2.25rem);
+  .includes li {
+    animation: rise var(--wuavy-ease-soft) both;
+    animation-timeline: view();
+    animation-range: entry calc(var(--i, 0) * 8%) entry calc(60% + var(--i, 0) * 8%);
   }
 }

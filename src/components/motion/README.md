@@ -30,6 +30,7 @@ Everything here serves one of the three. If an effect doesn't, it doesn't ship.
 |---|---|---|
 | `TextReveal` | CSS, per word | Hero title |
 | `LineReveal` | CSS + a line measure (ResizeObserver) | Ideia, Sistemas and Diferenciais headlines |
+| `Reveal` | CSS (`.m-fade`) | Generic card/list fade-up; Pulse commercial page |
 | `WidthWave` | CSS + a pointer listener | Service outcomes, contact |
 | `ImageReveal` | CSS clip-path channel | Work covers, case page |
 | `HeroChoreography` | Shared scroll frame, one transform | Hero: the wordmark's flight into the header |

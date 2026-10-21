@@ -7,6 +7,7 @@
 
 export { TextReveal } from "./TextReveal";
 export { LineReveal } from "./LineReveal";
+export { Reveal } from "./Reveal";
 export { WidthWave } from "./WidthWave";
 export { ImageReveal } from "./ImageReveal";
 export { RevealObserver } from "./RevealObserver";
