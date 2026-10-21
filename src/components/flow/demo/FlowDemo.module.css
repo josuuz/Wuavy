@@ -18,10 +18,8 @@
   flex: none;
 }
 
-/* Below the bar: the rail on the left, the work on the right. */
-.body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+/* The bar and the work, stacked; the rail sits beside this, full height, not above it. */
+.shell {
   min-width: 0;
 }
 
@@ -209,12 +207,11 @@
   outline-offset: 2px;
 }
 
-/* ── Desktop: the bar stands full-width on top; below it, the rail on the left, the work on the right ── */
+/* ── Desktop: the rail stands full height on the left; the bar and the work share the rest, stacked ── */
 @media (min-width: 1024px) {
   .app {
     height: 100svh;
     display: flex;
-    flex-direction: column;
   }
 
   /* Nothing left on the left — the brand lives in the rail now, and so does the menu — so the bar just holds its tools, pushed to the end. */
@@ -228,19 +225,24 @@
     border-bottom: var(--rule) solid var(--border);
   }
 
-  .body {
+  .shell {
     flex: 1;
     min-height: 0;
-    grid-template-columns: 15.5rem minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
   }
 
   .side {
     position: static;
+    flex: none;
+    width: 15.5rem;
     height: 100%;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    padding: 1.75rem 1.25rem max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+    /* Top padding centers PULSE on the same line as Assinar: the button's own
+       padding makes it taller than bare text, so matching tops isn't enough. */
+    padding: 1.65rem 1.25rem max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
     overflow-y: auto;
     border-bottom: 0;
     border-right: var(--rule) solid var(--border);
@@ -248,7 +250,8 @@
   }
 
   .main {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
   }
 

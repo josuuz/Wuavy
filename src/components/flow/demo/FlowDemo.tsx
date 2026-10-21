@@ -132,81 +132,81 @@ function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.app} data-pulse="">
-      <header className={styles.bar} data-pulse-surface="rail">
-        <div className={styles.barTools}>
-          <div className={styles.planGroup}>
-            {access.isDemoMode ? (
-              <span className={styles.demoChip}>{PLAN.demo.badge}</span>
-            ) : plan ? (
-              <span className={styles.planChip} data-tone={tone}>
-                {plan}
-              </span>
-            ) : null}
-            {canSubscribe ? (
-              <button type="button" className={styles.subscribe} onClick={subscribe} aria-haspopup="dialog">
-                <Crown />
-                {PLAN.subscribe.open}
-              </button>
-            ) : null}
+      <aside className={styles.side} data-pulse-surface="rail">
+        <div className={styles.brandRow}>
+          <Link href="/pulse" className={styles.brand} aria-label="Wuavy Pulse: voltar à página do produto">
+            <PulseLogo />
+          </Link>
+          <div className={styles.rowTools}>
+            <ThemeToggle />
+            <button type="button" className={styles.askSmall} onClick={() => ask()}>
+              Pergunte
+            </button>
           </div>
-          <ThemeToggle className={styles.barToggle} />
-          <button type="button" className={styles.ask} onClick={() => ask()} data-cursor="action">
-            <span className="pulse-dot" aria-hidden="true" />
-            Pergunte ao Pulse
-          </button>
         </div>
-      </header>
-
-      <div className={styles.body}>
-        <aside className={styles.side} data-pulse-surface="rail">
-          <div className={styles.brandRow}>
-            <Link href="/pulse" className={styles.brand} aria-label="Wuavy Pulse: voltar à página do produto">
-              <PulseLogo />
-            </Link>
-            <div className={styles.rowTools}>
-              <ThemeToggle />
-              <button type="button" className={styles.askSmall} onClick={() => ask()}>
-                Pergunte
-              </button>
-            </div>
-          </div>
-          <p className={styles.org}>
-            {data.organization.logoUrl ? (
-              <Image className={styles.logo} src={data.organization.logoUrl} alt="" width={28} height={28} unoptimized />
-            ) : null}
-            {data.organization.name}
-            {account && !access.isDemoMode ? <span>{account.name}</span> : null}
-            {plan ? (
-              <span className={styles.plan} data-tone={tone}>
-                {plan}
-              </span>
-            ) : null}
-            {account ? <SignOut className={styles.signOut} /> : null}
-          </p>
-          <nav aria-label="Telas do Pulse" className={styles.sideNav}>
-            <ol>{menu.map((view) => navItem(view))}</ol>
-          </nav>
-          <button type="button" className={styles.mascot} onClick={() => ask()} aria-haspopup="dialog">
-            <Pulse interactive className={styles.mascotFigure} />
-            <span className={styles.mascotLabel}>Pergunte ao Pulse</span>
-          </button>
-          <GuideCard />
-          <GuidePill />
-          {potential && can.sales ? (
-            <Link href={viewHref("oportunidades", base)} className={styles.railValue}>
-              <span className={styles.railLabel}>Receita potencial · agora</span>
-              <strong className={styles.railAmount}>{brl(potential)}</strong>
-              <span className={styles.railNote}>
-                em {open} {open === 1 ? "oportunidade aberta" : "oportunidades abertas"}
-              </span>
-            </Link>
+        <p className={styles.org}>
+          {data.organization.logoUrl ? (
+            <Image className={styles.logo} src={data.organization.logoUrl} alt="" width={28} height={28} unoptimized />
           ) : null}
-          {account && !access.isDemoMode ? null : (
-            <Link href="/pulse" className={styles.back}>
-              <span aria-hidden="true">←</span> Voltar ao Wuavy Pulse
-            </Link>
-          )}
-        </aside>
+          {data.organization.name}
+          {account && !access.isDemoMode ? <span>{account.name}</span> : null}
+          {plan ? (
+            <span className={styles.plan} data-tone={tone}>
+              {plan}
+            </span>
+          ) : null}
+          {account ? <SignOut className={styles.signOut} /> : null}
+        </p>
+        <nav aria-label="Telas do Pulse" className={styles.sideNav}>
+          <ol>{menu.map((view) => navItem(view))}</ol>
+        </nav>
+        <button type="button" className={styles.mascot} onClick={() => ask()} aria-haspopup="dialog">
+          <Pulse interactive className={styles.mascotFigure} />
+          <span className={styles.mascotLabel}>Pergunte ao Pulse</span>
+        </button>
+        <GuideCard />
+        <GuidePill />
+        {potential && can.sales ? (
+          <Link href={viewHref("oportunidades", base)} className={styles.railValue}>
+            <span className={styles.railLabel}>Receita potencial · agora</span>
+            <strong className={styles.railAmount}>{brl(potential)}</strong>
+            <span className={styles.railNote}>
+              em {open} {open === 1 ? "oportunidade aberta" : "oportunidades abertas"}
+            </span>
+          </Link>
+        ) : null}
+        {account && !access.isDemoMode ? null : (
+          <Link href="/pulse" className={styles.back}>
+            <span aria-hidden="true">←</span> Voltar ao Wuavy Pulse
+          </Link>
+        )}
+      </aside>
+
+      <div className={styles.shell}>
+        <header className={styles.bar} data-pulse-surface="rail">
+          <div className={styles.barTools}>
+            <div className={styles.planGroup}>
+              {access.isDemoMode ? (
+                <span className={styles.demoChip}>{PLAN.demo.badge}</span>
+              ) : plan ? (
+                <span className={styles.planChip} data-tone={tone}>
+                  {plan}
+                </span>
+              ) : null}
+              {canSubscribe ? (
+                <button type="button" className={styles.subscribe} onClick={subscribe} aria-haspopup="dialog">
+                  <Crown />
+                  {PLAN.subscribe.open}
+                </button>
+              ) : null}
+            </div>
+            <ThemeToggle className={styles.barToggle} />
+            <button type="button" className={styles.ask} onClick={() => ask()} data-cursor="action">
+              <span className="pulse-dot" aria-hidden="true" />
+              Pergunte ao Pulse
+            </button>
+          </div>
+        </header>
 
         <div className={styles.main}>
           <PlanNotice onSubscribe={subscribe} />
