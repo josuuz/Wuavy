@@ -6,28 +6,9 @@
   font-size: 0.9375rem;
 }
 
-/* ── The top bar: the main menu, horizontal. Hidden on a phone — the bottom bar carries it there ── */
+/* ── The top bar: plan, theme and "Pergunte ao Pulse". Hidden on a phone — the bottom bar carries the screens there instead ── */
 .bar {
   display: none;
-}
-
-.topnav ol {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow: hidden;
-  gap: 0.3rem;
-}
-
-/*
-  Before TopNav.tsx's first measurement, every screen renders (there is no
-  "visible count" to trust yet) and the row's own overflow:hidden would cut
-  whichever one lands on its right edge mid-word. The fade reads as the row
-  simply continuing rather than a name cut in half; it is gone the instant
-  the real count is known, which for most visits is well under one frame.
-*/
-.topnavGuess {
-  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent 100%);
 }
 
 .barTools {
@@ -35,21 +16,6 @@
   align-items: center;
   gap: 0.75rem;
   flex: none;
-}
-
-/* The "Mais" pill, present but out of the way (not just invisible) until something overflows. */
-.moreHidden {
-  display: none;
-}
-
-/*
-  TopNav.tsx marks what does not fit this way: the list stays nowrap so
-  every item keeps its true width for measuring, so clipping at the
-  container's edge alone would cut an item off mid-word instead of hiding
-  it whole. Taking it out of flow is what actually hides it.
-*/
-.navLink[aria-hidden="true"] {
-  display: none;
 }
 
 /* Below the bar: the rail on the left, the work on the right. */
@@ -117,6 +83,11 @@
 /* The Pulse, kept in reach beside the clinic's own numbers. Desktop only: a phone already carries
    the quick "Pergunte" in the brand row and the full button in the top bar once it shows. */
 .mascot {
+  display: none;
+}
+
+/* The screens, in the rail. Desktop only: a phone carries them in the bottom bar instead. */
+.sideNav {
   display: none;
 }
 
@@ -246,57 +217,15 @@
     flex-direction: column;
   }
 
-  /*
-    One row when the brand, the menu and the actions all fit beside each
-    other; the menu's own full-width row the moment they do not
-    (TopNav.tsx measures this, [data-stacked] is its verdict). Never a
-    third row: past that, screens wait behind "Mais" instead.
-  */
+  /* Nothing left on the left — the brand lives in the rail now, and so does the menu — so the bar just holds its tools, pushed to the end. */
   .bar {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: "brand nav tools";
+    display: flex;
+    justify-content: flex-end;
     align-items: center;
-    column-gap: 1.75rem;
-    row-gap: 0.75rem;
     flex: none;
     padding: 1.1rem clamp(1.5rem, 2.5vw, 2.25rem);
     background: color-mix(in srgb, var(--surface) 94%, transparent);
     border-bottom: var(--rule) solid var(--border);
-  }
-
-  /*
-    Same three columns in both states — the middle one stays `1fr` so it
-    always absorbs whatever is left over, which is what makes "nav" read
-    as the bar's true full width once it spans every column, row of its
-    own. Dropping to two columns here left that middle sliver unclaimed:
-    the grid shrank to just the brand and the actions, and the row below
-    quietly inherited that same width instead of the whole bar.
-  */
-  .bar[data-stacked] {
-    grid-template-areas:
-      "brand . tools"
-      "nav nav nav";
-  }
-
-  /* The brand stands in the bar now, top-left, next to the menu it used to sit below. */
-  .bar .brand {
-    grid-area: brand;
-    flex: none;
-  }
-
-  /* The rail no longer carries the brand: the bar does. */
-  .brandRow {
-    display: none;
-  }
-
-  .topnav {
-    grid-area: nav;
-    min-width: 0;
-  }
-
-  .barTools {
-    grid-area: tools;
   }
 
   .body {
@@ -325,6 +254,15 @@
 
   .askSmall {
     display: none;
+  }
+
+  .sideNav {
+    display: block;
+  }
+
+  .sideNav ol {
+    display: grid;
+    gap: 0.25rem;
   }
 
   .org {
