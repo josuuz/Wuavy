@@ -59,8 +59,15 @@ export function statusFrom(
   if (isCancelled(subscription.status)) return "cancelled";
   if (subscription.status === "pending") return "pending";
   if (subscription.status === "paused") return "past_due";
+  // refunded/charged_back: uma cobrança que foi aprovada e depois revertida
+  // (estorno, contestação) não é mais dinheiro em caixa — a mesma razão que
+  // paidPeriodEnd nunca a conta como paga.
   const failed =
-    last?.status === "recycling" || last?.payment?.status === "rejected" || last?.payment?.status === "cancelled";
+    last?.status === "recycling" ||
+    last?.payment?.status === "rejected" ||
+    last?.payment?.status === "cancelled" ||
+    last?.payment?.status === "refunded" ||
+    last?.payment?.status === "charged_back";
   return failed ? "past_due" : "active";
 }
 
@@ -152,6 +159,62 @@ export function testSafeUrl(path: string, siteUrl: string, canonical: string, is
     throw new Error(`Cobrança de teste fechada: o endereço aponta para o domínio de produção (${productionHost}). Use um endereço de teste.`);
   }
   return url.toString();
+}
+
+/*
+  Até quando o mês já pago vale — nunca lido de next_payment_date. Esse campo
+  é, pela própria documentação do Mercado Pago, só a "date of the next
+  payment debit": uma data de agendamento futuro, não um registro do que já
+  foi pago. Uma assinatura cancelada não tem mais nenhum débito agendado, e
+  billing.ts:syncStanding escrevia esse campo (ou a ausência dele) direto em
+  current_period_end, qualquer que fosse o status — o que apagava, no exato
+  momento em que uma clínica cancelava, a data que lib/flow/access.ts:
+  paidThrough usa para manter o Pulse funcionando até o fim do mês já pago.
+*/
+
+/*
+ * Evidência POSITIVA, nunca ausência de uma lista de estados negativos: a
+ * própria documentação de assinaturas do Mercado Pago diz que uma parcela
+ * recusada fica em "recycling" sendo retentada e, esgotadas as tentativas,
+ * passa para "processed" mesmo associada a um pagamento recusado —
+ * "processed" é só "o ciclo de tentativas terminou", nunca prova de
+ * pagamento. Uma lista do que É proibido (rejected, cancelled…) sempre deixa
+ * de fora o que ainda não se sabe (pending, in_process, authorized sem
+ * captura, ou nenhum payment.status nenhum) — e isso contaria como pago.
+ * Por isso a prova exigida é a única positiva que existe: "approved".
+ */
+const CONFIRMED_PAYMENT = "approved";
+
+/** Um mês a partir de `date`, com o dia preso ao último dia do mês de destino quando ele não existir (31 de janeiro -> 28/29 de fevereiro, nunca 2/3 de março). */
+function addOneMonthClamped(date: Date): Date {
+  const day = date.getUTCDate();
+  const firstOfMonth = new Date(date);
+  firstOfMonth.setUTCDate(1); // antes de somar o mês, para a soma nunca estourar por conta do dia.
+  firstOfMonth.setUTCMonth(firstOfMonth.getUTCMonth() + 1);
+  const daysInTargetMonth = new Date(Date.UTC(firstOfMonth.getUTCFullYear(), firstOfMonth.getUTCMonth() + 1, 0)).getUTCDate();
+  firstOfMonth.setUTCDate(Math.min(day, daysInTargetMonth));
+  return firstOfMonth;
+}
+
+/**
+ * O fim do período que a cobrança CONFIRMADA mais recente cobre: um ciclo —
+ * sempre mensal, a única cadência que createSubscription usa, com o dia
+ * preso ao mês de destino (addOneMonthClamped) — a partir da data dessa
+ * cobrança. "Confirmada" é status "processed" com payment.status
+ * exatamente "approved"; qualquer outra coisa (pendente, em processamento,
+ * autorizada sem captura, recusada, estornada, contestada, ou sem
+ * informação nenhuma) não conta, e sem nenhuma cobrança confirmada o
+ * resultado é null — nunca um mês inventado. Puro: não decide o que isso
+ * significa para o acesso (lib/flow/access.ts), só o que uma cobrança
+ * confirmada, de verdade, paga.
+ */
+export function paidPeriodEnd(charges: readonly Pick<Charge, "status" | "date_created" | "payment">[] | undefined): string | null {
+  const confirmed = (charges ?? []).filter((c) => c.status === "processed" && c.payment?.status === CONFIRMED_PAYMENT);
+  const last = latestCharge(confirmed);
+  if (!last?.date_created) return null;
+  const paidAt = new Date(last.date_created);
+  if (!Number.isFinite(paidAt.getTime())) return null;
+  return addOneMonthClamped(paidAt).toISOString();
 }
 
 /*

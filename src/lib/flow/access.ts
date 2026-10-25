@@ -77,6 +77,31 @@ export function asStatus(value: string | null | undefined): SubscriptionStatus |
 export interface Standing {
   status: SubscriptionStatus | null;
   current_period_end: string | null;
+  /**
+   * Set once, at insert (lib/flow/session.ts isLegacyTransition), only for the
+   * one row created when a clinic that already exists starts its very first
+   * subscription attempt — never for a brand-new sign-up (no clinic yet),
+   * never for a resubscription after a rejected or cancelled row (migration
+   * 0017). Keeps clinicAccess at full use while that one attempt is still
+   * pending or blocked for reconciliation, so starting a real checkout never
+   * itself causes the one downgrade this column exists to prevent.
+   */
+  legacy_access_transition?: boolean | null;
+  /**
+   * Set once by syncStanding, on real evidence of an approved charge
+   * (migration 0017) — never cleared, never inferred from status. The
+   * protection below ends here and stays ended even after a later
+   * cancellation: once a real payment ever happened, what comes after is an
+   * ordinary cancelled subscription, read by paidThrough like any other, not
+   * the legacy exception again.
+   */
+  first_payment_confirmed_at?: string | null;
+  /**
+   * An administrative decision, made by hand against the database, to end
+   * the transition's protection without a confirmed charge (migration 0017).
+   * The other way this protection ends — never a timeout, never a guess.
+   */
+  legacy_transition_cleared_at?: string | null;
 }
 
 /**
@@ -101,6 +126,9 @@ export function clinicAccess(subscription: Standing | null, now: Date = new Date
   if (!status) return FULL;
   const nextCharge = subscription?.current_period_end ?? null;
   if (releases(status)) return { ...FULL, subscriptionStatus: status, nextCharge };
+  if (subscription?.legacy_access_transition && !subscription.legacy_transition_cleared_at && !subscription.first_payment_confirmed_at) {
+    return { ...FULL, subscriptionStatus: status };
+  }
   const paidUntil = paidThrough(subscription, now);
   if (paidUntil) return { ...FULL, subscriptionStatus: status, paidUntil, nextCharge: null };
   return { ...FULL, subscriptionStatus: status, isReadOnly: true, canEdit: false, canReachOut: false, nextCharge: null };

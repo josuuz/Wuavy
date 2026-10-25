@@ -2,11 +2,19 @@ import "server-only";
 
 import { CANONICAL_URL, site } from "@/data/site";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  claimDecision,
+  runCreateSubscription,
+  runPersistRetry,
+  type ClaimOutcome,
+  type PersistOutcome,
+} from "@/lib/mercadopago/create-subscription";
 import { checkoutDecision, decide, payerEmailFor, REFUSAL } from "@/lib/mercadopago/environment";
 import {
   confirmedStatus,
   httpsUrl,
   latestCharge,
+  paidPeriodEnd,
   PROVIDER_ID,
   runCancel,
   runCardChange,
@@ -48,11 +56,12 @@ export class BillingUnavailable extends Error {}
 
 /** Mercado Pago answered with an error (a refused card, an invalid token, an outage). */
 export class MercadoPagoError extends Error {
-  constructor(
-    readonly status: number,
-    readonly body: unknown,
-  ) {
+  status: number;
+  body: unknown;
+  constructor(status: number, body: unknown) {
     super(`Mercado Pago answered ${status}`);
+    this.status = status;
+    this.body = body;
   }
 }
 
@@ -152,6 +161,251 @@ export async function createSubscription(input: { reference: string; email: stri
 }
 
 /*
+  Criar uma assinatura com segurança: reserva atômica antes de chamar o
+  Mercado Pago (claimSubscriptionCreation), classificação do resultado
+  (runCreateSubscription, create-subscription.ts) e gravação do id com
+  algumas tentativas (persistSubscriptionId) — nunca um UPDATE sem conferir
+  erro. O mesmo mecanismo das Cobranças (billing/charges.ts), com o nome da
+  coluna certo para esta tabela. A ordem importa: depois que o Mercado Pago
+  criou a assinatura, nada é relatado como recusa — só "saved" (confirmado)
+  ou "failed" (bloquear, nunca criar uma segunda).
+*/
+
+/** Quanto tempo uma reserva (creation_claimed_at) vale antes de ser considerada abandonada. */
+const CLAIM_STALE_MS = 30_000;
+/** Quantas vezes tentar só a gravação local depois de o Mercado Pago já ter respondido. */
+const PERSIST_ATTEMPTS = 3;
+const persistWaitMs = (attempt: number) => attempt * 300;
+
+/**
+ * A reserva atômica: um UPDATE condicional que só afeta a linha quando
+ * nenhuma outra tentativa está em andamento e ela não está bloqueada. Duas
+ * requisições para a mesma linha (clique duplo, uma aba recarregada) nunca
+ * reivindicam as duas — a atomicidade é do próprio UPDATE do Postgres.
+ */
+export async function claimSubscriptionCreation(rowId: string): Promise<ClaimOutcome> {
+  const admin = createAdminClient();
+  const { data: row, error: readError } = await admin
+    .from("subscriptions")
+    .select("provider_subscription_id, creation_blocked_at, creation_claimed_at")
+    .eq("id", rowId)
+    .maybeSingle();
+  if (readError) {
+    // Supabase indisponível: não dá para saber o estado real da linha, e
+    // reivindicar às cegas arriscaria uma segunda chamada ao Mercado Pago.
+    // "in_progress" não cria nada — o lado seguro quando a dúvida é sobre o
+    // próprio banco.
+    console.error("pulse: ler assinatura para reivindicar", rowId, readError.message);
+    return "in_progress";
+  }
+  if (!row) return "already";
+
+  const decision = claimDecision(row, Date.now(), CLAIM_STALE_MS);
+
+  if (decision === "blocked" && !row.creation_blocked_at) {
+    // A reserva venceu agora mesmo: trava atomicamente, conferindo a mesma
+    // reserva que foi lida — se outra requisição já mudou a linha entre a
+    // leitura e aqui, este UPDATE não afeta nada.
+    const { error: blockError } = await admin
+      .from("subscriptions")
+      .update({ creation_blocked_at: new Date().toISOString() })
+      .eq("id", rowId)
+      .eq("creation_claimed_at", row.creation_claimed_at as string)
+      .is("provider_subscription_id", null)
+      .is("creation_blocked_at", null);
+    if (blockError) console.error("pulse: travar reserva vencida", rowId, blockError.message);
+    return "blocked";
+  }
+  if (decision !== "claimed") return decision;
+
+  const { data, error: claimError } = await admin
+    .from("subscriptions")
+    .update({ creation_claimed_at: new Date().toISOString() })
+    .eq("id", rowId)
+    .is("provider_subscription_id", null)
+    .is("creation_blocked_at", null)
+    .is("creation_claimed_at", null)
+    .select("id");
+  if (claimError) {
+    console.error("pulse: reivindicar criação", rowId, claimError.message);
+    return "in_progress";
+  }
+  // A pré-leitura disse "claimed", mas o UPDATE condicional pode não ter
+  // afetado nada se outra requisição reivindicou entre as duas chamadas.
+  return data && data.length ? "claimed" : "in_progress";
+}
+
+/**
+ * Libera a reserva sem bloquear: uma recusa confirmada (4xx do próprio
+ * Mercado Pago) prova que nada foi criado, então uma NOVA linha pode
+ * reivindicar livremente depois. Nunca toca numa linha já bloqueada ou com
+ * assinatura.
+ */
+export async function releaseSubscriptionClaim(rowId: string): Promise<void> {
+  const admin = createAdminClient();
+  await admin
+    .from("subscriptions")
+    .update({ creation_claimed_at: null })
+    .eq("id", rowId)
+    .is("provider_subscription_id", null)
+    .is("creation_blocked_at", null);
+}
+
+/**
+ * Fecha a linha para qualquer criação automática nova: usado quando o
+ * resultado no Mercado Pago ficou incerto (timeout, 5xx) ou quando a
+ * assinatura foi aceita mas não foi possível salvar o id mesmo depois de
+ * tentar (persistSubscriptionId). Só reconciliação manual destrava.
+ */
+export async function blockSubscriptionCreation(rowId: string): Promise<PersistOutcome> {
+  const admin = createAdminClient();
+  return runPersistRetry(
+    async () => {
+      // Guarda em provider_subscription_id null como toda outra escrita deste
+      // arquivo (persistSubscriptionId, a reserva vencida dentro de
+      // claimSubscriptionCreation): sem isto, uma resposta do Mercado Pago (ou
+      // o webhook) que resolveu a linha de verdade ENQUANTO esta chamada ainda
+      // rodava podia ser sobrescrita por um bloqueio tardio — achado da
+      // revisão independente (ecc:database-reviewer).
+      const { data, error } = await admin
+        .from("subscriptions")
+        .update({ creation_blocked_at: new Date().toISOString() })
+        .eq("id", rowId)
+        .is("provider_subscription_id", null)
+        .select("id");
+      if (error) {
+        console.warn("pulse: gravar bloqueio, tentativa falhou", rowId, error.message);
+        return false;
+      }
+      if (data && data.length) return true;
+      // 0 linhas: ou a linha já tem provider_subscription_id (resolvida
+      // enquanto esta tentativa ainda rodava — nada a bloquear, a corrida já
+      // se resolveu sozinha e check()/clinicAccess() já leem o estado certo),
+      // ou ela não existe mais. Lê para diferenciar; só o primeiro caso é sucesso.
+      const { data: current } = await admin.from("subscriptions").select("provider_subscription_id").eq("id", rowId).maybeSingle();
+      if (current?.provider_subscription_id) {
+        console.warn("pulse: bloqueio dispensado — a linha já resolveu sozinha antes do bloqueio chegar", rowId);
+        return true;
+      }
+      return false;
+    },
+    PERSIST_ATTEMPTS,
+    (attempt) => new Promise((resolve) => setTimeout(resolve, persistWaitMs(attempt))),
+  );
+  // "failed" aqui não deixa a linha livre: claimSubscriptionCreation trava
+  // sozinho (reserva vencida -> "blocked") na próxima vez que alguém olhar
+  // esta linha, mesmo que esta gravação explícita nunca confirme.
+}
+
+/**
+ * Marca a linha como recusada na criação: nunca existiu no Mercado Pago,
+ * nunca foi apagada — fica para histórico e para suporte financeiro. Uma
+ * recusa confirmada nunca bloqueia: libera para uma tentativa nova (uma
+ * linha nova) em vez de travar à espera de reconciliação manual, que aqui
+ * não teria nada para reconciliar.
+ */
+export async function recordSubscriptionRefusal(rowId: string, httpStatus: number, detail: string | undefined): Promise<PersistOutcome> {
+  const admin = createAdminClient();
+  return runPersistRetry(
+    async () => {
+      const { error } = await admin
+        .from("subscriptions")
+        .update({
+          status: "rejected",
+          last_refusal_http_status: httpStatus,
+          last_refusal_detail: detail ?? null,
+          creation_claimed_at: null,
+        })
+        .eq("id", rowId)
+        .is("provider_subscription_id", null);
+      if (error) console.warn("pulse: gravar recusa, tentativa falhou", rowId, error.message);
+      return !error;
+    },
+    PERSIST_ATTEMPTS,
+    (attempt) => new Promise((resolve) => setTimeout(resolve, persistWaitMs(attempt))),
+  );
+}
+
+async function writeRecoveredSubscriptionId(admin: ReturnType<typeof createAdminClient>, rowId: string, providerId: string): Promise<boolean> {
+  const { data, error } = await admin
+    .from("subscriptions")
+    .update({ provider_subscription_id: providerId, creation_blocked_at: null, creation_claimed_at: null })
+    .eq("id", rowId)
+    .is("provider_subscription_id", null)
+    .select("id");
+  if (error) {
+    console.error("pulse: gravar id recuperado após bloqueio", rowId, error.message);
+    return false;
+  }
+  return Boolean(data && data.length);
+}
+
+/**
+ * Grava o id da assinatura recém-criada, com algumas tentativas — nunca
+ * chama o Mercado Pago de novo, só repete a escrita no Supabase. "failed"
+ * significa que o id existe no Mercado Pago mas não foi possível salvá-lo
+ * aqui mesmo depois de tentar: quem chamou deve bloquear a linha
+ * (blockSubscriptionCreation), nunca criar uma segunda assinatura.
+ *
+ * Se a reserva venceu e travou sozinha (claimSubscriptionCreation) ENQUANTO
+ * esta chamada ainda estava em andamento, a resposta do Mercado Pago que só
+ * agora chegou é legítima e o id não pode ser perdido — grava mesmo assim
+ * pelo caminho de recuperação, em vez de descartar.
+ */
+export async function persistSubscriptionId(rowId: string, providerId: string): Promise<PersistOutcome> {
+  const admin = createAdminClient();
+  return runPersistRetry(
+    async () => {
+      const { data, error } = await admin
+        .from("subscriptions")
+        .update({ provider_subscription_id: providerId, creation_claimed_at: null })
+        .eq("id", rowId)
+        .is("provider_subscription_id", null)
+        .is("creation_blocked_at", null)
+        .select("id");
+      if (error) {
+        console.warn("pulse: gravar id da assinatura, tentativa falhou", rowId, error.message);
+        return false;
+      }
+      if (data && data.length) return true;
+
+      // 0 linhas afetadas: ou já está salvo (idempotente — repetir não é
+      // falha), ou a linha travou no meio do caminho. Lê o estado atual
+      // para diferenciar; nunca assume nenhum dos dois sem conferir.
+      const { data: current, error: readError } = await admin
+        .from("subscriptions")
+        .select("provider_subscription_id, creation_blocked_at")
+        .eq("id", rowId)
+        .maybeSingle();
+      if (readError || !current) {
+        console.warn("pulse: conferir estado após gravação sem efeito", rowId, readError?.message);
+        return false;
+      }
+      if (current.provider_subscription_id === providerId) return true;
+      if (current.provider_subscription_id) {
+        // Duas assinaturas diferentes para a mesma linha: nunca sobrescreve
+        // silenciosamente. Precisa de olhos humanos, não de mais uma tentativa.
+        console.error("pulse: duas assinaturas diferentes para a mesma linha — não sobrescrevendo", rowId, {
+          jaSalva: current.provider_subscription_id,
+          recemCriada: providerId,
+        });
+        return false;
+      }
+      if (current.creation_blocked_at) {
+        const recovered = await writeRecoveredSubscriptionId(admin, rowId, providerId);
+        if (recovered) console.warn("pulse: resposta do Mercado Pago chegou depois do bloqueio — recuperada com segurança", rowId);
+        return recovered;
+      }
+      return false;
+    },
+    PERSIST_ATTEMPTS,
+    (attempt) => new Promise((resolve) => setTimeout(resolve, persistWaitMs(attempt))),
+  );
+}
+
+export { runCreateSubscription };
+
+/*
   Changing a subscription that already exists: PUT /preapproval/{id}, which is
   what the API reference documents for it. Two rules hold for both operations
   below, and they are the reason neither takes a shortcut:
@@ -237,9 +491,15 @@ export async function syncStanding(providerId: string): Promise<Standing | null>
   // The id goes into a URL and into the filter string below: whatever answered,
   // if it is not an id, it is not asked about and nothing is written.
   if (!PROVIDER_ID.test(String(subscription.id ?? ""))) return null;
+  // Failed (not merely empty): told apart from a genuine "no charges yet" so
+  // that one lost request never reads as "nothing was ever paid" below.
+  let chargesFetchFailed = false;
   const charges = await mp<{ results?: Charge[] }>(
     `/authorized_payments/search?preapproval_id=${encodeURIComponent(subscription.id)}`,
-  ).catch((): { results?: Charge[] } => ({ results: [] }));
+  ).catch((): { results?: Charge[] } => {
+    chargesFetchFailed = true;
+    return { results: [] };
+  });
   const status = statusFrom(subscription, latestCharge(charges.results));
 
   const admin = createAdminClient();
@@ -247,25 +507,63 @@ export async function syncStanding(providerId: string): Promise<Standing | null>
   const reference = subscription.external_reference && UUID.test(subscription.external_reference) ? subscription.external_reference : null;
   const { data: rows } = await admin
     .from("subscriptions")
-    .select("id, started_at, provider_subscription_id")
+    .select("id, started_at, provider_subscription_id, current_period_end, legacy_access_transition, first_payment_confirmed_at")
     .or(`provider_subscription_id.eq.${subscription.id}${reference ? `,id.eq.${reference}` : ""}`);
   const row = rows?.find((r) => r.provider_subscription_id === subscription.id) ?? rows?.find((r) => !r.provider_subscription_id);
   if (!row) return null;
 
+  /*
+    What this column means switches with status, and so does where it comes
+    from. Active or past_due: the next date Mercado Pago itself means to
+    charge (next_payment_date) — a forward-looking field by Mercado Pago's
+    own definition, nothing about history. Cancelled: there is no next
+    charge to report, so the same field tells nothing about the month
+    already paid for — paidThrough (lib/flow/access.ts) needs the end of the
+    period the last CONFIRMED charge bought, derived from the search above,
+    never invented and never read from next_payment_date (billing.ts:252,
+    found in review: writing it unconditionally erased the paid month the
+    instant a clinic cancelled, since Mercado Pago reports no next debit
+    for a cancelled subscription).
+    A charges search that failed outright (not one that genuinely found
+    none) must not read as "nothing was ever paid": that would take away an
+    already-confirmed month over a passing network error. The stored value
+    stands until a search that actually answers says otherwise.
+  */
+  const periodEnd =
+    status !== "cancelled"
+      ? subscription.next_payment_date ?? null
+      : chargesFetchFailed
+        ? (row.current_period_end ?? null)
+        : paidPeriodEnd(charges.results);
+
+  // Prova financeira, nunca inferida do status (migration 0017): a primeira
+  // vez que uma busca de verdade mostra um pagamento "approved" nesta
+  // assinatura, grava uma vez e nunca mais muda — é o único jeito financeiro
+  // de encerrar a proteção de transição legada (lib/flow/access.ts), sem
+  // depender de status==='active' sozinho (que um 5xx futuro ou uma leitura
+  // perdida não devem apagar).
+  const hasConfirmedPayment = (charges.results ?? []).some((c) => c.status === "processed" && c.payment?.status === "approved");
   const now = new Date().toISOString();
   const { error } = await admin
     .from("subscriptions")
     .update({
       provider_subscription_id: subscription.id,
       status,
-      current_period_end: subscription.next_payment_date ?? null,
+      current_period_end: periodEnd,
       // Set once, the first time it is active: a repeated notice does not move it.
       started_at: row.started_at ?? (status === "active" ? now : null),
       updated_at: now,
+      // A confirmed read of this subscription is proof positive of what
+      // Mercado Pago did with it — the webhook landing, or the checkout's
+      // own confirm step, always clears a stale claim or block: there is
+      // nothing left to reconcile once the real status is known.
+      creation_claimed_at: null,
+      creation_blocked_at: null,
+      ...(row.legacy_access_transition && !row.first_payment_confirmed_at && hasConfirmedPayment ? { first_payment_confirmed_at: now } : {}),
     })
     .eq("id", row.id);
   if (error) throw error;
-  return { status, current_period_end: subscription.next_payment_date ?? null };
+  return { status, current_period_end: periodEnd };
 }
 
 /** A monthly charge's notice: the subscription it belongs to is synced. */

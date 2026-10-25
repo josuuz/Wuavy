@@ -12,6 +12,7 @@ import {
   cardChangeBody,
   httpsUrl,
   latestCharge,
+  paidPeriodEnd,
   retryOtherSpelling,
   statusFrom,
   verifyNotice,
@@ -204,6 +205,123 @@ test("só um valor recusado (400) vale tentar com a outra grafia", () => {
   for (const status of [401, 403, 404, 409, 429, 500, 502, 503]) {
     assert.equal(retryOtherSpelling(status), false, String(status));
   }
+});
+
+// ── Até quando o mês já pago vale (achado: billing.ts:252) ─────
+//
+// current_period_end guardava, sem distinção, o que a próxima cobrança
+// prevista (next_payment_date) OU o fim do mês já pago deveriam significar.
+// next_payment_date é, pela própria documentação do Mercado Pago, só a
+// "date of the next payment debit" — nada que uma assinatura cancelada,
+// sem mais nenhum débito agendado, tenha motivo para continuar informando.
+// paidPeriodEnd nunca olha para next_payment_date: deriva o fim do período
+// pago só de uma cobrança CONFIRMADA (status "processed", sem estorno nem
+// contestação), um ciclo (sempre mensal — createSubscription) a partir da
+// data dela.
+
+test("uma cobrança processada e aprovada paga um mês a partir da sua data", () => {
+  const fim = paidPeriodEnd([{ status: "processed", date_created: "2026-09-13T10:00:00.000-03:00", payment: { status: "approved" } }]);
+  assert.equal(fim, "2026-10-13T13:00:00.000Z");
+});
+
+test("sem cobrança nenhuma (cancelada antes de qualquer pagamento aprovado) não há mês pago", () => {
+  assert.equal(paidPeriodEnd([]), null);
+  assert.equal(paidPeriodEnd(undefined), null);
+});
+
+test("uma cobrança 'scheduled' ou 'recycling' não é uma cobrança confirmada", () => {
+  assert.equal(paidPeriodEnd([{ status: "scheduled", date_created: "2026-09-13T10:00:00.000Z" }]), null);
+  assert.equal(paidPeriodEnd([{ status: "recycling", date_created: "2026-09-13T10:00:00.000Z" }]), null);
+});
+
+test("pagamento recusado não paga nada, mesmo que a cobrança em si diga 'processed'", () => {
+  assert.equal(paidPeriodEnd([{ status: "processed", payment: { status: "rejected" }, date_created: "2026-09-13T10:00:00.000Z" }]), null);
+});
+
+test("estorno ou contestação: uma cobrança processada mas depois revertida não prova pagamento", () => {
+  assert.equal(paidPeriodEnd([{ status: "processed", payment: { status: "refunded" }, date_created: "2026-09-13T10:00:00.000Z" }]), null);
+  assert.equal(paidPeriodEnd([{ status: "processed", payment: { status: "charged_back" }, date_created: "2026-09-13T10:00:00.000Z" }]), null);
+});
+
+test("a cobrança confirmada mais recente é a que decide, mesmo com cobranças mais antigas na lista", () => {
+  const fim = paidPeriodEnd([
+    { status: "processed", payment: { status: "approved" }, date_created: "2026-07-13T10:00:00.000Z" },
+    { status: "processed", payment: { status: "approved" }, date_created: "2026-09-13T10:00:00.000Z" },
+    { status: "rejected", payment: { status: "rejected" }, date_created: "2026-10-13T10:00:00.000Z" },
+  ]);
+  assert.equal(fim, "2026-10-13T10:00:00.000Z");
+});
+
+test("uma cobrança sem data não é usada: não há de onde contar o ciclo", () => {
+  assert.equal(paidPeriodEnd([{ status: "processed", payment: { status: "approved" } }]), null);
+});
+
+// ── Auditoria: evidência POSITIVA, nunca ausência de negativa ──
+//
+// A própria documentação do Mercado Pago (assinaturas, recorrência) diz que
+// uma parcela fica em "recycling" sendo retentada e, esgotadas as
+// tentativas, passa para "processed" mesmo associada a um pagamento
+// recusado — "processed" não é prova de pagamento, é só "o ciclo de
+// tentativas terminou". Por isso paidPeriodEnd nunca pode aceitar uma
+// cobrança por faltar um status negativo na lista; só por ter
+// payment.status === "approved" explicitamente.
+
+test("pendente ou em processamento: nada foi efetivamente cobrado ainda, não compra mês nenhum", () => {
+  assert.equal(paidPeriodEnd([{ status: "processed", payment: { status: "pending" }, date_created: "2026-09-13T10:00:00.000Z" }]), null);
+  assert.equal(paidPeriodEnd([{ status: "processed", payment: { status: "in_process" }, date_created: "2026-09-13T10:00:00.000Z" }]), null);
+});
+
+test("autorizada mas não capturada: autorização de cartão não é dinheiro recebido", () => {
+  assert.equal(paidPeriodEnd([{ status: "processed", payment: { status: "authorized" }, date_created: "2026-09-13T10:00:00.000Z" }]), null);
+});
+
+test("sem objeto payment nenhum: ausência de informação nunca vira aprovação", () => {
+  assert.equal(paidPeriodEnd([{ status: "processed", date_created: "2026-09-13T10:00:00.000Z" }]), null);
+});
+
+// ── Auditoria: statusFrom não lê estorno/contestação como "ativa" ──
+
+test("a última cobrança foi estornada ou contestada depois de aprovada: em atraso, não ativa", () => {
+  assert.equal(statusFrom({ status: "authorized" }, { status: "processed", payment: { status: "refunded" } }), "past_due");
+  assert.equal(statusFrom({ status: "authorized" }, { status: "processed", payment: { status: "charged_back" } }), "past_due");
+});
+
+// ── Auditoria: viradas de mês ────────────────────────────────────
+//
+// setMonth/setUTCMonth do JavaScript somam o dia do mês sem olhar quantos
+// dias o mês de destino tem: 31 de janeiro mais um mês viraria 2 ou 3 de
+// março (fevereiro não tem 31 dias), não o fim de fevereiro. A frequência
+// contratada é sempre mensal (createSubscription); o dia tem que ser
+// limitado ao último dia do mês de destino quando ele não existir.
+
+test("cobrança no dia 31: o mês pago termina no fim de fevereiro, nunca em março", () => {
+  // 2026 não é bissexto: fevereiro tem 28 dias.
+  assert.equal(
+    paidPeriodEnd([{ status: "processed", payment: { status: "approved" }, date_created: "2026-01-31T10:00:00.000Z" }]),
+    "2026-02-28T10:00:00.000Z",
+  );
+});
+
+test("cobrança no dia 29 de janeiro bissexto: o mês pago ainda assim respeita fevereiro", () => {
+  // 2028 é bissexto: fevereiro tem 29 dias, e o dia 29 existe nele.
+  assert.equal(
+    paidPeriodEnd([{ status: "processed", payment: { status: "approved" }, date_created: "2028-01-29T10:00:00.000Z" }]),
+    "2028-02-29T10:00:00.000Z",
+  );
+});
+
+test("cobrança num mês comum: o dia simplesmente se mantém", () => {
+  assert.equal(
+    paidPeriodEnd([{ status: "processed", payment: { status: "approved" }, date_created: "2026-03-15T08:30:00.000Z" }]),
+    "2026-04-15T08:30:00.000Z",
+  );
+});
+
+test("cobrança em dezembro: o ciclo vira o ano corretamente", () => {
+  assert.equal(
+    paidPeriodEnd([{ status: "processed", payment: { status: "approved" }, date_created: "2026-12-10T10:00:00.000Z" }]),
+    "2027-01-10T10:00:00.000Z",
+  );
 });
 
 // ── Trocar o cartão ───────────────────────────────────────────

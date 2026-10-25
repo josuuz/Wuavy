@@ -1745,8 +1745,17 @@ export type Database = {
       subscriptions: {
         Row: {
           created_at: string
+          creation_blocked_at: string | null
+          creation_claimed_at: string | null
           current_period_end: string | null
+          first_payment_confirmed_at: string | null
           id: string
+          last_refusal_detail: string | null
+          last_refusal_http_status: number | null
+          legacy_access_transition: boolean
+          legacy_transition_cleared_at: string | null
+          legacy_transition_cleared_by: string | null
+          legacy_transition_cleared_reason: string | null
           organization_id: string | null
           provider: string
           provider_subscription_id: string | null
@@ -1757,8 +1766,17 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          creation_blocked_at?: string | null
+          creation_claimed_at?: string | null
           current_period_end?: string | null
+          first_payment_confirmed_at?: string | null
           id?: string
+          last_refusal_detail?: string | null
+          last_refusal_http_status?: number | null
+          legacy_access_transition?: boolean
+          legacy_transition_cleared_at?: string | null
+          legacy_transition_cleared_by?: string | null
+          legacy_transition_cleared_reason?: string | null
           organization_id?: string | null
           provider?: string
           provider_subscription_id?: string | null
@@ -1769,8 +1787,17 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          creation_blocked_at?: string | null
+          creation_claimed_at?: string | null
           current_period_end?: string | null
+          first_payment_confirmed_at?: string | null
           id?: string
+          last_refusal_detail?: string | null
+          last_refusal_http_status?: number | null
+          legacy_access_transition?: boolean
+          legacy_transition_cleared_at?: string | null
+          legacy_transition_cleared_by?: string | null
+          legacy_transition_cleared_reason?: string | null
           organization_id?: string | null
           provider?: string
           provider_subscription_id?: string | null

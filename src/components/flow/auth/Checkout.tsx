@@ -132,6 +132,46 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
     );
   }
 
+  if (stage === "declined") {
+    return (
+      <section className={styles.state} aria-live="polite">
+        <h1 className={ui.title}>O Mercado Pago não aprovou esta assinatura.</h1>
+        <p className={ui.lead}>
+          A tentativa foi cancelada antes de qualquer cobrança recorrente começar. Se aparecer algo no extrato do seu
+          cartão nos próximos dias, costuma ser uma pré-autorização que expira sozinha — não uma cobrança.
+        </p>
+        <button type="button" className={ui.primary} onClick={retry}>
+          Tentar novamente
+        </button>
+      </section>
+    );
+  }
+
+  if (stage === "unresolved") {
+    return (
+      <section className={styles.state} aria-live="polite">
+        <h1 className={ui.title}>Ainda não confirmamos o resultado desta tentativa.</h1>
+        <p className={ui.lead}>
+          Por segurança, não tente de novo agora: isso poderia gerar uma cobrança duplicada se a primeira tentativa
+          ainda estiver em andamento. Vamos confirmar e liberar automaticamente assim que soubermos.
+        </p>
+        <div className={ui.actions}>
+          <button type="button" className={ui.secondary} onClick={() => setStage("processing")}>
+            Verificar de novo
+          </button>
+          <a
+            href={contactHref(site.contact.primary, `${PLAN.subscribe.topic} — tentativa não confirmada (${email})`)}
+            className={ui.primary}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Falar com a Wuavy
+          </a>
+        </div>
+      </section>
+    );
+  }
+
   if (stage === "unavailable" || !publicKey) return <Offline email={email} />;
 
   return (

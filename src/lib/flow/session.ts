@@ -50,8 +50,19 @@ export const getSubscription = cache(async () => {
   const org = session.member?.organization_id;
   const { data } = await session.supabase
     .from("subscriptions")
-    .select("id, status, organization_id, provider_subscription_id, current_period_end")
+    .select(
+      "id, status, organization_id, provider_subscription_id, current_period_end, creation_blocked_at, legacy_access_transition, legacy_transition_cleared_at, first_payment_confirmed_at",
+    )
     .or(org ? `organization_id.eq.${org},and(user_id.eq.${session.user.id},organization_id.is.null)` : `user_id.eq.${session.user.id}`)
+    // 'rejected' (migration 0020) is a creation attempt that never existed at
+    // Mercado Pago — never this clinic's standing. Without this filter it can
+    // become the "latest" row after a real subscription (active, or
+    // cancelled with a paid month still running) and asStatus() below would
+    // read it back as null, which clinicAccess() treats as "no row ever" —
+    // full access. Excluding it here lets the clinic's real standing (an
+    // older row, or genuinely none) surface instead, for access control and
+    // for check()/subscribe()'s polling alike.
+    .neq("status", "rejected")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -80,7 +91,13 @@ export const getClinicAccess = cache(async () => {
  * request that actually has to ask.
  */
 async function standing(subscription: Awaited<ReturnType<typeof getSubscription>>): Promise<Standing> {
-  const stored = { status: subscription?.status ?? null, current_period_end: subscription?.current_period_end ?? null };
+  const stored = {
+    status: subscription?.status ?? null,
+    current_period_end: subscription?.current_period_end ?? null,
+    legacy_access_transition: subscription?.legacy_access_transition ?? null,
+    legacy_transition_cleared_at: subscription?.legacy_transition_cleared_at ?? null,
+    first_payment_confirmed_at: subscription?.first_payment_confirmed_at ?? null,
+  };
   if (!subscription?.provider_subscription_id || !needsReread(subscription)) return stored;
   try {
     const { syncStanding } = await import("./billing");
