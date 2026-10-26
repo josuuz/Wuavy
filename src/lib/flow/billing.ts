@@ -573,6 +573,35 @@ export async function syncCharge(chargeId: string) {
   return charge.preapproval_id ? syncSubscription(String(charge.preapproval_id)) : null;
 }
 
+/** O resumo mínimo de uma assinatura, para o painel administrativo — nunca cartão, nunca token. */
+export interface Inspection {
+  status: SubscriptionStatus;
+  current_period_end: string | null;
+  /** Evidência positiva de ao menos uma cobrança "approved" — nunca inferida do status (ver syncStanding). */
+  hasConfirmedPayment: boolean;
+  latestCharge: { status: string | null; paymentStatus: string | null; dateCreated: string | null } | null;
+}
+
+/**
+ * A mesma leitura de syncStanding, só para inspeção administrativa — nunca
+ * grava nada. Usada pelo painel (/pulse/admin) para decidir se uma linha
+ * precisa de reconciliação antes de gravar (syncSubscription/syncStanding).
+ */
+export async function inspectSubscription(providerId: string): Promise<Inspection | null> {
+  if (!PROVIDER_ID.test(providerId)) return null;
+  const subscription = await mp<Preapproval>(`/preapproval/${providerId}`);
+  if (!PROVIDER_ID.test(String(subscription.id ?? ""))) return null;
+  const charges = await mp<{ results?: Charge[] }>(`/authorized_payments/search?preapproval_id=${encodeURIComponent(subscription.id)}`);
+  const last = latestCharge(charges.results);
+  const status = statusFrom(subscription, last);
+  return {
+    status,
+    current_period_end: status !== "cancelled" ? (subscription.next_payment_date ?? null) : paidPeriodEnd(charges.results),
+    hasConfirmedPayment: (charges.results ?? []).some((c) => c.status === "processed" && c.payment?.status === "approved"),
+    latestCharge: last ? { status: last.status ?? null, paymentStatus: last.payment?.status ?? null, dateCreated: last.date_created ?? null } : null,
+  };
+}
+
 /**
  * A webhook's x-signature, against the secret from the Mercado Pago panel.
  * The rule itself is in mercadopago-notice.ts, where it is tested; this reads
