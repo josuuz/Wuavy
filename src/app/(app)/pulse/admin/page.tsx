@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { inspectSubscription } from "@/lib/flow/billing";
+import { describeError, inspectSubscription, MercadoPagoError } from "@/lib/flow/billing";
 import { getAdmin } from "@/lib/maintenance/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reconcile } from "./actions";
@@ -49,7 +49,10 @@ export default async function PulseAdminPage({ searchParams }: { searchParams: P
       try {
         inspection = await inspectSubscription(row.provider_subscription_id);
       } catch (e) {
-        error = e instanceof Error ? e.message : "Falha ao consultar o Mercado Pago.";
+        // Texto de validação da própria API do Mercado Pago (ex.: "parâmetro
+        // inválido") — nunca cartão, nunca token; a mesma função já usada no
+        // checkout em modo de teste (billing.ts:describeError).
+        error = e instanceof MercadoPagoError ? describeError(e) : e instanceof Error ? e.message : "Falha ao consultar o Mercado Pago.";
       }
     }
   }
@@ -83,14 +86,23 @@ export default async function PulseAdminPage({ searchParams }: { searchParams: P
         <section style={{ marginTop: 16, padding: 16, border: "1px solid #ddd" }}>
           <h2>Estado real no Mercado Pago agora</h2>
           <p>Status real: <strong>{inspection.status}</strong></p>
-          <p>Pagamento aprovado encontrado: <strong>{inspection.hasConfirmedPayment ? "sim" : "não"}</strong></p>
+          {inspection.chargesUnavailable ? (
+            <p style={{ color: "#a60" }}>
+              A busca de cobranças falhou (comum quando a assinatura nunca chegou a gerar nenhuma) — &quot;pagamento aprovado&quot; e
+              &quot;última cobrança&quot; abaixo não respondem por nada, só o status do preapproval é real.
+            </p>
+          ) : (
+            <>
+              <p>Pagamento aprovado encontrado: <strong>{inspection.hasConfirmedPayment ? "sim" : "não"}</strong></p>
+              <p>
+                Última cobrança:{" "}
+                {inspection.latestCharge
+                  ? `${inspection.latestCharge.status ?? "—"} · pagamento ${inspection.latestCharge.paymentStatus ?? "—"} · ${inspection.latestCharge.dateCreated ?? "—"}`
+                  : "nenhuma"}
+              </p>
+            </>
+          )}
           <p>Próxima cobrança / período pago: {inspection.current_period_end ?? "—"}</p>
-          <p>
-            Última cobrança:{" "}
-            {inspection.latestCharge
-              ? `${inspection.latestCharge.status ?? "—"} · pagamento ${inspection.latestCharge.paymentStatus ?? "—"} · ${inspection.latestCharge.dateCreated ?? "—"}`
-              : "nenhuma"}
-          </p>
 
           <form action={reconcile} style={{ marginTop: 12 }}>
             <input type="hidden" name="id" value={subscriptionId ?? ""} />

@@ -580,18 +580,38 @@ export interface Inspection {
   /** Evidência positiva de ao menos uma cobrança "approved" — nunca inferida do status (ver syncStanding). */
   hasConfirmedPayment: boolean;
   latestCharge: { status: string | null; paymentStatus: string | null; dateCreated: string | null } | null;
+  /**
+   * A busca de cobranças falhou (ex.: nenhuma cobrança existe ainda — o
+   * Mercado Pago responde 400 a /authorized_payments/search para uma
+   * assinatura sem nenhuma, em vez de uma lista vazia). `status` ainda vem
+   * do preapproval sozinho; hasConfirmedPayment e latestCharge não
+   * respondem por nada quando isto é true — mesma distinção que
+   * chargesFetchFailed já faz em syncStanding.
+   */
+  chargesUnavailable: boolean;
 }
 
 /**
  * A mesma leitura de syncStanding, só para inspeção administrativa — nunca
  * grava nada. Usada pelo painel (/pulse/admin) para decidir se uma linha
  * precisa de reconciliação antes de gravar (syncSubscription/syncStanding).
+ *
+ * A leitura do preapproval é obrigatória: falhando, não há nada para
+ * inspecionar. A busca de cobranças, não — syncStanding já trata essa busca
+ * como passível de falhar (chargesFetchFailed) sem que isso vire "nunca foi
+ * pago"; a mesma resiliência faltava aqui.
  */
 export async function inspectSubscription(providerId: string): Promise<Inspection | null> {
   if (!PROVIDER_ID.test(providerId)) return null;
   const subscription = await mp<Preapproval>(`/preapproval/${providerId}`);
   if (!PROVIDER_ID.test(String(subscription.id ?? ""))) return null;
-  const charges = await mp<{ results?: Charge[] }>(`/authorized_payments/search?preapproval_id=${encodeURIComponent(subscription.id)}`);
+  let chargesUnavailable = false;
+  const charges = await mp<{ results?: Charge[] }>(
+    `/authorized_payments/search?preapproval_id=${encodeURIComponent(subscription.id)}`,
+  ).catch((): { results?: Charge[] } => {
+    chargesUnavailable = true;
+    return { results: [] };
+  });
   const last = latestCharge(charges.results);
   const status = statusFrom(subscription, last);
   return {
@@ -599,6 +619,7 @@ export async function inspectSubscription(providerId: string): Promise<Inspectio
     current_period_end: status !== "cancelled" ? (subscription.next_payment_date ?? null) : paidPeriodEnd(charges.results),
     hasConfirmedPayment: (charges.results ?? []).some((c) => c.status === "processed" && c.payment?.status === "approved"),
     latestCharge: last ? { status: last.status ?? null, paymentStatus: last.payment?.status ?? null, dateCreated: last.date_created ?? null } : null,
+    chargesUnavailable,
   };
 }
 
