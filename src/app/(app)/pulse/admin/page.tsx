@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { describeError, inspectSubscription, MercadoPagoError } from "@/lib/flow/billing";
+import { describeError, inspectPayment, inspectSubscription, MercadoPagoError } from "@/lib/flow/billing";
 import { getAdmin } from "@/lib/maintenance/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reconcile } from "./actions";
@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 const UUID = /^[0-9a-f-]{36}$/i;
+const PAYMENT_ID = /^\d{1,20}$/;
 
 /*
   A menor ferramenta administrativa para o que o Pulse ainda não tinha: olhar
@@ -20,7 +21,7 @@ const UUID = /^[0-9a-f-]{36}$/i;
   caminho do webhook) ou se já está correta. Quem não está em
   WUAVY_ADMIN_EMAILS não vê nada além da porta fechada.
 */
-export default async function PulseAdminPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
+export default async function PulseAdminPage({ searchParams }: { searchParams: Promise<{ id?: string; paymentId?: string }> }) {
   const admin = await getAdmin();
   if (!admin) {
     return (
@@ -30,8 +31,9 @@ export default async function PulseAdminPage({ searchParams }: { searchParams: P
     );
   }
 
-  const { id } = await searchParams;
+  const { id, paymentId } = await searchParams;
   const subscriptionId = id && UUID.test(id) ? id : null;
+  const mpPaymentId = paymentId && PAYMENT_ID.test(paymentId) ? paymentId : null;
 
   let row: { provider_subscription_id: string | null; status: string | null } | null = null;
   let inspection: Awaited<ReturnType<typeof inspectSubscription>> = null;
@@ -54,6 +56,16 @@ export default async function PulseAdminPage({ searchParams }: { searchParams: P
         // checkout em modo de teste (billing.ts:describeError).
         error = e instanceof MercadoPagoError ? describeError(e) : e instanceof Error ? e.message : "Falha ao consultar o Mercado Pago.";
       }
+    }
+  }
+
+  let paymentInspection: Awaited<ReturnType<typeof inspectPayment>> = null;
+  let paymentError: string | null = null;
+  if (mpPaymentId) {
+    try {
+      paymentInspection = await inspectPayment(mpPaymentId);
+    } catch (e) {
+      paymentError = e instanceof MercadoPagoError ? describeError(e) : e instanceof Error ? e.message : "Falha ao consultar o Mercado Pago.";
     }
   }
 
@@ -108,6 +120,47 @@ export default async function PulseAdminPage({ searchParams }: { searchParams: P
             <input type="hidden" name="id" value={subscriptionId ?? ""} />
             <button type="submit">Reconciliar (grava este status real na linha)</button>
           </form>
+        </section>
+      )}
+
+      <h1 style={{ marginTop: 40 }}>Consultar pagamento (Mercado Pago)</h1>
+      <p style={{ color: "#666" }}>
+        Só leitura, sempre — GET /v1/payments/id. Nunca mostra pagador, cartão ou token.
+      </p>
+
+      <form style={{ display: "flex", gap: 8, margin: "16px 0" }}>
+        <input
+          name="paymentId"
+          defaultValue={mpPaymentId ?? ""}
+          placeholder="id do pagamento (o número que o Mercado Pago deu)"
+          style={{ flex: 1, padding: 8 }}
+        />
+        <button type="submit">Consultar</button>
+      </form>
+
+      {mpPaymentId && !paymentInspection && !paymentError && <p>Nenhum pagamento com esse id.</p>}
+      {paymentError && <p style={{ color: "crimson" }}>{paymentError}</p>}
+
+      {paymentInspection && (
+        <section style={{ marginTop: 16, padding: 16, border: "1px solid #ddd" }}>
+          <h2>Estado real no Mercado Pago agora</h2>
+          <p>
+            Conta:{" "}
+            <strong style={{ color: paymentInspection.live_mode ? "#070" : "#a60" }}>
+              {paymentInspection.live_mode === null ? "—" : paymentInspection.live_mode ? "LIVE (real)" : "TESTE"}
+            </strong>
+          </p>
+          <p>Status: <strong>{paymentInspection.status ?? "—"}</strong></p>
+          <p>Status detail: <strong>{paymentInspection.status_detail ?? "—"}</strong></p>
+          <p>Método / tipo: {paymentInspection.payment_method_id ?? "—"} / {paymentInspection.payment_type_id ?? "—"}</p>
+          <p>Criado em: {paymentInspection.date_created ?? "—"}</p>
+          <p>Aprovado em: {paymentInspection.date_approved ?? "—"}</p>
+          {paymentInspection.external_reference && UUID.test(paymentInspection.external_reference) && (
+            <p>
+              Ligado à nossa assinatura:{" "}
+              <a href={`/pulse/admin?id=${paymentInspection.external_reference}`}>{paymentInspection.external_reference}</a>
+            </p>
+          )}
         </section>
       )}
     </main>

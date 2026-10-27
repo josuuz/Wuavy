@@ -623,6 +623,49 @@ export async function inspectSubscription(providerId: string): Promise<Inspectio
   };
 }
 
+const PAYMENT_ID = /^\d{1,20}$/;
+
+/** O resumo mínimo de um pagamento do Mercado Pago, para o painel administrativo — nunca pagador, nunca cartão, nunca token. */
+export interface PaymentInspection {
+  id: number;
+  status: string | null;
+  status_detail: string | null;
+  /** O campo que a própria Mercado Pago devolve — a prova de que o id pertence (ou não) à conta LIVE. */
+  live_mode: boolean | null;
+  payment_method_id: string | null;
+  payment_type_id: string | null;
+  date_created: string | null;
+  date_approved: string | null;
+  /** A referência que nós mesmos mandamos ao criar a assinatura (a linha em subscriptions) — nunca um dado do pagador. */
+  external_reference: string | null;
+}
+
+/**
+ * GET /v1/payments/{id} — a API de pagamentos (diferente de /preapproval e
+ * /authorized_payments, que são de assinatura). Suporte do Mercado Pago só
+ * devolve o status_detail de uma recusa por aqui. Usada pelo painel para
+ * diagnosticar uma recusa quando não há assinatura nossa para olhar (ex.: a
+ * tentativa falhou antes de qualquer provider_subscription_id ser gravado).
+ * Nunca repassa pagador, cartão ou identificação — só os campos abaixo.
+ */
+export async function inspectPayment(paymentId: string): Promise<PaymentInspection | null> {
+  if (!PAYMENT_ID.test(paymentId)) return null;
+  const payment = await mp<Record<string, unknown>>(`/v1/payments/${paymentId}`);
+  if (!PAYMENT_ID.test(String(payment.id ?? ""))) return null;
+  const field = (key: string) => (typeof payment[key] === "string" ? (payment[key] as string) : null);
+  return {
+    id: payment.id as number,
+    status: field("status"),
+    status_detail: field("status_detail"),
+    live_mode: typeof payment.live_mode === "boolean" ? payment.live_mode : null,
+    payment_method_id: field("payment_method_id"),
+    payment_type_id: field("payment_type_id"),
+    date_created: field("date_created"),
+    date_approved: field("date_approved"),
+    external_reference: field("external_reference"),
+  };
+}
+
 /**
  * A webhook's x-signature, against the secret from the Mercado Pago panel.
  * The rule itself is in mercadopago-notice.ts, where it is tested; this reads
