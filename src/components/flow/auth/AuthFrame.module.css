@@ -163,22 +163,6 @@
   justify-items: start;
 }
 
-/* ── Checkout: the card form from Mercado Pago, in the Pulse's frame ── */
-.brick {
-  display: grid;
-  min-height: 12rem;
-  align-content: start;
-}
-
-.brickLoading {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 0;
-  font-size: 0.875rem;
-  color: var(--text-2);
-}
-
 .processing {
   display: grid;
   gap: 0.4rem;

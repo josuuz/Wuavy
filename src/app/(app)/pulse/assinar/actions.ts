@@ -21,35 +21,44 @@ import { getSession, getSubscription } from "@/lib/flow/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /*
-  The checkout's two calls. Subscribing takes only the card token the
-  Mercado Pago Brick made in the browser (never the card) and the payer's
-  e-mail; who is paying comes from the verified session. The answer is what
-  Mercado Pago said, read on the server. Checking reads it again. Neither
-  ever tells the browser more than the six outcomes below.
+  The checkout, now hosted by Mercado Pago. subscribe() never collects a
+  card: it creates (or resumes) a subscription with status "pending" and
+  redirects to init_point, the page Mercado Pago itself returns. The card is
+  typed there, on Mercado Pago's own domain — never on ours, not even as a
+  token. check() reads what the subscription stands at now, whether the
+  person just submitted the form, just returned from Mercado Pago, or is
+  revisiting later.
 
   Creating is a claim, not a bare call: claimSubscriptionCreation reserves
   the row before anything reaches Mercado Pago (lib/mercadopago/
   create-subscription.ts, the same mechanism billing/charges.ts already
-  proved for Cobranças), so two requests for the same row — a double click,
-  a retried network call — never both call POST /preapproval. Once Mercado
-  Pago answers "created", nothing after that point is ever reported as
-  "rejected": either the id is saved (persistSubscriptionId, with retries)
-  and the real status read back, or the row is blocked for manual
-  reconciliation. A row is never deleted and never silently loses the id of
-  an assinatura that may already exist at Mercado Pago.
+  proved for Cobranças), so two requests for the same row — a double click, a
+  retried network call — never both call POST /preapproval. Once Mercado Pago
+  answers "created", nothing after that point is ever reported as "rejected":
+  either the id is saved (persistSubscriptionId, with retries) or the row is
+  blocked for manual reconciliation. A row is never deleted and never
+  silently loses the id of an assinatura that may already exist at Mercado
+  Pago.
+
+  A row that already has a provider_subscription_id but is still "pending" —
+  the person started the hosted checkout and never finished it, or just came
+  back and the webhook has not landed yet — is resumed, never recreated:
+  Mercado Pago's own idempotency key (the row's id) makes a repeated
+  POST /preapproval answer with the very same subscription and the very same
+  init_point, so sending the person back there is always safe.
 */
 
 export type CheckoutOutcome =
   | "active"
   /** Ainda em andamento: nenhum erro, só esperando o Mercado Pago confirmar. */
   | "pending"
-  /** O Mercado Pago recusou a criação, sincronamente: nada chegou a existir lá. */
+  /** O Mercado Pago recusou a criação, sincronamente (dados da configuração, nunca o cartão: nenhum cartão existe ainda nesta etapa). */
   | "rejected"
   /** O Mercado Pago criou a assinatura e já a cancelou, sem nunca ter cobrado nada. */
   | "declined"
   /** Resultado desconhecido (rede, timeout, falha ao salvar): travado para reconciliação manual. */
   | "unresolved"
-  /** Nossas credenciais ou um limite de taxa — nunca o cartão da pessoa. */
+  /** Nossas credenciais ou um limite de taxa. */
   | "unavailable";
 
 /** The outcome, and in test mode only, why Mercado Pago refused. */
@@ -58,33 +67,116 @@ export interface Subscribed {
   detail?: string;
 }
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CARD_TOKEN = /^[\w-]{8,128}$/;
-
 /**
- * 'cancelled' aqui nunca é a mesma coisa que a assinatura recusada na
- * criação (runCreateSubscription's "refused"): é o Mercado Pago confirmando
- * que criou a assinatura e já a cancelou — dentro do fluxo de subscribe()/
- * check(), sempre para uma linha desta própria tentativa, que nunca chegou
- * a ficar ativa (started_at nunca foi gravado). "declined", nunca
- * "rejected": a tela mostra uma frase mais cautelosa, sem afirmar que nada
- * foi cobrado com a mesma certeza de uma recusa síncrona.
+ * 'declined' aqui nunca é a mesma coisa que a assinatura recusada na criação
+ * (runCreateSubscription's "refused"): é o Mercado Pago confirmando que
+ * criou a assinatura e já a cancelou — sempre para uma linha desta própria
+ * tentativa, que nunca chegou a ficar ativa (started_at nunca foi gravado).
+ * "declined", nunca "rejected": a tela mostra uma frase mais cautelosa, sem
+ * afirmar que nada foi cobrado com a mesma certeza de uma recusa síncrona.
  */
 const outcome = (status: SubscriptionStatus | null): CheckoutOutcome =>
   releases(status) ? "active" : status === "cancelled" ? "declined" : "pending";
 
-export async function subscribe(input: { token: string; email: string }): Promise<Subscribed> {
+/**
+ * O que termina uma criação (ou uma retomada): chama o Mercado Pago, trata
+ * cada desfecho exatamente como subscribe() sempre tratou
+ * (recusado/nosso/incerto/criado) e, só quando a assinatura existe e o
+ * init_point veio, redireciona para o checkout hospedado — nunca retorna
+ * nesse caminho. Retorna normalmente em qualquer outro desfecho.
+ */
+async function createAndRedirect(rowId: string, email: string, backPath: string): Promise<Subscribed> {
+  const result = await runCreateSubscription(() => createSubscription({ reference: rowId, email, backPath }));
+
+  if (result.outcome === "ours") {
+    // Ours, not theirs: credentials or rate limit. Nada foi criado — libera
+    // a reserva, a mesma linha pode tentar de novo depois.
+    console.error("subscribe: Mercado Pago refused our credentials or rate-limited us", result.httpStatus);
+    await releaseSubscriptionClaim(rowId);
+    return { outcome: "unavailable" };
+  }
+
+  if (result.outcome === "refused") {
+    // Recusado na própria configuração (payer_email, moeda, valor): a
+    // tentativa nunca chegou a existir no Mercado Pago. Marca como recusada —
+    // nunca apaga — e libera para uma tentativa nova (uma linha nova).
+    console.warn("subscribe: refused by Mercado Pago", result.httpStatus, JSON.stringify(result.body));
+    const detail = testMode() ? describeError(new MercadoPagoError(result.httpStatus, result.body)) : undefined;
+    if ((await recordSubscriptionRefusal(rowId, result.httpStatus, detail)) === "failed") {
+      console.error("subscribe: gravar recusa não confirmou", rowId);
+    }
+    return { outcome: "rejected", detail };
+  }
+
+  if (result.outcome === "unconfirmed") {
+    // Rede, timeout, 5xx: a assinatura pode já existir do lado do Mercado
+    // Pago sem termos como confirmar agora. Trava para reconciliação manual
+    // — nunca repete a chamada sozinha, que arriscaria uma segunda
+    // assinatura recorrente.
+    console.error("subscribe: Mercado Pago unreachable, resultado indeterminado", rowId);
+    if ((await blockSubscriptionCreation(rowId)) === "failed") console.error("subscribe: bloqueio após resultado incerto não confirmou", rowId);
+    return { outcome: "unresolved" };
+  }
+
+  // result.outcome === "created": o Mercado Pago criou a assinatura. A
+  // partir de agora nada mais é relatado como recusa.
+  const persisted = await persistSubscriptionId(rowId, result.providerId);
+  if (persisted === "failed") {
+    // O id existe no Mercado Pago (result.providerId) mas não foi possível
+    // salvá-lo aqui mesmo depois de tentar: registra os dois ids juntos —
+    // sem isto, uma reconciliação manual não teria como saber qual
+    // assinatura, do lado do Mercado Pago, pertence a esta linha.
+    console.error("subscribe: não foi possível salvar o id da assinatura", { rowId, providerId: result.providerId });
+    if ((await blockSubscriptionCreation(rowId)) === "failed") console.error("subscribe: bloqueio após falha de persistência não confirmou", rowId);
+    return { outcome: "unresolved" };
+  }
+
+  if (!result.initPoint) {
+    // O id já está salvo (persistSubscriptionId confirmou) — nunca perdido —
+    // mas sem init_point não há para onde mandar a pessoa. Não devia
+    // acontecer numa criação "pending" sem card_token_id; se acontecer, pede
+    // para verificar de novo em vez de travar ou inventar um endereço.
+    console.error("subscribe: Mercado Pago criou a assinatura sem init_point", rowId, result.providerId);
+    return { outcome: "unresolved" };
+  }
+
+  redirect(result.initPoint);
+}
+
+/**
+ * Retoma um checkout hospedado já criado para esta linha. Confirma o estado
+ * real primeiro — nunca confia em "ainda pending" guardado sem perguntar de
+ * novo ao Mercado Pago — e só quando ele de fato ainda não resolveu reemite a
+ * MESMA chamada de criação (idempotente pela chave = o id desta linha) para
+ * recuperar o mesmo init_point e levar a pessoa de volta.
+ */
+async function resumeCheckout(rowId: string, providerId: string, email: string): Promise<Subscribed> {
+  let fresh: SubscriptionStatus | null;
+  try {
+    fresh = await syncSubscription(providerId);
+  } catch (error) {
+    console.error("subscribe: resync ao retomar checkout pendente", rowId, error);
+    return { outcome: "pending" };
+  }
+  if (fresh !== "pending") return { outcome: outcome(fresh) };
+  return createAndRedirect(rowId, email, "/pulse/assinar");
+}
+
+export async function subscribe(): Promise<Subscribed> {
   const session = await getSession();
   if (!session) redirect("/pulse/entrar?depois=assinar");
+
+  const email = session.user.email;
 
   const current = await getSubscription();
   // Already paying, or already waiting on one: never a second subscription.
   if (current && releases(current.status)) return { outcome: "active" };
-  if (current?.status === "pending" && current.provider_subscription_id) return { outcome: await check() };
+  if (current?.status === "pending" && current.provider_subscription_id) {
+    if (!email) return { outcome: "rejected" };
+    return resumeCheckout(current.id, current.provider_subscription_id, email);
+  }
 
   if (!billingReady()) return { outcome: "unavailable" };
-  if (typeof input?.token !== "string" || !CARD_TOKEN.test(input.token)) return { outcome: "rejected" };
-  const email = typeof input.email === "string" && EMAIL.test(input.email.trim()) ? input.email.trim() : session.user.email;
   if (!email) return { outcome: "rejected" };
 
   let admin;
@@ -121,13 +213,9 @@ export async function subscribe(input: { token: string; email: string }): Promis
       // 23505 (unique_violation): perdeu a corrida contra outra requisição
       // simultânea da mesma pessoa (subscriptions_one_live_per_user, pré-
       // clínica, ou subscriptions_one_live_per_clinic, já com clínica —
-      // migrations 0021/0020). Achado da revisão independente: sem isto, duas
-      // chamadas concorrentes de quem ainda não tem clínica liam a mesma
-      // ausência de assinatura, cada uma inseria e reivindicava a sua própria
-      // linha, e as duas chegavam a criar uma assinatura real no Mercado
-      // Pago. Nunca insere uma segunda linha: lê a que já existe e segue com
-      // ela, como se tivesse sido encontrada por getSubscription() desde o
-      // início.
+      // migrations 0021/0020). Nunca insere uma segunda linha: lê a que já
+      // existe e segue com ela, como se tivesse sido encontrada por
+      // getSubscription() desde o início.
       if (error.code === "23505") {
         const base = admin.from("subscriptions").select("id, status, provider_subscription_id").eq("user_id", session.user.id);
         // organization_id null precisa de .is(), nunca .eq(): o índice que
@@ -141,7 +229,9 @@ export async function subscribe(input: { token: string; email: string }): Promis
           return { outcome: "unavailable" };
         }
         if (releases(won.status as SubscriptionStatus)) return { outcome: "active" };
-        if (won.status === "pending" && won.provider_subscription_id) return { outcome: await check() };
+        if (won.status === "pending" && won.provider_subscription_id) {
+          return resumeCheckout(won.id, won.provider_subscription_id, email);
+        }
         rowId = won.id;
       } else {
         console.error("subscribe: row", error);
@@ -160,61 +250,7 @@ export async function subscribe(input: { token: string; email: string }): Promis
   if (claim === "blocked") return { outcome: "unresolved" };
   if (claim === "in_progress") return { outcome: "pending" };
 
-  const id = rowId;
-  const result = await runCreateSubscription(() => createSubscription({ reference: id, email, cardToken: input.token, backPath: "/pulse/assinar" }));
-
-  if (result.outcome === "ours") {
-    // Ours, not theirs: credentials or rate limit. Nada foi criado — libera
-    // a reserva, a mesma linha pode tentar de novo depois.
-    console.error("subscribe: Mercado Pago refused our credentials or rate-limited us", result.httpStatus);
-    await releaseSubscriptionClaim(id);
-    return { outcome: "unavailable" };
-  }
-
-  if (result.outcome === "refused") {
-    // Recusado (cartão, dados): a tentativa nunca chegou a existir no
-    // Mercado Pago. Marca como recusada — nunca apaga — e libera para uma
-    // tentativa nova (uma linha nova).
-    console.warn("subscribe: refused by Mercado Pago", result.httpStatus, JSON.stringify(result.body));
-    const detail = testMode() ? describeError(new MercadoPagoError(result.httpStatus, result.body)) : undefined;
-    if ((await recordSubscriptionRefusal(id, result.httpStatus, detail)) === "failed") {
-      console.error("subscribe: gravar recusa não confirmou", id);
-    }
-    return { outcome: "rejected", detail };
-  }
-
-  if (result.outcome === "unconfirmed") {
-    // Rede, timeout, 5xx: a assinatura pode já existir do lado do Mercado
-    // Pago sem termos como confirmar agora. Trava para reconciliação manual
-    // — nunca repete a chamada sozinha, que arriscaria uma segunda
-    // assinatura recorrente.
-    console.error("subscribe: Mercado Pago unreachable, resultado indeterminado", id);
-    if ((await blockSubscriptionCreation(id)) === "failed") console.error("subscribe: bloqueio após resultado incerto não confirmou", id);
-    return { outcome: "unresolved" };
-  }
-
-  // result.outcome === "created": o Mercado Pago criou a assinatura. A
-  // partir de agora nada mais é relatado como recusa.
-  const persisted = await persistSubscriptionId(id, result.providerId);
-  if (persisted === "failed") {
-    // O id existe no Mercado Pago (result.providerId) mas não foi possível
-    // salvá-lo aqui mesmo depois de tentar: registra os dois ids juntos —
-    // sem isto, uma reconciliação manual não teria como saber qual
-    // assinatura, do lado do Mercado Pago, pertence a esta linha.
-    console.error("subscribe: não foi possível salvar o id da assinatura", { rowId: id, providerId: result.providerId });
-    if ((await blockSubscriptionCreation(id)) === "failed") console.error("subscribe: bloqueio após falha de persistência não confirmou", id);
-    return { outcome: "unresolved" };
-  }
-
-  // O id já está salvo (persistSubscriptionId confirmou): uma falha aqui é
-  // só a leitura de confirmação, nunca a criação. A linha continua 'pending'
-  // com o id salvo — o webhook ou a próxima pergunta de check() resolve.
-  try {
-    return { outcome: outcome(await syncSubscription(result.providerId)) };
-  } catch (error) {
-    console.error("subscribe: falha ao sincronizar depois de criar", id, error);
-    return { outcome: "pending" };
-  }
+  return createAndRedirect(rowId, email, "/pulse/assinar");
 }
 
 /** Where the signed-in person's subscription stands, read again from Mercado Pago while it is pending. */
