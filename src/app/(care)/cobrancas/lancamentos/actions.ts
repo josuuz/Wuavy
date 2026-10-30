@@ -19,6 +19,8 @@ import {
   runCreateCharge,
   syncByReference,
 } from "@/lib/billing/charges";
+import { COUPON_REJECT_MESSAGE, resolveCoupon } from "@/lib/billing/coupon-rules";
+import { couponChargeHistory, lookupCouponByCode, type CouponLookup } from "@/lib/billing/coupons";
 import { parsePrice } from "@/lib/billing/money";
 import { getAdmin } from "@/lib/maintenance/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -51,7 +53,15 @@ const uuid = (form: FormData, key: string) => {
 };
 
 export type ChargeState =
-  | { ok: true; url: string; description: string; amountCents: number; clientWhatsapp: string | null }
+  | {
+      ok: true;
+      url: string;
+      description: string;
+      amountCents: number;
+      discountCents: number;
+      originalAmountCents: number;
+      clientWhatsapp: string | null;
+    }
   | { ok: false; error: string }
   | null;
 
@@ -65,36 +75,95 @@ export async function addCharge(_state: ChargeState, form: FormData): Promise<Ch
 
   const serviceId = uuid(form, "service_id");
   let description = text(form, "description", 200);
+  let service: { name: string; active: boolean; kind: string } | null = null;
   if (serviceId) {
-    const { data: service } = await admin.from("billing_services").select("name, active").eq("id", serviceId).maybeSingle();
-    if (!service) return { ok: false, error: "Serviço não encontrado." };
-    if (!service.active) return { ok: false, error: "Este serviço está inativo." };
-    description ??= service.name;
+    const { data } = await admin.from("billing_services").select("name, active, kind").eq("id", serviceId).maybeSingle();
+    if (!data) return { ok: false, error: "Serviço não encontrado." };
+    if (!data.active) return { ok: false, error: "Este serviço está inativo." };
+    service = data;
+    description ??= data.name;
   }
   if (!description) return { ok: false, error: "Escolha um serviço ou escreva uma descrição." };
 
   const amountCents = parsePrice(text(form, "price", 20) ?? "");
   if (amountCents === null) return { ok: false, error: "Valor inválido. Use algo como 150,00." };
 
+  // A linha desta tentativa, e se ela já existe — antes de qualquer coisa
+  // sobre o cupom. Numa repetição (reload, duplo clique, reenvio depois de
+  // uma recusa), a linha já tem amount_cents/coupon_id/discount_cents
+  // congelados desde a primeira vez; nunca recalculados do formulário atual.
+  // Sem isso, um cupom trocado ou removido no reenvio cobraria um valor
+  // diferente do já registrado, e contaria duas vezes contra o limite de
+  // uso do cupom (effectiveUses, coupon-rules.ts) — a mesma proteção que
+  // amount_cents já tinha antes de cupons existirem, agora estendida a eles.
+  const chargeId = uuid(form, "charge_id") ?? randomUUID();
+  const { data: existing } = await admin
+    .from("billing_charges")
+    .select("id, provider_preference_id, payment_url, creation_blocked_at, amount_cents, coupon_id, discount_cents")
+    .eq("id", chargeId)
+    .maybeSingle();
+
+  let finalAmountCents: number;
+  let discountCents: number;
+  let couponId: string | null;
+
+  if (existing) {
+    finalAmountCents = existing.amount_cents;
+    discountCents = existing.discount_cents;
+    couponId = existing.coupon_id;
+  } else {
+    // O cupom (opcional): sempre recalculado aqui, nunca confiado do
+    // navegador. Sem código, resolveCoupon não aplica nada e não recusa — o
+    // caminho normal. Uma falha ao consultar o cupom nunca libera a
+    // cobrança sem ele: fecha, em vez de seguir como se não houvesse cupom
+    // (o oposto de services.ts/clients.ts, onde uma leitura vazia por erro
+    // é inofensiva para uma lista — aqui decide se um desconto é aplicado).
+    const couponCode = text(form, "coupon_code", 20);
+    let couponLookup: CouponLookup | null = null;
+    let resolution: ReturnType<typeof resolveCoupon>;
+    try {
+      couponLookup = couponCode ? await lookupCouponByCode(couponCode) : null;
+      if (couponCode && !couponLookup) return { ok: false, error: COUPON_REJECT_MESSAGE["not-found"] };
+      const chargeHistory = couponLookup ? await couponChargeHistory(couponLookup.coupon.id) : [];
+      resolution = resolveCoupon({
+        couponCode: couponCode ?? null,
+        coupon: couponLookup?.coupon ?? null,
+        eligibleServiceIds: couponLookup?.eligibleServiceIds ?? [],
+        chargeHistory,
+        representativeActive: couponLookup?.representative.active ?? true,
+        nowMs: Date.now(),
+        amountCents,
+        serviceId,
+        serviceKind: service ? (service.kind as "once" | "recurring") : null,
+      });
+    } catch (error) {
+      console.error("cobranças: verificar cupom", error);
+      return { ok: false, error: "Não foi possível verificar o cupom agora. Tente de novo." };
+    }
+    if (!resolution.applied && "error" in resolution) return { ok: false, error: resolution.error };
+    finalAmountCents = resolution.applied ? resolution.finalCents : amountCents;
+    discountCents = resolution.applied ? resolution.discountCents : 0;
+    couponId = resolution.applied ? (couponLookup as NonNullable<typeof couponLookup>).coupon.id : null;
+  }
+
   const { data: client } = await admin.from("billing_clients").select("id, email, whatsapp, archived_at").eq("id", clientId).maybeSingle();
   if (!client || client.archived_at) return { ok: false, error: "Cliente não encontrado." };
 
   if (!billingReady()) return { ok: false, error: closedReason() ?? "Cobrança fechada." };
 
-  // A nossa linha primeiro: o id dela é a referência da Preference. Se duas
-  // requisições com o mesmo chargeId tentarem inserir ao mesmo tempo (duplo
-  // clique, uma repetição de rede), só uma insere — a outra recebe 23505 e
-  // simplesmente segue, porque a linha que importa já existe.
-  const chargeId = uuid(form, "charge_id") ?? randomUUID();
-  const { data: existing } = await admin
-    .from("billing_charges")
-    .select("id, provider_preference_id, payment_url, creation_blocked_at")
-    .eq("id", chargeId)
-    .maybeSingle();
+  // Se duas requisições com o mesmo chargeId tentarem inserir ao mesmo
+  // tempo (duplo clique, uma repetição de rede), só uma insere — a outra
+  // recebe 23505 e simplesmente segue, porque a linha que importa já existe.
   if (!existing) {
-    const { error } = await admin
-      .from("billing_charges")
-      .insert({ id: chargeId, client_id: clientId, service_id: serviceId, description, amount_cents: amountCents });
+    const { error } = await admin.from("billing_charges").insert({
+      id: chargeId,
+      client_id: clientId,
+      service_id: serviceId,
+      description,
+      amount_cents: finalAmountCents,
+      coupon_id: couponId,
+      discount_cents: discountCents,
+    });
     if (error && error.code !== "23505") {
       console.error("cobranças: criar cobrança", error);
       return { ok: false, error: "Não foi possível salvar esta cobrança." };
@@ -102,7 +171,15 @@ export async function addCharge(_state: ChargeState, form: FormData): Promise<Ch
   }
 
   if (existing?.provider_preference_id && existing.payment_url) {
-    return { ok: true, url: existing.payment_url, description, amountCents, clientWhatsapp: client.whatsapp };
+    return {
+      ok: true,
+      url: existing.payment_url,
+      description,
+      amountCents: finalAmountCents,
+      discountCents,
+      originalAmountCents: finalAmountCents + discountCents,
+      clientWhatsapp: client.whatsapp,
+    };
   }
 
   // A reserva atômica: só uma tentativa por vez chega a chamar o Mercado
@@ -112,7 +189,15 @@ export async function addCharge(_state: ChargeState, form: FormData): Promise<Ch
   if (claim === "already") {
     const { data: refreshed } = await admin.from("billing_charges").select("payment_url").eq("id", chargeId).maybeSingle();
     return refreshed?.payment_url
-      ? { ok: true, url: refreshed.payment_url, description, amountCents, clientWhatsapp: client.whatsapp }
+      ? {
+          ok: true,
+          url: refreshed.payment_url,
+          description,
+          amountCents: finalAmountCents,
+          discountCents,
+          originalAmountCents: finalAmountCents + discountCents,
+          clientWhatsapp: client.whatsapp,
+        }
       : { ok: false, error: "Esta cobrança já tem uma Preference registrada, mas sem link salvo. Peça a reconciliação manual." };
   }
   if (claim === "blocked") {
@@ -126,7 +211,7 @@ export async function addCharge(_state: ChargeState, form: FormData): Promise<Ch
   }
 
   const payerEmail = payerEmailForCharge(client.email);
-  const result = await runCreateCharge(null, () => createPreference({ chargeId, description, amountCents, payerEmail }));
+  const result = await runCreateCharge(null, () => createPreference({ chargeId, description, amountCents: finalAmountCents, payerEmail }));
 
   if (result.outcome === "unconfirmed") {
     // Pode já ter sido criada no Mercado Pago, sem termos como confirmar
@@ -155,7 +240,15 @@ export async function addCharge(_state: ChargeState, form: FormData): Promise<Ch
   }
 
   revalidatePath(PANEL);
-  return { ok: true, url: result.url, description, amountCents, clientWhatsapp: client.whatsapp };
+  return {
+    ok: true,
+    url: result.url,
+    description,
+    amountCents: finalAmountCents,
+    discountCents,
+    originalAmountCents: finalAmountCents + discountCents,
+    clientWhatsapp: client.whatsapp,
+  };
 }
 
 /** O que o painel mostra depois de investigar ou reconciliar — nunca "ok" sem uma Preference de verdade confirmada. */

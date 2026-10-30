@@ -6,6 +6,7 @@ import { CopyLink } from "@/components/maintenance/CopyLink";
 import { Button } from "@/components/ui/Button";
 import styles from "@/components/maintenance/Admin.module.css";
 import { brl } from "@/lib/billing/money";
+import { waLink } from "@/lib/billing/whatsapp";
 import type { ChargeState } from "@/app/(care)/cobrancas/lancamentos/actions";
 
 /*
@@ -25,12 +26,6 @@ interface ChargeFormProps {
   clients: { id: string; name: string }[];
   services: { id: string; name: string; default_price_cents: number }[];
 }
-
-const waLink = (whatsapp: string | null, text: string) => {
-  const digits = (whatsapp ?? "").replace(/\D/g, "");
-  const to = digits ? (digits.length > 11 ? digits : `55${digits}`) : "";
-  return `https://wa.me/${to}?text=${encodeURIComponent(text)}`;
-};
 
 export function ChargeForm({ action, chargeId, clients, services }: ChargeFormProps) {
   const [state, submit, pending] = useActionState(action, null);
@@ -75,6 +70,11 @@ export function ChargeForm({ action, chargeId, clients, services }: ChargeFormPr
         <input name="price" className={styles.input} inputMode="decimal" placeholder="150,00" required />
       </label>
 
+      <label className={styles.field}>
+        <span className="type-micro">Cupom (opcional)</span>
+        <input name="coupon_code" className={styles.input} maxLength={20} placeholder="BRU10" />
+      </label>
+
       <div data-wide="" className={styles.rowActions}>
         <Button type="submit" size="sm" disabled={pending} aria-busy={pending || undefined}>
           {pending ? "Gerando…" : "Gerar cobrança"}
@@ -90,7 +90,14 @@ export function ChargeForm({ action, chargeId, clients, services }: ChargeFormPr
       {state?.ok ? (
         <div className={styles.notice} data-wide="" role="status">
           <p className="type-chapter">
-            {state.description} — {brl(state.amountCents)}
+            {state.description} —{" "}
+            {state.discountCents > 0 ? (
+              <>
+                {brl(state.originalAmountCents)} − {brl(state.discountCents)} = {brl(state.amountCents)}
+              </>
+            ) : (
+              brl(state.amountCents)
+            )}
           </p>
           <CopyLink url={state.url} />
           <div className={styles.rowActions}>
