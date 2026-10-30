@@ -29,21 +29,25 @@ import { PRICE, type Standing, type SubscriptionStatus } from "./access";
 /*
   Mercado Pago, from the server only. The Access Token lives in an env var
   without the NEXT_PUBLIC_ prefix and this module is server-only, so it never
-  reaches a browser. The card itself never reaches the Pulse either: the
-  browser tokenizes it with Mercado Pago's own Card Payment Brick and sends
-  only the token, which the subscription below consumes.
+  reaches a browser.
 
-  The model: a monthly subscription "with authorized payment" (/preapproval
-  with a card token, status "authorized"). Mercado Pago validates the card at
-  once and then charges R$ 297 every month on its own; that is why the card is
-  the only method offered: Pix and boleto do not charge by themselves each
-  month.
+  The model, for the first subscription (createSubscription, below): a
+  monthly subscription with NO associated plan and status "pending", created
+  without any card data (/preapproval, status "pending", no card_token_id).
+  Mercado Pago answers with init_point, its own hosted checkout page, where
+  the person enters the card. Nothing about the card — not even a token —
+  ever reaches the Pulse for this step; only Mercado Pago's own id and
+  init_point do. Changing the card on a subscription that already exists
+  (changeCard, below) is a different, narrower operation and still uses
+  Mercado Pago's Card Payment Brick for a token, the same as before.
 
   What a subscription's status is comes from one place: syncSubscription,
   which asks Mercado Pago for the subscription and its latest charge and
-  writes the answer. The checkout calls it right after creating the
-  subscription, and the webhook calls it on every notice. Never from anything
-  the browser says, and running it twice writes the same thing.
+  writes the answer. The webhook calls it on every notice, and the checkout
+  calls it when the person returns from Mercado Pago's hosted page. Never
+  from anything the browser says (not even query parameters Mercado Pago
+  itself attaches to the back_url), and running it twice writes the same
+  thing.
 */
 
 const API = "https://api.mercadopago.com";
@@ -137,10 +141,18 @@ export const returnUrl = (path: string) => httpsUrl(path, site.url, CANONICAL_UR
 
 /**
  * Creates the monthly subscription for one of our rows (its id is the
- * reference and the idempotency key: a retry after a timeout gets the same
- * subscription back instead of a second one).
+ * reference and the idempotency key: a retry after a timeout — a double
+ * click, a reload, resuming a pending checkout the person never finished —
+ * gets the same subscription back, with the same init_point, instead of a
+ * second one. Mercado Pago's idempotency key is what guarantees this; this
+ * function always sends the identical body for the same reference).
+ *
+ * No card data goes in this call. Status "pending" and no card_token_id is
+ * what makes Mercado Pago answer with init_point: its own hosted checkout
+ * page, where the person enters the card. The subscription is not charged,
+ * and is not even authorized, until they do.
  */
-export async function createSubscription(input: { reference: string; email: string; cardToken: string; backPath: string }) {
+export async function createSubscription(input: { reference: string; email: string; backPath: string }) {
   return mp<Preapproval>("/preapproval", {
     method: "POST",
     idempotencyKey: input.reference,
@@ -148,14 +160,13 @@ export async function createSubscription(input: { reference: string; email: stri
       reason: "Wuavy Pulse",
       external_reference: input.reference,
       payer_email: payerEmail(input.email),
-      card_token_id: input.cardToken,
       // The amount is stored inside the subscription: Mercado Pago charges this
       // one every month until someone changes it there. Raising PRICE therefore
       // prices new subscriptions only — which is what keeps the five founding
       // clinics at theirs (lib/flow/access.ts).
       auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: PRICE / 100, currency_id: "BRL" },
       back_url: returnUrl(input.backPath),
-      status: "authorized",
+      status: "pending",
     },
   });
 }

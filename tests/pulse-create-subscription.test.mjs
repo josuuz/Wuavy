@@ -14,9 +14,18 @@ import { claimDecision, runCreateSubscription, runPersistRetry } from "../src/li
 
 // ── runCreateSubscription ─────────────────────────────────────
 
-test("o Mercado Pago aceita: 'created', com o id dele", async () => {
-  const result = await runCreateSubscription(async () => ({ id: "preapproval-1" }));
-  assert.deepEqual(result, { outcome: "created", providerId: "preapproval-1" });
+test("o Mercado Pago aceita: 'created', com o id e o init_point do checkout hospedado", async () => {
+  const result = await runCreateSubscription(async () => ({ id: "preapproval-1", init_point: "https://www.mercadopago.com/subscriptions/checkout?preapproval_id=preapproval-1" }));
+  assert.deepEqual(result, {
+    outcome: "created",
+    providerId: "preapproval-1",
+    initPoint: "https://www.mercadopago.com/subscriptions/checkout?preapproval_id=preapproval-1",
+  });
+});
+
+test("o Mercado Pago aceita mas não devolve init_point: 'created', initPoint null — nunca inventa o endereço", async () => {
+  const result = await runCreateSubscription(async () => ({ id: "preapproval-2" }));
+  assert.deepEqual(result, { outcome: "created", providerId: "preapproval-2", initPoint: null });
 });
 
 test("uma recusa de alto risco (400, com a causa) é 'refused' — nada foi criado", async () => {

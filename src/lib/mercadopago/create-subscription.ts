@@ -18,8 +18,13 @@
 const OURS = new Set([401, 403, 429]);
 
 export type CreateSubscriptionOutcome =
-  /** O Mercado Pago criou a assinatura: o id existe do lado dele a partir de agora. */
-  | { outcome: "created"; providerId: string }
+  /**
+   * O Mercado Pago criou a assinatura: o id existe do lado dele a partir de
+   * agora. initPoint é o endereço do checkout hospedado, exatamente como o
+   * Mercado Pago devolveu — null quando a resposta não trouxe nenhum (nunca
+   * inventado aqui).
+   */
+  | { outcome: "created"; providerId: string; initPoint: string | null }
   /** Recusada sincronamente pelo Mercado Pago (cartão, dados) — nada foi criado. */
   | { outcome: "refused"; httpStatus: number; body: unknown }
   /** Nossas credenciais ou um limite de taxa — nada foi criado, mas não é o cartão. */
@@ -34,8 +39,10 @@ export type CreateSubscriptionOutcome =
  * daqui pode voltar a ser "refused" sem arriscar perder o vínculo (o mesmo
  * risco que billing.ts tinha antes desta correção).
  */
-export async function runCreateSubscription(create: () => Promise<{ id: string }>): Promise<CreateSubscriptionOutcome> {
-  let created: { id: string };
+export async function runCreateSubscription(
+  create: () => Promise<{ id: string; init_point?: string }>,
+): Promise<CreateSubscriptionOutcome> {
+  let created: { id: string; init_point?: string };
   try {
     created = await create();
   } catch (error) {
@@ -44,7 +51,7 @@ export async function runCreateSubscription(create: () => Promise<{ id: string }
     if (OURS.has(status)) return { outcome: "ours", httpStatus: status };
     return { outcome: "refused", httpStatus: status, body: (error as { body?: unknown } | null)?.body };
   }
-  return { outcome: "created", providerId: created.id };
+  return { outcome: "created", providerId: created.id, initPoint: created.init_point ?? null };
 }
 
 /*

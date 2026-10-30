@@ -35,6 +35,13 @@ export interface Preapproval {
   status: "pending" | "authorized" | "paused" | "cancelled" | "canceled";
   external_reference?: string;
   next_payment_date?: string;
+  /**
+   * O endereço do checkout hospedado — só existe numa assinatura criada com
+   * status "pending" e sem card_token_id (lib/flow/billing.ts:createSubscription).
+   * Nunca construído à mão aqui nem em billing.ts: é sempre o que o próprio
+   * Mercado Pago devolveu na criação.
+   */
+  init_point?: string;
 }
 
 /** Uma cobrança mensal de uma assinatura (um "authorized payment"). */

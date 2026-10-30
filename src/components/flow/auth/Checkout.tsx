@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { check, subscribe, type CheckoutOutcome, type Subscribed } from "@/app/(app)/pulse/assinar/actions";
 import { site } from "@/data/site";
@@ -12,109 +12,83 @@ import { brl } from "@/lib/flow/format";
 import { PLAN } from "../demo/copy";
 import { PaymentMethod, Soon } from "../demo/forms";
 import ui from "../demo/ui.module.css";
-import { CardBrick } from "./CardBrick";
 import styles from "./AuthFrame.module.css";
 
 /*
-  The checkout. The card is typed into Mercado Pago's own Card Payment Brick,
-  which turns it into a token in the browser; only that token goes to our
-  server, which creates the subscription with Mercado Pago and answers with
-  what Mercado Pago said. While the answer is not final, the page asks the
-  server again (the server asks Mercado Pago, the webhook may already have
-  told it). The browser never decides that the Pulse is paid.
+  The checkout, hosted by Mercado Pago. Submitting takes no card: subscribe()
+  (a Server Action) creates or resumes the subscription and redirects the
+  browser straight to Mercado Pago's own init_point. The card is typed there,
+  never here. While a "pending" row waits on a webhook, or on someone who
+  started the hosted form and never finished it, the page polls check() and
+  also offers the same submit again — subscribe() resumes that exact
+  checkout instead of creating a second one.
 */
 
-type Stage = "form" | "processing" | CheckoutOutcome;
+type Stage = CheckoutOutcome | "form";
 
-const BRICK = "pulse-card-brick";
-const POLL_MS = 2500;
-/** About twenty seconds of asking; then the page says the payment is being processed. */
-const POLLS = 8;
+/** While "pending", how often the page asks again on its own. */
+const POLL_MS = 8000;
 
 interface CheckoutProps {
-  stage: "form" | "pending" | "active";
+  stage: Stage;
   email: string;
   /** A clinic subscribing again goes back to the Pulse, not to onboarding. */
   hasClinic: boolean;
-  publicKey: string;
-  /** Test credentials in use: say so, and say why a card was refused. */
+  /** Mercado Pago is configured on the server. Without it, only the offline path shows. */
+  ready: boolean;
+  /** Test credentials in use: say so, and say why an attempt was refused. */
   test: boolean;
 }
 
-export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: CheckoutProps) {
-  const [stage, setStage] = useState<Stage>(initial === "pending" ? "processing" : initial);
-  const [ready, setReady] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const [detail, setDetail] = useState<string>();
+export function Checkout({ stage: initial, email, hasClinic, ready, test }: CheckoutProps) {
+  const [result, submitAction, submitting] = useActionState<Subscribed | null>(() => subscribe(), null);
+  // A manual override — set only from event handlers (retry, recheck, the
+  // slow poll below), never mirrored from `result` in an effect. When a new
+  // submit actually finishes, the fresh `result` must win over a stale
+  // override; adjusting state during render (comparing against the last
+  // `result` seen) is React's own pattern for that, not an effect.
+  const [manualStage, setManualStage] = useState<Stage | null>(null);
+  const [syncedResult, setSyncedResult] = useState(result);
+  if (result !== syncedResult) {
+    setSyncedResult(result);
+    setManualStage(null);
+  }
+  const stage: Stage = manualStage ?? result?.outcome ?? initial;
 
-  // The card, as a token from Mercado Pago's own form (CardBrick): the number never comes here.
-  const sent = async (token: string, payer: string) => {
-    setSubmitting(true);
-    const result = await subscribe({ token, email: payer }).catch((): Subscribed => ({ outcome: "pending" }));
-    setSubmitting(false);
-    setDetail(result.detail);
-    setStage(result.outcome === "pending" ? "processing" : result.outcome);
-  };
-
-  // Not final yet: ask the server again, a few times, then say it is being processed.
-  useEffect(() => {
-    if (stage !== "processing") return;
-    let alive = true;
-    let asked = 0;
-    let timer: ReturnType<typeof setTimeout>;
-    const ask = async () => {
-      const result = await check().catch((): CheckoutOutcome => "pending");
-      if (!alive) return;
-      if (result !== "pending") return setStage(result);
-      if (++asked >= POLLS) return setStage("pending");
-      timer = setTimeout(ask, POLL_MS);
-    };
-    timer = setTimeout(ask, 600);
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [stage]);
-
-  // Still not final after the quick asks: keep asking, slowly, while the page is open (the webhook may land any time).
+  // Still pending: keep asking, slowly, while the page is open (the webhook may land any time).
   useEffect(() => {
     if (stage !== "pending") return;
     const timer = setInterval(async () => {
-      const result = await check().catch((): CheckoutOutcome => "pending");
-      if (result !== "pending") setStage(result);
-    }, 8000);
+      const outcome = await check().catch((): CheckoutOutcome => "pending");
+      if (outcome !== "pending") setManualStage(outcome);
+    }, POLL_MS);
     return () => clearInterval(timer);
   }, [stage]);
 
-  const retry = () => {
-    setReady(false);
-    setAttempt((n) => n + 1);
-    setStage("form");
-  };
+  const recheck = async () => setManualStage(await check().catch((): CheckoutOutcome => "pending"));
+  const retry = () => setManualStage("form");
 
   if (stage === "active") return <Activated hasClinic={hasClinic} />;
-
-  if (stage === "processing") {
-    return (
-      <section className={styles.state} aria-live="polite">
-        <Processing />
-      </section>
-    );
-  }
 
   if (stage === "pending") {
     return (
       <section className={styles.state} aria-live="polite">
-        <Signal />
-        <h1 className={ui.title}>Seu pagamento está sendo processado.</h1>
+        <Signal loop />
+        <h1 className={ui.title}>Aguardando confirmação.</h1>
         <p className={ui.lead}>
-          Assim que o Mercado Pago confirmar, o Pulse libera sozinho. Pode fechar esta página: a confirmação chega mesmo
-          assim.
+          Assim que o Mercado Pago confirmar o pagamento, o Pulse libera sozinho. Se você ainda não concluiu o
+          pagamento no Mercado Pago, continue por aqui — é a mesma tentativa, nenhuma cobrança duplicada.
         </p>
-        <button type="button" className={ui.secondary} onClick={() => setStage("processing")}>
-          Verificar de novo
-        </button>
+        <div className={ui.actions}>
+          <button type="button" className={ui.secondary} onClick={recheck}>
+            Verificar de novo
+          </button>
+          <form action={submitAction}>
+            <button type="submit" className={ui.primary} disabled={submitting} aria-busy={submitting}>
+              {submitting ? "Abrindo o Mercado Pago…" : "Continuar no Mercado Pago"}
+            </button>
+          </form>
+        </div>
       </section>
     );
   }
@@ -122,9 +96,9 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
   if (stage === "rejected") {
     return (
       <section className={styles.state} aria-live="polite">
-        <h1 className={ui.title}>Não foi possível concluir o pagamento.</h1>
-        <p className={ui.lead}>Nada foi cobrado. Confira os dados do cartão ou tente com outro.</p>
-        {test && detail ? <p className={ui.fine}>Teste: {detail}</p> : null}
+        <h1 className={ui.title}>Não foi possível iniciar o pagamento.</h1>
+        <p className={ui.lead}>Nada foi cobrado. Tente novamente; se persistir, fale com a Wuavy.</p>
+        {test && result?.detail ? <p className={ui.fine}>Teste: {result.detail}</p> : null}
         <button type="button" className={ui.primary} onClick={retry}>
           Tentar novamente
         </button>
@@ -156,7 +130,7 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
           ainda estiver em andamento. Vamos confirmar e liberar automaticamente assim que soubermos.
         </p>
         <div className={ui.actions}>
-          <button type="button" className={ui.secondary} onClick={() => setStage("processing")}>
+          <button type="button" className={ui.secondary} onClick={recheck}>
             Verificar de novo
           </button>
           <a
@@ -172,7 +146,7 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
     );
   }
 
-  if (stage === "unavailable" || !publicKey) return <Offline email={email} />;
+  if (stage === "unavailable" || !ready) return <Offline email={email} />;
 
   return (
     <>
@@ -186,30 +160,14 @@ export function Checkout({ stage: initial, email, hasClinic, publicKey, test }: 
       </header>
       <Includes />
       <PaymentMethod />
-      <div className={styles.brick} aria-busy={!ready || submitting}>
-        {!ready && !submitting ? (
-          <p className={styles.brickLoading}>
-            <span className="pulse-dot" aria-hidden="true" />
-            Carregando o pagamento seguro do Mercado Pago…
-          </p>
-        ) : null}
-        <div hidden={submitting}>
-          <CardBrick
-            key={attempt}
-            id={BRICK}
-            publicKey={publicKey}
-            email={email}
-            amount={PRICE / 100}
-            submitLabel={PLAN.subscribe.cta}
-            onToken={sent}
-            onReady={() => setReady(true)}
-            onFail={() => setStage("unavailable")}
-          />
-        </div>
-        {submitting ? <Processing /> : null}
-      </div>
+      <form action={submitAction}>
+        <button type="submit" className={ui.primary} disabled={submitting} aria-busy={submitting}>
+          {submitting ? "Redirecionando para o Mercado Pago…" : PLAN.subscribe.cta}
+        </button>
+      </form>
       <p className={ui.fine}>
-        Os dados do cartão vão direto para o Mercado Pago: o Pulse não vê nem guarda o número do cartão.
+        Você será levado ao ambiente oficial do Mercado Pago para concluir o pagamento com segurança. O Pulse não vê
+        nem guarda os dados do seu cartão.
         {test ? " Ambiente de teste: use um cartão de teste do Mercado Pago; nada é cobrado." : ""}
       </p>
     </>
@@ -302,16 +260,6 @@ function Signal({ loop }: { loop?: boolean }) {
       <span />
       <span />
     </span>
-  );
-}
-
-function Processing() {
-  return (
-    <div className={styles.processing} role="status">
-      <Signal loop />
-      <p className={ui.label}>Processando pagamento</p>
-      <p className={styles.processingText}>Estamos confirmando sua assinatura…</p>
-    </div>
   );
 }
 
