@@ -1,28 +1,26 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { useState } from "react";
 
 import { AppFrame, OpportunityCard, type OppScreen } from "./product";
-import { focusTab, onTabKeys, tabIndex } from "./tabs";
 import { track } from "./track";
 import styles from "./interactive.module.css";
 
 /*
-  "Isso acontece na sua clínica?" — the page's centre.
+  "Veja como o PULSE ajuda sua equipe a agir" — the page's hands-on moment.
 
-  Three situations a clinic recognises. Choosing one changes one area: the
-  four things worth knowing about it on the left (what happened, what the
-  Pulse found, why it deserves attention, what the team can do), and on the
-  right the same front open in the product, down to the drafted message.
+  Three situations, as a list on the left. The one that is open says the four
+  things worth knowing about it — what happened, what the Pulse identified,
+  why it deserves attention, what the team can do — and the product beside it
+  shows the same front, open down to the message waiting for review.
 
-  Why the card is shown fully open rather than animating through its stages:
-  nothing on this page should make someone wait to read. The parts arrive on
-  a short stagger — the suggestion, then whom it picked, then the draft — so
-  the order the product works in is visible, but every word is there from the
-  first frame and the stagger is only how it enters.
+  A list that opens, and not tabs: only one situation is ever shown, which is
+  what a disclosure is for, and every button is a plain button that keeps the
+  keyboard's usual meaning. The open row draws a line across its top; the
+  product re-enters with the short rise the rest of the page uses.
 
-  One scenario at a time, on purpose: seven animations competing was the
-  thing to avoid.
+  The first situation here is the one the first screen's animation just played.
+  That is intended: the animation shows it moving, this lets the visitor pick.
 */
 
 export interface ScenarioLabels {
@@ -55,90 +53,75 @@ interface ScenariosProps {
 
 export function Scenarios({ pick, labels, items, note }: ScenariosProps) {
   const [at, setAt] = useState(0);
-  const strip = useRef<HTMLDivElement>(null);
   const scenario = items[at];
 
   const choose = (next: number) => {
+    if (next === at) return;
     setAt(next);
     track("scenario", items[next]?.id);
   };
 
   return (
     <div className={styles.scenarios}>
-      <div
-        ref={strip}
-        className={styles.choices}
-        role="tablist"
-        aria-label={pick}
-        onKeyDown={(event) =>
-          onTabKeys(event, at, items.length, (next) => {
-            choose(next);
-            focusTab(strip.current, next);
-          })
-        }
-      >
-        {items.map((item, i) => (
-          <button
-            key={item.id}
-            type="button"
-            data-tab=""
-            role="tab"
-            id={`cenario-${item.id}`}
-            aria-selected={i === at}
-            aria-controls={`cenario-painel-${item.id}`}
-            tabIndex={tabIndex(i, at)}
-            className={styles.choice}
-            style={{ "--i": i } as CSSProperties}
-            onClick={() => choose(i)}
-          >
-            <span className={styles.choiceIndex} aria-hidden="true">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <span className={styles.choiceText}>{item.choice}</span>
-          </button>
-        ))}
+      <div className={styles.accordion} role="group" aria-label={pick}>
+        {items.map((item, i) => {
+          const here = i === at;
+          return (
+            <div key={item.id} className={styles.case} data-open={here ? "" : undefined}>
+              <h3 className={styles.caseHead}>
+                <button
+                  type="button"
+                  className={styles.caseButton}
+                  aria-expanded={here}
+                  aria-controls={`cenario-${item.id}`}
+                  onClick={() => choose(i)}
+                >
+                  <span className={styles.caseIndex} aria-hidden="true">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className={styles.caseChoice}>{item.choice}</span>
+                </button>
+              </h3>
+
+              {/* Always laid out and folded to nothing, so opening it animates; hidden from assistive tech while folded. */}
+              <div id={`cenario-${item.id}`} className={styles.caseBody} aria-hidden={!here}>
+                <div>
+                  <dl className={styles.facts}>
+                    <div className={styles.fact}>
+                      <dt>{labels.happened}</dt>
+                      <dd>{item.happened}</dd>
+                    </div>
+                    <div className={styles.fact}>
+                      <dt>{labels.found}</dt>
+                      <dd>{item.found}</dd>
+                    </div>
+                    <div className={styles.fact} data-why="">
+                      <dt>{labels.why}</dt>
+                      <dd>{item.why}</dd>
+                    </div>
+                    <div className={styles.fact}>
+                      <dt>{labels.action}</dt>
+                      <dd>{item.action}</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* `key` on the panel restarts the stagger: a new scene, entering. */}
-      <div
-        key={scenario.id}
-        id={`cenario-painel-${scenario.id}`}
-        role="tabpanel"
-        aria-labelledby={`cenario-${scenario.id}`}
-        tabIndex={-1}
-        className={styles.scene}
-      >
-        <div className={styles.story}>
-          <section className={styles.step} style={{ "--i": 0 } as CSSProperties}>
-            <h3 className={styles.stepLabel}>{labels.happened}</h3>
-            <p className={styles.stepText}>{scenario.happened}</p>
-          </section>
-
-          <section className={styles.step} style={{ "--i": 1 } as CSSProperties}>
-            <h3 className={styles.stepLabel}>{labels.found}</h3>
-            <p className={styles.stepText}>{scenario.found}</p>
-          </section>
-
-          {/* The reason is the one block that gets a mark of its own: it is why
-              this front is above the others. */}
-          <section className={styles.step} data-why="" style={{ "--i": 2 } as CSSProperties}>
-            <h3 className={styles.stepLabel}>{labels.why}</h3>
-            <p className={styles.stepText}>{scenario.why}</p>
-          </section>
-
-          <section className={styles.step} style={{ "--i": 3 } as CSSProperties}>
-            <h3 className={styles.stepLabel}>{labels.action}</h3>
-            <p className={styles.stepText}>{scenario.action}</p>
-          </section>
-        </div>
-
-        <div className={styles.sceneScreen}>
-          <p className={styles.sceneScreenLabel}>{labels.screen}</p>
-          <AppFrame screen="Oportunidades" rail="oportunidades" chip="Demo" className={styles.sceneFrame}>
-            <OpportunityCard screen={scenario.screen} stage="draft" draftLabel={labels.draft} reviewNote={labels.review} />
-          </AppFrame>
-          <p className={styles.note}>{note}</p>
-        </div>
+      <div className={styles.caseScreen}>
+        <AppFrame
+          key={scenario.id}
+          screen="Oportunidades"
+          rail="oportunidades"
+          chip="Demo"
+          className={styles.caseFrame}
+        >
+          <OpportunityCard screen={scenario.screen} stage="draft" draftLabel={labels.draft} reviewNote={labels.review} />
+        </AppFrame>
+        <p className={styles.note}>{note}</p>
       </div>
     </div>
   );

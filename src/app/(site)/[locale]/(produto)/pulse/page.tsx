@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 
-import { ChapterHead, Section } from "@/components/layout/Section";
-import { LineReveal, Reveal } from "@/components/motion";
 import { Pulse } from "@/components/flow/Pulse";
+import { Section } from "@/components/layout/Section";
+import { Reveal } from "@/components/motion";
 import { Fronts } from "@/components/pulse/Fronts";
-import { HeroSequence } from "@/components/pulse/HeroSequence";
+import { HeroStory } from "@/components/pulse/HeroStory";
 import { Scenarios } from "@/components/pulse/Scenarios";
 import { Tour } from "@/components/pulse/Tour";
 import { TrackLinks } from "@/components/pulse/TrackLinks";
@@ -18,29 +18,39 @@ import { pad } from "@/lib/utils";
 import styles from "./page.module.css";
 
 /*
-  PULSE by WUAVY, the public page.
+  PULSE by WUAVY, the public page — told as a story, in six chapters.
 
-  It answers six questions in the order a clinic asks them: what it is, is it
-  for me, what does it fix in my day, how does it work, what does it cost, how
-  do I start. Each one is a section, and each section is either light or dark
-  so the page reads as a sequence of rooms rather than one long scroll.
+    1  Existe uma oportunidade passando despercebida   the first screen: the
+       promise, centred, and the product already moving under it
+    2  Você provavelmente reconhece esta situação       three short, specific
+       situations, in type. No product yet: this is the "that is us" moment
+    3  Veja como o PULSE ajuda sua equipe a agir        the same situations, now
+       with the product: the problem, what it identified, the next step
+    4  E a rotina da clínica fica organizada            agenda, patients, the
+       clinical file and the opportunities, one screen at a time
+    5  Veja o que ele acompanha                         the seven fronts, now
+       that the visitor knows why they matter — the page's one light section
+    6  Quanto custa e como começar                      the plan, the three
+       steps, the questions, and the way in
+
+  The argument is made once and then built on: what the Pulse finds is the
+  first screen's animation; the situations name it; the interactive section
+  lets the visitor pick one; the tour shows the rest of the day; the seven
+  fronts are the full list; and only then the price.
 
   Three rules this file keeps:
 
   · nothing load-bearing waits for JavaScript. The title, the lead, both
     buttons, all seven fronts' names, the whole plan and the whole FAQ are
-    server-rendered text. The four interactive pieces (the hero's sequence,
-    the three situations, the fronts opening, the tour) add a picture and a
-    choice on top of words that are already there;
+    server-rendered text. The interactive pieces add a picture and a choice on
+    top of words that are already there;
   · every claim is one the code can back. The fronts are the opportunity
-    engine's seven (lib/flow/insights.ts); the plan is PRICE and the terms;
-    the three steps to start are the three routes that actually enforce the
-    path (pulse/entrar → pulse/assinar → pulse/comecar). What is not built
-    says "em breve" and sits apart from what the plan includes;
-  · the product is the protagonist. The Pulse character appears twice — once
-    to ask the question in "Como funciona", once at the close — and nowhere
-    else. It guides; it never performs, and it is never shown doing something
-    the product cannot do.
+    engine's seven (lib/flow/insights.ts); the plan is PRICE and the terms; the
+    three steps to start are the three routes that actually enforce the path
+    (pulse/entrar → pulse/assinar → pulse/comecar). What is not built says
+    "em breve"/"ainda não faz parte do plano" and sits apart from what is sold;
+  · the product is the protagonist. The Pulse character appears as a guide: in
+    the first screen's notes and once at the close, and nowhere else.
 
   The words are the dictionaries' `pulse` (src/i18n/dictionaries), in both
   languages. The product's own screens are drawn in components/pulse/product.tsx.
@@ -63,8 +73,10 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/pulse">
   const { locale } = await params;
   if (!isLocale(locale)) return null;
   const pulse = getDictionary(locale).pulse;
-  const { hero, scenarios, fronts, routine, start, pricing, faq, close } = pulse;
+  const { hero, recognize, scenarios, fronts, routine, start, pricing, faq, close } = pulse;
   const talk = talkHref(locale, pulse.name);
+  // The tour is four screens: the overview is the first screen's own subject, not a stop of its own.
+  const tour = routine.screens.filter((screen) => screen.id !== "visao-geral");
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -85,76 +97,104 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/pulse">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <TrackLinks />
 
-      {/* ── 1. What it is, and what it does, in one screen ─────────────── */}
+      {/* ── 1. The promise, centred, and the product already moving ─────── */}
       <Section id="pulse" surface="black" label={pulse.brand} className={`tx-grain ${styles.hero}`}>
-        <div className={`tx-light ${styles.heroLight}`} data-tone="signal" aria-hidden="true" />
-        <div className={`frame ${styles.heroGrid}`}>
-          <div className={styles.heroText}>
-            <p className={styles.kicker}>{hero.label}</p>
-            {/* Plain text, deliberately. LineReveal hides its words until the
-                reveal observer has run, and the one headline on this page that
-                must never wait for a script is this one. */}
-            <h1 className={styles.title}>{hero.title}</h1>
-            <p className={styles.lead}>{hero.lead}</p>
+        <div className={styles.heroInner}>
+          <p className={styles.pill}>
+            <span className={styles.pillDot} aria-hidden="true" />
+            {hero.label}
+          </p>
 
-            <div className={styles.actions}>
-              <Button href={hero.ctaHref}>{hero.cta}</Button>
-              <TextLink href={hero.secondary.href}>{hero.secondary.label}</TextLink>
-            </div>
+          {/* Plain text, deliberately. LineReveal hides its words until the reveal observer has run,
+              and the one headline on this page that must never wait for a script is this one. */}
+          <h1 className={styles.title}>
+            <span className={styles.line}>{hero.title}</span>
+            <span className={`${styles.line} ${styles.accent}`}>{hero.titleAccent}</span>
+          </h1>
 
-            <p className={styles.heroFoot}>
-              <TextLink href={hero.signIn.href} className={styles.quietLink}>
-                {hero.signIn.label}
-              </TextLink>
-              <span className={styles.market}>{hero.market}</span>
-            </p>
+          <p className={styles.lead}>{hero.lead}</p>
+
+          <div className={styles.actions}>
+            <Button href={hero.ctaHref}>{hero.cta}</Button>
+            <TextLink href={hero.secondary.href} className={styles.quiet}>
+              {hero.secondary.label} <span aria-hidden="true">→</span>
+            </TextLink>
           </div>
+        </div>
 
-          <HeroSequence
-            className={styles.heroSequence}
-            sequence={hero.sequence}
+        <div className={styles.heroStage}>
+          <HeroStory
+            story={hero.story}
             // The same front the first situation below states: one source for both.
             screen={scenarios.items[0].screen}
+            others={[scenarios.items[1].screen, scenarios.items[2].screen]}
             draftLabel={scenarios.labels.draft}
-            reviewNote={scenarios.labels.review}
           />
         </div>
       </Section>
 
-      {/* ── 2. Does it fix my day? Three situations, one demonstration ──── */}
-      <Section id="como-funciona" surface="paper" label={scenarios.chapter} className={`tx-grain ${styles.section}`}>
-        <div className="frame">
-          <ChapterHead index={1} name={scenarios.chapter} className={styles.chapter} />
-          <div className={styles.head}>
-            <h2 className={styles.h2}>
-              <span className={styles.guide} aria-hidden="true">
-                <Pulse state="welcome" greet interactive />
-              </span>
-              {scenarios.title}
-            </h2>
-            <p className={styles.sectionLead}>{scenarios.lead}</p>
-          </div>
+      {/* ── 2. "That is us": three situations, said plainly ─────────────── */}
+      <Section id="reconhecer" surface="carbon" label={recognize.chapter} className={`tx-grain ${styles.section}`}>
+        <div className={styles.narrow}>
+          <h2 className={`${styles.h2} ${styles.center}`}>{recognize.title}</h2>
 
-          <div className={styles.full}>
-            <Scenarios pick={scenarios.pick} labels={scenarios.labels} items={scenarios.items} note={scenarios.note} />
-          </div>
+          <ol className={styles.signs}>
+            {recognize.items.map((item, i) => (
+              <li key={item.line} className={styles.sign}>
+                <span className={styles.signIndex} aria-hidden="true">
+                  {pad(i + 1)}
+                </span>
+                <div>
+                  <p className={styles.signLine}>{item.line}</p>
+                  <p className={styles.signDetail}>{item.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <p className={styles.signsClose}>{recognize.close}</p>
         </div>
       </Section>
 
-      {/* ── 3. The commercial difference: the seven fronts ──────────────── */}
-      <Section id="oportunidades" surface="carbon" label={fronts.chapter} className={`tx-grain ${styles.section}`}>
-        <div className="frame">
-          <ChapterHead index={2} name={fronts.chapter} className={styles.chapter} />
-          <div className={styles.head}>
-            <h2 className={styles.h2}>
-              <LineReveal text={fronts.title} step={90} />
-            </h2>
-            <p className={styles.sectionLead}>{fronts.lead}</p>
-          </div>
+      {/* ── 3. The same situations, with the product ────────────────────── */}
+      <Section id="como-funciona" surface="black" label={scenarios.chapter} className={`tx-grain ${styles.section}`}>
+        <div className={styles.wide}>
+          <header className={styles.head}>
+            <h2 className={styles.h2}>{scenarios.title}</h2>
+            <p className={styles.sectionLead}>{scenarios.lead}</p>
+          </header>
 
-          <div className={styles.full}>
-            <Fronts items={fronts.items} hint={fronts.hint} doesLabel={fronts.doesLabel} />
-          </div>
+          <Scenarios pick={scenarios.pick} labels={scenarios.labels} items={scenarios.items} note={scenarios.note} />
+        </div>
+      </Section>
+
+      {/* ── 4. The rest of the day, one screen at a time ────────────────── */}
+      <Section id="por-dentro" surface="carbon" label={routine.chapter} className={`tx-grain ${styles.section}`}>
+        <div className={styles.wide}>
+          <header className={`${styles.head} ${styles.headCenter}`}>
+            <h2 className={`${styles.h2} ${styles.center}`}>{routine.title}</h2>
+            <p className={`${styles.sectionLead} ${styles.center}`}>{routine.lead}</p>
+          </header>
+
+          <Tour screens={tour} fronts={fronts.items} hint={routine.hint} note={routine.note} />
+        </div>
+      </Section>
+
+      {/* ── 5. The seven fronts: the page's one light section ───────────── */}
+      <Section id="oportunidades" surface="paper" label={fronts.chapter} className={`tx-grain ${styles.section}`}>
+        <div className={styles.wide}>
+          <header className={`${styles.head} ${styles.headCenter}`}>
+            <h2 className={`${styles.h2} ${styles.center}`}>{fronts.title}</h2>
+            <p className={`${styles.sectionLead} ${styles.center}`}>{fronts.lead}</p>
+          </header>
+
+          <Fronts
+            items={fronts.items}
+            hint={fronts.hint}
+            doesLabel={fronts.doesLabel}
+            count={fronts.count}
+            countLabel={fronts.countLabel}
+          />
 
           <aside className={styles.caveat}>
             <p className={styles.caveatLabel}>{fronts.caveatLabel}</p>
@@ -163,90 +203,42 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/pulse">
         </div>
       </Section>
 
-      {/* ── 4. The routine: five screens, one task each ─────────────────── */}
-      <Section id="por-dentro" surface="fog" label={routine.chapter} className={`tx-grain ${styles.section}`}>
-        <div className="frame">
-          <ChapterHead index={3} name={routine.chapter} className={styles.chapter} />
-          <div className={styles.head}>
-            <h2 className={styles.h2}>
-              <LineReveal text={routine.title} step={90} />
-            </h2>
-            <p className={styles.sectionLead}>{routine.lead}</p>
-          </div>
+      {/* ── 6. The plan, and the way in ─────────────────────────────────── */}
+      <Section id="plano" surface="black" label={pricing.chapter} className={`tx-grain ${styles.section}`}>
+        <div className={styles.narrow}>
+          <h2 className={`${styles.h2} ${styles.center}`}>{pricing.title}</h2>
+          <p className={`${styles.sectionLead} ${styles.center}`}>{pricing.lead}</p>
 
-          <div className={styles.full}>
-            <Tour screens={routine.screens} fronts={fronts.items} hint={routine.hint} note={routine.note} />
-          </div>
-        </div>
-      </Section>
+          <div className={styles.plan}>
+            <p className={styles.planName}>{pricing.planName}</p>
+            <p className={styles.price}>
+              <span className={styles.priceValue}>{pricing.price}</span>
+              <span className={styles.pricePer}>{pricing.per}</span>
+            </p>
+            <p className={styles.billing}>{pricing.billing}</p>
 
-      {/* ── 5. How to start: the three steps the routes really enforce ──── */}
-      <Section id="comecar" surface="black" label={start.chapter} className={`tx-grain ${styles.section}`}>
-        <div className="frame">
-          <ChapterHead index={4} name={start.chapter} className={styles.chapter} />
-          <h2 className={styles.h2}>{start.title}</h2>
-
-          <ol className={styles.steps}>
-            {start.steps.map((step, i) => (
-              <li key={step.label} className={styles.startStep} style={{ "--i": i } as CSSProperties}>
-                <Reveal delay={i * 42}>
-                  <span className={styles.stepIndex} aria-hidden="true">
-                    {pad(i + 1)}
-                  </span>
-                  <h3 className={styles.stepName}>{step.label}</h3>
-                  <p className={styles.stepText}>{step.text}</p>
-                  <p className={styles.stepDetail}>{step.detail}</p>
-                  {step.cta && step.href ? (
-                    <span data-pulse-track={step.href.includes("assinar") ? "subscribe" : "demo_full"}>
-                      <TextLink href={step.href}>{step.cta}</TextLink>
-                    </span>
-                  ) : null}
-                </Reveal>
-              </li>
-            ))}
-          </ol>
-
-          <p className={styles.startNote}>{start.note}</p>
-        </div>
-      </Section>
-
-      {/* ── 6. The plan: one price, and the conditions as the terms state ── */}
-      <Section id="plano" surface="paper" label={pricing.chapter} className={`tx-grain ${styles.section}`}>
-        <div className="frame">
-          <ChapterHead index={5} name={pricing.chapter} className={styles.chapter} />
-          <div className={styles.head}>
-            <h2 className={styles.h2}>{pricing.title}</h2>
-            <p className={styles.sectionLead}>{pricing.lead}</p>
-          </div>
-
-          <div className={styles.planGrid}>
-            <div className={styles.plan}>
-              <p className={styles.planName}>{pricing.planName}</p>
-              <p className={styles.price}>
-                <span className={styles.priceValue}>{pricing.price}</span>
-                <span className={styles.pricePer}>{pricing.per}</span>
-              </p>
-              <p className={styles.billing}>{pricing.billing}</p>
-
-              <div className={styles.planActions} data-pulse-track="subscribe">
-                <Button href={pricing.ctaHref}>{pricing.cta}</Button>
-                <TextLink href={talk}>{pricing.talk}</TextLink>
-              </div>
+            <div className={styles.planActions} data-pulse-track="subscribe">
+              <Button href={pricing.ctaHref}>{pricing.cta}</Button>
+              <TextLink href={talk} className={styles.quiet}>
+                {pricing.talk}
+              </TextLink>
             </div>
+          </div>
 
-            <div className={styles.planLists}>
-              <section className={styles.includes}>
-                <h3 className={styles.listTitle}>{pricing.includesLabel}</h3>
-                <ul>
-                  {pricing.includes.map((item, i) => (
-                    <li key={item} style={{ "--i": i } as CSSProperties}>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </section>
+          <div className={styles.planLists}>
+            <section className={styles.includes}>
+              <h3 className={styles.listTitle}>{pricing.includesLabel}</h3>
+              <ul>
+                {pricing.includes.map((item, i) => (
+                  <li key={item} style={{ "--i": i } as CSSProperties}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </section>
 
-              {/* Apart from the list above, and labelled: what is coming is not what is sold. */}
+            <div className={styles.apart}>
+              {/* Apart from the list beside it, and labelled: what is coming is not what is sold. */}
               <section className={styles.coming}>
                 <h3 className={styles.listTitle}>{pricing.comingLabel}</h3>
                 <ul>
@@ -264,14 +256,39 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/pulse">
               </dl>
             </div>
           </div>
+
+          <div className={styles.start}>
+            <h3 className={`${styles.h3} ${styles.center}`}>{start.title}</h3>
+
+            <ol className={styles.steps}>
+              {start.steps.map((step, i) => (
+                <li key={step.label} className={styles.startStep}>
+                  <Reveal delay={i * 42}>
+                    <span className={styles.stepIndex} aria-hidden="true">
+                      {pad(i + 1)}
+                    </span>
+                    <h4 className={styles.stepName}>{step.label}</h4>
+                    <p className={styles.stepText}>{step.text}</p>
+                    <p className={styles.stepDetail}>{step.detail}</p>
+                    {step.cta && step.href ? (
+                      <span data-pulse-track={step.href.includes("assinar") ? "subscribe" : "demo_full"}>
+                        <TextLink href={step.href}>{step.cta}</TextLink>
+                      </span>
+                    ) : null}
+                  </Reveal>
+                </li>
+              ))}
+            </ol>
+
+            <p className={styles.startNote}>{start.note}</p>
+          </div>
         </div>
       </Section>
 
-      {/* ── 7. The questions, answered from the real behaviour ──────────── */}
+      {/* ── The questions, answered from the real behaviour ─────────────── */}
       <Section id="faq" surface="carbon" label={faq.chapter} className={`tx-grain ${styles.section}`}>
-        <div className="frame">
-          <ChapterHead index={6} name={faq.chapter} className={styles.chapter} />
-          <h2 className={styles.h2}>{faq.title}</h2>
+        <div className={styles.narrow}>
+          <h2 className={`${styles.h2} ${styles.center}`}>{faq.title}</h2>
 
           <div className={styles.faqList}>
             {faq.items.map((item, i) => (
@@ -290,38 +307,34 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/pulse">
         </div>
       </Section>
 
-      {/* ── 8. The close: the demo, or the plan ─────────────────────────── */}
+      {/* ── The close: the demo, or the plan ────────────────────────────── */}
       <Section id="conhecer" surface="black" label={close.chapter} className={`tx-grain ${styles.close}`}>
         <div className={`tx-light ${styles.closeLight}`} data-tone="signal" aria-hidden="true" />
-        <div className={`frame ${styles.closeGrid}`}>
-          <ChapterHead index={7} name={close.chapter} className={styles.chapter} />
-          <h2 className={styles.closeTitle}>
-            <LineReveal text={close.title} step={110} />
-          </h2>
+        <div className={styles.closeInner}>
+          <span className={styles.closeGuide} aria-hidden="true">
+            <Pulse state="happy" interactive />
+          </span>
+          <h2 className={`${styles.h2} ${styles.center}`}>{close.title}</h2>
+          <p className={`${styles.sectionLead} ${styles.center}`}>{close.lead}</p>
 
-          <div className={styles.closeAction}>
-            <span className={styles.closeGuide} aria-hidden="true">
-              <Pulse state="happy" interactive />
+          <div className={styles.actions}>
+            <span data-pulse-track="subscribe">
+              <Button href={close.ctaHref}>{close.cta}</Button>
             </span>
-            <p className={styles.closeLead}>{close.lead}</p>
-            <div className={styles.actions}>
-              <span data-pulse-track="subscribe">
-                <Button href={close.ctaHref}>{close.cta}</Button>
+            {close.demo.ready ? (
+              <span data-pulse-track="demo_full">
+                <TextLink href={close.demo.href}>{close.demo.label}</TextLink>
               </span>
-              {close.demo.ready ? (
-                <span data-pulse-track="demo_full">
-                  <TextLink href={close.demo.href}>{close.demo.label}</TextLink>
-                </span>
-              ) : (
-                <span className={styles.soon}>{close.demo.soon}</span>
-              )}
-            </div>
-            <p className={styles.closeTalk}>
-              <TextLink href={talk} className={styles.quietLink}>
-                {close.talk}
-              </TextLink>
-            </p>
+            ) : (
+              <span className={styles.soon}>{close.demo.soon}</span>
+            )}
           </div>
+
+          <p>
+            <TextLink href={talk} className={styles.quiet}>
+              {close.talk}
+            </TextLink>
+          </p>
         </div>
       </Section>
     </>

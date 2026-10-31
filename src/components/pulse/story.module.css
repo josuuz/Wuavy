@@ -1,0 +1,556 @@
+/*
+  The hero's animation. Brand tokens around it (the page is black, off-white
+  and Signal), the product's own --pulse-* tokens inside the frame.
+
+  Motion, by the project's contract (components/motion/README.md): only
+  transform and opacity animate (plus grid-template-rows for the two
+  disclosures); nothing loops except the Pulse's own point; the resting style
+  is the end state. Reduced motion reduces — fades stay, travel goes.
+*/
+
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+/* ── The four steps: a line that fills, and one sentence each ───────────── */
+
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bar {
+  position: relative;
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  background: var(--mark);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.step[data-done] .fill {
+  transform: scaleX(1);
+}
+
+/* --p is written on .timeline by the clock, every frame, without a render. */
+.step[aria-selected="true"] .fill {
+  transform: scaleX(var(--p, 0));
+}
+
+.stepText {
+  display: none;
+  gap: 0.6rem;
+}
+
+.n {
+  flex: none;
+  padding-top: 0.15rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  transition: color var(--duration-element) var(--wuavy-ease-out);
+}
+
+.t {
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  color: var(--text-2);
+  text-wrap: balance;
+  transition: color var(--duration-element) var(--wuavy-ease-out);
+}
+
+.step[aria-selected="true"] .n {
+  color: var(--mark);
+}
+
+.step[aria-selected="true"] .t,
+.step:hover .t {
+  color: var(--text);
+}
+
+/* On a phone: four short lines and the lit step written once, under them. */
+.current {
+  min-height: 1.5em;
+  font-size: 1.0625rem;
+  font-weight: 560;
+  line-height: 1.3;
+  text-align: center;
+  text-wrap: balance;
+}
+
+@media (min-width: 48rem) {
+  .stepText {
+    display: flex;
+  }
+
+  .current {
+    display: none;
+  }
+}
+
+/* ── The stage ───────────────────────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  isolation: isolate;
+}
+
+/* A warm light under the product, once, and still. Not a glow that moves. */
+.glow {
+  position: absolute;
+  inset: 18% -6% -14%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    58% 50% at 50% 72%,
+    color-mix(in srgb, var(--wuavy-signal) 26%, transparent),
+    transparent 72%
+  );
+}
+
+.frame {
+  filter: drop-shadow(0 40px 60px rgb(0 0 0 / 0.55));
+}
+
+/* A fixed height, so nothing below the animation ever moves: the Pulse's note on top, the scene under it. */
+.viewport {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  height: clamp(28rem, 22vw + 14rem, 37rem);
+}
+
+.clip {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.world {
+  display: grid;
+  transform: translateY(calc(var(--pan, 0) * 1px));
+  transition: transform 800ms var(--wuavy-ease-out);
+}
+
+.world > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+/* ── Beat 0: the board ───────────────────────────────────────────────────── */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  gap: 0.6rem;
+  transition:
+    opacity 600ms var(--wuavy-ease-out),
+    transform 800ms var(--wuavy-ease-out);
+}
+
+/* With little room, the two columns that matter: the quotes, and what follows them. */
+@container (max-width: 37.99rem) {
+  .board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .col:nth-child(-n + 3) {
+    display: none;
+  }
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.colHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--pulse-border-soft);
+  font-size: 0.6875rem;
+  font-weight: 620;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pulse-muted);
+}
+
+.person {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: var(--pulse-r-sm);
+  background: var(--pulse-card);
+  opacity: 0.5;
+  transition:
+    opacity 600ms var(--wuavy-ease-out),
+    box-shadow 600ms var(--wuavy-ease-out),
+    border-color 600ms var(--wuavy-ease-out);
+}
+
+.person[data-focus] {
+  opacity: 1;
+  border-color: var(--pulse-accent);
+  box-shadow:
+    0 0 0 2px var(--pulse-accent),
+    0 0 0 8px color-mix(in srgb, var(--pulse-accent) 16%, transparent);
+}
+
+.personName {
+  font-size: 0.8125rem;
+  font-weight: 660;
+}
+
+.personWhat {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--pulse-muted);
+}
+
+.personMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.15rem 0.5rem;
+  margin-top: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+}
+
+.late {
+  color: var(--pulse-accent-text);
+}
+
+/* ── Beats 1–3: Oportunidades ────────────────────────────────────────────── */
+
+.opps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-content: start;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(1.25rem);
+  transition:
+    opacity 600ms var(--wuavy-ease-out),
+    transform 800ms var(--wuavy-ease-out),
+    visibility 0s linear 600ms;
+}
+
+.world:not([data-beat="0"]) .opps {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
+}
+
+.world:not([data-beat="0"]) .board {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.target,
+.draft {
+  transition:
+    box-shadow 600ms var(--wuavy-ease-out),
+    border-color 600ms var(--wuavy-ease-out);
+}
+
+/* The ring that leads the eye: orange, with one soft step around it. */
+.target[data-focus],
+.draft[data-focus] {
+  border-color: var(--pulse-accent);
+  box-shadow:
+    0 0 0 2px var(--pulse-accent),
+    0 0 0 9px color-mix(in srgb, var(--pulse-accent) 15%, transparent);
+}
+
+.world[data-beat="2"] .picks {
+  padding: 0.6rem;
+  margin: -0.6rem;
+  border-radius: var(--pulse-r-md);
+  background: color-mix(in srgb, var(--pulse-accent) 8%, transparent);
+  outline: 2px solid var(--pulse-accent);
+}
+
+.ghost {
+  transition: opacity 600ms var(--wuavy-ease-out);
+}
+
+.world[data-beat="1"] .ghost {
+  opacity: 0.38;
+}
+
+.world[data-beat="2"] .ghost,
+.world[data-beat="3"] .ghost {
+  opacity: 0.14;
+}
+
+/* Where a disclosure opens: grid rows from 0 to 1, so the card grows without a measured height. */
+.collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 800ms var(--wuavy-ease-out);
+}
+
+.collapse[data-open] {
+  grid-template-rows: 1fr;
+}
+
+.collapse > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The buttons are drawings of the product's: they press when the cursor does. */
+.button,
+.prepare {
+  transition:
+    transform 160ms var(--wuavy-ease-out),
+    background-color 400ms var(--wuavy-ease-out),
+    color 400ms var(--wuavy-ease-out);
+}
+
+.button[data-press],
+.prepare[data-press] {
+  transform: scale(0.94);
+}
+
+.prepare {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+
+.prepare[data-done] {
+  background: var(--pulse-sand);
+  color: var(--pulse-muted);
+}
+
+/* The part of the draft that is not typed yet: there, so nothing shifts, and not seen. */
+.unwritten {
+  color: transparent;
+}
+
+/* ── The Pulse's note ────────────────────────────────────────────────────── */
+
+.callouts {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem 0.75rem 0.8rem;
+  border: 1px solid var(--pulse-border);
+  border-left: 3px solid var(--pulse-accent);
+  border-radius: var(--pulse-r-md);
+  background: var(--pulse-card);
+  box-shadow: 0 18px 32px -22px rgb(0 0 0 / 0.35);
+}
+
+.avatar {
+  flex: none;
+  display: block;
+  width: 2.75rem;
+}
+
+/* All four notes in one cell: the strip is as tall as the longest, and a change is a cross-fade. */
+.texts {
+  display: grid;
+  min-width: 0;
+}
+
+.callout {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.5rem);
+  transition:
+    opacity 500ms var(--wuavy-ease-out),
+    transform 600ms var(--wuavy-ease-out),
+    visibility 0s linear 500ms;
+}
+
+.callout[data-on] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 120ms, 120ms, 0s;
+}
+
+.calloutTag {
+  font-size: 0.6875rem;
+  font-weight: 620;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--pulse-accent-text);
+}
+
+.calloutText {
+  margin-top: 0.15rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* ── The cursor ──────────────────────────────────────────────────────────── */
+
+.cursor {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  left: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(calc(var(--x, 640) * 1px), calc(var(--y, 120) * 1px));
+  transition:
+    transform 1000ms var(--wuavy-ease-inout),
+    opacity 400ms var(--wuavy-ease-out);
+}
+
+.cursor[data-on] {
+  opacity: 1;
+}
+
+.cursor svg {
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+  transition: transform 160ms var(--wuavy-ease-out);
+}
+
+.cursor[data-press] svg {
+  transform: scale(0.82);
+}
+
+/* The click, as a ring that goes out from the point. */
+.cursor::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: -1.125rem 0 0 -1.125rem;
+  border: 2px solid var(--pulse-accent);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.3);
+}
+
+.cursor[data-press]::after {
+  animation: story-click 600ms var(--wuavy-ease-out) both;
+}
+
+@keyframes story-click {
+  from {
+    opacity: 0.9;
+    transform: scale(0.3);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+/* ── Under the stage ─────────────────────────────────────────────────────── */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem var(--space-2);
+}
+
+.note {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.pause {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.9rem;
+  border: var(--rule) solid var(--border);
+  border-radius: var(--radius-button);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    color var(--duration-ui) var(--wuavy-ease-out),
+    border-color var(--duration-ui) var(--wuavy-ease-out);
+}
+
+.pause:hover {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+/* ── Reduced motion: the four beats stay, the travel goes ───────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .world,
+  .board,
+  .opps {
+    transition-property: opacity, visibility;
+    transition-duration: 200ms;
+  }
+
+  .world {
+    transform: none;
+  }
+
+  .opps {
+    transform: none;
+  }
+
+  .collapse {
+    transition: none;
+  }
+
+  .callout {
+    transform: none;
+    transition-duration: 200ms, 1ms, 0s;
+  }
+
+  .cursor {
+    display: none;
+  }
+}

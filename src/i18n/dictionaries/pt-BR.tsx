@@ -751,50 +751,78 @@ export const ptBR = {
       },
     },
 
-    hero: {
-      label: "Sistema de gestão para clínicas de estética",
-      title: "Organize sua clínica. Enxergue oportunidades de vender mais.",
-      lead: "O PULSE reúne a rotina da sua clínica de estética e mostra quais orçamentos, retornos e horários precisam de atenção — para sua equipe saber por onde começar.",
-      cta: "Conhecer o PULSE na prática",
-      ctaHref: "#como-funciona",
-      secondary: { label: "Ver planos", href: "#plano" },
-      signIn: { label: "Já uso o PULSE", href: "/pulse/entrar" },
-      market: "Começando por clínicas de estética",
+    /*
+      The first screen is centred, the way the story is told: a short
+      identification, the promise in two sentences, one line of explanation, the
+      way in, and then the product — large, and already entering the fold.
 
-      /*
-        The hero's own short sequence: the four beats of what really happens
-        in the product, in order. Beat 4 ends at a message waiting for
-        review — never at a message sent, and never at a sale.
-      */
-      sequence: {
-        label: "O que o PULSE faz, em quatro passos",
-        note: "Demonstração com dados fictícios",
+      `story` is the animation under it. Four beats, one situation, in the order
+      the product really works: a quote went unanswered → the Pulse picks it out
+      and says why → it is opened → the message waits for someone to read it.
+      It never ends at a message sent, and never at a sale.
+    */
+    hero: {
+      label: "Sistema para clínicas de estética",
+      title: "Sua clínica pode estar deixando dinheiro parado.",
+      titleAccent: "O PULSE mostra onde.",
+      lead: "Organize sua clínica de estética e encontre orçamentos esquecidos, pacientes sem retorno e horários que precisam de atenção.",
+      cta: "Veja como funciona",
+      ctaHref: "#como-funciona",
+      secondary: { label: "Conhecer o plano", href: "#plano" },
+
+      story: {
+        label: "O PULSE em quatro passos",
+        note: "Demonstração com dados fictícios. Nada é enviado daqui.",
         play: "Retomar",
         pause: "Pausar",
-        step: "Passo {n} de {total}",
+        step: "Passo {n} de {total}: {title}",
         beats: [
           {
             tag: "Na clínica",
-            title: "Um orçamento está sem resposta.",
-            text: "A recepção enviou o orçamento de Carla há seis dias. Depois disso, ninguém voltou a falar com ela.",
+            title: "Um orçamento ficou sem resposta.",
+            text: "Carla pediu o orçamento de harmonização facial há seis dias. A recepção enviou, e depois disso ninguém voltou a falar com ela.",
           },
           {
-            tag: "No PULSE",
-            title: "O PULSE apresenta a oportunidade.",
-            text: "Ele junta os orçamentos abertos sem resposta numa frente só, com o que ela representa em receita potencial.",
+            tag: "O PULSE destaca",
+            title: "O PULSE destaca a oportunidade.",
+            text: "Por que merece atenção: o orçamento está aberto há 3 dias ou mais, sem resposta. É interesse que a pessoa já declarou.",
           },
           {
             tag: "Na tela",
-            title: "A pessoa abre os detalhes.",
-            text: "Quem o PULSE separou para começar, com o procedimento de interesse e há quanto tempo o orçamento está parado.",
+            title: "A oportunidade é aberta.",
+            text: "O PULSE mostra o que sugere e quem separou para começar, cada pessoa com o procedimento de interesse.",
           },
           {
             tag: "Com a equipe",
-            title: "Uma mensagem aparece para revisão.",
-            text: "O texto já vem pronto, com o histórico da pessoa. Alguém da equipe lê, ajusta se quiser e decide enviar pelo WhatsApp da clínica.",
+            title: "A mensagem espera a equipe.",
+            text: "O texto já vem pronto. Alguém da equipe lê, ajusta se quiser e decide se envia, pelo WhatsApp da clínica.",
           },
         ],
       },
+    },
+
+    /*
+      Second chapter: recognition. Three short, specific situations, said the
+      way a clinic says them. No product yet — this is the "that is us" moment.
+    */
+    recognize: {
+      chapter: "Reconhecer",
+      title: "Você provavelmente reconhece esta situação.",
+      items: [
+        {
+          line: "Enviaram um orçamento e ninguém respondeu.",
+          detail: "Carla pediu o orçamento de harmonização facial numa quinta-feira. Seis dias depois, silêncio.",
+        },
+        {
+          line: "O paciente precisava voltar.",
+          detail: "Ana fez skinbooster há quatro meses. O intervalo recomendado fechou esta semana e não há nada marcado.",
+        },
+        {
+          line: "Ficou um horário vazio.",
+          detail: "Um cancelamento abriu as 14h de amanhã. A agenda do dia continua cheia; só aquele horário ficou aberto.",
+        },
+      ],
+      close: "Os sinais já estão nos dados da clínica. O PULSE os reúne e mostra por onde começar.",
     },
 
     /*
@@ -805,8 +833,8 @@ export const ptBR = {
     */
     scenarios: {
       chapter: "Como funciona",
-      title: "Isso acontece na sua clínica?",
-      lead: "Escolha uma situação. A mesma tela do PULSE mostra o que ele encontrou, por que aquilo merece atenção e qual ação sua equipe pode tomar.",
+      title: "Veja como o PULSE ajuda sua equipe a agir.",
+      lead: "Escolha uma situação. Em cada uma, o PULSE mostra o problema, o que identificou e o próximo passo — e quem decide é a equipe.",
       note: "Demonstração com dados fictícios. Nenhuma mensagem é enviada aqui.",
       pick: "Escolha uma situação",
       labels: {
@@ -915,9 +943,11 @@ export const ptBR = {
       engine computes — no front here is aspirational.
     */
     fronts: {
-      chapter: "O diferencial",
-      title: "O próximo passo pode estar nos pacientes que você já conhece.",
-      lead: "Uma clínica com a agenda cheia ainda pode estar deixando receita para trás: um orçamento que ninguém retomou, um retorno que passou da data, uma falta que não foi remarcada. O PULSE lê esses sinais nos dados que a própria clínica já registra e deixa cada frente visível, com o valor que ela representa.",
+      chapter: "O que ele acompanha",
+      title: "Veja o que ele acompanha.",
+      lead: "Sete frentes de oportunidade, calculadas a partir dos dados que a clínica já registra. Cada uma aparece separada, com o valor que representa e o que o PULSE faz com ela.",
+      count: "7",
+      countLabel: "frentes de oportunidade que o PULSE acompanha",
       hint: "Escolha uma frente para ver o que o PULSE faz com ela.",
       doesLabel: "O que o PULSE faz",
       caveatLabel: "Sobre os valores",
@@ -985,8 +1015,8 @@ export const ptBR = {
     */
     routine: {
       chapter: "Por dentro do PULSE",
-      title: "Da agenda ao histórico do paciente, sua rotina no mesmo lugar.",
-      lead: "As telas que a sua equipe usa todos os dias. Tudo o que aparece aqui é dado fictício.",
+      title: "E a rotina da clínica fica organizada.",
+      lead: "Agenda, pacientes, prontuário e oportunidades no mesmo lugar. Uma tela por vez; tudo o que aparece aqui é dado fictício.",
       hint: "Escolha uma tela",
       sidebar: "Telas do PULSE",
       note: "Telas do PULSE com dados fictícios.",
@@ -1065,7 +1095,7 @@ export const ptBR = {
 
     pricing: {
       chapter: "Plano",
-      title: "Um plano, tudo o que já existe incluído.",
+      title: "Quanto custa e como começar.",
       lead: "Sem contrato de fidelidade e sem taxa de implantação: a assinatura paga o uso do mês.",
       planName: "PULSE para sua clínica",
       price: "R$ 297",

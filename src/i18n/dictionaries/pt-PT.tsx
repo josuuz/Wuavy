@@ -727,50 +727,69 @@ export const ptPT: typeof ptBR = {
     },
 
     hero: {
-      label: "Sistema de gestão para clínicas de estética",
-      title: "Organize a sua clínica. Veja oportunidades de vender mais.",
-      lead: "O PULSE reúne a rotina da sua clínica de estética e mostra que orçamentos, regressos e horários precisam de atenção — para a sua equipa saber por onde começar.",
-      cta: "Conhecer o PULSE na prática",
+      label: "Sistema para clínicas de estética",
+      title: "A sua clínica pode estar a deixar dinheiro parado.",
+      titleAccent: "O PULSE mostra onde.",
+      lead: "Organize a sua clínica de estética e encontre orçamentos esquecidos, pacientes sem regresso e horários que precisam de atenção.",
+      cta: "Veja como funciona",
       ctaHref: "#como-funciona",
-      secondary: { label: "Ver planos", href: "#plano" },
-      signIn: { label: "Já uso o PULSE", href: "/pulse/entrar" },
-      market: "A começar pelas clínicas de estética",
+      secondary: { label: "Conhecer o plano", href: "#plano" },
 
-      sequence: {
-        label: "O que o PULSE faz, em quatro passos",
-        note: "Demonstração com dados fictícios",
+      story: {
+        label: "O PULSE em quatro passos",
+        note: "Demonstração com dados fictícios. Nada é enviado daqui.",
         play: "Retomar",
         pause: "Pausar",
-        step: "Passo {n} de {total}",
+        step: "Passo {n} de {total}: {title}",
         beats: [
           {
             tag: "Na clínica",
-            title: "Um orçamento está sem resposta.",
-            text: "A receção enviou o orçamento da Carla há seis dias. Depois disso, ninguém voltou a falar com ela.",
+            title: "Um orçamento ficou sem resposta.",
+            text: "A Carla pediu o orçamento de harmonização facial há seis dias. A receção enviou, e depois disso ninguém voltou a falar com ela.",
           },
           {
-            tag: "No PULSE",
-            title: "O PULSE apresenta a oportunidade.",
-            text: "Junta os orçamentos abertos sem resposta numa só frente, com o que ela representa em receita potencial.",
+            tag: "O PULSE destaca",
+            title: "O PULSE destaca a oportunidade.",
+            text: "Por que merece atenção: o orçamento está aberto há 3 dias ou mais, sem resposta. É interesse que a pessoa já declarou.",
           },
           {
             tag: "No ecrã",
-            title: "A pessoa abre os detalhes.",
-            text: "Quem o PULSE separou para começar, com o procedimento de interesse e há quanto tempo o orçamento está parado.",
+            title: "A oportunidade é aberta.",
+            text: "O PULSE mostra o que sugere e quem separou para começar, cada pessoa com o procedimento de interesse.",
           },
           {
             tag: "Com a equipa",
-            title: "Uma mensagem aparece para revisão.",
-            text: "O texto já vem pronto, com o histórico da pessoa. Alguém da equipa lê, ajusta se quiser e decide enviar pelo WhatsApp da clínica.",
+            title: "A mensagem espera a equipa.",
+            text: "O texto já vem pronto. Alguém da equipa lê, ajusta se quiser e decide se envia, pelo WhatsApp da clínica.",
           },
         ],
       },
     },
 
+    recognize: {
+      chapter: "Reconhecer",
+      title: "Provavelmente reconhece esta situação.",
+      items: [
+        {
+          line: "Enviaram um orçamento e ninguém respondeu.",
+          detail: "A Carla pediu o orçamento de harmonização facial numa quinta-feira. Seis dias depois, silêncio.",
+        },
+        {
+          line: "O paciente precisava de voltar.",
+          detail: "A Ana fez skinbooster há quatro meses. O intervalo recomendado fechou esta semana e não há nada marcado.",
+        },
+        {
+          line: "Ficou um horário vazio.",
+          detail: "Um cancelamento abriu as 14h de amanhã. A agenda do dia continua cheia; só aquele horário ficou aberto.",
+        },
+      ],
+      close: "Os sinais já estão nos dados da clínica. O PULSE reúne-os e mostra por onde começar.",
+    },
+
     scenarios: {
       chapter: "Como funciona",
-      title: "Isto acontece na sua clínica?",
-      lead: "Escolha uma situação. O mesmo ecrã do PULSE mostra o que ele encontrou, por que é que aquilo merece atenção e que ação a sua equipa pode tomar.",
+      title: "Veja como o PULSE ajuda a sua equipa a agir.",
+      lead: "Escolha uma situação. Em cada uma, o PULSE mostra o problema, o que identificou e o próximo passo — e quem decide é a equipa.",
       note: "Demonstração com dados fictícios. Nenhuma mensagem é enviada aqui.",
       pick: "Escolha uma situação",
       labels: {
@@ -873,9 +892,11 @@ export const ptPT: typeof ptBR = {
     },
 
     fronts: {
-      chapter: "O diferencial",
-      title: "O próximo passo pode estar nos pacientes que já conhece.",
-      lead: "Uma clínica com a agenda cheia ainda pode estar a deixar receita para trás: um orçamento que ninguém retomou, um regresso que passou da data, uma falta que não foi remarcada. O PULSE lê esses sinais nos dados que a própria clínica já registra e deixa cada frente visível, com o valor que representa.",
+      chapter: "O que ele acompanha",
+      title: "Veja o que ele acompanha.",
+      lead: "Sete frentes de oportunidade, calculadas a partir dos dados que a clínica já regista. Cada uma aparece separada, com o valor que representa e o que o PULSE faz com ela.",
+      count: "7",
+      countLabel: "frentes de oportunidade que o PULSE acompanha",
       hint: "Escolha uma frente para ver o que o PULSE faz com ela.",
       doesLabel: "O que o PULSE faz",
       caveatLabel: "Sobre os valores",
@@ -936,8 +957,8 @@ export const ptPT: typeof ptBR = {
 
     routine: {
       chapter: "Por dentro do PULSE",
-      title: "Da agenda ao histórico do paciente, a sua rotina no mesmo lugar.",
-      lead: "Os ecrãs que a sua equipa usa todos os dias. Tudo o que aparece aqui é dado fictício.",
+      title: "E a rotina da clínica fica organizada.",
+      lead: "Agenda, pacientes, prontuário e oportunidades no mesmo lugar. Um ecrã de cada vez; tudo o que aparece aqui é dado fictício.",
       hint: "Escolha um ecrã",
       sidebar: "Ecrãs do PULSE",
       note: "Ecrãs do PULSE com dados fictícios.",
@@ -1010,7 +1031,7 @@ export const ptPT: typeof ptBR = {
 
     pricing: {
       chapter: "Plano",
-      title: "Um plano, com tudo o que já existe incluído.",
+      title: "Quanto custa e como começar.",
       lead: "Sem contrato de fidelização e sem taxa de implementação: a assinatura paga o uso do mês.",
       planName: "PULSE para a sua clínica",
       price: "R$ 297",

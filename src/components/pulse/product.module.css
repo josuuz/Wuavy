@@ -110,6 +110,10 @@
   font-weight: 560;
   color: var(--pulse-muted);
   white-space: nowrap;
+  /* The lit item changes hands when the screen does: a fade, not a jump. */
+  transition:
+    background-color 0.5s var(--wuavy-ease-out),
+    color 0.5s var(--wuavy-ease-out);
 }
 
 .nav li[data-here] {

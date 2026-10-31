@@ -6,31 +6,37 @@
 
 /* ── Header ──────────────────────────────────────────────────────────────── */
 
+/* A floating bar, always there, with air around it: the page is the product,
+   and the bar is a small thing laid over it. The wrapper lets clicks through
+   its margins; only the bar takes them. */
 .header {
   position: sticky;
   top: 0;
   z-index: 60;
+  padding: 0.75rem var(--margin) 0;
   color: var(--wuavy-paper);
-  border-bottom: var(--rule) solid transparent;
-  transition:
-    background-color var(--duration-ui) var(--wuavy-ease-out),
-    border-color var(--duration-ui) linear;
-}
-
-/* Over the hero the bar is only its contents; once the page moves it takes a
-   ground, so the product's light screens never run under bare words. */
-.header[data-lifted] {
-  background: color-mix(in srgb, var(--wuavy-black) 88%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom-color: color-mix(in srgb, var(--wuavy-paper) 14%, transparent);
+  pointer-events: none;
 }
 
 .inner {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--header-h);
-  padding-inline: var(--margin);
+  max-width: 82rem;
+  min-height: 3.5rem;
+  margin-inline: auto;
+  padding: 0.5rem 0.625rem 0.5rem 1.125rem;
+  border: var(--rule) solid color-mix(in srgb, var(--wuavy-paper) 14%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--wuavy-black) 86%, transparent);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  transition: border-color var(--duration-element) var(--wuavy-ease-out);
+}
+
+/* Once the page has moved, the rule firms up: the bar is over something now. */
+.header[data-lifted] .inner {
+  border-color: color-mix(in srgb, var(--wuavy-paper) 26%, transparent);
 }
 
 .brand {
@@ -124,7 +130,8 @@
   color: var(--wuavy-paper);
 }
 
-.locale {
+/* `.actions >` raises this above the switch's own rule, which would otherwise show it on a phone. */
+.actions > .locale {
   display: none;
 }
 
@@ -149,7 +156,7 @@
 
 @media (min-width: 48rem) {
   .back,
-  .locale {
+  .actions > .locale {
     display: inline-flex;
   }
 }

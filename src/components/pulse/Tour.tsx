@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { useRef, useState } from "react";
 
 import { AgendaCrop, AppFrame, OpportunitiesCrop, OverviewCrop, PatientsCrop, RecordCrop } from "./product";
 import { focusTab, onTabKeys, tabIndex } from "./tabs";
@@ -8,7 +8,12 @@ import { track } from "./track";
 import styles from "./interactive.module.css";
 
 /*
-  The tour: five screens of the product, one task each.
+  "E a rotina da clínica fica organizada" — the tour, one screen at a time.
+
+  Centred, with the product wide: the tabs on top, the screen in the middle,
+  what it is for written once underneath. The words follow the picture here
+  (in the situations above they sit beside it) so that two sections in a row
+  never share a layout.
 
   Not screenshots. Each crop is the real screen's content rebuilt in HTML with
   the product's own tokens (./product.tsx), which is what makes it readable on
@@ -82,7 +87,6 @@ export function Tour({ screens, fronts, hint, note }: TourProps) {
             aria-controls={`tela-painel-${item.id}`}
             tabIndex={tabIndex(i, at)}
             className={styles.tourTab}
-            style={{ "--i": i } as CSSProperties}
             onClick={() => choose(i)}
           >
             {item.nav}
@@ -91,14 +95,23 @@ export function Tour({ screens, fronts, hint, note }: TourProps) {
       </div>
 
       <div
-        key={screen.id}
         id={`tela-painel-${screen.id}`}
         role="tabpanel"
         aria-labelledby={`tela-${screen.id}`}
         tabIndex={-1}
         className={styles.tourPanel}
       >
-        <div className={styles.tourWords}>
+        <div className={styles.tourScreen}>
+          <AppFrame key={screen.id} screen={screen.nav} rail={RAIL[screen.id] ?? ""} chip="Demo" className={styles.tourFrame}>
+            {screen.id === "visao-geral" ? <OverviewCrop /> : null}
+            {screen.id === "agenda" ? <AgendaCrop /> : null}
+            {screen.id === "pacientes" ? <PatientsCrop /> : null}
+            {screen.id === "prontuario" ? <RecordCrop /> : null}
+            {screen.id === "oportunidades" ? <OpportunitiesCrop fronts={fronts} /> : null}
+          </AppFrame>
+        </div>
+
+        <div key={screen.id} className={styles.tourWords}>
           <h3 className={styles.tourTitle}>{screen.title}</h3>
           <p className={styles.tourText}>{screen.text}</p>
           <p className={styles.tourBenefit}>
@@ -108,16 +121,7 @@ export function Tour({ screens, fronts, hint, note }: TourProps) {
           {screen.note ? <p className={styles.tourNote}>{screen.note}</p> : null}
         </div>
 
-        <div className={styles.tourScreen}>
-          <AppFrame screen={screen.nav} rail={RAIL[screen.id] ?? ""} chip="Demo" className={styles.tourFrame}>
-            {screen.id === "visao-geral" ? <OverviewCrop /> : null}
-            {screen.id === "agenda" ? <AgendaCrop /> : null}
-            {screen.id === "pacientes" ? <PatientsCrop /> : null}
-            {screen.id === "prontuario" ? <RecordCrop /> : null}
-            {screen.id === "oportunidades" ? <OpportunitiesCrop fronts={fronts} /> : null}
-          </AppFrame>
-          <p className={styles.note}>{note}</p>
-        </div>
+        <p className={styles.note}>{note}</p>
       </div>
     </div>
   );
