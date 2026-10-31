@@ -1027,7 +1027,7 @@ export const ptPT: typeof ptBR = {
         "Mensagens prontas para a equipa revisar e enviar pelo WhatsApp",
         "Equipa com acessos separados por função",
       ],
-      comingLabel: "Ainda não existe — chega depois, sem custo adicional",
+      comingLabel: "Ainda não faz parte do plano",
       coming: [
         "Automações inteligentes",
         "Pulse AI",

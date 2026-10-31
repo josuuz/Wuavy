@@ -1082,7 +1082,9 @@ export const ptBR = {
         "Mensagens prontas para a equipe revisar e enviar pelo WhatsApp",
         "Equipe com acessos separados por função",
       ],
-      comingLabel: "Ainda não existe — chega depois, sem custo a mais",
+      // Sem promessa de preço nem de data: os termos dizem apenas que o que
+      // está marcado como "em breve" ainda não faz parte do serviço.
+      comingLabel: "Ainda não faz parte do plano",
       coming: [
         "Automações inteligentes",
         "Pulse AI",
