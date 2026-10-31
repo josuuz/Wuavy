@@ -682,164 +682,367 @@ export const ptPT: typeof ptBR = {
   services,
   passo,
 
+  /*
+    PULSE by WUAVY, em pt-PT. A mesma estrutura do pt-BR (é ele que define o
+    tipo Dictionary): os mesmos factos, nas palavras de Portugal. O produto em
+    si corre apenas em pt-BR, por isso os nomes dos ecrãs do PULSE — "Visão
+    geral", "Configurações → Plano" — ficam como o produto os mostra.
+  */
   pulse: {
     name: "Wuavy Pulse",
-    pitch: "Sistema operativo de crescimento para clínicas",
+    brand: "PULSE",
+    byline: "by WUAVY",
+    pitch: "Sistema de gestão para clínicas de estética",
     meta: {
-      title: "Wuavy Pulse: onde a sua clínica está a deixar dinheiro parado",
+      title: "PULSE by WUAVY: sistema de gestão para clínicas de estética",
       description:
-        "O Pulse cruza agenda, pacientes, vendas e stock para mostrar pacientes sem regresso, orçamentos parados e horários vagos — com o valor de cada um.",
+        "O PULSE reúne a rotina da sua clínica de estética — agenda, pacientes, orçamentos, procedimentos e stock — e mostra o que precisa de atenção hoje: orçamentos sem resposta, regressos previstos e horários vagos.",
     },
 
-    hero: {
-      label: "Wuavy Pulse",
-      market: "A começar pelas clínicas de estética",
-      title: "A sua clínica pode estar a deixar dinheiro parado. O Pulse mostra onde.",
-      lead: "Transforme os dados da sua clínica em oportunidades de crescimento: pacientes que não voltaram, vendas que precisam de atenção e horários parados — cada um com o valor que representa.",
-      cta: "Quero assinar",
-      ctaHref: "/pulse/assinar",
-      secondary: { label: "Ver a demo", href: "/pulse/demo" },
-      talk: "Prefiro falar com a Wuavy",
-      stat: {
-        value: "7",
-        label: "frentes de oportunidade que o Pulse acompanha na sua clínica",
-        note: "Cada frente é calculada e mostrada separadamente, com dados fictícios da demonstração — sem somar como um total garantido.",
+    chrome: {
+      home: "PULSE by WUAVY: ir para o início da página",
+      nav: "Secções desta página",
+      menu: "Abrir o menu",
+      close: "Fechar o menu",
+      links: [
+        { label: "Como funciona", href: "#como-funciona" },
+        { label: "Por dentro do PULSE", href: "#por-dentro" },
+        { label: "Plano", href: "#plano" },
+      ],
+      signIn: { label: "Entrar", href: "/pulse/entrar" },
+      cta: { label: "Ver a demonstração", href: "#como-funciona" },
+      back: { label: "Wuavy", title: "Ir para o site da Wuavy", href: "/" },
+      footer: {
+        signature: "PULSE é o sistema de gestão da Wuavy para clínicas de estética.",
+        agency: "Conheça a Wuavy",
+        navTitle: "Nesta página",
+        productTitle: "Produto",
+        legalTitle: "Legal",
+        rights: "Todos os direitos reservados.",
+        product: [
+          { label: "Entrar no PULSE", href: "/pulse/entrar" },
+          { label: "Assinar", href: "/pulse/assinar" },
+        ],
       },
     },
 
-    guide: {
-      invite: "A sua clínica pode estar a deixar escapar oportunidades. Quer ver uma?",
-      start: "Mostra-me",
-      next: "Seguinte",
-      restart: "Ver outra vez",
-      note: "Exemplo ilustrativo",
-      steps: [
+    hero: {
+      label: "Sistema de gestão para clínicas de estética",
+      title: "Organize a sua clínica. Veja oportunidades de vender mais.",
+      lead: "O PULSE reúne a rotina da sua clínica de estética e mostra que orçamentos, regressos e horários precisam de atenção — para a sua equipa saber por onde começar.",
+      cta: "Conhecer o PULSE na prática",
+      ctaHref: "#como-funciona",
+      secondary: { label: "Ver planos", href: "#plano" },
+      signIn: { label: "Já uso o PULSE", href: "/pulse/entrar" },
+      market: "A começar pelas clínicas de estética",
+
+      sequence: {
+        label: "O que o PULSE faz, em quatro passos",
+        note: "Demonstração com dados fictícios",
+        play: "Retomar",
+        pause: "Pausar",
+        step: "Passo {n} de {total}",
+        beats: [
+          {
+            tag: "Na clínica",
+            title: "Um orçamento está sem resposta.",
+            text: "A receção enviou o orçamento da Carla há seis dias. Depois disso, ninguém voltou a falar com ela.",
+          },
+          {
+            tag: "No PULSE",
+            title: "O PULSE apresenta a oportunidade.",
+            text: "Junta os orçamentos abertos sem resposta numa só frente, com o que ela representa em receita potencial.",
+          },
+          {
+            tag: "No ecrã",
+            title: "A pessoa abre os detalhes.",
+            text: "Quem o PULSE separou para começar, com o procedimento de interesse e há quanto tempo o orçamento está parado.",
+          },
+          {
+            tag: "Com a equipa",
+            title: "Uma mensagem aparece para revisão.",
+            text: "O texto já vem pronto, com o histórico da pessoa. Alguém da equipa lê, ajusta se quiser e decide enviar pelo WhatsApp da clínica.",
+          },
+        ],
+      },
+    },
+
+    scenarios: {
+      chapter: "Como funciona",
+      title: "Isto acontece na sua clínica?",
+      lead: "Escolha uma situação. O mesmo ecrã do PULSE mostra o que ele encontrou, por que é que aquilo merece atenção e que ação a sua equipa pode tomar.",
+      note: "Demonstração com dados fictícios. Nenhuma mensagem é enviada aqui.",
+      pick: "Escolha uma situação",
+      labels: {
+        happened: "O que aconteceu",
+        found: "O que o PULSE identificou",
+        why: "Por que merece atenção",
+        action: "O que a equipa pode fazer",
+        screen: "No PULSE",
+        draft: "Mensagem preparada para revisão",
+        review: "A equipa revê e decide enviar pelo WhatsApp da clínica. O PULSE não envia nada sozinho.",
+      },
+      items: [
         {
-          tag: "Lead esquecido",
-          text: "Pediu um orçamento de harmonização facial e ninguém voltou a falar com ela.",
-          detail: ["Carla M.", "Harmonização facial", "Orçamento há 6 dias", "Sem resposta"],
+          id: "orcamento",
+          choice: "Enviaram orçamento e não responderam.",
+          short: "Orçamento sem resposta",
+          happened:
+            "A Carla pediu o orçamento de harmonização facial numa quinta-feira. A receção enviou no mesmo dia. Depois disso, silêncio.",
+          found:
+            "Orçamento aberto há 6 dias, sem resposta e sem nada marcado na agenda. Com ela, outras duas pessoas estão na mesma situação.",
+          why: "Um orçamento aberto é interesse já declarado: a pessoa pediu o preço. Quanto mais tempo passa sem contacto, mais o assunto arrefece.",
+          action:
+            "O PULSE prepara um follow-up com o procedimento de interesse e a oferta de reservar um horário. A equipa revê, envia pelo WhatsApp e registra o contacto.",
+          screen: {
+            tag: "Orçamentos",
+            headline: "3 orçamentos sem resposta",
+            sentence: "3 pessoas receberam orçamento e não responderam há 3 dias ou mais.",
+            value: "R$ 7.400",
+            valueLabel: "em orçamentos abertos",
+            action: "Preparar follow-up",
+            suggestion:
+              "Retomar o procedimento de interesse de cada pessoa, a começar pelos orçamentos maiores e mais recentes.",
+            picked: "PULSE selecionou 3 contactos.",
+            people: [
+              { name: "Carla M.", detail: "Harmonização facial · sem resposta há 6 dias", value: "R$ 3.200" },
+              { name: "Renata A.", detail: "Preenchimento labial · sem resposta há 4 dias", value: "R$ 2.400" },
+              { name: "Priscila N.", detail: "Bioestimulador · sem resposta há 3 dias", value: "R$ 1.800" },
+            ],
+            draft:
+              "Olá Carla! Passo por aqui para saber se ficou alguma dúvida sobre o orçamento de harmonização facial. Se quiser, já deixo um horário reservado para si.",
+          },
         },
         {
-          tag: "O Pulse identifica",
-          text: "O Pulse deteta o silêncio antes que o lead arrefeça e cruza o interesse com a agenda.",
-          detail: ["Interesse alto", "Instagram", "Quinta, 10h livre"],
+          id: "retorno",
+          choice: "O paciente precisava de voltar.",
+          short: "Regresso previsto",
+          happened:
+            "A Ana fez skinbooster há quatro meses. O intervalo recomendado do procedimento fechou esta semana e não há nada marcado para ela.",
+          found:
+            "Regresso previsto para esta semana, sem marcação. O PULSE compara a última consulta com o intervalo do próprio procedimento, registado pela clínica.",
+          why: "Quem já fez o procedimento é quem tem mais probabilidade de repetir. Passado o intervalo, o regresso vai ficando para depois — e às vezes não volta.",
+          action:
+            "O PULSE prepara um convite de regresso e mostra os horários livres da semana. A equipa revê, envia e marca ali mesmo.",
+          screen: {
+            tag: "Regressos",
+            headline: "5 pacientes precisam de regressar",
+            sentence: "5 pacientes estão no período de regresso, sem nada marcado.",
+            value: "R$ 6.150",
+            valueLabel: "em regressos prováveis",
+            action: "Preparar convites",
+            suggestion:
+              "Um convite de regresso com os horários livres da semana, no intervalo recomendado de cada procedimento.",
+            picked: "PULSE selecionou 5 pacientes, pela probabilidade de regresso.",
+            people: [
+              { name: "Ana P.", detail: "Skinbooster · regresso hoje", value: "R$ 1.450" },
+              { name: "Lívia C.", detail: "Limpeza de pele · regresso em 2 dias", value: "R$ 380" },
+              { name: "Fernanda D.", detail: "Toxina botulínica · atrasado há 5 dias", value: "R$ 1.900" },
+            ],
+            draft: "Olá Ana! Já está na época do seu regresso de skinbooster. Quer que veja um horário para si esta semana?",
+          },
         },
         {
-          tag: "Ação sugerida",
-          text: "A próxima mensagem já vem pronta. A equipa revê e decide enviar.",
-          detail: ["Follow-up com horário sugerido"],
+          id: "horario",
+          choice: "Ficou um horário vazio.",
+          short: "Horário vago",
+          happened:
+            "Um cancelamento de última hora abriu as 14h de amanhã. A agenda do dia continua cheia; só aquele horário ficou aberto.",
+          found: "Horário livre entre hoje e amanhã, com pacientes compatíveis na lista de espera do mesmo período.",
+          why: "Hora de sala e de profissional não volta: o horário que não é preenchido passa. E quem está na lista de espera queria exatamente aquele período.",
+          action:
+            "O PULSE ordena quem mais combina com o horário — a lista de espera primeiro, depois quem tem regresso próximo — e prepara o convite. A equipa envia e confirma.",
+          screen: {
+            tag: "Agenda",
+            headline: "2 horários livres até amanhã",
+            sentence: "2 horários estão livres entre hoje e amanhã.",
+            value: "R$ 980",
+            valueLabel: "em horários a preencher",
+            action: "Preencher horários",
+            suggestion:
+              "Oferecer cada horário a quem mais combina: a lista de espera do mesmo período primeiro, depois quem tem regresso próximo.",
+            picked: "PULSE encontrou 2 pacientes compatíveis, um por horário.",
+            people: [
+              { name: "Juliana R.", detail: "Amanhã às 14h · Limpeza de pele · 92% compatível", value: "R$ 380" },
+              { name: "Marina L.", detail: "Hoje às 17h · Peeling · 78% compatível", value: "R$ 600" },
+            ],
+            draft: "Olá Juliana! Abriu um horário amanhã às 14h para limpeza de pele. Quer que o reserve para si?",
+          },
         },
       ],
-      done: "Isto é o Pulse: ler os sinais do que ficou para trás e sugerir o próximo passo.",
     },
 
     fronts: {
-      chapter: "Onde o dinheiro pode estar parado",
-      title: "Sete frentes que o Pulse acompanha todos os dias.",
-      lead: "Mesmo com a agenda cheia, uma clínica pode estar a perder receita em silêncio. O Pulse cruza vendas, pacientes, agenda e stock para encontrar essas frentes e calcular quanto cada uma vale.",
+      chapter: "O diferencial",
+      title: "O próximo passo pode estar nos pacientes que já conhece.",
+      lead: "Uma clínica com a agenda cheia ainda pode estar a deixar receita para trás: um orçamento que ninguém retomou, um regresso que passou da data, uma falta que não foi remarcada. O PULSE lê esses sinais nos dados que a própria clínica já registra e deixa cada frente visível, com o valor que representa.",
+      hint: "Escolha uma frente para ver o que o PULSE faz com ela.",
+      doesLabel: "O que o PULSE faz",
+      caveatLabel: "Sobre os valores",
+      caveat:
+        "Receita potencial estimada. Não representa venda realizada. Cada frente é calculada e mostrada separadamente, porque a mesma pessoa pode aparecer em mais de uma: o total não é cumulativo. A decisão e a mensagem final são sempre da sua equipa.",
       items: [
         {
           tag: "Orçamentos",
           name: "Orçamentos sem resposta",
           text: "Um orçamento foi enviado e ninguém respondeu há 3 dias ou mais.",
+          does: "Reúne os orçamentos abertos, a começar pelos maiores e mais recentes, e prepara o follow-up do procedimento de interesse.",
           example: "Carla M. · Harmonização facial · orçamento há 6 dias",
         },
         {
           tag: "Regressos",
-          name: "Pacientes para regressar",
+          name: "Pacientes com regresso previsto",
           text: "O intervalo do procedimento chegou e o regresso ainda não foi marcado.",
+          does: "Compara a última consulta com o intervalo registado no procedimento e prepara o convite com os horários livres da semana.",
           example: "Ana P. · Skinbooster · regresso previsto para esta semana",
         },
         {
           tag: "Sem regresso",
-          name: "Pacientes que desapareceram",
-          text: "Mais de 90 dias sem consulta, e nada marcado: a base a arrefecer.",
+          name: "Pacientes que não voltaram",
+          text: "Mais de 90 dias sem consulta e nada marcado: a base da clínica a arrefecer.",
+          does: "Separa quem mais investiu na clínica e prepara uma mensagem pessoal a lembrar o último procedimento.",
           example: "Beatriz S. · última consulta há 4 meses",
         },
         {
           tag: "Leads",
           name: "Leads parados",
-          text: "Um contacto interessado, sem orçamento ainda, ficou 2 dias ou mais sem resposta.",
+          text: "Um contacto interessado, ainda sem orçamento, ficou 2 dias ou mais sem conversa.",
+          does: "Retoma a conversa no ponto em que parou, com a avaliação como próximo passo.",
           example: "Juliana R. · perguntou e desapareceu há 3 dias",
         },
         {
           tag: "Agenda",
           name: "Horários vagos",
-          text: "Um cancelamento abre a agenda e o horário fica parado até amanhã.",
+          text: "Um cancelamento abre a agenda e o horário fica parado entre hoje e amanhã.",
+          does: "Ordena quem mais combina com cada horário — a lista de espera do mesmo período primeiro — e prepara um convite por horário.",
           example: "Amanhã, 14h · livre desde ontem",
         },
         {
           tag: "Stock",
-          name: "Stock perto da validade",
-          text: "Um lote perto da validade ainda pode tornar-se consulta, se usado a tempo.",
+          name: "Stock perto do prazo de validade",
+          text: "Um lote perto do prazo ainda pode virar consulta, se for usado a tempo.",
+          does: "Liga o lote aos procedimentos que usam aquele produto e aos pacientes com histórico compatível, antes do prazo.",
           example: "Toxina botulínica · expira em 32 dias",
         },
         {
           tag: "Faltas",
-          name: "Faltas sem remarcar",
-          text: "Um paciente faltou recentemente e ninguém remarcou.",
+          name: "Faltas sem remarcação",
+          text: "Um paciente faltou nos últimos 14 dias e ninguém remarcou.",
+          does: "Prepara o convite para remarcar o mesmo procedimento, com os próximos horários livres, enquanto o interesse está vivo.",
           example: "Marcos T. · faltou há 5 dias",
         },
       ],
-      caveat:
-        "Receita potencial é o que essas frentes representam, não dinheiro recuperado ou garantido: a mesma pessoa pode aparecer em mais de uma frente, pelo que o total não é estritamente cumulativo. A decisão e a mensagem final são sempre da sua equipa.",
     },
 
-    priority: {
-      chapter: "Como o Pulse decide",
-      title: "Calcula, ordena e prepara. Quem decide é a sua equipa.",
-      lead: "O motor de oportunidades não escolhe por si: organiza o que já está nos seus dados para a decisão ser mais rápida.",
-      steps: [
+    routine: {
+      chapter: "Por dentro do PULSE",
+      title: "Da agenda ao histórico do paciente, a sua rotina no mesmo lugar.",
+      lead: "Os ecrãs que a sua equipa usa todos os dias. Tudo o que aparece aqui é dado fictício.",
+      hint: "Escolha um ecrã",
+      sidebar: "Ecrãs do PULSE",
+      note: "Ecrãs do PULSE com dados fictícios.",
+      screens: [
         {
-          label: "Calcula",
-          text: "Cada frente ganha um valor: quanto representa, a partir do histórico de preços e procedimentos da própria clínica.",
+          id: "visao-geral",
+          nav: "Visão geral",
+          title: "O dia inteiro num ecrã.",
+          text: "O que pede atenção agora, as consultas do dia e a receita potencial em aberto — sem ser preciso abrir um relatório à parte.",
+          benefit: "A sua equipa abre o PULSE e já sabe por onde começar.",
         },
         {
-          label: "Ordena",
-          text: "As frentes com mais receita potencial aparecem primeiro, para a equipa decidir por onde começar.",
+          id: "agenda",
+          nav: "Agenda",
+          title: "A agenda que também avisa o que sobrou.",
+          text: "Horários, profissionais e salas no mesmo quadro. Um cancelamento abre espaço, e o PULSE mostra quem pode ocupar.",
+          benefit: "Menos horário vazio, sem ninguém ter de conferir a agenda de hora a hora.",
         },
         {
-          label: "Prepara",
-          text: "A mensagem já vem pronta, com o histórico da pessoa. Alguém da equipa revê e decide enviar pelo WhatsApp.",
+          id: "pacientes",
+          nav: "Pacientes",
+          title: "A ficha de cada pessoa, inteira.",
+          text: "Contacto, procedimentos feitos, próximo regresso previsto e o que já foi conversado, numa só página.",
+          benefit: "Qualquer pessoa da equipa atende a saber o histórico.",
+        },
+        {
+          id: "prontuario",
+          nav: "Prontuário",
+          title: "Queixa, evolução e anamnese registadas.",
+          text: "A queixa principal em destaque, a evolução de cada consulta, o histórico completo e a anamnese com as perguntas da própria clínica.",
+          benefit: "O registo da consulta fica junto do resto, visível só para o responsável e os profissionais.",
+          note: "Registo de apoio, sem certificação digital: não substitui o registo clínico exigido pela ordem profissional da clínica. Fotografias e consentimento: em breve.",
+        },
+        {
+          id: "oportunidades",
+          nav: "Oportunidades",
+          title: "As sete frentes, com valor e ação.",
+          text: "Cada frente com o que representa, quem o PULSE separou para começar e a mensagem pronta para a equipa revisar.",
+          benefit: "A decisão fica rápida porque o trabalho de garimpar os dados já foi feito.",
         },
       ],
-      note: "Hoje, enviar é sempre uma decisão humana. Automações inteligentes e recuperação automática de receita: em breve.",
     },
 
-    interfaces: {
-      chapter: "Por dentro do Pulse",
-      title: "Os mesmos ecrãs que a sua clínica vai usar.",
-      lead: "Capturas reais do Pulse, com os dados fictícios da demonstração — não ilustrações. Os valores que aparecem em cada captura são estimativas por frente, não um total somado.",
-      overview: {
-        label: "Visão geral",
-        caption: "O que pede atenção agora, com a receita potencial calculada ali, não escondida num relatório à parte.",
-      },
-      opportunities: {
-        label: "Oportunidades",
-        caption: "Cada frente com o seu valor, a sua urgência e uma ação já pronta para a equipa rever.",
-      },
+    start: {
+      chapter: "Como começar",
+      title: "Três passos, na ordem em que acontecem.",
+      steps: [
+        {
+          label: "Conhecer a demonstração",
+          text: "Crie uma conta gratuita e navegue pela demo completa, com os dados fictícios da Clínica Aurora. Nenhuma mensagem, automação ou integração é executada ali.",
+          detail: "Precisa de nome, e-mail e palavra-passe. Não precisa de cartão.",
+          cta: "Abrir a demo completa",
+          href: "/pulse/demo",
+        },
+        {
+          label: "Assinar",
+          text: "A assinatura é feita no cartão, pelo Mercado Pago. A primeira cobrança acontece na contratação e as seguintes a cada mês, na mesma data.",
+          detail: "Sem contrato de fidelização e sem taxa de implementação.",
+          cta: "Quero começar com o PULSE",
+          href: "/pulse/assinar",
+        },
+        {
+          label: "Configurar a clínica e começar a usar",
+          text: "Registra a clínica, a equipa, os primeiros procedimentos e pacientes. Um guia de primeiros passos acompanha essa parte dentro do próprio PULSE.",
+          detail: "Com o acompanhamento da Wuavy, se a clínica quiser.",
+        },
+      ],
+      note: "A demonstração pública desta página é uma apresentação comercial: não cria conta e não guarda nada.",
     },
 
     pricing: {
-      chapter: "Assinatura",
-      title: "Um plano, tudo incluído.",
-      lead: "Sem fidelização e sem taxa de implementação: a assinatura paga o uso do mês.",
-      price: "297 €",
+      chapter: "Plano",
+      title: "Um plano, com tudo o que já existe incluído.",
+      lead: "Sem contrato de fidelização e sem taxa de implementação: a assinatura paga o uso do mês.",
+      planName: "PULSE para a sua clínica",
+      price: "R$ 297",
       per: "/mês",
+      billing:
+        "Cobrança mensal recorrente no cartão, pelo Mercado Pago. A primeira na contratação, as seguintes a cada mês na mesma data, até ao cancelamento.",
+      includesLabel: "Incluído hoje",
       includes: [
         "Pacientes, vendas e orçamentos",
         "Agenda, faltas e regressos",
         "Procedimentos e stock ligados",
-        "Motor de oportunidades com receita potencial",
-        "Mensagens prontas a enviar pelo WhatsApp",
+        "Prontuário com evolução, histórico e anamnese",
+        "Motor de oportunidades nas sete frentes, com receita potencial",
+        "Mensagens prontas para a equipa revisar e enviar pelo WhatsApp",
+        "Equipa com acessos separados por função",
       ],
-      coming: ["Automações inteligentes", "Pulse AI", "Rastreamento de receita recuperada"],
-      comingLabel: "Chegam em breve",
+      comingLabel: "Ainda não existe — chega depois, sem custo adicional",
+      coming: [
+        "Automações inteligentes",
+        "Pulse AI",
+        "Registo de receita recuperada",
+        "Fotografias e consentimento no prontuário",
+      ],
+      cancelLabel: "Cancelamento",
+      cancel:
+        "Cancela sozinho, a qualquer momento, em Configurações → Plano. O cancelamento interrompe as cobranças seguintes; o mês já cobrado continua a funcionar até ao fim. Depois disso o PULSE fica só para consulta, e nenhum dado é apagado.",
+      founderLabel: "Primeiras cinco clínicas",
       founder:
-        "As cinco primeiras clínicas a assinar mantêm este preço enquanto a assinatura se mantiver ativa, mesmo que o valor suba depois para quem assinar.",
-      cta: "Quero assinar",
+        "As cinco primeiras clínicas a assinar mantêm R$ 297 por mês enquanto a assinatura seguir ativa, mesmo que o valor suba para quem assinar depois. A garantia acompanha a assinatura: se for cancelada, uma nova contratação passa a valer pelo preço em vigor nesse momento.",
+      cta: "Quero começar com o PULSE",
       ctaHref: "/pulse/assinar",
-      talk: "Prefiro falar com a Wuavy antes",
+      talk: "Falar com a Wuavy",
     },
 
     faq: {
@@ -847,40 +1050,48 @@ export const ptPT: typeof ptBR = {
       title: "Antes de assinar.",
       items: [
         {
-          q: "O Pulse recupera esse dinheiro automaticamente?",
-          a: "Não. O Pulse mostra onde está a receita potencial e prepara a próxima ação. Quem decide e envia é a sua equipa — por agora, nada acontece sozinho.",
+          q: "Para que clínicas serve o PULSE?",
+          a: "O PULSE foi feito para clínicas de estética: é nelas que procedimento, intervalo de regresso, orçamento e stock encaixam como o sistema espera. Uma clínica de outra área pode usar a parte de rotina — pacientes, agenda, vendas e stock —, mas as frentes de oportunidade foram pensadas para a estética. Se a sua clínica é de outra área, fale com a Wuavy antes de assinar.",
         },
         {
-          q: "Os valores da demonstração são reais?",
-          a: "Não. A demo usa a Clínica Aurora, uma clínica fictícia, para mostrar como o Pulse calcula e organiza as oportunidades. Com a sua clínica, os números vêm dos seus próprios dados.",
+          q: "Preciso de instalar algo?",
+          a: "Não. O PULSE funciona no navegador, no computador e no telemóvel. No telemóvel, pode adicionar o PULSE ao ecrã inicial e ele abre como uma aplicação — sem loja de aplicações e sem instalar nada.",
         },
         {
-          q: "Como funciona a implementação?",
-          a: "Cria a conta, regista a clínica, os primeiros procedimentos e pacientes. Um guia de primeiros passos acompanha essa parte dentro do próprio Pulse.",
+          q: "Como funciona a demo?",
+          a: "São duas coisas diferentes. A demonstração desta página é uma apresentação: corre aqui mesmo, com dados fictícios, e não cria conta. A demo completa é o PULSE inteiro navegável: pede uma conta gratuita (nome, e-mail e palavra-passe) e usa os dados da Clínica Aurora, uma clínica fictícia. Nela, toda a ação é simulada no navegador — nenhuma mensagem, automação ou integração é executada.",
         },
         {
-          q: "Como funciona a cobrança?",
-          a: "297 € por mês, cobrados no cartão pelo Mercado Pago. A primeira cobrança acontece na contratação e as seguintes a cada mês, na mesma data, até ao cancelamento.",
+          q: "O PULSE envia mensagens sozinho?",
+          a: "Não. O PULSE identifica a oportunidade, escolhe por onde começar e deixa a mensagem pronta, com o histórico da pessoa. Quem lê, ajusta e envia é alguém da sua equipa, pelo WhatsApp da própria clínica — e a responsabilidade pela mensagem é da clínica. Automações inteligentes e recuperação automática de receita estão entre os recursos que ainda não existem.",
         },
         {
-          q: "Posso cancelar quando quiser?",
-          a: "Sim, sozinho, em Definições → Plano. O cancelamento vale a partir do pedido; o mês já pago continua a funcionar até ao fim dele, e depois o Pulse fica disponível só para consulta — nenhum dado é apagado.",
+          q: "O que significa receita potencial?",
+          a: "É uma estimativa do que uma frente representa, calculada a partir dos preços e dos procedimentos registados pela própria clínica. Não é venda realizada nem dinheiro recuperado. Cada frente é mostrada separadamente, porque a mesma pessoa pode aparecer em mais de uma: somar tudo daria um número que não existe.",
         },
         {
-          q: "Os meus dados ficam seguros?",
-          a: "Sim. Só quem trabalha na clínica acede aos dados dela, e a política de privacidade do Pulse explica o que é guardado e porquê.",
+          q: "Como começo a usar?",
+          a: "Crie a conta gratuita e conheça a demo completa. Quando decidir, assine pelo cartão e registre a clínica, a equipa, os primeiros procedimentos e pacientes — um guia de primeiros passos acompanha essa parte dentro do PULSE. Não há migração automática de outro sistema: o que já existe é registado por quem conhece a clínica, com o acompanhamento da Wuavy se quiserem.",
+        },
+        {
+          q: "Como funciona a assinatura?",
+          a: "R$ 297 por mês, no cartão, pelo Mercado Pago. A primeira cobrança acontece na contratação e as seguintes a cada mês, na mesma data, no mesmo cartão, até ao cancelamento. Não há contrato de fidelização nem taxa de implementação. Se uma cobrança atrasar, o PULSE continua disponível enquanto o Mercado Pago tenta de novo; o cartão é trocado no mesmo ecrã do plano.",
+        },
+        {
+          q: "Como funciona o cancelamento?",
+          a: "O responsável pela clínica cancela sozinho, a qualquer momento, em Configurações → Plano, sem precisar de falar com ninguém. O cancelamento vale a partir do pedido e interrompe as cobranças seguintes; o mês já cobrado não é devolvido e, em troca, o PULSE continua a funcionar até ao fim dele. Depois disso o PULSE fica disponível só para consulta — nenhum dado é apagado.",
         },
       ],
     },
 
     close: {
-      chapter: "Conhecer o Pulse",
-      title: "Veja o Pulse com os dados da sua clínica.",
-      lead: "Explore a demo com dados fictícios. Depois, assine e ligue os dados da sua própria clínica, acompanhada pela Wuavy.",
-      cta: "Quero assinar",
+      chapter: "Começar",
+      title: "Veja o próximo passo da sua clínica com mais clareza.",
+      lead: "Conheça a demo completa com dados fictícios e, quando fizer sentido, assine e comece com os dados da sua própria clínica.",
+      cta: "Quero começar com o PULSE",
       ctaHref: "/pulse/assinar",
-      talk: "Prefiro falar com a Wuavy",
-      demo: { href: "/pulse/demo", ready: true, label: "Conhecer o Pulse na demo", soon: "Demo interativa em breve" },
+      talk: "Falar com a Wuavy",
+      demo: { href: "/pulse/demo", ready: true, label: "Abrir a demo completa", soon: "Demo interativa em breve" },
     },
   },
 

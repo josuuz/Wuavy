@@ -1,0 +1,270 @@
+/*
+  PULSE's header and footer. Brand tokens only (styles/tokens.css): the page
+  belongs to the Wuavy site, so it is black, off-white and the Signal orange —
+  the same orange the product uses as its accent.
+*/
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  color: var(--wuavy-paper);
+  border-bottom: var(--rule) solid transparent;
+  transition:
+    background-color var(--duration-ui) var(--wuavy-ease-out),
+    border-color var(--duration-ui) linear;
+}
+
+/* Over the hero the bar is only its contents; once the page moves it takes a
+   ground, so the product's light screens never run under bare words. */
+.header[data-lifted] {
+  background: color-mix(in srgb, var(--wuavy-black) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom-color: color-mix(in srgb, var(--wuavy-paper) 14%, transparent);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--header-h);
+  padding-inline: var(--margin);
+}
+
+.brand {
+  display: inline-flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+}
+
+/* PULSE leads the mark; WUAVY signs it underneath, small. */
+.brandName {
+  font-size: clamp(1.125rem, 0.95rem + 0.5vw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--wuavy-signal);
+}
+
+.brandBy {
+  font-size: 0.5rem;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--wuavy-stone);
+}
+
+.nav {
+  display: none;
+  margin-inline: auto;
+}
+
+.nav ul {
+  display: flex;
+  gap: clamp(0.75rem, 0.2rem + 1.2vw, 1.75rem);
+}
+
+.navLink {
+  position: relative;
+  display: inline-block;
+  padding: 0.5rem 0;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  letter-spacing: 0.02em;
+  color: var(--wuavy-stone);
+  transition: color var(--duration-ui) var(--wuavy-ease-out);
+}
+
+.navLink::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0.15rem;
+  height: 2px;
+  background: var(--wuavy-signal);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.navLink:hover,
+.navLink[aria-current="location"] {
+  color: var(--wuavy-paper);
+}
+
+.navLink[aria-current="location"]::after {
+  transform: scaleX(1);
+}
+
+.actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: clamp(0.5rem, 0.2rem + 0.8vw, 1.25rem);
+  margin-left: auto;
+}
+
+/* The door back to the agency: there, and quiet. */
+.back {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  color: var(--wuavy-stone);
+  transition: color var(--duration-ui) var(--wuavy-ease-out);
+}
+
+.back:hover {
+  color: var(--wuavy-paper);
+}
+
+.locale {
+  display: none;
+}
+
+.signIn {
+  padding: 0.5rem 0;
+  font-size: var(--fs-micro);
+  font-weight: 640;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-decoration-thickness: max(1px, 0.07em);
+  text-underline-offset: 0.3em;
+  transition: text-decoration-color var(--duration-ui) linear;
+}
+
+.signIn:hover {
+  text-decoration-color: var(--wuavy-signal);
+}
+
+.cta {
+  flex: none;
+}
+
+@media (min-width: 48rem) {
+  .back,
+  .locale {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 62rem) {
+  .nav {
+    display: block;
+  }
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+
+.footer {
+  padding-block: var(--space-4) var(--space-3);
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.footerGrid {
+  row-gap: var(--space-3);
+}
+
+.footerLead {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  max-width: 34ch;
+}
+
+.footerBrand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+}
+
+.footerBrandName {
+  font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.75rem);
+  font-weight: 900;
+  letter-spacing: 0.005em;
+  line-height: 1;
+  color: var(--wuavy-signal);
+}
+
+.footerBrandBy {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+
+.footerSignature {
+  font-size: var(--fs-body);
+  line-height: 1.42;
+  text-wrap: pretty;
+}
+
+.footerTalk {
+  color: var(--text);
+}
+
+.footerCol {
+  grid-column: span 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.footerTitle {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.footerCol ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.footerCol a {
+  display: inline-block;
+  padding-block: 0.15rem;
+  font-size: var(--fs-body);
+  font-weight: 480;
+  transition: color var(--duration-ui) var(--wuavy-ease-out);
+}
+
+.footerCol a:hover {
+  color: var(--wuavy-signal);
+}
+
+.footerRights {
+  grid-column: 1 / -1;
+  padding-top: var(--space-2);
+  border-top: var(--rule) solid var(--border);
+  font-size: var(--fs-micro);
+  color: var(--text-2);
+}
+
+@media (min-width: 48rem) {
+  .footerLead {
+    grid-column: span 5;
+  }
+
+  .footerCol {
+    grid-column: span 2;
+  }
+
+  .footerCol:nth-of-type(2) {
+    grid-column-start: 7;
+  }
+}

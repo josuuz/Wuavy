@@ -67,7 +67,12 @@
 
 /* Light: the Wuavy off-white ground, white cards on a soft shadow, a
    softened black for words. */
-:root[data-pulse-theme="light"] [data-pulse] {
+/* The second selector is for a Pulse that must be light wherever it is shown,
+   whatever the visitor chose inside the app: the product's screens on the
+   public page, which sit on the site's own dark surfaces and are the light
+   half of that contrast. Same values, so there is one light theme. */
+:root[data-pulse-theme="light"] [data-pulse],
+[data-pulse][data-pulse-theme="light"] {
   --pulse-bg: #f6f4ee;
   --pulse-rail: #faf9f5;
   --pulse-raised: #ffffff;

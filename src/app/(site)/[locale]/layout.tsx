@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { SiteChrome } from "@/components/layout/SiteChrome";
 import { SmoothScroll } from "@/components/motion";
 import { site } from "@/data/site";
 import { isLocale, localizePath, locales, ogLocale } from "@/i18n/config";
@@ -10,8 +9,20 @@ import { organizationJsonLd, shareImage } from "@/lib/seo";
 
 /*
   The public site, once per language: pt-BR at the plain addresses, pt-PT
-  under /pt-pt (the proxy maps both to this segment). Both are static. An unknown language is a 404 (below); an unknown page inside
-  one is [...missing]'s.
+  under /pt-pt (the proxy maps both to this segment). Both are static. An
+  unknown language is a 404 (below); an unknown page inside one is
+  [...missing]'s.
+
+  This layout holds only what every public page shares — the language, the
+  smooth scroll and the organisation's structured data. The chrome lives one
+  level down, in a route group, because the two kinds of page here do not
+  wear the same one:
+
+  · (marketing) — the agency: the site header with its whole menu, the footer.
+  · (produto)   — PULSE: its own header and a short footer, so the agency's
+                  services never compete with subscribing to the product.
+
+  Route groups do not appear in the address, so /pulse is still /pulse.
 */
 
 export function generateStaticParams() {
@@ -50,7 +61,7 @@ export default async function SiteLayout({ children, params }: LayoutProps<"/[lo
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(getDictionary(locale).meta.description)) }}
       />
       <SmoothScroll />
-      <SiteChrome locale={locale}>{children}</SiteChrome>
+      {children}
     </>
   );
 }

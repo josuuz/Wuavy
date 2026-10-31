@@ -1,0 +1,569 @@
+/*
+  PULSE's page. Brand tokens only (styles/tokens.css): black, carbon, off-white
+  paper, fog, and the Signal orange as the one accent. The grid is the site's
+  12-column frame; the rhythm between blocks is the --space scale.
+
+  Nothing here is glass, nothing glows, and the orange is never a field behind
+  a paragraph. The light areas are where the product is shown, the dark areas
+  are where it is explained, and the page alternates between them.
+*/
+
+/* ── Shared ──────────────────────────────────────────────────────────────── */
+
+.section {
+  padding-block: var(--section-pad);
+}
+
+.chapter {
+  grid-column: 1 / -1;
+  margin-bottom: var(--space-3);
+  color: var(--text-2);
+}
+
+/* An interactive block spans the whole frame: without this it would be placed
+   in the grid's first column and squeeze itself into a ribbon. */
+.full {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.head {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+/* Spans the frame: a section that puts its h2 straight into the grid (Como
+   começar, FAQ) would otherwise get one column and break every word. */
+.h2 {
+  grid-column: 1 / -1;
+  max-width: 24ch;
+  font-size: var(--fs-h2);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.sectionLead {
+  max-width: 62ch;
+  font-size: var(--fs-lead);
+  line-height: 1.38;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.kicker {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.quietLink {
+  font-weight: 520;
+  color: var(--text-2);
+}
+
+/* The Pulse as a guide: small, beside a question, and nowhere else. */
+.guide {
+  display: inline-block;
+  width: clamp(2.5rem, 1.6rem + 2.6vw, 4rem);
+  vertical-align: -0.22em;
+  margin-right: 0.4em;
+}
+
+/* ── 1. Hero ─────────────────────────────────────────────────────────────── */
+
+.hero {
+  padding-block: calc(var(--section-pad) * 0.7) var(--section-pad);
+  overflow: clip;
+}
+
+.heroLight {
+  top: -24vh;
+  left: 56%;
+  width: min(80vw, 56rem);
+  height: min(80vw, 56rem);
+}
+
+.heroGrid {
+  position: relative;
+  z-index: 1;
+  row-gap: var(--space-4);
+  align-items: start;
+}
+
+.heroText {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Large, but not so large that the lead and the buttons fall off the fold:
+   this headline is five words longer than the home page's. */
+.title {
+  max-width: 17ch;
+  font-size: clamp(2.5rem, 1.1rem + 3.6vw, 5.25rem);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.lead {
+  max-width: 50ch;
+  font-size: var(--fs-lead);
+  line-height: 1.38;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.heroFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.market {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.heroSequence {
+  grid-column: 1 / -1;
+}
+
+/* The sequence needs room: with less than ~38rem of its own, the product
+   frame lays its rail across the top instead of down the left, and on a
+   desktop the rail belongs on the left, where the product keeps it. */
+@media (min-width: 62rem) {
+  .heroText {
+    grid-column: 1 / span 6;
+  }
+
+  .heroSequence {
+    grid-column: 7 / span 6;
+  }
+}
+
+@media (min-width: 80rem) {
+  .heroText {
+    grid-column: 1 / span 5;
+  }
+}
+
+/* ── 3. The caveat under the seven fronts ───────────────────────────────── */
+
+.caveat {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 76ch;
+  margin-top: var(--space-3);
+  padding: var(--space-2);
+  border-left: 2px solid var(--border);
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.caveatLabel {
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+/* ── 5. How to start ─────────────────────────────────────────────────────── */
+
+.steps {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.startStep > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+  height: 100%;
+  padding-top: var(--space-2);
+  border-top: 2px solid var(--mark);
+}
+
+.stepIndex {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--mark);
+}
+
+.stepName {
+  font-size: var(--fs-h3);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.stepText {
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.stepDetail {
+  font-size: var(--fs-micro);
+  font-weight: 560;
+  letter-spacing: 0.02em;
+}
+
+.startNote {
+  grid-column: 1 / -1;
+  max-width: 70ch;
+  margin-top: var(--space-3);
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+@media (min-width: 48rem) {
+  .steps {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gutter);
+  }
+}
+
+/* ── 6. The plan ─────────────────────────────────────────────────────────── */
+
+.planGrid {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: var(--rule) solid var(--border);
+  border-radius: var(--radius-button);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.planName {
+  font-size: var(--fs-body);
+  font-weight: 640;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.priceValue {
+  font-size: clamp(3rem, 1.6rem + 4.5vw, 5rem);
+  font-weight: var(--wuavy-display);
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.pricePer {
+  font-size: var(--fs-lead);
+  font-weight: 560;
+  color: var(--text-2);
+}
+
+.billing {
+  margin-top: var(--space-1);
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.planActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.planLists {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.listTitle {
+  margin-bottom: var(--space-1);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.includes ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.includes li {
+  display: flex;
+  gap: 0.75rem;
+  padding-block: 0.55rem;
+  border-bottom: var(--rule) solid var(--border);
+  font-size: var(--fs-body);
+  line-height: 1.4;
+}
+
+/* The mark: the channel's diagonal, not a tick from a template. */
+.includes li::before {
+  content: "";
+  flex: none;
+  width: 3px;
+  height: 1.1em;
+  background: var(--mark);
+  transform: skewX(calc(var(--wuavy-angle) * -1));
+}
+
+/* What is coming: quieter, outlined, clearly not part of the list above. */
+.coming {
+  padding: var(--space-2);
+  border: var(--rule) dashed var(--border);
+  border-radius: var(--radius-button);
+}
+
+.coming ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.coming li {
+  padding: 0.3rem 0.65rem;
+  border: var(--rule) solid var(--border);
+  border-radius: 999px;
+  font-size: var(--fs-micro);
+  font-weight: 560;
+  color: var(--text-2);
+}
+
+.conditions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.conditions dt {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.conditions dd {
+  max-width: 70ch;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-micro);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.conditions dd:last-child {
+  margin-bottom: 0;
+}
+
+@media (min-width: 62rem) {
+  .planGrid {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: var(--space-4);
+  }
+}
+
+/* ── 7. FAQ ──────────────────────────────────────────────────────────────── */
+
+.faqList {
+  grid-column: 1 / -1;
+  margin-top: var(--space-4);
+  border-top: var(--rule) solid var(--border);
+}
+
+.faqItem {
+  border-bottom: var(--rule) solid var(--border);
+}
+
+.faqQuestion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 4rem;
+  padding-block: var(--space-2);
+  font-size: clamp(1.0625rem, 0.92rem + 0.55vw, 1.4rem);
+  font-weight: 640;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  cursor: pointer;
+  list-style: none;
+  text-wrap: pretty;
+}
+
+.faqQuestion::-webkit-details-marker {
+  display: none;
+}
+
+.faqIndex {
+  flex: none;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.faqMark {
+  position: relative;
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: auto;
+}
+
+.faqMark::before,
+.faqMark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--text-2);
+  transition: transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.faqMark::after {
+  transform: rotate(90deg);
+}
+
+.faqItem[open] .faqMark::before,
+.faqItem[open] .faqMark::after {
+  background: var(--mark);
+}
+
+.faqItem[open] .faqMark::after {
+  transform: rotate(0deg);
+}
+
+.faqAnswer {
+  max-width: 76ch;
+  padding-bottom: var(--space-3);
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+/* ── 8. The close ────────────────────────────────────────────────────────── */
+
+.close {
+  padding-block: var(--section-pad);
+  overflow: clip;
+}
+
+.closeLight {
+  bottom: -40vh;
+  left: 8%;
+  width: min(90vw, 60rem);
+  height: min(90vw, 60rem);
+}
+
+.closeGrid {
+  position: relative;
+  z-index: 1;
+  row-gap: var(--space-3);
+  align-items: center;
+}
+
+.closeTitle {
+  grid-column: 1 / -1;
+  max-width: 22ch;
+  font-size: var(--fs-h2);
+  font-weight: var(--wuavy-headline);
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.closeAction {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.closeGuide {
+  display: block;
+  width: clamp(3.5rem, 2.4rem + 3.2vw, 5.5rem);
+}
+
+.closeLead {
+  max-width: 48ch;
+  font-size: var(--fs-lead);
+  line-height: 1.38;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.closeTalk {
+  margin-top: var(--space-1);
+}
+
+.soon {
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+@media (min-width: 62rem) {
+  .closeTitle {
+    grid-column: 1 / span 6;
+  }
+
+  .closeAction {
+    grid-column: 8 / span 5;
+  }
+}
