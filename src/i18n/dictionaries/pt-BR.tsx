@@ -782,6 +782,16 @@ export const ptBR = {
         draftLabel: "Mensagem para revisão",
         draft: "Oi Carla! Passando para saber se ficou alguma dúvida sobre o orçamento de harmonização facial. Se quiser, já deixo um horário reservado para você.",
         draftNote: "É um rascunho. Nada foi enviado.",
+        // The three signals that gather around the screen, and the next step that closes the story.
+        // Capabilities the product really has, said in a word or two; nothing is sent or booked.
+        aside: {
+          signals: [
+            { id: "quote", title: "Orçamento", note: "sem resposta" },
+            { id: "agenda", title: "Agenda", note: "horário vago" },
+            { id: "back", title: "Retorno", note: "previsto" },
+          ],
+          next: { kicker: "Próximo passo", title: "Revisar contato", note: "Rascunho pronto" },
+        },
         scenes: [
           { title: "Um orçamento ficou sem resposta.", caption: "Um orçamento ficou sem resposta." },
           { title: "O Clinavy destaca a oportunidade.", caption: "O Clinavy mostra o que merece atenção." },

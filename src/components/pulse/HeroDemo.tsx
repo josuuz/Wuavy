@@ -76,6 +76,35 @@ export interface HeroDemoCopy {
   draft: string;
   draftNote: string;
   scenes: readonly { title: string; caption: string }[];
+  /** What gathers around the screen: three signals, and the next step that closes the story. */
+  aside: {
+    signals: readonly { id: string; title: string; note: string }[];
+    next: { kicker: string; title: string; note: string };
+  };
+}
+
+/** One quiet line icon per signal, and the arrow of the next step. Drawn here, not imported. */
+const ICONS = {
+  quote: (
+    <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />
+  ),
+  agenda: (
+    <path d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4" />
+  ),
+  back: (
+    <path d="M5 12a7 7 0 0 1 12-4.9M19 12a7 7 0 0 1-12 4.9M17.5 3.5V8H13M6.5 20.5V16H11" />
+  ),
+  next: (
+    <path d="M5 12h13M13 6l6 6-6 6" />
+  ),
+} as const;
+
+function Icon({ name }: { name: keyof typeof ICONS }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {ICONS[name]}
+    </svg>
+  );
 }
 
 export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: string }) {
@@ -179,100 +208,147 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
 
   const scene = scenes[at] ?? scenes[0];
 
+  const { aside } = demo;
+  const lit = at >= 1;
+
   return (
     <div
-      ref={region}
-      className={className ? `${styles.demo} ${className}` : styles.demo}
+      className={className ? `${styles.scene} ${className}` : styles.scene}
+      data-at={at}
       data-soft={soft ? "" : undefined}
+      data-fading={fading ? "" : undefined}
       role="group"
       aria-label={demo.label}
     >
-      <ProductSurface className={`${styles.stage} ${styles.heroStage}`}>
-        <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
-          {/* Clinavy's caption, one scene at a time: the sentence the scene is for. */}
-          <div className={styles.caption}>
-            <span className={styles.avatar}>
-              <Pulse still state={at === last ? "calm" : "idle"} />
+      {/* The device is the stage: the signals and the next step are laid around it, on the same clock. */}
+      <div ref={region} className={styles.device}>
+        <div className={styles.sides} aria-hidden="true">
+          <ul className={styles.signals}>
+            {aside.signals.map((signal) => (
+              <li key={signal.id} className={styles.signal} data-id={signal.id} data-lit={signal.id === "quote" && lit ? "" : undefined}>
+                <span className={styles.signalIcon}>
+                  <Icon name={signal.id as keyof typeof ICONS} />
+                </span>
+                <span className={styles.signalText}>
+                  <strong>{signal.title}</strong>
+                  <span>{signal.note}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <svg className={`${styles.trail} ${styles.trailIn}`} viewBox="0 0 40 24">
+            <path d="M0 12 H37" pathLength="100" />
+            <circle cx="37" cy="12" r="2.4" />
+          </svg>
+          <svg className={`${styles.trail} ${styles.trailOut}`} viewBox="0 0 40 24">
+            <path d="M3 12 H40" pathLength="100" />
+            <circle cx="3" cy="12" r="2.4" />
+          </svg>
+          <div className={styles.next} data-on={at >= 4 ? "" : undefined}>
+            <span className={styles.nextIcon}>
+              <Icon name="next" />
             </span>
-            <div className={styles.lines}>
-              {scenes.map((item, i) => (
-                <p key={item.title} className={styles.line} data-on={i === at ? "" : undefined}>
-                  {item.caption}
-                </p>
-              ))}
-            </div>
+            <span className={styles.signalText}>
+              <small>{aside.next.kicker}</small>
+              <strong>{aside.next.title}</strong>
+              <span>{aside.next.note}</span>
+            </span>
           </div>
-
-          <div className={styles.deck}>
-            <article className={styles.card} data-ring={at === 1 || at === 2 ? "" : undefined}>
-              <header className={styles.head}>
-                <p className={styles.name}>{demo.patient.name}</p>
-                <p className={styles.what}>{demo.patient.sent}</p>
-                <span className={styles.chip}>{demo.patient.status}</span>
-              </header>
-
-              {/* Clinavy's doing: the button that was not there appears with the ring, and stays,
-                  marked as done, until the next click needs the room. */}
-              <div className={styles.collapse} data-open={at >= 1 && at < 3 ? "" : undefined}>
-                <div>
-                  <div className={styles.actionRow}>
-                    <span
-                      ref={actionRef}
-                      className={styles.action}
-                      data-press={at === 2 && press ? "" : undefined}
-                      data-done={opened ? "" : undefined}
-                    >
-                      {demo.action}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* What the first click opened. */}
-              <div className={styles.collapse} data-open={opened ? "" : undefined}>
-                <div>
-                  <div className={styles.details}>
-                    {demo.details.map((line) => (
-                      <p key={line.label} className={styles.text}>
-                        <span className={styles.kicker}>{line.label} </span>
-                        {line.text}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* The second button, while it waits to be pressed; it gives way to the draft. */}
-              <div className={styles.collapse} data-open={at === 3 ? "" : undefined}>
-                <div>
-                  <div className={styles.actionRow}>
-                    <span
-                      ref={suggestRef}
-                      className={styles.action}
-                      data-press={at === 3 && press ? "" : undefined}
-                      data-done={at === 3 && clicked ? "" : undefined}
-                    >
-                      {demo.suggest}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.collapse} data-open={at >= 4 ? "" : undefined}>
-                <div>
-                  <section className={styles.draft}>
-                    <p className={styles.kicker}>{demo.draftLabel}</p>
-                    <p className={styles.draftText}>{demo.draft}</p>
-                    <p className={styles.note}>{demo.draftNote}</p>
-                  </section>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <DemoCursor spot={cursor.spot} press={press} />
         </div>
-      </ProductSurface>
+
+        <div className={styles.lid}>
+          <span className={styles.camera} aria-hidden="true" />
+          <div className={styles.screen}>
+            <ProductSurface className={`${styles.stage} ${styles.heroStage}`}>
+              <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
+              {/* Clinavy's caption, one scene at a time: the sentence the scene is for. */}
+              <div className={styles.caption}>
+                <span className={styles.avatar}>
+                  <Pulse still state={at === last ? "calm" : "idle"} />
+                </span>
+                <div className={styles.lines}>
+                  {scenes.map((item, i) => (
+                    <p key={item.title} className={styles.line} data-on={i === at ? "" : undefined}>
+                      {item.caption}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.deck}>
+                <article className={styles.card} data-ring={at === 1 || at === 2 ? "" : undefined}>
+                  <header className={styles.head}>
+                    <p className={styles.name}>{demo.patient.name}</p>
+                    <p className={styles.what}>{demo.patient.sent}</p>
+                    <span className={styles.chip}>{demo.patient.status}</span>
+                  </header>
+
+                  {/* Clinavy's doing: the button that was not there appears with the ring, and stays,
+                      marked as done, until the next click needs the room. */}
+                  <div className={styles.collapse} data-open={at >= 1 && at < 3 ? "" : undefined}>
+                    <div>
+                      <div className={styles.actionRow}>
+                        <span
+                          ref={actionRef}
+                          className={styles.action}
+                          data-press={at === 2 && press ? "" : undefined}
+                          data-done={opened ? "" : undefined}
+                        >
+                          {demo.action}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* What the first click opened. */}
+                  <div className={styles.collapse} data-open={opened ? "" : undefined}>
+                    <div>
+                      <div className={styles.details}>
+                        {demo.details.map((line) => (
+                          <p key={line.label} className={styles.text}>
+                            <span className={styles.kicker}>{line.label} </span>
+                            {line.text}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* The second button, while it waits to be pressed; it gives way to the draft. */}
+                  <div className={styles.collapse} data-open={at === 3 ? "" : undefined}>
+                    <div>
+                      <div className={styles.actionRow}>
+                        <span
+                          ref={suggestRef}
+                          className={styles.action}
+                          data-press={at === 3 && press ? "" : undefined}
+                          data-done={at === 3 && clicked ? "" : undefined}
+                        >
+                          {demo.suggest}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.collapse} data-open={at >= 4 ? "" : undefined}>
+                    <div>
+                      <section className={styles.draft}>
+                        <p className={styles.kicker}>{demo.draftLabel}</p>
+                        <p className={styles.draftText}>{demo.draft}</p>
+                        <p className={styles.note}>{demo.draftNote}</p>
+                      </section>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <DemoCursor spot={cursor.spot} press={press} />
+              </div>
+            </ProductSurface>
+          </div>
+        </div>
+        <div className={styles.base} aria-hidden="true" />
+      </div>
 
       <p className="sr-only">
         {scene.title} {scene.caption}
