@@ -1020,7 +1020,7 @@ html[data-perf="lite"] .piece {
   }
 
   .pQuote {
-    right: calc(100% - 0.4rem);
+    right: calc(100% - 0.9rem);
   }
 
   .pBack {
