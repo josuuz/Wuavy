@@ -872,14 +872,6 @@
   color: var(--wuavy-signal);
 }
 
-/* Back to the first scene: everything returns to rest at once, while the sides are still faded out. */
-.scene[data-at="0"] .signal,
-.scene[data-at="0"] .trail path,
-.scene[data-at="0"] .trail circle,
-.scene[data-at="0"] .next {
-  transition: opacity 450ms var(--wuavy-ease-out);
-}
-
 /* Reduced motion: the same story, no travel. Things appear and dim; nothing slides, tilts or draws. */
 .scene[data-soft] .signal,
 .scene[data-soft] .next {
@@ -900,6 +892,16 @@
 
 .scene[data-soft] .trail circle {
   transition: opacity 250ms linear;
+}
+
+/* Back to the first scene: everything returns to rest at once, and unseen. The sides are faded out when
+   the lap ends and fade back in with the new one, so nothing of the last lap may be left to fade away in
+   sight. Last of the rules for these elements on purpose: it must beat the reduced-motion ones too. */
+.scene[data-at="0"] .signal,
+.scene[data-at="0"] .trail path,
+.scene[data-at="0"] .trail circle,
+.scene[data-at="0"] .next {
+  transition: none;
 }
 
 /* Wide screens only: the sides need the room on both sides of the laptop (about 15rem each). */
