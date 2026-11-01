@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
 
 import styles from "./demo.module.css";
 
 /*
   The small parts the two demonstrations share (the first screen's, and the
   one in "Veja como o PULSE ajuda sua equipe a agir"): the reduced-motion
-  switch, the typing of a draft, and the demonstrative cursor.
+  switch, the presence check (in view, tab in front), and the demonstrative
+  cursor.
 
   Kept apart so the two scenes can differ in what they tell and still behave
-  the same: they type the same way, point the same way, and give up the same
-  things when motion is turned down.
+  the same: they point the same way, and give up the same things when motion
+  is turned down.
 */
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
@@ -55,87 +56,120 @@ export function usePresence(target: RefObject<Element | null>, threshold: number
 }
 
 /**
- * Where a demonstration is in its life, and the one button that follows it:
- *
- *   ready    never played            "Reproduzir demonstração"
- *   playing  running                 "Pausar"
- *   paused   held by the visitor     "Continuar"
- *   done     reached the last scene  "Repetir"
- *   manual   the visitor took it     "Reproduzir demonstração" (watch it again)
- *
- * "manual" is entered only by an explicit act: pressing a scene, a situation or a
- * button of the simulation. Moving the pointer over it, or focusing it, is not one.
+ * Both demonstrations play by themselves, in a loop, while they are in view and
+ * the tab is in front. The visitor's only control is to hold them:
+ * "Pausar" / "Continuar". Everything else (a scene mark, a situation, a button of
+ * the simulation) just moves the story and lets it carry on from there.
  */
-export type PlayMode = "ready" | "playing" | "paused" | "done" | "manual";
+export type PlayMode = "playing" | "paused";
 
-export function playLabel(
-  mode: PlayMode,
-  copy: { play: string; pause: string; resume: string; replay: string },
-) {
-  if (mode === "playing") return copy.pause;
-  if (mode === "paused") return copy.resume;
-  if (mode === "done") return copy.replay;
-  return copy.play;
-}
+/*
+  The demonstrative cursor is an ordinary arrow: white, dark outline, drawn at
+  CURSOR px. It belongs to the demonstration only; the visitor's own pointer is
+  never read, hidden or moved. Its tip is at (5, 3) in the 24-unit drawing, so
+  to point at something the element is placed up and to the left of it by TIP.
+*/
+export const CURSOR = 28;
+const TIP = { x: (5 / 24) * CURSOR, y: (3 / 24) * CURSOR };
 
-/**
- * How many characters of `text` are written. While `active` it types them,
- * starting after `delay`; when `active` ends it rewinds for the next lap.
- * With reduced motion there is no typing: the text is whole as soon as it is active.
- */
-export function useTyped(text: string, active: boolean, reduced: boolean, delay = 700, every = 24) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!active || reduced) return;
-    let interval = 0;
-    const start = window.setTimeout(() => {
-      interval = window.setInterval(() => {
-        setCount((n) => {
-          if (n + 1 >= text.length) window.clearInterval(interval);
-          return Math.min(n + 1, text.length);
-        });
-      }, every);
-    }, delay);
-    return () => {
-      window.clearTimeout(start);
-      window.clearInterval(interval);
-      setCount(0);
-    };
-  }, [active, reduced, text, delay, every]);
-
-  if (!active) return 0;
-  return reduced ? text.length : count;
-}
-
-/** Where, inside `box`, the cursor should rest to point at `target`: a little inside its middle. */
+/** Where the cursor element goes so that its tip rests on the middle of `target`, inside `box`. */
 export function pointAt(box: HTMLElement | null, target: HTMLElement | null) {
   if (!box || !target) return null;
   const b = box.getBoundingClientRect();
   const t = target.getBoundingClientRect();
-  return { x: t.left - b.left + t.width * 0.58, y: t.top - b.top + t.height * 0.62 };
+  return { x: t.left - b.left + t.width / 2 - TIP.x, y: t.top - b.top + t.height / 2 - TIP.y };
 }
 
 export interface CursorSpot {
   x: number;
   y: number;
+  on: boolean;
+  /** Riding its target while the layout settles under it (no glide, no lag). */
+  follow?: boolean;
 }
 
 /**
- * The demonstrative cursor. It is a drawing: it moves between the buttons the
- * scene wants to show being pressed, shrinks and sends out a ring when it
+ * The cursor's place and visibility, driven by the demonstration's own clock so
+ * that a pause freezes it with everything else. It always arrives before the
+ * click: `park` puts it, unseen, to the lower right of the target; `go` shows it
+ * and lets it glide onto the target's middle; `hide` lets it fade.
+ * On resize it is put back on its target.
+ */
+export function useDemoCursor(box: RefObject<HTMLElement | null>) {
+  const [spot, setSpot] = useState<CursorSpot>({ x: 0, y: 0, on: false });
+  const target = useRef<HTMLElement | null>(null);
+  const live = useRef(false);
+
+  const spotRef = useRef(spot);
+  const place = (on: boolean, from?: boolean) => {
+    const at = pointAt(box.current, target.current);
+    const room = box.current?.getBoundingClientRect();
+    if (!at || !room) return;
+    // The entry point: down and to the right of the target, kept inside the stage.
+    const x = from ? Math.min(at.x + 150, room.width - CURSOR) : at.x;
+    const y = from ? Math.min(at.y + 90, room.height - CURSOR) : at.y;
+    spotRef.current = { x, y, on };
+    setSpot(spotRef.current);
+  };
+
+  useEffect(() => {
+    const onResize = () => {
+      if (live.current && target.current) place(true);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return {
+    spot,
+    park: (el: HTMLElement | null) => {
+      target.current = el;
+      live.current = false;
+      place(false, true);
+    },
+    go: (el: HTMLElement | null) => {
+      target.current = el;
+      live.current = true;
+      place(true);
+    },
+    /**
+     * Stays on the target's middle while the layout moves under it (a card that opens
+     * recentres, and the button goes with it): the cursor rides along instead of being left behind.
+     */
+    follow: (el: HTMLElement | null) => {
+      if (!live.current) return;
+      const at = pointAt(box.current, el);
+      const now = spotRef.current;
+      if (!at || (Math.abs(at.x - now.x) < 0.4 && Math.abs(at.y - now.y) < 0.4)) return;
+      spotRef.current = { x: at.x, y: at.y, on: true, follow: true };
+      setSpot(spotRef.current);
+    },
+    /** Whether it is on stage now, so a second click can carry on from where the first left it. */
+    live: () => live.current,
+    hide: () => {
+      live.current = false;
+      setSpot((s) => (s.on ? { ...s, on: false } : s));
+    },
+  };
+}
+
+/**
+ * The demonstrative cursor. It is a drawing: it glides between the buttons the
+ * scene shows being pressed, sinks a little and sends out a quiet ring when it
  * "clicks", and never receives a real event. Hidden from assistive tech.
  */
-export function DemoCursor({ spot, on, press }: { spot: CursorSpot | null; on: boolean; press: boolean }) {
+export function DemoCursor({ spot, press }: { spot: CursorSpot; press: boolean }) {
   return (
     <div
       className={styles.cursor}
       aria-hidden="true"
-      data-on={on && spot ? "" : undefined}
+      data-on={spot.on ? "" : undefined}
+      data-follow={spot.follow ? "" : undefined}
       data-press={press ? "" : undefined}
-      style={{ "--x": spot?.x, "--y": spot?.y } as CSSProperties}
+      style={{ "--x": spot.x, "--y": spot.y } as CSSProperties}
     >
-      <svg viewBox="0 0 24 24" width="24" height="24" focusable="false">
+      <svg viewBox="0 0 24 24" width={CURSOR} height={CURSOR} focusable="false">
         <path d="M5 3l14 8-6.2 1.6L9.6 19z" fill="#fff" stroke="#1c1b19" strokeWidth="1.5" strokeLinejoin="round" />
       </svg>
     </div>

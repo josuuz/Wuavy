@@ -3,84 +3,80 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Pulse } from "@/components/flow/Pulse";
-import { cn } from "@/lib/utils";
-import {
-  DemoCursor,
-  playLabel,
-  pointAt,
-  usePresence,
-  useReducedMotion,
-  useTyped,
-  type CursorSpot,
-  type PlayMode,
-} from "./demo-kit";
+import { DemoCursor, usePresence, useDemoCursor, useReducedMotion, type PlayMode } from "./demo-kit";
 import styles from "./demo.module.css";
 import { ProductSurface } from "./product";
 import { focusTab, onTabKeys, tabIndex } from "./tabs";
 import { track } from "./track";
 
 /*
-  The first screen's demonstration: one patient card, four scenes, about
-  fifteen seconds, one idea in each.
+  The first screen's demonstration: one patient card, five scenes, about
+  twenty seconds, one idea in each. It plays by itself, in a loop.
 
     1  A quote went unanswered      the card, alone: name, what, "Sem resposta"
     2  The Pulse picks it out       a ring, and "Ver oportunidade" appears
-    3  A click opens it             a cursor goes to the button and presses it;
-                                    the details the story needs open under it
-    4  The message waits            the draft is typed, marked as a draft
+    3  A click opens it             the cursor glides to the button, rests, presses
+                                    it; the details open as a result
+    4  Another click                the cursor goes on to "Ver sugestão de mensagem"
+                                    and presses that
+    5  The message waits            the draft, marked as a draft, held a few seconds
 
-  It stops there. It never shows a message sent, an answer, a booking or
-  revenue: the last scene is a person about to read a draft. Only what the
-  product does today is drawn, and the labels say what the product says.
+  Then the stage lets go softly and the story begins again, for as long as it is
+  in view. It never shows a message sent, an answer, a booking or revenue: the
+  last scene is a person about to read a draft.
 
-  Everything else is left out on purpose — no menu, no columns, no other
-  patients, no numbers. The tour further down shows the whole interface.
+  How it behaves:
 
-  How it behaves — one mode (PlayMode in demo-kit) says where it is, and one
-  button follows it: "Reproduzir demonstração" · "Pausar" · "Continuar" ·
-  "Repetir".
-
-  · normal motion: it starts by itself when it is in view enough, plays once
-    and rests on the last scene, where "Repetir" plays it again;
-  · one clock (requestAnimationFrame) runs it, only while it is in view and the
-    tab is in front, and it resumes where it stopped;
-  · the four scene marks are buttons: pressing one hands the scene to the
-    visitor ("manual"), who then steps through it by hand and nothing plays on
-    its own. Hovering or focusing is not an act: only a press is. "Reproduzir
-    demonstração" takes it back and plays it from the start;
-  · the picture is aria-hidden; what a screen reader gets is the four scenes
-    (each named) and the sentence of the one that is showing;
-  · reduced motion reduces, it does not remove: nothing starts by itself and
-    "Reproduzir demonstração" is there from the first paint. Pressed, it plays
-    a calm version: the scenes change one after the other, with no cursor, no
-    travel and no typing — each scene appears in its finished state. The scene
-    marks (and the arrows) step through it by hand all the same.
+  · it starts by itself when it is in view enough, and loops. Out of view, or
+    with the tab hidden, its clock rests and resumes where it stopped;
+  · one clock (requestAnimationFrame) runs everything: the scenes, the cursor
+    and the presses. A click is never earlier than the cursor's arrival: it
+    leaves, arrives, rests, and only then the button shows pressed and its
+    result opens;
+  · the visitor's one control is "Pausar" / "Continuar". The scene marks jump to
+    a scene and the story carries on from there. Nothing needs pressing;
+  · the cursor is the demonstration's own drawing. The visitor's pointer is
+    never read, hidden or moved;
+  · reduced motion reduces, it does not remove: the scenes still advance by
+    themselves at an easy pace, each in its finished state, with no cursor, no
+    glide, no press and no zoom, only the content changing;
+  · the picture is aria-hidden; what a screen reader gets is the five scenes
+    (each named) and the sentence of the one that is showing.
 
   The title, the lead and the buttons above it are plain server-rendered
   markup: nothing in the first screen waits for this.
 */
 
-/** How long each scene stays, in ms: about sixteen seconds in all. */
-const DWELL = [2600, 3200, 4200, 6000] as const;
-/** The calm version has no cursor to wait for, so scene 3 is shorter. */
-const CALM_DWELL = [2800, 3400, 3400, 6000] as const;
-/** In scene 3 the cursor arrives, presses at CLICK_AT and the details open. */
-const CLICK_AT = 1500;
-const PRESS_FROM = 1300;
-const PRESS_TO = 1750;
+/** How long each scene stays, in ms. */
+const DWELL = [2800, 3200, 5200, 3300, 7000] as const;
+/** Without a cursor to wait for, the scenes of the calm version each get a steady beat. */
+const CALM_DWELL = [3000, 3600, 4000, 4000, 7000] as const;
+/** The soft let-go between the last scene and the first. */
+const FADE = 450;
+
+/**
+ * The scenes where the cursor clicks, in ms from the start of the scene: when it leaves,
+ * when the button shows pressed and when it lets go. The cursor takes about 900 ms to
+ * arrive, so there is always a rest between its arrival and the press.
+ */
+const BEATS: Record<number, { leave: number; press: number; release: number }> = {
+  2: { leave: 450, press: 1800, release: 2250 },
+  3: { leave: 1000, press: 2350, release: 2800 },
+};
+/** The click's effect lands just after the press begins. */
+const CLICK_LAG = 100;
 
 export interface HeroDemoCopy {
   label: string;
   note: string;
-  /** Before it has played, and to watch it again after the visitor took it. */
-  play: string;
   pause: string;
   resume: string;
-  replay: string;
   /** "Cena {n} de {total}: {title}" — each scene mark's accessible name. */
   scene: string;
   patient: { name: string; sent: string; status: string };
   action: string;
+  /** The second button, on the opened card. */
+  suggest: string;
   /** The two lines the opened card needs: what she asked for, and why it is on the list. */
   details: readonly { label: string; text: string }[];
   draftLabel: string;
@@ -91,119 +87,117 @@ export interface HeroDemoCopy {
 
 export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: string }) {
   const { scenes } = demo;
+  const last = scenes.length - 1;
   const reduced = useReducedMotion();
   const [at, setAt] = useState(0);
   const [clicked, setClicked] = useState(false);
   const [press, setPress] = useState(false);
-  const [mode, setMode] = useState<PlayMode>("ready");
-  const [spot, setSpot] = useState<CursorSpot | null>(null);
+  const [fading, setFading] = useState(false);
+  const [mode, setMode] = useState<PlayMode>("playing");
 
   const region = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const marks = useRef<HTMLDivElement>(null);
   const actionRef = useRef<HTMLSpanElement>(null);
+  const suggestRef = useRef<HTMLSpanElement>(null);
   const atRef = useRef(0);
   const clock = useRef(0);
-  const flags = useRef({ press: false, clicked: false });
+  const flags = useRef({ parked: false, went: false, press: false, clicked: false, fade: false });
   const started = useRef(false);
+  const cursor = useDemoCursor(box);
+  const cursorRef = useRef(cursor);
 
   useEffect(() => {
     atRef.current = at;
-  }, [at]);
+    cursorRef.current = cursor;
+  });
 
-  const inView = usePresence(region, 0.5);
-  /** The first act of any kind, by itself or by the visitor, is the demonstration's start. */
-  const begin = () => {
-    if (started.current) return;
-    started.current = true;
-    track("demo_start");
-  };
-  /** Calm: each scene shows how it ends, with no cursor, no typing and no travel. */
-  const calm = reduced || mode === "manual";
+  const inView = usePresence(region, 0.35);
   const running = mode === "playing" && inView;
+  /** Calm (reduced motion): each scene shows how it ends, with no cursor, no glide and no press. */
+  const calm = reduced;
   const opened = at >= 3 || (at === 2 && (clicked || calm));
-  const typed = useTyped(demo.draft, at === 3, calm, 900);
 
-  // Normal motion starts itself, once, when it comes into view: nothing plays behind the fold.
-  // Reduced motion waits for "Reproduzir demonstração".
   useEffect(() => {
-    if (reduced || !inView || mode !== "ready" || started.current) return;
-    begin();
-    setMode("playing");
-  }, [reduced, inView, mode]);
+    if (running && !started.current) {
+      started.current = true;
+      track("demo_start");
+    }
+  }, [running]);
 
-  // The one clock: it advances scenes, and in scene 3 it times the press and the opening.
+  // The one clock: scenes, cursor and presses, in order, and the loop.
   useEffect(() => {
     if (!running) return;
     let frame = 0;
-    let last = performance.now();
+    let before = performance.now();
+
+    const begin = (index: number) => {
+      clock.current = 0;
+      flags.current = { parked: false, went: false, press: false, clicked: false, fade: false };
+      setPress(false);
+      setClicked(false);
+      setAt(index);
+      if (index !== 3) cursorRef.current.hide();
+    };
+
     const tick = (now: number) => {
-      clock.current += Math.min(now - last, 80);
-      last = now;
+      clock.current += Math.min(now - before, 80);
+      before = now;
       const t = clock.current;
       const index = atRef.current;
+      const f = flags.current;
+      const beat = reduced ? undefined : BEATS[index];
 
-      if (index === 2 && !reduced) {
-        const pressNow = t >= PRESS_FROM && t < PRESS_TO;
-        if (pressNow !== flags.current.press) {
-          flags.current.press = pressNow;
+      if (beat) {
+        const target = index === 2 ? actionRef.current : suggestRef.current;
+        // Placed out of sight first (scene 4 only if it is not already on stage), then it glides in.
+        if (!f.parked && t >= beat.leave - 300) {
+          f.parked = true;
+          if (!cursorRef.current.live()) cursorRef.current.park(target);
+        }
+        if (!f.went && t >= beat.leave) {
+          f.went = true;
+          cursorRef.current.go(target);
+        }
+        // Once it has arrived it stays on the button, even while the card opens and moves it.
+        if (f.went && t >= beat.leave + 950) cursorRef.current.follow(target);
+        const pressNow = t >= beat.press && t < beat.release;
+        if (pressNow !== f.press) {
+          f.press = pressNow;
           setPress(pressNow);
         }
-        const clickedNow = t >= CLICK_AT;
-        if (clickedNow !== flags.current.clicked) {
-          flags.current.clicked = clickedNow;
+        const clickedNow = t >= beat.press + CLICK_LAG;
+        if (clickedNow !== f.clicked) {
+          f.clicked = clickedNow;
           setClicked(clickedNow);
         }
       }
 
-      if (t >= ((reduced ? CALM_DWELL : DWELL)[index] ?? DWELL[0])) {
-        clock.current = 0;
-        flags.current = { press: false, clicked: false };
-        setPress(false);
-        setClicked(false);
-        if (index >= scenes.length - 1) setMode("done");
-        else setAt(index + 1);
+      const dwell = (reduced ? CALM_DWELL : DWELL)[index] ?? DWELL[0];
+      if (index < last) {
+        if (t >= dwell) begin(index + 1);
+      } else if (t >= dwell + FADE) {
+        setFading(false);
+        begin(0);
+      } else if (t >= dwell && !f.fade) {
+        f.fade = true;
+        setFading(true);
       }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [running, reduced, scenes.length]);
+  }, [running, reduced, last]);
 
-  // The cursor goes to "Ver oportunidade" once the card has settled where it will be pressed.
-  useEffect(() => {
-    if (calm || at !== 2) return;
-    const place = () => setSpot(pointAt(box.current, actionRef.current));
-    const settle = window.setTimeout(place, 250);
-    window.addEventListener("resize", place);
-    return () => {
-      window.clearTimeout(settle);
-      window.removeEventListener("resize", place);
-    };
-  }, [at, calm]);
-
-  const reset = (next: number) => {
+  /** A scene mark jumps to its scene; the story carries on from there. */
+  const jump = (next: number) => {
     clock.current = 0;
-    flags.current = { press: false, clicked: false };
+    flags.current = { parked: false, went: false, press: false, clicked: false, fade: false };
     setPress(false);
     setClicked(false);
+    setFading(false);
+    cursor.hide();
     setAt(next);
-  };
-
-  /** Pressing a scene mark hands the demonstration to the visitor, until "Reproduzir demonstração". */
-  const take = (next: number) => {
-    begin();
-    reset(next);
-    setMode("manual");
-  };
-
-  /** The one control: it plays, holds, resumes or replays, whichever the mode asks for. */
-  const control = () => {
-    if (mode === "playing") return setMode("paused");
-    if (mode === "paused") return setMode("playing");
-    begin();
-    reset(0);
-    setMode("playing");
   };
 
   const scene = scenes[at] ?? scenes[0];
@@ -214,13 +208,13 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       .replace("{title}", scenes[i]?.title ?? "");
 
   return (
-    <div ref={region} className={cn(styles.demo, className)} data-mode={mode}>
-      <ProductSurface className={cn(styles.stage, styles.heroStage)}>
-        <div ref={box} className={styles.inner} aria-hidden="true">
+    <div ref={region} className={className ? `${styles.demo} ${className}` : styles.demo} data-mode={mode}>
+      <ProductSurface className={`${styles.stage} ${styles.heroStage}`}>
+        <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
           {/* The Pulse's caption, one scene at a time: the sentence the scene is for. */}
           <div className={styles.caption}>
             <span className={styles.avatar}>
-              <Pulse still state={at === 3 ? "calm" : "idle"} />
+              <Pulse still state={at === last ? "calm" : "idle"} />
             </span>
             <div className={styles.lines}>
               {scenes.map((item, i) => (
@@ -231,7 +225,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
             </div>
           </div>
 
-          <div className={styles.deck} data-scene={at} data-clicked={opened ? "" : undefined}>
+          <div className={styles.deck}>
             <article className={styles.card} data-ring={at === 1 || at === 2 ? "" : undefined}>
               <header className={styles.head}>
                 <p className={styles.name}>{demo.patient.name}</p>
@@ -239,15 +233,15 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
                 <span className={styles.chip}>{demo.patient.status}</span>
               </header>
 
-              {/* The Pulse's doing: the button that was not there appears with the ring. */}
-              {/* It stays through the click, marked as done, and folds away in the last scene: the draft needs the room. */}
+              {/* The Pulse's doing: the button that was not there appears with the ring, and stays,
+                  marked as done, until the next click needs the room. */}
               <div className={styles.collapse} data-open={at >= 1 && at < 3 ? "" : undefined}>
                 <div>
                   <div className={styles.actionRow}>
                     <span
                       ref={actionRef}
                       className={styles.action}
-                      data-press={press ? "" : undefined}
+                      data-press={at === 2 && press ? "" : undefined}
                       data-done={opened ? "" : undefined}
                     >
                       {demo.action}
@@ -256,6 +250,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
                 </div>
               </div>
 
+              {/* What the first click opened. */}
               <div className={styles.collapse} data-open={opened ? "" : undefined}>
                 <div>
                   <div className={styles.details}>
@@ -269,15 +264,27 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
                 </div>
               </div>
 
-              <div className={styles.collapse} data-open={at >= 3 ? "" : undefined}>
+              {/* The second button, while it waits to be pressed; it gives way to the draft. */}
+              <div className={styles.collapse} data-open={at === 3 ? "" : undefined}>
+                <div>
+                  <div className={styles.actionRow}>
+                    <span
+                      ref={suggestRef}
+                      className={styles.action}
+                      data-press={at === 3 && press ? "" : undefined}
+                      data-done={at === 3 && clicked ? "" : undefined}
+                    >
+                      {demo.suggest}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.collapse} data-open={at >= 4 ? "" : undefined}>
                 <div>
                   <section className={styles.draft}>
                     <p className={styles.kicker}>{demo.draftLabel}</p>
-                    {/* The whole text is laid out from the start, so typing never moves anything. */}
-                    <p className={styles.draftText}>
-                      {demo.draft.slice(0, typed)}
-                      <span className={styles.unwritten}>{demo.draft.slice(typed)}</span>
-                    </p>
+                    <p className={styles.draftText}>{demo.draft}</p>
                     <p className={styles.note}>{demo.draftNote}</p>
                   </section>
                 </div>
@@ -285,7 +292,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
             </article>
           </div>
 
-          <DemoCursor spot={spot} on={!calm && at === 2} press={press} />
+          {calm ? null : <DemoCursor spot={cursor.spot} press={press} />}
         </div>
       </ProductSurface>
 
@@ -301,7 +308,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
           aria-label={demo.label}
           onKeyDown={(event) =>
             onTabKeys(event, at, scenes.length, (next) => {
-              take(next);
+              jump(next);
               focusTab(marks.current, next);
             })
           }
@@ -317,15 +324,19 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
               tabIndex={tabIndex(i, at)}
               data-done={i < at ? "" : undefined}
               className={styles.dot}
-              onClick={() => take(i)}
+              onClick={() => jump(i)}
             >
               <span className={styles.dotMark} aria-hidden="true" />
             </button>
           ))}
         </div>
 
-        <button type="button" className={styles.ghost} onClick={control}>
-          {playLabel(mode, demo)}
+        <button
+          type="button"
+          className={styles.ghost}
+          onClick={() => setMode((m) => (m === "playing" ? "paused" : "playing"))}
+        >
+          {mode === "playing" ? demo.pause : demo.resume}
         </button>
         <p className={styles.fine}>{demo.note}</p>
       </div>

@@ -773,13 +773,12 @@ export const ptBR = {
       demo: {
         label: "O PULSE em quatro cenas",
         note: "Demonstração com dados fictícios. Nada é enviado daqui.",
-        play: "Reproduzir demonstração",
         pause: "Pausar",
         resume: "Continuar",
-        replay: "Repetir",
         scene: "Cena {n} de {total}: {title}",
         patient: { name: "Carla", sent: "Orçamento enviado há 6 dias", status: "Sem resposta" },
         action: "Ver oportunidade",
+        suggest: "Ver sugestão de mensagem",
         details: [
           { label: "Procedimento:", text: "harmonização facial." },
           { label: "Por que aparece:", text: "sem resposta há 3 dias ou mais." },
@@ -791,6 +790,7 @@ export const ptBR = {
           { title: "Um orçamento ficou sem resposta.", caption: "Um orçamento ficou sem resposta." },
           { title: "O PULSE destaca a oportunidade.", caption: "O PULSE mostra o que merece atenção." },
           { title: "Um clique abre os detalhes.", caption: "Um clique abre os detalhes." },
+          { title: "Outro clique traz a sugestão.", caption: "Outro clique traz a sugestão de mensagem." },
           { title: "A mensagem espera a equipe.", caption: "Sua equipe revisa e decide o contato." },
         ],
       },
@@ -839,10 +839,8 @@ export const ptBR = {
       pick: "Escolha uma situação",
       hint: "Clique para experimentar",
       note: "Exemplo com dados fictícios. Nada é enviado.",
-      play: "Reproduzir demonstração",
       pause: "Pausar",
       resume: "Continuar",
-      replay: "Repetir",
       labels: {
         reasonLabel: "Por que merece atenção",
         nextLabel: "Próximo passo",
