@@ -1072,7 +1072,7 @@ export const ptPT: typeof ptBR = {
       items: [
         {
           q: "Para que clínicas serve o PULSE?",
-          a: "O PULSE foi feito para clínicas de estética: é nelas que procedimento, intervalo de regresso, orçamento e stock encaixam como o sistema espera. Uma clínica de outra área pode usar a parte de rotina — pacientes, agenda, vendas e stock —, mas as frentes de oportunidade foram pensadas para a estética. Se a sua clínica é de outra área, fale com a Wuavy antes de assinar.",
+          a: "O PULSE foi feito para clínicas de estética: é nelas que procedimento, intervalo de regresso, orçamento e stock encaixam como o sistema espera. Se a sua clínica é de outra área, fale com a Wuavy antes de assinar.",
         },
         {
           q: "Preciso de instalar algo?",

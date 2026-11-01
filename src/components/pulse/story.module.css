@@ -553,4 +553,9 @@
   .cursor {
     display: none;
   }
+
+  /* Nothing fills the line, because nothing plays: the lit step is simply marked. */
+  .step[aria-selected="true"] .fill {
+    transform: scaleX(1);
+  }
 }

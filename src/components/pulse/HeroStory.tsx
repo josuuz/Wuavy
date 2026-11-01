@@ -35,9 +35,11 @@ import styles from "./story.module.css";
     Pausar). After that it is theirs, and never starts again;
   · the picture is aria-hidden. What a screen reader gets is the tab strip
     (four steps, each named) and the active beat's sentence;
-  · reduced motion keeps the four beats and drops the travel: no cursor, no
-    pan, no typing — the text is whole, the changes are fades. Windows reports
-    this whenever animations are off, which is common, so it must still read.
+  · reduced motion starts it stopped, on the first beat, and the visitor
+    advances it with the four steps (or the arrows). It also drops the travel:
+    no cursor, no pan, no typing — the text is whole, the changes are fades.
+    Windows reports this whenever animations are off, which is common, so the
+    beats must still be there to be read, just not moving by themselves.
 
   Nothing in the page's first screen waits for this: the title, the lead and
   both buttons are server-rendered above it.
@@ -134,7 +136,8 @@ export function HeroStory({ story, screen, others, draftLabel, className }: Hero
     atRef.current = at;
   }, [at]);
 
-  const running = playing && onScreen;
+  // With reduced motion the scene never plays by itself: it waits on the first beat and the visitor moves it.
+  const running = playing && onScreen && !reduced;
   const draft = screen.draft;
   const shown = reduced && at >= 3 ? draft.length : typed;
 
@@ -472,7 +475,8 @@ export function HeroStory({ story, screen, others, draftLabel, className }: Hero
 
       <div className={styles.foot}>
         <p className={styles.note}>{story.note}</p>
-        {taken ? null : (
+        {/* Nothing to pause when it does not play: with reduced motion the beats are the visitor's from the start. */}
+        {taken || reduced ? null : (
           <button type="button" className={styles.pause} onClick={() => setPlaying((on) => !on)}>
             {playing ? story.pause : story.play}
           </button>
