@@ -57,6 +57,7 @@ export function AppFrame({
   bodyClassName,
   contentKey,
   pressSlug,
+  compact,
 }: {
   /** The screen's name, shown above the work. */
   screen: string;
@@ -72,12 +73,14 @@ export function AppFrame({
   contentKey?: string;
   /** The rail item that is being pressed right now (the demonstration's cursor), by slug. */
   pressSlug?: string;
+  /** Tighter chrome, for a frame that sits on a small screen (the first screen's laptop). */
+  compact?: boolean;
 }) {
   // The host carries the container; the frame inside answers the query. A
   // container query styles what is inside a container, never the container
   // itself, so the two cannot be the same element.
   return (
-    <div className={cn(styles.host, className)}>
+    <div className={cn(styles.host, className)} data-compact={compact ? "" : undefined}>
       <ProductSurface className={styles.frame}>
         <div className={styles.rail} data-pulse-surface="rail" aria-hidden="true">
           <p className={styles.brand}>
@@ -232,7 +235,7 @@ export function OpportunityCard({
   Fictitious, and chosen to show one task per screen rather than a whole
   dashboard shrunk until nothing reads. Clínica Aurora is the demo's own clinic.
 */
-const SAMPLE = {
+export const SAMPLE = {
   attention: [
     { tag: "Orçamentos", text: "3 orçamentos sem resposta", value: "R$ 7.400" },
     { tag: "Retornos", text: "5 pacientes no período de retorno", value: "R$ 6.150" },

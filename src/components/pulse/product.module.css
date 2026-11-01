@@ -169,6 +169,25 @@
   }
 }
 
+/* The compact frame: the same rail and the same work area, with the chrome closer in, so a small screen has
+   room for the story. Specific enough to win over the container query above, whatever the order. */
+.host[data-compact] .rail {
+  gap: 0.75rem;
+  padding: 0.95rem 0.95rem;
+}
+
+.host[data-compact] .panel {
+  padding: 0.8rem 1.05rem 0.55rem;
+}
+
+.host[data-compact] .bar {
+  padding-bottom: 0.5rem;
+}
+
+.host[data-compact] .body {
+  padding-top: 0.7rem;
+}
+
 /* ── Shared pieces ───────────────────────────────────────────────────────── */
 
 .kicker {

@@ -4,9 +4,9 @@
   one — are demo.module.css.)
 
   They share one grammar — a short list or strip of choices, one area that
-  changes — but not one composition, on purpose: the situations are a list on
-  the left with the product on the right, the tour is centred with the product
-  wide above its words, the fronts are a list beside one large number. The
+  changes — but not one composition, on purpose: the situations are words on
+  the left with a scene on the right, the tour is the product wide with its
+  words on the right, the fronts are a list beside one large number. The
   story alternates so that no two sections in a row are laid out the same way.
 
   Motion, by the project's contract (components/motion/README.md): only
@@ -241,19 +241,57 @@
   }
 }
 
-/* ── The tour: centred, the product wide above its words ────────────────── */
+/* ── The tour: the product as an application window, the words beside it ─────────────────────
+   The window takes most of the width. Beside it a narrow column: the screens to choose from, and what the
+   one on show is for. When the demonstration lights a detail, the words come level with it and a thin line
+   joins the two. On a phone the column goes under the window. */
 
 .tour {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+}
+
+.tour::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: 12%;
+  width: min(100vw, 80rem);
+  height: 52%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse 50% 50% at 42% 60%, rgb(214 84 32 / 0.15), transparent 74%);
+  pointer-events: none;
+}
+
+.tourGrid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
 }
 
+.tourScreen {
+  min-width: 0;
+}
+
+.tourSide {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 1.4rem;
+}
+
+.tourSide .note {
+  margin-top: auto;
+}
+
+/* The choices: pills on a phone, a quiet list with the chosen one marked by a rule on a wide screen. */
 .tourTabs {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.4rem;
 }
 
@@ -286,33 +324,14 @@
   color: var(--on-mark);
 }
 
-.tourPanel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-width: 0;
-}
-
-.tourScreen {
-  width: 100%;
-  max-width: 72rem;
-  min-width: 0;
-}
-
-/* The frame and the rail stay where they are; only the work area comes in with each screen. */
-.tourBody {
-  animation: pulse-rise var(--duration-element) var(--wuavy-ease-out) both;
-}
-
 .tourWords {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.6rem;
-  max-width: 44rem;
-  text-align: center;
+  text-align: left;
+  transform: translateY(var(--ny, 0px));
+  transition: transform 800ms var(--wuavy-ease-out);
   animation: pulse-rise var(--duration-element) var(--wuavy-ease-out) var(--wuavy-wave-step) both;
 }
 
@@ -339,7 +358,6 @@
 }
 
 .tourNote {
-  max-width: 52ch;
   padding-top: 0.5rem;
   border-top: var(--rule) solid var(--border);
   font-size: var(--fs-micro);
@@ -348,39 +366,75 @@
   text-wrap: pretty;
 }
 
-/* ── Reduced motion: the changes stay, the travelling goes ──────────────── */
+/* The line from the lit detail to the words: drawn once the detail is lit, taken back when it is let go. */
+.tourLink {
+  display: none;
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke: var(--mark);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
-@media (prefers-reduced-motion: reduce) {
-  .frontPanel,
-  .tourFrame,
-  .tourWords {
-    animation-name: pulse-in;
-    animation-duration: var(--duration-ui);
+.tourLink path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tourLink[data-on] path {
+  stroke-dashoffset: 0;
+}
+
+@media (min-width: 64rem) {
+  .tourGrid {
+    grid-template-columns: minmax(0, 1fr) 19.5rem;
+    column-gap: clamp(2.25rem, 4.5vw, 4rem);
+    align-items: start;
+  }
+
+  .tourSide {
+    gap: 1.6rem;
+  }
+
+  .tourTabs {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0.1rem;
+  }
+
+  .tourTab {
+    padding: 0.55rem 1rem;
+    border: 0;
+    border-left: 2px solid rgb(255 255 255 / 0.14);
+    border-radius: 0 0.7rem 0.7rem 0;
+    font-size: 1rem;
+    letter-spacing: 0;
+    text-align: left;
+  }
+
+  .tourTab:hover {
+    border-left-color: color-mix(in srgb, var(--text) 45%, transparent);
+  }
+
+  .tourTab[aria-selected="true"] {
+    border-left-color: var(--mark);
+    background: rgb(255 255 255 / 0.05);
+    color: var(--text);
+  }
+
+  .tourLink {
+    display: block;
   }
 }
 
-/* ── The tour as an application window ────────────────────────────────────────
-   A slim graphite window around the product's own frame. The cursor goes to a detail of the screen, the
-   detail is lit and held, the cursor goes to the next item of the rail and presses it, and the screen
-   changes. The rail answers the press; nothing else moves. */
-
-.tour {
-  position: relative;
-  isolation: isolate;
-}
-
-.tour::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  left: 50%;
-  bottom: 18%;
-  width: min(100vw, 80rem);
-  height: 46%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse 50% 50% at 50% 60%, rgb(214 84 32 / 0.16), transparent 74%);
-  pointer-events: none;
-}
+/* ── The window ───────────────────────────────────────────────────────────────────────────── */
 
 .tourWindow {
   padding: 0 0.55rem 0.55rem;
@@ -412,6 +466,11 @@
   box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6);
 }
 
+/* The frame and the rail stay where they are; only the work area comes in with each screen. */
+.tourBody {
+  animation: pulse-rise var(--duration-element) var(--wuavy-ease-out) both;
+}
+
 /* The detail the cursor went to: a ring and a faint tint while it is held, the way the card is lit above. */
 .tourStage [data-focus] {
   transition:
@@ -427,12 +486,30 @@
     0 0 0 7px color-mix(in srgb, var(--pulse-accent) 17%, transparent);
 }
 
+/* Reduced motion: the words and the line still go to the detail, but they are there at once; nothing travels. */
 .tour[data-soft] .tourBody {
   animation: none;
 }
 
+.tour[data-soft] .tourWords {
+  transition: none;
+  animation-name: pulse-in;
+  animation-duration: var(--duration-ui);
+}
+
+.tour[data-soft] .tourLink path {
+  transition: none;
+}
+
 .tour[data-soft] .tourStage [data-focus] {
   transition-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frontPanel {
+    animation-name: pulse-in;
+    animation-duration: var(--duration-ui);
+  }
 }
 
 @media (max-width: 47.99rem) {

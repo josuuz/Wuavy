@@ -1,53 +1,61 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
+import { VIEWS } from "@/components/flow/demo/copy";
 import { Pulse } from "@/components/flow/Pulse";
 import { DemoCursor, useDemoCursor, usePresence, useReducedMotion } from "./demo-kit";
 import styles from "./demo.module.css";
-import { ProductSurface } from "./product";
+import { AppFrame, SAMPLE } from "./product";
 import { track } from "./track";
 
 /*
-  The first screen's demonstration: one patient card, five scenes, about
-  twenty seconds, one idea in each. It plays by itself, in a loop.
+  The first screen's demonstration: the clinic's routine, and what Clinavy picks out of it. Six
+  scenes, about twenty-five seconds, one idea in each. It plays by itself, in a loop.
 
-    1  A quote went unanswered      the card, alone: name, what, "Sem resposta"
-    2  Clinavy picks it out       a ring, and "Ver oportunidade" appears
-    3  A click opens it             the cursor glides to the button, rests, presses
-                                    it; the details open as a result
-    4  Another click                the cursor goes on to "Ver sugestão de mensagem"
-                                    and presses that
-    5  The message waits            the draft, marked as a draft, held a few seconds
+    1  The routine keeps the team busy      the patients list, and around the laptop the first
+                                            pieces: an estimate, tomorrow's agenda
+    2  Some opportunities go unnoticed      three signals become readable: the estimate has no
+                                            answer, a return is due, an hour is free
+    3  Clinavy shows what deserves attention  the estimate is lit, the rest steps back, the
+                                            estimate's piece leans toward the screen
+    4  A click opens it                     the cursor glides to "Ver oportunidade", rests, presses
+                                            it; the details open as a result
+    5  Another click                        the cursor goes on to "Ver sugestão de mensagem" and
+                                            presses that
+    6  The team reviews and decides         the draft, marked as a draft, held a few seconds
 
-  Then the stage lets go softly and the story begins again, for as long as it is
-  in view. It never shows a message sent, an answer, a booking or revenue: the
-  last scene is a person about to read a draft.
+  Then the stage lets go softly and the story begins again, for as long as it is in view. The
+  estimate is the proof of the promise, not the whole of it: the first two scenes are the clinic's
+  routine, in the product's own patients list. It never shows a message sent, an answer, a booking
+  or revenue: the last scene is a person about to read a draft.
 
   How it behaves:
 
-  · it starts by itself when it is in view enough, and loops. Out of view, or
-    with the tab hidden, its clock rests and resumes where it stopped. There is
-    nothing to press: no play, pause, replay or scene marks, and a hover, a
-    tap or a click on the stage does nothing;
-  · one clock (requestAnimationFrame) runs everything: the scenes, the cursor
-    and the presses. A click is never earlier than the cursor's arrival: it
-    leaves, arrives, rests, and only then the button shows pressed and its
-    result opens;
-  · the cursor is the demonstration's own drawing, on every device and with
-    every motion setting. The visitor's pointer is never read, hidden or moved;
-  · reduced motion changes how it moves, never whether it plays: the same story,
-    the same cursor and the same two clicks, with a short soft glide, a press
-    shown without zoom, a quiet fade for the click and content that cross-fades;
-  · the picture is aria-hidden; what a screen reader gets is the sentence of
-    the scene that is showing.
+  · it starts by itself when it is in view enough, and loops. Out of view, or with the tab hidden,
+    its clock rests and resumes where it stopped. There is nothing to press: no play, pause,
+    replay or scene marks, and a hover, a tap or a click on the stage does nothing;
+  · one clock (requestAnimationFrame) runs everything: the scenes, the pieces around the laptop,
+    the cursor and the presses. A click is never earlier than the cursor's arrival: it leaves,
+    arrives, rests, and only then the button shows pressed and its result opens. While the cursor
+    is clicking, the pieces around the laptop go quiet so the eye stays on it;
+  · the laptop never re-enters: only the story inside it and the pieces around it start again, and
+    on every lap after the first the reset happens while they are faded out, so nothing of the
+    last lap is left to fade away in sight;
+  · the cursor is the demonstration's own drawing, on every device and with every motion setting.
+    The visitor's pointer is never read, hidden or moved;
+  · reduced motion changes how it moves, never whether it plays: the same story, the same cursor
+    and the same two clicks, with a short soft glide, a press shown without zoom, a quiet fade for
+    the click and content that cross-fades;
+  · the picture is aria-hidden; what a screen reader gets is the sentence of the scene that is
+    showing.
 
-  The title, the lead and the buttons above it are plain server-rendered
-  markup: nothing in the first screen waits for this.
+  The title, the lead and the buttons above it are plain server-rendered markup: nothing in the
+  first screen waits for this.
 */
 
 /** How long each scene stays, in ms. */
-const DWELL = [2800, 3200, 5200, 3300, 7000] as const;
+const DWELL = [3000, 3600, 3200, 5200, 3300, 7000] as const;
 /** The soft let-go between the last scene and the first. */
 const FADE = 450;
 
@@ -57,8 +65,8 @@ const FADE = 450;
  * arrive, so there is always a rest between its arrival and the press.
  */
 const BEATS: Record<number, { leave: number; press: number; release: number }> = {
-  2: { leave: 450, press: 1800, release: 2250 },
-  3: { leave: 1000, press: 2350, release: 2800 },
+  3: { leave: 450, press: 1800, release: 2250 },
+  4: { leave: 1000, press: 2350, release: 2800 },
 };
 /** The click's effect lands just after the press begins. */
 const CLICK_LAG = 100;
@@ -78,11 +86,16 @@ export interface HeroDemoCopy {
   scenes: readonly { title: string; caption: string }[];
   /** Three pieces of the routine laid around the screen: each a few real words. */
   aside: {
-    quote: { kicker: string; review: string };
+    quote: { kicker: string; sent: string; review: string };
     agenda: { day: string; free: string; busy: string };
     back: { kicker: string; name: string; note: string };
+    /** The same three signals as small tags under the phone, where there is no room beside it. */
+    strip: { quote: string; back: string; agenda: string };
   };
 }
+
+/** The product's own names for the two screens the story visits. */
+const screenName = (slug: string) => VIEWS.find((view) => view.slug === slug)?.label ?? "";
 
 export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: string }) {
   const { scenes } = demo;
@@ -94,9 +107,12 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   const [fading, setFading] = useState(false);
   /** True from the first moment the scene is on screen: the pieces come in once, then stay. */
   const [ready, setReady] = useState(false);
+  /** True from the second lap on: the reset is then instant, behind the fade. */
+  const [again, setAgain] = useState(false);
 
   const region = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
+  const screenRef = useRef<HTMLDivElement>(null);
   const actionRef = useRef<HTMLSpanElement>(null);
   const suggestRef = useRef<HTMLSpanElement>(null);
   const atRef = useRef(0);
@@ -112,7 +128,8 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   });
 
   const inView = usePresence(region, 0.35);
-  const opened = at >= 3 || (at === 2 && clicked);
+  /** The details are open from the first click until the draft takes their place. */
+  const detailsOpen = at === 4 || (at === 3 && clicked);
 
   useEffect(() => {
     if (inView && !started.current) {
@@ -122,7 +139,15 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
     }
   }, [inView]);
 
-  // The one clock: scenes, cursor and presses, in order, and the loop.
+  // On a phone the product's rail is a strip that scrolls: keep the lit screen in sight.
+  useEffect(() => {
+    const here = screenRef.current?.querySelector<HTMLElement>("li[data-here]");
+    const list = here?.parentElement;
+    if (!here || !list || list.scrollWidth <= list.clientWidth) return;
+    list.scrollLeft = here.offsetLeft - (list.clientWidth - here.offsetWidth) / 2;
+  }, [at]);
+
+  // The one clock: scenes, pieces, cursor and presses, in order, and the loop.
   useEffect(() => {
     if (!inView) return;
     let frame = 0;
@@ -134,7 +159,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       setPress(false);
       setClicked(false);
       setAt(index);
-      if (index !== 3) cursorRef.current.hide();
+      if (index !== 4) cursorRef.current.hide();
     };
 
     const tick = (now: number) => {
@@ -146,8 +171,8 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       const beat = BEATS[index];
 
       if (beat) {
-        const target = index === 2 ? actionRef.current : suggestRef.current;
-        // Placed out of sight first (scene 4 only if it is not already on stage), then it glides in.
+        const target = index === 3 ? actionRef.current : suggestRef.current;
+        // Placed out of sight first (the second click only if it is not already on stage), then it glides in.
         if (!f.parked && t >= beat.leave - 300) {
           f.parked = true;
           if (!cursorRef.current.live()) cursorRef.current.park(target);
@@ -175,6 +200,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
         if (t >= dwell) begin(index + 1);
       } else if (t >= dwell + FADE) {
         setFading(false);
+        setAgain(true);
         begin(0);
       } else if (t >= dwell && !f.fade) {
         f.fade = true;
@@ -189,6 +215,8 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   const scene = scenes[at] ?? scenes[0];
 
   const { aside } = demo;
+  const [ana, beatriz] = SAMPLE.patients;
+  const here = at < 2 ? "pacientes" : "oportunidades";
 
   return (
     <div
@@ -196,6 +224,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       data-at={at}
       data-soft={soft ? "" : undefined}
       data-fading={fading ? "" : undefined}
+      data-again={again ? "" : undefined}
       role="group"
       aria-label={demo.label}
     >
@@ -221,8 +250,9 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
           <path className={styles.arcLit} d="M30 440 C 150 360, 250 225, 368 156 C 520 80, 800 44, 1072 52 C 1200 56, 1320 14, 1410 -50" pathLength="100" />
         </svg>
 
-        {/* Three pieces of the routine, in layers around the laptop. They come in once, with a short spring,
-            in the order the story needs them; then they only change contrast with the scenes. */}
+        {/* Three pieces of the routine, in layers around the laptop. They take part in every lap, each in its
+            scene: the agenda reveals a free hour, the return comes in, the estimate takes the light and leans
+            toward the screen, and all of them go quiet while the cursor is clicking. */}
         <div className={styles.sides} aria-hidden="true" data-ready={ready ? "" : undefined}>
           <div className={`${styles.piece} ${styles.pAgenda}`}>
             <p className={styles.pKick}>{aside.agenda.day}</p>
@@ -231,9 +261,12 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
                 <b>10h30</b>
                 <span>{aside.agenda.busy}</span>
               </li>
-              <li data-free="">
+              <li data-slot="">
                 <b>14h</b>
-                <span>{aside.agenda.free}</span>
+                <span className={styles.slotText}>
+                  <span data-state="busy">{aside.agenda.busy}</span>
+                  <span data-state="free">{aside.agenda.free}</span>
+                </span>
               </li>
               <li>
                 <b>15h30</b>
@@ -264,6 +297,9 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
             </div>
             <span className={styles.pChip}>
               <i />
+              <span className={styles.pChipText} data-state="sent">
+                {aside.quote.sent}
+              </span>
               <span className={styles.pChipText} data-state="waiting">
                 {demo.patient.status}
               </span>
@@ -276,96 +312,152 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
 
         <div className={styles.lid}>
           <span className={styles.camera} aria-hidden="true" />
-          <div className={styles.screen}>
-            <ProductSurface className={`${styles.stage} ${styles.heroStage}`}>
+          <div ref={screenRef} className={styles.screen}>
+            {/* The product itself, at the size of a laptop's screen: its own rail on the left, and the work. */}
+            <AppFrame
+              screen={screenName(here)}
+              rail={here}
+              chip="Demo"
+              compact
+              className={styles.heroFrame}
+              bodyClassName={styles.heroBody}
+            >
               <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
-              {/* Clinavy's caption, one scene at a time: the sentence the scene is for. */}
-              <div className={styles.caption}>
-                <span className={styles.avatar}>
-                  <Pulse still state={at === last ? "calm" : "idle"} />
-                </span>
-                <div className={styles.lines}>
-                  {scenes.map((item, i) => (
-                    <p key={item.title} className={styles.line} data-on={i === at ? "" : undefined}>
-                      {item.caption}
-                    </p>
-                  ))}
+                {/* Clinavy's caption, one scene at a time: the sentence the scene is for. */}
+                <div className={styles.caption}>
+                  <span className={styles.avatar}>
+                    <Pulse still state={at === last ? "calm" : "idle"} />
+                  </span>
+                  <div className={styles.lines}>
+                    {scenes.map((item, i) => (
+                      <p key={item.title} className={styles.line} data-on={i === at ? "" : undefined}>
+                        {item.caption}
+                      </p>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className={styles.deck}>
-                <article className={styles.card} data-ring={at === 1 || at === 2 ? "" : undefined}>
-                  <header className={styles.head}>
-                    <p className={styles.name}>{demo.patient.name}</p>
-                    <p className={styles.what}>{demo.patient.sent}</p>
-                    <span className={styles.chip}>{demo.patient.status}</span>
-                  </header>
-
-                  {/* Clinavy's doing: the button that was not there appears with the ring, and stays,
-                      marked as done, until the next click needs the room. */}
-                  <div className={styles.collapse} data-open={at >= 1 && at < 3 ? "" : undefined}>
+                <div className={styles.deck}>
+                  {/* The clinic's routine: two more patients, as the product lists them. When Clinavy picks
+                      the estimate out, they step back and make room for it. */}
+                  <div className={styles.collapse} data-open={at < 2 ? "" : undefined}>
                     <div>
-                      <div className={styles.actionRow}>
-                        <span
-                          ref={actionRef}
-                          className={styles.action}
-                          data-press={at === 2 && press ? "" : undefined}
-                          data-done={opened ? "" : undefined}
-                        >
-                          {demo.action}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* What the first click opened. */}
-                  <div className={styles.collapse} data-open={opened ? "" : undefined}>
-                    <div>
-                      <div className={styles.details}>
-                        {demo.details.map((line) => (
-                          <p key={line.label} className={styles.text}>
-                            <span className={styles.kicker}>{line.label} </span>
-                            {line.text}
-                          </p>
+                      <ul className={styles.mini} data-dim={at >= 2 ? "" : undefined}>
+                        {[ana, beatriz].map((patient, i) => (
+                          <li key={patient.name} className={styles.mrow} style={{ "--i": i } as CSSProperties}>
+                            <span className={styles.mwho}>
+                              <b>{patient.name}</b>
+                              <small>{patient.last}</small>
+                            </span>
+                            <span className={styles.mchip} data-on={i === 0 && at >= 1 ? "" : undefined}>
+                              {patient.next}
+                            </span>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
                   </div>
 
-                  {/* The second button, while it waits to be pressed; it gives way to the draft. */}
-                  <div className={styles.collapse} data-open={at === 3 ? "" : undefined}>
-                    <div>
-                      <div className={styles.actionRow}>
-                        <span
-                          ref={suggestRef}
-                          className={styles.action}
-                          data-press={at === 3 && press ? "" : undefined}
-                          data-done={at === 3 && clicked ? "" : undefined}
-                        >
-                          {demo.suggest}
+                  <article className={styles.card} data-ring={at === 2 || at === 3 ? "" : undefined}>
+                    <header className={styles.head}>
+                      <p className={styles.name}>{demo.patient.name}</p>
+                      <p className={styles.what}>{demo.patient.sent}</p>
+                      <span className={styles.chip} data-quiet={at < 1 ? "" : undefined}>
+                        <span className={styles.chipText} data-state="sent">
+                          {aside.quote.sent}
                         </span>
+                        <span className={styles.chipText} data-state="status">
+                          {demo.patient.status}
+                        </span>
+                      </span>
+                    </header>
+
+                    {/* Clinavy's doing: the button that was not there appears with the ring, and stays,
+                        marked as done, until the next click needs the room. */}
+                    <div className={styles.collapse} data-open={at >= 2 && at < 4 ? "" : undefined}>
+                      <div>
+                        <div className={styles.actionRow}>
+                          <span
+                            ref={actionRef}
+                            className={styles.action}
+                            data-press={at === 3 && press ? "" : undefined}
+                            data-done={at >= 4 || (at === 3 && clicked) ? "" : undefined}
+                          >
+                            {demo.action}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className={styles.collapse} data-open={at >= 4 ? "" : undefined}>
-                    <div>
-                      <section className={styles.draft}>
-                        <p className={styles.kicker}>{demo.draftLabel}</p>
-                        <p className={styles.draftText}>{demo.draft}</p>
-                        <p className={styles.note}>{demo.draftNote}</p>
-                      </section>
+                    {/* What the first click opened. */}
+                    <div className={styles.collapse} data-open={detailsOpen ? "" : undefined}>
+                      <div>
+                        <div className={styles.details}>
+                          {demo.details.map((line) => (
+                            <p key={line.label} className={styles.text}>
+                              <span className={styles.kicker}>{line.label} </span>
+                              {line.text}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              </div>
 
-              <DemoCursor spot={cursor.spot} press={press} />
+                    {/* The second button, while it waits to be pressed; it gives way to the draft. */}
+                    <div className={styles.collapse} data-open={at === 4 ? "" : undefined}>
+                      <div>
+                        <div className={styles.actionRow}>
+                          <span
+                            ref={suggestRef}
+                            className={styles.action}
+                            data-press={at === 4 && press ? "" : undefined}
+                            data-done={at === 4 && clicked ? "" : undefined}
+                          >
+                            {demo.suggest}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={styles.collapse} data-open={at >= 5 ? "" : undefined}>
+                      <div>
+                        <section className={styles.draft}>
+                          <p className={styles.kicker}>{demo.draftLabel}</p>
+                          <p className={styles.draftText}>{demo.draft}</p>
+                          <p className={styles.note}>{demo.draftNote}</p>
+                        </section>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+
+                <DemoCursor spot={cursor.spot} press={press} />
               </div>
-            </ProductSurface>
+            </AppFrame>
           </div>
         </div>
         <div className={styles.base} aria-hidden="true" />
+      </div>
+
+      {/* On a phone there is no room beside the screen: the same three signals, as small tags under it. */}
+      <div className={styles.strip} aria-hidden="true">
+        <span className={styles.tag} data-k="quote">
+          <i />
+          <span className={styles.tagText} data-state="waiting">
+            {aside.strip.quote}
+          </span>
+          <span className={styles.tagText} data-state="review">
+            {aside.quote.review}
+          </span>
+        </span>
+        <span className={styles.tag} data-k="back">
+          <i />
+          {aside.strip.back}
+        </span>
+        <span className={styles.tag} data-k="agenda">
+          <i />
+          {aside.strip.agenda}
+        </span>
       </div>
 
       <p className="sr-only">

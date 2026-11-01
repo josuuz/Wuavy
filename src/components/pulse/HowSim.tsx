@@ -11,16 +11,18 @@ import { track } from "./track";
 /*
   "Veja como o Clinavy ajuda sua equipe a agir" — a simulation that shows itself.
 
-  Three situations to choose from, and one stage. On the stage, one card and
-  one step at a time:
+  Split in two. On one side the situation, said in one strong sentence with a short
+  explanation, and the three situations to choose from. On the other a scene: a cut of the
+  product (the agenda, a patient's timeline, an estimate) on a dark stage, and Clinavy's
+  answer laid over it as a glass piece. One step at a time, and one idea in each:
 
-    1  the card, and one button: "Ver oportunidade"
-    2  why it deserves attention, what to do next, and a second button:
-       "Ver sugestão de mensagem"
-    3  the draft, marked as a draft, and "Sua equipe revisa e decide o contato"
+    1  the cut, alone, in the middle: and one thing to press, "Ver oportunidade"
+    2  the cut steps aside; Clinavy's piece comes in: why it deserves attention, what to do
+       next, and a second thing to press, "Ver sugestão de mensagem"
+    3  the same piece, now the draft, marked as a draft: "Sua equipe revisa e decide o contato"
 
-  Nothing is shown at once that the story has not reached: no list of
-  patients, no total, no explanation beside the suggestion beside the message.
+  Nothing is shown at once that the story has not reached: the reason and the next step are
+  replaced by the draft, not piled up under it.
 
   The two buttons are drawings: the cursor presses them, nothing else can. They go
   nowhere and send nothing; the last step is a draft, and says so.
@@ -29,19 +31,21 @@ import { track } from "./track";
 
   · it plays the situation on show by itself, in a loop, while it is in view and
     the tab is in front: a cursor goes to each button, rests, presses it, and the
-    stage follows. At the end it holds the draft for a few seconds, lets go
+    scene follows. At the end it holds the draft for a few seconds, lets go
     softly and begins again. A hover, a tap or a click on the stage does nothing;
   · choosing another situation starts its story at once, by itself. The choices
     are for exploring other examples; nothing needs pressing to follow the story;
   · one clock runs everything, and the cursor is driven by it: it always arrives
-    before the click;
+    before the click, and it rides the first button while the cut slides aside;
+  · on every lap after the first the reset is instant, behind the fade, so nothing
+    of the last lap is left to fade away in sight;
   · the cursor is there on every device and with every motion setting. Reduced
     motion changes how it moves, never whether it plays: a short soft glide, a
-    press shown without zoom, a quiet fade for the click, content that cross-fades.
+    press shown without zoom, a quiet fade for the click, content that cross-fades,
+    and nothing that slides.
 
-  The stage is built from stacked layers, one cell for every card, caption and
-  panel, so it is as tall as the tallest and nothing moves when the situation
-  or the step changes.
+  Every situation's cut and every step's piece sit in one cell, so the stage is as tall as
+  the tallest and nothing moves when the situation or the step changes.
 */
 
 const STEPS = 3;
@@ -51,8 +55,8 @@ const DWELL = [3100, 4400, 7000] as const;
 const FADE = 450;
 /**
  * The steps where the cursor clicks, in ms from the start of the step: when it
- * leaves, when the button shows pressed and when it lets go. The cursor takes about
- * 900 ms to arrive, so there is always a rest between its arrival and the press.
+ * leaves, when the button shows pressed and when it lets go. The cursor takes about 900 ms to
+ * arrive, so there is always a rest between its arrival and the press.
  */
 const BEATS = [
   { leave: 900, press: 2300, release: 2750 },
@@ -62,6 +66,8 @@ const BEATS = [
 /** What each situation draws: an estimate and its days, a timeline, or a slice of tomorrow's agenda. */
 export interface SimVisual {
   kind: string;
+  /** The product's own name for the screen the cut is taken from. */
+  screen?: string;
   kicker?: string;
   procedure?: string;
   days?: number;
@@ -77,6 +83,8 @@ export interface SimVisual {
 
 export interface SimItem {
   id: string;
+  /** The situation, in one sentence. */
+  call: string;
   choice: string;
   intro: string;
   card: { name: string; what: string; status: string };
@@ -90,6 +98,8 @@ export interface SimItem {
 }
 
 export interface SimCopy {
+  title: string;
+  lead: string;
   pick: string;
   note: string;
   labels: {
@@ -231,6 +241,8 @@ export function HowSim({ copy }: { copy: SimCopy }) {
   const [st, setSt] = useState(0);
   const [press, setPress] = useState(false);
   const [fading, setFading] = useState(false);
+  /** True from the second lap on: the reset is then instant, behind the fade. */
+  const [again, setAgain] = useState(false);
 
   const region = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -270,6 +282,9 @@ export function HowSim({ copy }: { copy: SimCopy }) {
       flags.current = { parked: false, went: false, press: false, fade: false };
       setPress(false);
       setSt(step);
+      if (step !== 0) setAgain(false);
+      // The cursor stays for the second click (it is still on the first button, riding it while the cut
+      // slides aside); the first click, and the draft, start from an empty stage.
       if (step === 2 || step === 0) cursorRef.current.hide();
     };
 
@@ -287,6 +302,10 @@ export function HowSim({ copy }: { copy: SimCopy }) {
         if (!f.parked && t >= beat.leave - 300) {
           f.parked = true;
           if (!cursorRef.current.live()) cursorRef.current.park(target);
+        }
+        // Until it leaves for the second button it keeps to the first, which moves with its cut.
+        if (step === 1 && !f.went && cursorRef.current.live()) {
+          cursorRef.current.follow(buttons.current[`${scRef.current}:open`] ?? null);
         }
         if (!f.went && t >= beat.leave) {
           f.went = true;
@@ -306,6 +325,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
         if (t >= dwell) begin(step + 1);
       } else if (t >= dwell + FADE) {
         setFading(false);
+        setAgain(true);
         begin(0);
       } else if (t >= dwell && !f.fade) {
         f.fade = true;
@@ -324,6 +344,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
     setPress(false);
     setFading(false);
     cursor.hide();
+    setAgain(false);
     setSt(0);
     setSc(next);
     track("scenario", items[next]?.id);
@@ -333,121 +354,153 @@ export function HowSim({ copy }: { copy: SimCopy }) {
   const stepName = labels.step.replace("{n}", String(st + 1)).replace("{total}", String(STEPS));
 
   return (
-    <div ref={region} className={styles.sim} data-soft={soft ? "" : undefined} data-st={st} data-sc={sc}>
-      <div className={styles.picks} role="group" aria-label={copy.pick}>
-        {items.map((it, i) => (
-          <button
-            key={it.id}
-            type="button"
-            id={`sim-${it.id}`}
-            aria-pressed={i === sc}
-            className={styles.pick}
-            onClick={() => choose(i)}
-          >
-            {it.choice}
-          </button>
-        ))}
+    <div
+      ref={region}
+      className={styles.sim}
+      data-soft={soft ? "" : undefined}
+      data-again={again ? "" : undefined}
+      data-st={st}
+      data-sc={sc}
+    >
+      {/* The situation: one strong sentence, one line of explanation, and the others to choose from. */}
+      <div className={styles.simCopy}>
+        <h2 className={styles.simTitle}>{copy.title}</h2>
+
+        <div className={styles.layers}>
+          {items.map((it, i) => (
+            <div key={it.id} className={styles.layer} data-on={i === sc ? "" : undefined}>
+              <p className={styles.call}>{it.call}</p>
+              <p className={styles.intro}>{it.intro}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.pickBox}>
+          <p className={styles.pickLabel}>{copy.lead}</p>
+          <div className={styles.picks} role="group" aria-label={copy.pick}>
+            {items.map((it, i) => (
+              <button
+                key={it.id}
+                type="button"
+                id={`sim-${it.id}`}
+                aria-pressed={i === sc}
+                className={styles.pick}
+                onClick={() => choose(i)}
+              >
+                {it.choice}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
+      {/* The scene: a cut of the product, and Clinavy's answer laid over it. */}
       <div id="sim-palco" className={styles.demo}>
         <p className="sr-only">
           {stepName}. {caption(st, item)}
         </p>
 
-        <div className={styles.tablet}>
-          <span className={styles.tabletCam} aria-hidden="true" />
-          <div className={styles.tabletScreen}>
-        <ProductSurface className={`${styles.stage} ${styles.simStage}`}>
-          <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
-            {/* Clinavy's sentence for the step. Every one of them is in the same cell. */}
-            <div className={styles.caption}>
-              <span className={styles.avatar}>
-                <Pulse still state={st === 2 ? "calm" : "idle"} />
-              </span>
-              <div className={styles.lines}>
-                {items.map((it, i) =>
-                  Array.from({ length: STEPS }, (_, s) => (
-                    <p key={`${it.id}-${s}`} className={styles.line} data-on={i === sc && s === st ? "" : undefined}>
-                      {caption(s, it)}
-                    </p>
-                  )),
-                )}
+        <div className={styles.sceneBox}>
+          <div ref={box} className={styles.sceneIn} aria-hidden="true" data-fading={fading ? "" : undefined}>
+            <div className={styles.cutSlot}>
+              <div className={styles.layers}>
+                {items.map((it, i) => {
+                  const cell = {
+                    it,
+                    here: i === sc,
+                    st,
+                    press,
+                    target: (node: HTMLElement | null) => {
+                      buttons.current[`${i}:open`] = node;
+                    },
+                  };
+                  return (
+                    <div key={it.id} className={styles.layer} data-on={i === sc ? "" : undefined}>
+                      <ProductSurface className={styles.cut}>
+                        <p className={styles.cutBar}>
+                          <span className={styles.cutBrand}>CLINAVY</span>
+                          <span>{it.visual.screen}</span>
+                        </p>
+                        {it.visual.kind === "timeline" ? (
+                          <TimelineCell {...cell} />
+                        ) : it.visual.kind === "agenda" ? (
+                          <AgendaCell {...cell} />
+                        ) : (
+                          <QuoteCell {...cell} />
+                        )}
+                      </ProductSurface>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* The scene, one per situation, each its own drawing in the same place and the same size. */}
-            <div className={styles.layers}>
-              {items.map((it, i) => {
-                const cell = {
-                  it,
-                  here: i === sc,
-                  st,
-                  press,
-                  target: (node: HTMLElement | null) => {
-                    buttons.current[`${i}:open`] = node;
-                  },
-                };
-                return (
-                  <div key={it.id} className={styles.layer} data-on={i === sc ? "" : undefined}>
-                    {it.visual.kind === "timeline" ? <TimelineCell {...cell} /> : it.visual.kind === "agenda" ? <AgendaCell {...cell} /> : <QuoteCell {...cell} />}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* The step's panel: only what the story has reached. */}
-            <div className={styles.layers}>
-              {items.map((it, i) => (
-                <div key={`${it.id}-1`} className={styles.layer} data-on={i === sc && st === 1 ? "" : undefined}>
-                  <div className={styles.panel}>
-                    <p className={styles.pair}>
-                      <span className={styles.kicker}>{labels.reasonLabel}</span>
-                      <span className={styles.text}>{it.reason}</span>
-                    </p>
-                    <p className={styles.pair}>
-                      <span className={styles.kicker}>{labels.nextLabel}</span>
-                      <span className={styles.text}>{it.next}</span>
-                    </p>
-                    <div className={styles.row}>
-                      <span
-                        ref={(node) => {
-                          buttons.current[`${i}:suggest`] = node;
-                        }}
-                        className={styles.action}
-                        data-press={i === sc && st === 1 && press ? "" : undefined}
-                      >
-                        {it.suggest}
-                      </span>
+            {/* Clinavy's answer. Each step is its own piece, in the same place: the reason and the next step
+                give way to the draft, they are not stacked under it. */}
+            <div className={styles.glassSlot}>
+              <div className={styles.glassCell}>
+                {items.map((it, i) => (
+                  <div key={`${it.id}-1`} className={styles.gLayer} data-on={i === sc && st === 1 ? "" : undefined}>
+                    <div className={styles.glass}>
+                      <p className={styles.gHead}>
+                        <span className={styles.gAvatar}>
+                          <Pulse still state="idle" />
+                        </span>
+                        {labels.explain}
+                      </p>
+                      <p className={styles.gPair}>
+                        <span className={styles.gKick}>{labels.reasonLabel}</span>
+                        <span className={styles.gText}>{it.reason}</span>
+                      </p>
+                      <p className={styles.gPair}>
+                        <span className={styles.gKick}>{labels.nextLabel}</span>
+                        <span className={styles.gText}>{it.next}</span>
+                      </p>
+                      <div className={styles.row}>
+                        <span
+                          ref={(node) => {
+                            buttons.current[`${i}:suggest`] = node;
+                          }}
+                          className={styles.action}
+                          data-press={i === sc && st === 1 && press ? "" : undefined}
+                        >
+                          {it.suggest}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {items.map((it, i) => (
-                <div key={`${it.id}-2`} className={styles.layer} data-on={i === sc && st === 2 ? "" : undefined}>
-                  <div className={styles.panel}>
-                    <section className={styles.draft}>
-                      <p className={styles.kicker}>
-                        {labels.draftLabel} · {it.to}
+                {items.map((it, i) => (
+                  <div key={`${it.id}-2`} className={styles.gLayer} data-on={i === sc && st === 2 ? "" : undefined}>
+                    <div className={styles.glass}>
+                      <p className={styles.gHead}>
+                        <span className={styles.gAvatar}>
+                          <Pulse still state="calm" />
+                        </span>
+                        {labels.closing}
                       </p>
-                      <p className={styles.draftText}>{it.draft}</p>
-                      <p className={styles.note}>{labels.draftNote}</p>
-                    </section>
+                      <section className={styles.gDraft}>
+                        <p className={styles.gKick}>
+                          {labels.draftLabel} · {it.to}
+                        </p>
+                        <p className={styles.gDraftText}>{it.draft}</p>
+                        <p className={styles.gNote}>{labels.draftNote}</p>
+                      </section>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            <div className={styles.simSteps}>
-              {Array.from({ length: STEPS }, (_, s) => (
-                <span key={s} className={styles.simStep} data-on={s <= st ? "" : undefined} />
-              ))}
+                ))}
+              </div>
             </div>
 
             <DemoCursor spot={cursor.spot} press={press} />
           </div>
-        </ProductSurface>
-          </div>
+        </div>
+
+        <div className={styles.simSteps} aria-hidden="true">
+          {Array.from({ length: STEPS }, (_, s) => (
+            <span key={s} className={styles.simStep} data-on={s <= st ? "" : undefined} />
+          ))}
         </div>
 
         <div className={styles.controls}>

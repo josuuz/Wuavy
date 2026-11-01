@@ -32,11 +32,6 @@
   overflow: hidden;
 }
 
-/* Fixed, so no scene moves the page: tall enough for the last one (card, details and draft). */
-.heroStage {
-  height: 27.5rem;
-}
-
 /* The positioning box of a stage: the cursor and every measurement are relative to it. */
 .inner {
   position: relative;
@@ -48,19 +43,6 @@
 /* The story ends, and the stage lets go of it softly before the next lap begins. */
 .inner[data-fading] {
   opacity: 0;
-}
-
-/* The caption and the card are one block, centred in the stage: Clinavy speaks right above
-   the thing it is about, and the room that is left is split above and below, not in the middle.
-   The block grows from its middle as rows open, so nothing jumps. */
-.heroStage .inner {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.heroStage .caption {
-  padding-bottom: 1.15rem;
 }
 
 /* Clinavy speaking, in one line that changes with the scene. All captions share a cell, so
@@ -110,7 +92,7 @@
 /* ── The card: the one thing on stage ────────────────────────────────────── */
 
 /* The card sits right under Clinavy's caption, and the pair is centred in the stage (see
-   .heroStage .inner). It grows from the middle as its rows open, so nothing jumps. */
+   .heroBody). It grows from the middle as its rows open, so nothing jumps. */
 .deck {
   display: flex;
   flex: none;
@@ -402,13 +384,6 @@
   color: var(--on-mark);
 }
 
-.simStage {
-  max-width: 44rem;
-  width: 100%;
-  margin-inline: auto;
-  padding-bottom: 1.2rem;
-}
-
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -441,23 +416,6 @@
   transition-delay: 80ms, 80ms, 0s;
 }
 
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  padding-top: 0.9rem;
-}
-
-.pair {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.panel .draft {
-  margin: 0;
-}
-
 .simSteps {
   display: flex;
   justify-content: center;
@@ -481,10 +439,6 @@
   /* On a phone the lines wrap more, so the stage is taller: the same scenes, with room for them. */
   .stage {
     padding: 1rem 0.95rem 1.15rem;
-  }
-
-  .heroStage {
-    height: 39rem;
   }
 
   .caption {
@@ -521,36 +475,36 @@
    button in a short, soft move, the press is shown without zoom, and the click is a
    quiet fade, not a ring that grows. Content changes cross-fade, they do not travel. */
 
-:is(.demo, .sim)[data-soft] .line,
-:is(.demo, .sim)[data-soft] .layer {
+:is(.demo, .sim, .scene)[data-soft] .line,
+:is(.demo, .sim, .scene)[data-soft] .layer {
   transform: none;
   transition-duration: 300ms, 1ms, 0s;
 }
 
-:is(.demo, .sim)[data-soft] .collapse {
+:is(.demo, .sim, .scene)[data-soft] .collapse {
   transition-duration: 300ms;
 }
 
-:is(.demo, .sim)[data-soft] .action[data-press] {
+:is(.demo, .sim, .scene)[data-soft] .action[data-press] {
   transform: none;
   filter: brightness(0.9);
 }
 
-:is(.demo, .sim)[data-soft] .cursor[data-on] {
+:is(.demo, .sim, .scene)[data-soft] .cursor[data-on] {
   transition:
     transform 400ms ease-out,
     opacity 200ms linear;
 }
 
-:is(.demo, .sim)[data-soft] .cursor[data-on][data-follow] {
+:is(.demo, .sim, .scene)[data-soft] .cursor[data-on][data-follow] {
   transition: opacity 200ms linear;
 }
 
-:is(.demo, .sim)[data-soft] .cursor[data-press] svg {
+:is(.demo, .sim, .scene)[data-soft] .cursor[data-press] svg {
   transform: none;
 }
 
-:is(.demo, .sim)[data-soft] .cursor[data-press]::after {
+:is(.demo, .sim, .scene)[data-soft] .cursor[data-press]::after {
   animation: demo-click-soft 450ms linear both;
   transform: scale(0.9);
 }
@@ -569,10 +523,10 @@
 
 /* ── The scene: a laptop (a phone on a small screen), with the story laid around it ───────────
    The device is a frame, never the subject: thin graphite bezel, a plain base, seen from the
-   front, no reflection on the glass. Inside is the same live stage as before, at its real size
-   (the cursor measures real boxes, so the screen is never scaled). Around it, three signals and
-   one next step, all driven by the scene's own data-at: nothing here keeps a clock of its own.
-   Motion: transform and opacity only; reduced motion keeps the story and drops the travel. */
+   front, no reflection on the glass. Inside is the product itself, at its real size (the cursor
+   measures real boxes, so the screen is never scaled): its own rail, and the work. Around it,
+   three pieces of the routine, driven by the scene's own data-at: nothing here keeps a clock of
+   its own. Motion: transform and opacity only; reduced motion keeps the story and drops the travel. */
 
 .scene {
   display: flex;
@@ -624,12 +578,19 @@
   container: screen / inline-size;
 }
 
-/* The stage fills the screen: no card of its own, no second set of corners. */
-.screen .heroStage {
-  height: 27.5rem;
-  border: 0;
+/* The product fills the screen: no card of its own, no second set of corners. */
+.heroFrame {
+  height: 23.5rem;
+}
+
+.heroFrame > div {
+  height: 100%;
   border-radius: 0;
   box-shadow: none;
+}
+
+.heroBody {
+  min-height: 0;
 }
 
 .base {
@@ -656,6 +617,167 @@
   border-radius: 0 0 0.5rem 0.5rem;
   background: #151517;
   box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.1);
+}
+
+/* ── Inside the screen: the clinic's routine, and the estimate that comes out of it ──────────── */
+
+/* Clinavy speaking, one line that changes with the scene, above the thing it is about. */
+.heroBody .caption {
+  padding-bottom: 0.6rem;
+}
+
+.heroBody .avatar {
+  width: 2.4rem;
+}
+
+.heroBody .line {
+  font-size: 1.0625rem;
+}
+
+.heroBody .head {
+  padding: 0.7rem 1.05rem;
+}
+
+.heroBody .name {
+  font-size: 1.4375rem;
+}
+
+.heroBody .what {
+  font-size: 1rem;
+}
+
+.heroBody .actionRow {
+  padding: 0 1.05rem 0.9rem;
+}
+
+.heroBody .details {
+  padding: 0.5rem 1.05rem 0.6rem;
+}
+
+.heroBody .draft {
+  margin: 0 1.05rem 0.8rem;
+  padding: 0.6rem 0.9rem 0.65rem;
+}
+
+.heroBody .text,
+.heroBody .draftText {
+  font-size: 0.9375rem;
+}
+
+/* Two more patients above the estimate, as the product's list has them. They are the routine: nothing is
+   asked of them. When Clinavy picks the estimate out they step back and fold away. */
+.mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0 0 0.4rem;
+  list-style: none;
+  transition: opacity 450ms var(--wuavy-ease-out);
+}
+
+.mini[data-dim] {
+  opacity: 0.25;
+}
+
+.mrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--pulse-border-soft);
+  border-radius: var(--pulse-r-md);
+  background: var(--pulse-card);
+}
+
+.mwho {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.mwho b {
+  font-size: 0.9375rem;
+  font-weight: 640;
+}
+
+.mwho small {
+  font-size: 0.8125rem;
+  color: var(--pulse-muted);
+}
+
+.mchip {
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--pulse-r-pill);
+  background: var(--pulse-sand);
+  font-size: 0.8125rem;
+  font-weight: 620;
+  color: var(--pulse-muted);
+  white-space: nowrap;
+  transition:
+    background-color 500ms var(--wuavy-ease-out),
+    color 500ms var(--wuavy-ease-out);
+}
+
+/* A signal: the return that is due turns orange when the scene says so. */
+.mchip[data-on] {
+  background: var(--pulse-accent-soft);
+  color: var(--pulse-accent-text);
+}
+
+.scene[data-at="1"] .mchip[data-on] {
+  transition-delay: 650ms;
+}
+
+/* The estimate's own chip says "sent" until it becomes a signal, and then "no answer". */
+.chip {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  transition:
+    background-color 500ms var(--wuavy-ease-out),
+    color 500ms var(--wuavy-ease-out);
+}
+
+.chip[data-quiet] {
+  background: var(--pulse-sand);
+  color: var(--pulse-muted);
+}
+
+.chipText {
+  grid-area: 1 / 1;
+  transition: opacity 450ms var(--wuavy-ease-out);
+}
+
+.chipText[data-state="sent"] {
+  opacity: 0;
+}
+
+.chip[data-quiet] .chipText[data-state="sent"] {
+  opacity: 1;
+}
+
+.chip[data-quiet] .chipText[data-state="status"] {
+  opacity: 0;
+}
+
+.scene[data-at="1"] .chip,
+.scene[data-at="1"] .chipText {
+  transition-delay: 1200ms;
+}
+
+/* The routine arrives with the laptop: on the first lap only, the rows settle one after the other. */
+@keyframes mrow-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+  }
+}
+
+.scene:not([data-again])[data-at="0"] .mrow {
+  animation: mrow-in 700ms var(--wuavy-ease-out) both;
+  animation-delay: calc(var(--i, 0) * 110ms + 250ms);
 }
 
 /* ── The room around the laptop ─────────────────────
@@ -701,7 +823,7 @@
 .grain {
   background-image: var(--grain);
   background-size: 180px 180px;
-  opacity: 0.12;
+  opacity: 0.1;
 }
 
 /* The arc is drawn in the device's own coordinates (the lid's left edge is x=368, the card's height y=233),
@@ -724,7 +846,8 @@
   stroke-width: 1.5;
 }
 
-/* The lit stretch: short, orange, it goes in from the left, past the estimate, into the laptop. */
+/* The lit stretch: short, orange. It runs once a lap, in the scene where Clinavy picks the estimate out:
+   from the estimate, past it, into the laptop. */
 .arcLit {
   stroke: var(--wuavy-signal);
   stroke-width: 2.4;
@@ -738,18 +861,20 @@
     opacity 400ms var(--wuavy-ease-out);
 }
 
-.scene:not([data-at="0"]) .arcLit {
+.scene[data-at="2"] .arcLit {
   stroke-dashoffset: -20;
   opacity: 1;
 }
 
-.scene[data-at="2"] .arcLit,
 .scene[data-at="3"] .arcLit {
-  opacity: 0.45;
+  stroke-dashoffset: -20;
+  opacity: 0.35;
   transition-duration: 1500ms, 900ms;
 }
 
-.scene[data-at="4"] .arcLit {
+.scene[data-at="4"] .arcLit,
+.scene[data-at="5"] .arcLit {
+  stroke-dashoffset: -20;
   opacity: 0;
   transition-duration: 1500ms, 700ms;
 }
@@ -778,12 +903,14 @@
   transition: opacity 450ms var(--wuavy-ease-out);
 }
 
-.scene[data-fading] .sides {
+.scene[data-fading] .sides,
+.scene[data-fading] .strip {
   opacity: 0;
 }
 
 /* Dark glass with real words on it. The lid is drawn over them, so each is partly behind the laptop; only
-   these pieces have perspective, and it is a few degrees: the screen itself stays flat. */
+   these pieces have perspective, and it is a few degrees: the screen itself stays flat. Their place in the
+   story (how visible, how far in, how big) is set by the scene, below, through four variables. */
 .piece {
   position: absolute;
   width: var(--w);
@@ -803,7 +930,7 @@
     0 22px 40px -22px rgb(0 0 0 / 0.95);
   color: var(--wuavy-paper);
   opacity: var(--o, 0.6);
-  transform: translate3d(var(--tx, 0), var(--ty, 0), 0) perspective(900px) rotateY(var(--ry, 0deg));
+  transform: translate3d(var(--tx, 0rem), 0, 0) perspective(900px) rotateY(var(--ry, 0deg)) scale(var(--ps, 1));
   transition:
     opacity 600ms var(--wuavy-ease-out) var(--d, 0ms),
     transform 1100ms var(--spring) var(--d, 0ms),
@@ -811,20 +938,20 @@
     box-shadow 600ms var(--wuavy-ease-out);
 }
 
-/* Before the scene is ready they wait a little off their places, small and unseen; then they settle in the
-   order the story needs them: the agenda, the return, and last the estimate. */
+/* Before the scene is ready they wait off their places, small and unseen; then they come in the order the
+   story needs them, from the sides, with the spring. */
 .sides:not([data-ready]) .piece {
   opacity: 0;
-  transform: translate3d(var(--ex, 0), 1.1rem, 0) perspective(900px) rotateY(var(--ry, 0deg)) scale(0.93);
+  transform: translate3d(var(--ex, 0), 1.1rem, 0) perspective(900px) rotateY(var(--ry, 0deg)) scale(0.9);
 }
 
 .pQuote {
   --w: 14.5rem;
   --origin: right center;
   --ry: 9deg;
-  --ex: -1.6rem;
-  --d: 240ms;
-  --o: 0.95;
+  --ex: -3rem;
+  --d: 200ms;
+  --o: 0.88;
   top: 22%;
   right: calc(100% + 3.2rem);
 }
@@ -833,18 +960,23 @@
   --w: 11.5rem;
   --origin: left center;
   --ry: -9deg;
-  --ex: 1.6rem;
+  --ex: 3rem;
   --d: 0ms;
+  --o: 0.8;
   top: 2%;
   left: calc(100% - 0.8rem);
 }
 
+/* The return is not there in the first scene: it comes in with the second. */
 .pBack {
   --w: 12.25rem;
   --origin: left center;
   --ry: -9deg;
-  --ex: 1.6rem;
+  --ex: 3rem;
   --d: 120ms;
+  --o: 0;
+  --tx: 2.4rem;
+  --ps: 0.92;
   top: 49%;
   left: calc(100% + 0.7rem);
 }
@@ -906,6 +1038,11 @@
   background: rgb(255 255 255 / 0.05);
   font-size: 0.8125rem;
   color: var(--wuavy-stone);
+  transition:
+    background-color 500ms var(--wuavy-ease-out),
+    box-shadow 500ms var(--wuavy-ease-out),
+    color 500ms var(--wuavy-ease-out),
+    transform 800ms var(--spring);
 }
 
 .slots b {
@@ -913,13 +1050,40 @@
   color: var(--wuavy-paper);
 }
 
-.slots li[data-free] {
+/* The 14h hour: busy until the story says it is free. Then it lights, and pops a little, once. */
+.slotText {
+  display: grid;
+  justify-items: end;
+}
+
+.slotText span {
+  grid-area: 1 / 1;
+  transition: opacity 400ms var(--wuavy-ease-out);
+}
+
+.slotText [data-state="free"] {
+  opacity: 0;
+}
+
+.scene:not([data-at="0"]) .slots li[data-slot] {
   background: rgb(255 69 19 / 0.2);
   box-shadow: inset 0 0 0 1px rgb(255 69 19 / 0.5);
   color: var(--wuavy-paper);
+  transform: scale(1.05);
+  transition-delay: 200ms;
 }
 
-/* The estimate's state: "Sem resposta" until the draft is on the screen, then "Mensagem para revisão". */
+.scene:not([data-at="0"]) .slotText [data-state="busy"] {
+  opacity: 0;
+  transition-delay: 200ms;
+}
+
+.scene:not([data-at="0"]) .slotText [data-state="free"] {
+  opacity: 1;
+  transition-delay: 200ms;
+}
+
+/* The estimate's state: "sent", then "no answer", and at the end "message for review". */
 .pChip {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -934,6 +1098,7 @@
   font-weight: 620;
   line-height: 1.2;
   white-space: nowrap;
+  transition: border-color 500ms var(--wuavy-ease-out);
 }
 
 .pChip i {
@@ -941,43 +1106,134 @@
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 50%;
-  background: var(--wuavy-signal);
+  background: rgb(255 255 255 / 0.35);
+  transition: background-color 500ms var(--wuavy-ease-out);
 }
 
 .pChipText {
   grid-area: 1 / 2;
+  opacity: 0;
   transition: opacity 500ms var(--wuavy-ease-out);
 }
 
-.pChipText[data-state="review"] {
-  opacity: 0;
-}
-
-.scene[data-at="4"] .pChipText[data-state="waiting"] {
-  opacity: 0;
-}
-
-.scene[data-at="4"] .pChipText[data-state="review"] {
+.pChipText[data-state="sent"] {
   opacity: 1;
 }
 
-.scene[data-at="4"] .pChip {
+.scene:not([data-at="0"]) .pChip i {
+  background: var(--wuavy-signal);
+  transition-delay: 1200ms;
+}
+
+.scene[data-at="1"] .pChipText[data-state="sent"] {
+  opacity: 0;
+  transition-delay: 1100ms;
+}
+
+.scene[data-at="1"] .pChipText[data-state="waiting"] {
+  opacity: 1;
+  transition-delay: 1200ms;
+}
+
+.scene:is([data-at="2"], [data-at="3"], [data-at="4"]) .pChipText[data-state="sent"] {
+  opacity: 0;
+}
+
+.scene:is([data-at="2"], [data-at="3"], [data-at="4"]) .pChipText[data-state="waiting"] {
+  opacity: 1;
+}
+
+.scene[data-at="5"] .pChipText[data-state="sent"] {
+  opacity: 0;
+}
+
+.scene[data-at="5"] .pChipText[data-state="review"] {
+  opacity: 1;
+}
+
+.scene[data-at="5"] .pChip {
   border-color: rgb(255 69 19 / 0.55);
 }
 
-/* The story: the estimate takes the light as soon as the pieces are in, and keeps it; the other two stay quiet. */
-.sides[data-ready] .pQuote {
+/* The story, scene by scene. Each piece has a moment, and in the moments that are not its own it steps back.
+   --o: how visible. --tx: how far toward the laptop. --ps: how big. --d: its delay on the way in. */
+
+/* 2 · Some opportunities go unnoticed: the agenda reveals a free hour, the return comes in, the estimate
+   takes its state. In that order, so the eye is led through them. */
+.scene[data-at="1"] .pAgenda {
+  --o: 0.92;
+}
+
+.scene[data-at="1"] .pBack {
+  --o: 0.85;
+  --tx: 0rem;
+  --ps: 1;
+  --d: 650ms;
+}
+
+.scene[data-at="1"] .pQuote {
+  --o: 0.95;
+}
+
+/* 3 · Clinavy shows what deserves attention: the estimate is the one thing lit, and leans toward the screen
+   as the lit stretch of the arc goes in. The other two step back. */
+.scene[data-at="2"] .pQuote {
+  --o: 1;
+  --tx: 0.9rem;
+  --ps: 1.05;
+  --d: 0ms;
+  border-color: rgb(255 255 255 / 0.36);
+  border-top-color: rgb(255 255 255 / 0.58);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 22px 40px -22px rgb(0 0 0 / 0.95),
+    0 0 46px -14px rgb(255 122 61 / 0.45);
+}
+
+.scene[data-at="2"] .pAgenda,
+.scene[data-at="2"] .pBack {
+  --o: 0.34;
+  --d: 0ms;
+}
+
+/* 4 and 5 · The cursor is clicking: the periphery goes quiet and holds still, so the eye stays on it. */
+.scene:is([data-at="3"], [data-at="4"]) .pQuote {
+  --o: 0.5;
+  --tx: 0.9rem;
+  --ps: 1.05;
+  --d: 0ms;
+}
+
+.scene:is([data-at="3"], [data-at="4"]) .pAgenda,
+.scene:is([data-at="3"], [data-at="4"]) .pBack {
+  --o: 0.28;
+  --d: 0ms;
+}
+
+/* 6 · The team reviews and decides: the estimate's piece comes back, with its new state, and settles. */
+.scene[data-at="5"] .pQuote {
+  --o: 0.96;
+  --tx: 0.5rem;
+  --ps: 1.02;
+  --d: 0ms;
   border-color: rgb(255 255 255 / 0.34);
   border-top-color: rgb(255 255 255 / 0.55);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.22),
     0 22px 40px -22px rgb(0 0 0 / 0.95),
     0 0 46px -14px rgb(255 255 255 / 0.28);
-  transition-delay: var(--d, 0ms), var(--d, 0ms), 1100ms, 1100ms;
 }
 
-/* The lap starts over at once and unseen: nothing of the last lap may fade away in sight. */
-.scene[data-at="0"] .pChipText {
+.scene[data-at="5"] .pAgenda,
+.scene[data-at="5"] .pBack {
+  --o: 0.36;
+  --d: 0ms;
+}
+
+/* The lap starts over at once and unseen: on every lap after the first the reset is instant, because the
+   pieces, the screen and the strip are all faded out at that moment and nothing of the last lap may be left
+   to fade away in sight. The first lap keeps its transitions: that is the pieces' entrance. */
+.scene[data-again][data-at="0"] :is(.piece, .pChip, .pChip i, .pChipText, .slots li, .slotText span, .tag, .tag i, .tagText, .collapse, .line, .card, .chip, .chipText, .mchip, .mini, .action, .arcLit) {
   transition: none;
 }
 
@@ -986,15 +1242,29 @@
   transition: opacity 250ms linear;
 }
 
+.scene[data-soft][data-at] .piece {
+  --tx: 0rem;
+  --ps: 1;
+}
+
 .scene[data-soft] .sides:not([data-ready]) .piece {
   transform: translate3d(0, 0, 0) perspective(900px) rotateY(var(--ry, 0deg));
+}
+
+.scene[data-soft] .slots li {
+  transition: opacity 250ms linear;
+  transform: none;
+}
+
+.scene[data-soft] .mrow {
+  animation: none;
 }
 
 .scene[data-soft] .arcLit {
   transition: opacity 250ms linear;
 }
 
-.scene[data-at="0"][data-soft] .arcLit {
+.scene[data-soft][data-at="0"] .arcLit {
   transition: none;
 }
 
@@ -1010,6 +1280,124 @@ html[data-perf="lite"] .piece {
   position: relative;
   z-index: 2;
   color: rgb(246 244 238 / 0.72);
+}
+
+/* ── Where there is no room beside the screen: the same three signals, as tags under it ──────── */
+
+.strip {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  .strip {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+    max-width: 22rem;
+    margin-top: -0.3rem;
+    transition: opacity 450ms var(--wuavy-ease-out);
+  }
+
+  .tag {
+    display: inline-grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid rgb(255 255 255 / 0.16);
+    border-radius: 999px;
+    background: rgb(22 22 24 / 0.82);
+    font-size: 0.75rem;
+    font-weight: 620;
+    line-height: 1.2;
+    color: var(--wuavy-paper);
+    opacity: 0;
+    transform: translateY(0.45rem);
+    transition:
+      opacity 500ms var(--wuavy-ease-out) var(--d, 0ms),
+      transform 800ms var(--spring) var(--d, 0ms),
+      border-color 500ms var(--wuavy-ease-out);
+  }
+
+  .tag i {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--wuavy-signal);
+  }
+
+  .tagText {
+    grid-area: 1 / 2;
+    transition: opacity 500ms var(--wuavy-ease-out);
+  }
+
+  .tagText[data-state="review"] {
+    opacity: 0;
+  }
+
+  .tag[data-k="agenda"] {
+    --d: 200ms;
+  }
+
+  .tag[data-k="back"] {
+    --d: 650ms;
+  }
+
+  .tag[data-k="quote"] {
+    --d: 1200ms;
+  }
+
+  .scene:not([data-at="0"]) .tag {
+    opacity: 0.9;
+    transform: none;
+  }
+
+  /* While the estimate is the subject the others dim, and while the cursor clicks everything is quiet. */
+  .scene[data-at="2"] .tag:not([data-k="quote"]) {
+    opacity: 0.38;
+    --d: 0ms;
+  }
+
+  .scene[data-at="2"] .tag[data-k="quote"] {
+    --d: 0ms;
+    border-color: rgb(255 255 255 / 0.4);
+  }
+
+  .scene:is([data-at="3"], [data-at="4"]) .tag {
+    opacity: 0.32;
+    --d: 0ms;
+  }
+
+  .scene:is([data-at="3"], [data-at="4"]) .tag[data-k="quote"] {
+    opacity: 0.55;
+  }
+
+  .scene[data-at="5"] .tag:not([data-k="quote"]) {
+    opacity: 0.38;
+    --d: 0ms;
+  }
+
+  .scene[data-at="5"] .tag[data-k="quote"] {
+    opacity: 0.96;
+    --d: 0ms;
+    border-color: rgb(255 69 19 / 0.55);
+  }
+
+  .scene[data-at="5"] .tagText[data-state="waiting"] {
+    opacity: 0;
+  }
+
+  .scene[data-at="5"] .tagText[data-state="review"] {
+    opacity: 1;
+  }
+
+  .scene[data-soft] .tag {
+    transform: none;
+    transition: opacity 250ms linear;
+  }
 }
 
 /* Window sizes, from a small laptop up: the pieces shrink and move in, and only the smallest sizes lose the agenda. */
@@ -1064,44 +1452,6 @@ html[data-perf="lite"] .piece {
   }
 }
 
-/* The laptop's screen: less empty cream. It is only as tall as the last scene needs, the story starts at the
-   top the way a real screen does and opens downward, and the rows sit a little closer. Same type sizes. */
-@media (min-width: 48rem) {
-  .screen .heroStage {
-    height: 23.5rem;
-    padding: 1.05rem 1.2rem 0.85rem;
-  }
-
-  .screen .heroStage .inner {
-    justify-content: flex-start;
-  }
-
-  .screen .avatar {
-    width: 2.6rem;
-  }
-
-  .screen .caption {
-    padding-bottom: 0.65rem;
-  }
-
-  .screen .head {
-    padding: 0.8rem 1.3rem;
-  }
-
-  .screen .actionRow {
-    padding: 0 1.3rem 0.95rem;
-  }
-
-  .screen .details {
-    padding: 0.5rem 1.3rem 0.6rem;
-  }
-
-  .screen .draft {
-    margin: 0 1.3rem 0.85rem;
-    padding: 0.6rem 1rem 0.65rem;
-  }
-}
-
 /* A phone, not a shrunken laptop: the same story in a narrow screen, laid out for it. */
 @media (max-width: 47.99rem) {
   .device {
@@ -1146,77 +1496,93 @@ html[data-perf="lite"] .piece {
     display: none;
   }
 
-  .screen .heroStage {
-    height: 37.5rem;
-    padding: 2.7rem 0.9rem 0.9rem;
+  /* Taller than the laptop's screen, and clear of the notch at the top. */
+  .heroFrame {
+    height: 40rem;
   }
 
-  /* Top-anchored: the story starts where the eye already is, and rows open downward. */
-  .screen .heroStage .inner {
-    justify-content: flex-start;
-    padding-top: 0.35rem;
+  /* The strip of screens takes what it needs and the work gets the rest: without this the spare height
+     would be split between the two and the work would jump as the scenes change. */
+  .heroFrame > div {
+    padding-top: 1.55rem;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
-  .screen .avatar {
-    width: 2.4rem;
+  .heroBody .avatar {
+    width: 2.3rem;
   }
 
-  .screen .line {
+  .heroBody .line {
     font-size: 1rem;
   }
 
-  .screen .head {
+  .heroBody .head {
     grid-template-columns: minmax(0, 1fr);
-    padding: 1rem 1rem 0.9rem;
+    padding: 0.9rem 1rem 0.8rem;
   }
 
-  .screen .name {
-    font-size: 1.375rem;
+  .heroBody .name {
+    font-size: 1.3125rem;
   }
 
-  .screen .what {
+  .heroBody .what {
     font-size: 0.9375rem;
   }
 
-  .screen .chip {
+  .heroBody .chip {
     grid-row: auto;
     grid-column: 1;
     justify-self: start;
-    margin-top: 0.4rem;
-    padding: 0.3rem 0.8rem;
+    margin-top: 0.35rem;
+    padding: 0.28rem 0.8rem;
     font-size: 0.875rem;
   }
 
-  .screen .actionRow {
+  .heroBody .actionRow {
     padding: 0 1rem 1rem;
   }
 
-  .screen .details {
-    padding: 0.7rem 1rem 0.8rem;
+  .heroBody .details {
+    padding: 0.65rem 1rem 0.75rem;
   }
 
-  .screen .text,
-  .screen .draftText {
+  .heroBody .text,
+  .heroBody .draftText {
     font-size: 0.9rem;
   }
 
-  .screen .draft {
+  .heroBody .draft {
     margin: 0 1rem 1rem;
     padding: 0.7rem 0.85rem;
   }
+
+  /* The patient's state goes under the name, so neither is squeezed into a few letters per line. */
+  .mrow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.3rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .mchip {
+    justify-self: start;
+    font-size: 0.75rem;
+    padding: 0.18rem 0.55rem;
+  }
 }
 
-/* ── The situations: a tablet, and a scene for each one ──────────────────────────
-   The first screen has a laptop; this one has a tablet, so the two never look alike. Inside it the same
-   light product surface, but each situation draws its own thing: an estimate and the days that went by,
-   a patient's timeline, a slice of tomorrow's agenda. One clock, one thing at a time, as before. */
+/* ── The situations: the words on one side, a scene on the other ─────────────────────────────
+   The first screen has a laptop with pieces around it; this one is split. On one side the situation,
+   said in one sentence, and the others to choose from. On the other a dark stage: a cut of the product
+   (the agenda, a patient's timeline, an estimate), and Clinavy's answer laid over it as a piece of glass.
+   No big light card in the middle of the black. One clock, one thing at a time, as before. */
 
 .sim {
-  position: relative;
-  isolation: isolate;
-  width: 100%;
-  gap: 1.1rem;
   --spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1.4rem;
+  width: 100%;
 }
 
 @supports (transition-timing-function: linear(0, 1)) {
@@ -1225,64 +1591,339 @@ html[data-perf="lite"] .piece {
   }
 }
 
-/* A soft warm light on the floor under the tablet: it ties the light screen to the black around it. */
-.sim::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  left: 50%;
-  bottom: -8%;
-  width: min(100vw, 72rem);
-  height: 62%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse 50% 46% at 50% 70%, rgb(214 84 32 / 0.26), rgb(214 84 32 / 0.08) 55%, transparent 80%);
-  pointer-events: none;
+@media (min-width: 64rem) {
+  .sim {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    align-items: center;
+    gap: clamp(2.5rem, 5vw, 5rem);
+  }
 }
+
+/* ── The words ───────────────────────────────────────────────────────────────────────────── */
+
+.simCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.1rem;
+  text-align: left;
+}
+
+.simTitle {
+  font-size: clamp(1.0625rem, 0.95rem + 0.4vw, 1.25rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text-2);
+  text-wrap: balance;
+}
+
+.simCopy .layers {
+  width: 100%;
+}
+
+/* The situation, in one sentence: the largest type on this side, as the first screen's title is the largest
+   on its own. */
+.call {
+  font-size: clamp(2rem, 1.1rem + 2.7vw, 3.375rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.intro {
+  max-width: 27rem;
+  margin-top: 1rem;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.pickBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.pickLabel {
+  font-size: 0.8125rem;
+  font-weight: 560;
+  color: var(--text-2);
+}
+
+.simCopy .picks {
+  justify-content: flex-start;
+}
+
+/* ── The scene ───────────────────────────────────────────────────────────────────────────── */
 
 .sim .demo {
-  max-width: 48rem;
+  width: 100%;
+  max-width: 42rem;
+  margin-inline: auto 0;
+  gap: 0.9rem;
 }
 
-.tablet {
+/* The stage is a fixed size (the tallest scene fits, and nothing moves when the situation or the step
+   changes), dark, with a warm light low on the right where Clinavy's piece lands. */
+.sceneBox {
   position: relative;
-  padding: 0.8rem;
-  border-radius: 1.9rem;
-  background: linear-gradient(180deg, #343437 0%, #1f1f21 100%);
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.1),
-    inset 0 1px 0 rgb(255 255 255 / 0.16),
-    0 40px 70px -40px rgb(0 0 0 / 0.95),
-    0 14px 28px -18px rgb(0 0 0 / 0.8);
-}
-
-.tabletCam {
-  position: absolute;
-  top: 0.32rem;
-  left: 50%;
-  width: 0.34rem;
-  height: 0.34rem;
-  margin-left: -0.17rem;
-  border-radius: 50%;
-  background: #090909;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
-}
-
-.tabletScreen {
+  container-type: size;
+  height: 36rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(ellipse 70% 55% at 88% 100%, rgb(214 84 32 / 0.32), transparent 72%),
+    radial-gradient(ellipse 60% 40% at 8% 0%, rgb(255 255 255 / 0.06), transparent 72%),
+    linear-gradient(180deg, rgb(26 26 28), rgb(14 14 15));
+  box-shadow: 0 40px 70px -44px rgb(0 0 0 / 0.95);
   overflow: hidden;
-  border-radius: 1.15rem;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.7);
+  user-select: none;
 }
 
-/* The stage fills the tablet's screen: no card of its own, no second set of corners. */
-.sim .simStage {
-  max-width: none;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 1.1rem 1.4rem 1rem;
+@media (min-width: 40rem) {
+  .sceneBox {
+    height: 33rem;
+  }
 }
 
-/* The card of the scene settles into place with the short spring of the first screen's pieces. */
+.sceneIn {
+  position: absolute;
+  inset: 0;
+  transition: opacity 450ms var(--wuavy-ease-out);
+}
+
+.sceneIn[data-fading] {
+  opacity: 0;
+}
+
+/* The cut of the product. It starts in the middle of the stage, alone; when the first thing is pressed it
+   steps aside, up and to the left, a little smaller, to make room for the answer. */
+.cutSlot {
+  --cl: 1rem;
+  --ct: 1rem;
+  position: absolute;
+  z-index: 1;
+  top: var(--ct);
+  left: var(--cl);
+  width: calc(100% - 2 * var(--cl));
+  transform-origin: top left;
+  transition:
+    transform 1000ms var(--spring),
+    opacity 600ms var(--wuavy-ease-out);
+}
+
+@media (min-width: 40rem) {
+  .cutSlot {
+    --cl: 1.6rem;
+    --ct: 1.6rem;
+    width: min(21rem, 56cqw);
+  }
+
+  .sim[data-st="0"] .cutSlot {
+    transform: translate(calc(50cqw - 50% - var(--cl)), calc(50cqh - 50% - var(--ct)));
+  }
+}
+
+.sim:not([data-st="0"]) .cutSlot {
+  transform: scale(0.97);
+}
+
+.sim[data-st="2"] .cutSlot {
+  opacity: 0.5;
+}
+
+.cut {
+  overflow: hidden;
+  padding: 0 0.7rem 0.75rem;
+  border-radius: 1.1rem;
+}
+
+.cutBar {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.7rem 0.2rem 0.6rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.cutBrand {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--pulse-accent-text);
+}
+
+/* Inside the cut the product's own card, a little closer in. */
+.cut .head {
+  padding: 0.85rem 1rem;
+}
+
+.cut .name {
+  font-size: 1.375rem;
+}
+
+.cut .what {
+  font-size: 1rem;
+}
+
+.cut .chip {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8125rem;
+}
+
+.cut .actionRow {
+  padding: 0 1rem 0.95rem;
+}
+
+/* Clinavy's answer: dark glass over the cut, lower and to the right. Each step is its own piece, and they
+   swap in the same place. */
+.glassSlot {
+  --gr: 1rem;
+  --gb: 1rem;
+  position: absolute;
+  z-index: 2;
+  right: var(--gr);
+  bottom: var(--gb);
+  width: calc(100% - 2 * var(--gr));
+}
+
+@media (min-width: 40rem) {
+  .glassSlot {
+    --gr: 1.4rem;
+    --gb: 1.5rem;
+    width: min(20.5rem, 60cqw);
+  }
+}
+
+.glassCell {
+  display: grid;
+}
+
+.gLayer {
+  grid-area: 1 / 1;
+  align-self: end;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate3d(1.2rem, 0.8rem, 0) scale(0.96);
+  transition:
+    opacity 400ms var(--wuavy-ease-out),
+    transform 900ms var(--spring),
+    visibility 0s linear 400ms;
+}
+
+.gLayer[data-on] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 150ms, 150ms, 0s;
+}
+
+.glass {
+  /* The product's tokens, in the dark: the buttons and the draft inside read as the product's own. */
+  --pulse-accent: #ff7a3d;
+  --pulse-on-accent: #1c1b19;
+  --pulse-sand: rgb(255 255 255 / 0.12);
+  --pulse-muted: rgb(246 244 238 / 0.62);
+  --pulse-r-pill: 999px;
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-top-color: rgb(255 255 255 / 0.32);
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.03) 42%, rgb(10 10 11 / 0.4)),
+    rgb(22 22 24 / 0.72);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 26px 44px -22px rgb(0 0 0 / 0.95);
+  color: var(--wuavy-paper);
+}
+
+.gHead {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.9375rem;
+  font-weight: 620;
+  line-height: 1.3;
+}
+
+.gAvatar {
+  display: block;
+  flex: none;
+  width: 2.1rem;
+}
+
+.gPair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.7rem;
+}
+
+.gKick {
+  font-size: 0.6875rem;
+  font-weight: 620;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--wuavy-stone);
+}
+
+.gText {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.glass .row {
+  padding-top: 0.2rem;
+}
+
+.gDraft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.8rem 0.95rem 0.85rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 0.85rem;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.gDraftText {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.gNote {
+  font-size: 0.8125rem;
+  font-weight: 560;
+  color: var(--wuavy-stone);
+}
+
+.sim .simSteps {
+  padding-top: 0;
+}
+
+.sim .simStep {
+  background: rgb(255 255 255 / 0.2);
+}
+
+.sim .simStep[data-on] {
+  background: var(--wuavy-signal);
+}
+
+/* The cut's own card settles in with the same short spring as the first screen's pieces, each time a
+   situation takes the stage. */
 .sim .layer .card {
   transform: translateY(0.9rem) scale(0.975);
   transition:
@@ -1293,6 +1934,31 @@ html[data-perf="lite"] .piece {
 
 .sim .layer[data-on] .card {
   transform: none;
+}
+
+/* The lap starts over at once and unseen: from the second lap on the reset is instant, because the stage's
+   contents are faded out at that moment. (A visitor choosing a situation is not a new lap: that one cross-fades.) */
+.sim[data-again][data-st="0"] :is(.cutSlot, .layer, .gLayer, .card, .action, .agFree, .dayDots i, .tlLine i, .tlNode, .simStep) {
+  transition: none;
+}
+
+.sim[data-again][data-st="0"] .tlNode[data-k="due"]::before {
+  transition: none;
+}
+
+/* Reduced motion: nothing slides. The cut stays where it ends up, the answer fades in over it. */
+.sim[data-soft] .cutSlot {
+  transform: none;
+  transition: opacity 250ms linear;
+}
+
+.sim[data-soft][data-st] .cutSlot {
+  transform: none;
+}
+
+.sim[data-soft] .gLayer {
+  transform: none;
+  transition-duration: 250ms, 1ms, 0s;
 }
 
 .sim[data-soft] .layer .card {
@@ -1311,8 +1977,8 @@ html[data-perf="lite"] .piece {
 .waiting {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0 1.5rem 1rem;
+  gap: 0.8rem;
+  padding: 0 1rem 0.85rem;
 }
 
 .dayDots {
@@ -1340,7 +2006,7 @@ html[data-perf="lite"] .piece {
 }
 
 .waitText {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: var(--pulse-muted);
 }
 
@@ -1349,15 +2015,15 @@ html[data-perf="lite"] .piece {
   position: relative;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  gap: 0.6rem;
-  padding: 1.1rem 1.5rem 1.15rem;
+  gap: 0.5rem;
+  padding: 1rem 1rem 1.1rem;
 }
 
 .tlLine {
   position: absolute;
-  left: 1.9rem;
-  right: 1.9rem;
-  top: calc(1.1rem + 0.4rem - 1px);
+  left: 1.4rem;
+  right: 1.4rem;
+  top: calc(1rem + 0.4rem - 1px);
   height: 2px;
   border-radius: 2px;
   background: color-mix(in srgb, var(--pulse-ink) 14%, transparent);
@@ -1396,12 +2062,12 @@ html[data-perf="lite"] .piece {
 }
 
 .tlNode b {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 640;
 }
 
 .tlNode span {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--pulse-muted);
 }
 
@@ -1449,7 +2115,7 @@ html[data-perf="lite"] .piece {
   display: grid;
   gap: 0.4rem;
   margin: 0;
-  padding: 0 1.5rem 1.15rem;
+  padding: 0 1rem 1rem;
   list-style: none;
 }
 
@@ -1457,7 +2123,7 @@ html[data-perf="lite"] .piece {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 0.5rem 0.9rem;
+  padding: 0.5rem 0.8rem;
   border-radius: 0.75rem;
   background: color-mix(in srgb, var(--pulse-ink) 5%, transparent);
   font-size: 0.9375rem;
@@ -1497,53 +2163,3 @@ html[data-perf="lite"] .piece {
 .agFree[data-picked] b {
   color: var(--pulse-on-accent);
 }
-
-/* A narrow window: the tablet slims down and the card stacks its chip, as the phone does above. */
-@media (max-width: 47.99rem) {
-  .tablet {
-    padding: 0.5rem;
-    border-radius: 1.4rem;
-  }
-
-  .tabletScreen {
-    border-radius: 0.95rem;
-  }
-
-  .sim .simStage {
-    padding: 0.9rem 0.8rem 0.8rem;
-  }
-
-  .sim .head {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 0.9rem 1rem 0.8rem;
-  }
-
-  .sim .chip {
-    grid-row: auto;
-    grid-column: 1;
-    justify-self: start;
-    margin-top: 0.4rem;
-  }
-
-  .waiting,
-  .tl,
-  .agList {
-    padding-inline: 1rem;
-  }
-
-  .waiting {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .tlLine {
-    left: 1.4rem;
-    right: 1.4rem;
-  }
-
-  .sim .actionRow {
-    padding: 0 1rem 1rem;
-  }
-}
-

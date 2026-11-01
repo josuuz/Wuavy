@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.34, 1.4, 0.5, 1)",
+        "createdAt": "2026-11-01T14:51:21.048Z",
+        "reason": "Spring entry was asked for in the brief (principles taken from the 21st.dev reference); the exact curve is the assistant's choice: fallback for the linear() spring, ~12% overshoot, short entries of small pieces only, never on text or controls"
+      }
+    ]
+  }
+}

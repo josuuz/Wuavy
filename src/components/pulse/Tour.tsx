@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { DemoCursor, useDemoCursor, usePresence, useReducedMotion } from "./demo-kit";
 import { AgendaCrop, AppFrame, OpportunitiesCrop, OverviewCrop, PatientsCrop, RecordCrop } from "./product";
@@ -11,10 +11,12 @@ import styles from "./interactive.module.css";
 /*
   "E a rotina da clínica fica organizada" — the tour, one screen at a time.
 
-  Centred, with the product wide: the tabs on top, the screen in the middle,
-  what it is for written once underneath. The words follow the picture here
-  (in the situations above they sit beside it) so that two sections in a row
-  never share a layout.
+  The product wide, as an application window, and beside it a narrow column: the
+  screens to choose from, and what the one on show is for. When the demonstration
+  lights a detail of the screen, the words come level with it and a thin line joins
+  the two. (In the situations above the words are on the left and the scene on the
+  right; here it is the other way round, so two sections in a row never share a
+  layout.) On a phone it is one column: the window, the choices, the words.
 
   Not screenshots. Each crop is the real screen's content rebuilt in HTML with
   the product's own tokens (./product.tsx), which is what makes it readable on
@@ -68,6 +70,12 @@ export function Tour({ screens, fronts, hint, note }: TourProps) {
   const [hit, setHit] = useState(false);
   const [pressSlug, setPressSlug] = useState<string | undefined>(undefined);
   const [press, setPress] = useState(false);
+  /** How far the words have moved down to come level with the lit detail, and the line that joins them. */
+  const [ny, setNy] = useState(0);
+  const [link, setLink] = useState<{ w: number; h: number; d: string } | null>(null);
+  const grid = useRef<HTMLDivElement>(null);
+  const side = useRef<HTMLElement>(null);
+  const words = useRef<HTMLDivElement>(null);
   const strip = useRef<HTMLDivElement>(null);
   const region = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -94,6 +102,39 @@ export function Tour({ screens, fronts, hint, note }: TourProps) {
       track("demo_start", "tour");
     }
   }, [inView]);
+
+  // The words come level with the detail that is lit, and a thin line joins the two. Only where the words
+  // are beside the window: on a narrow screen they sit under it and nothing moves.
+  useEffect(() => {
+    if (!hit) return;
+    const measure = () => {
+      const g = grid.current?.getBoundingClientRect();
+      const column = side.current;
+      const text = words.current;
+      const detail = box.current?.querySelector<HTMLElement>("[data-focus]");
+      if (!g || !column || !text || !detail || g.width < 900) {
+        setNy(0);
+        setLink(null);
+        return;
+      }
+      const d = detail.getBoundingClientRect();
+      const c = column.getBoundingClientRect();
+      const centre = d.top + d.height / 2;
+      const room = Math.max(0, column.clientHeight - (text.offsetTop + text.offsetHeight) - 56);
+      const shift = Math.min(Math.max(centre - c.top - text.offsetHeight / 2 - text.offsetTop, 0), room);
+      const textTop = c.top - g.top + text.offsetTop + shift;
+      const x1 = d.right - g.left;
+      const y1 = centre - g.top;
+      const x2 = c.left - g.left + 4;
+      const y2 = Math.min(Math.max(y1, textTop + 20), textTop + text.offsetHeight - 20);
+      const mid = x1 + (x2 - x1) * 0.55;
+      setNy(shift);
+      setLink({ w: g.width, h: g.height, d: `M${x1} ${y1} H${mid} V${y2} H${x2}` });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [hit, at]);
 
   // One clock for the lap: the cursor, the lit detail, the press on the rail and the change of screen.
   useEffect(() => {
@@ -161,6 +202,8 @@ export function Tour({ screens, fronts, hint, note }: TourProps) {
         if (t >= T.release) {
           const next = screens.findIndex((x) => x.id === nextId);
           restart();
+          // The words start from their own place again, with the new screen.
+          setNy(0);
           setAt(next >= 0 ? next : 0);
         }
       } else if (t >= T.away && !f.away) {
@@ -185,49 +228,14 @@ export function Tour({ screens, fronts, hint, note }: TourProps) {
     setHit(false);
     setPressSlug(undefined);
     setPress(false);
+    setNy(0);
     setAt(next);
     track("screen", screens[next]?.id);
   };
 
   return (
     <div ref={region} className={styles.tour} data-soft={soft ? "" : undefined} data-at={screen.id}>
-      <div
-        ref={strip}
-        className={styles.tourTabs}
-        role="tablist"
-        aria-label={hint}
-        onKeyDown={(event) =>
-          onTabKeys(event, at, screens.length, (next) => {
-            choose(next);
-            focusTab(strip.current, next);
-          })
-        }
-      >
-        {screens.map((item, i) => (
-          <button
-            key={item.id}
-            type="button"
-            data-tab=""
-            role="tab"
-            id={`tela-${item.id}`}
-            aria-selected={i === at}
-            aria-controls={`tela-painel-${item.id}`}
-            tabIndex={tabIndex(i, at)}
-            className={styles.tourTab}
-            onClick={() => choose(i)}
-          >
-            {item.nav}
-          </button>
-        ))}
-      </div>
-
-      <div
-        id={`tela-painel-${screen.id}`}
-        role="tabpanel"
-        aria-labelledby={`tela-${screen.id}`}
-        tabIndex={-1}
-        className={styles.tourPanel}
-      >
+      <div ref={grid} className={styles.tourGrid}>
         <div className={styles.tourScreen}>
           {/* An application window: a slim title bar, and the product's own frame inside. */}
           <div className={styles.tourWindow}>
@@ -257,17 +265,65 @@ export function Tour({ screens, fronts, hint, note }: TourProps) {
           </div>
         </div>
 
-        <div key={screen.id} className={styles.tourWords}>
-          <h3 className={styles.tourTitle}>{screen.title}</h3>
-          <p className={styles.tourText}>{screen.text}</p>
-          <p className={styles.tourBenefit}>
-            <span aria-hidden="true">→ </span>
-            {screen.benefit}
-          </p>
-          {screen.note ? <p className={styles.tourNote}>{screen.note}</p> : null}
-        </div>
+        {/* The column beside it: the screens to choose from, and what the one on show is for. */}
+        <aside ref={side} className={styles.tourSide}>
+          <div
+            ref={strip}
+            className={styles.tourTabs}
+            role="tablist"
+            aria-label={hint}
+            onKeyDown={(event) =>
+              onTabKeys(event, at, screens.length, (next) => {
+                choose(next);
+                focusTab(strip.current, next);
+              })
+            }
+          >
+            {screens.map((item, i) => (
+              <button
+                key={item.id}
+                type="button"
+                data-tab=""
+                role="tab"
+                id={`tela-${item.id}`}
+                aria-selected={i === at}
+                aria-controls={`tela-painel-${item.id}`}
+                tabIndex={tabIndex(i, at)}
+                className={styles.tourTab}
+                onClick={() => choose(i)}
+              >
+                {item.nav}
+              </button>
+            ))}
+          </div>
 
-        <p className={styles.note}>{note}</p>
+          <div
+            key={screen.id}
+            ref={words}
+            id={`tela-painel-${screen.id}`}
+            role="tabpanel"
+            aria-labelledby={`tela-${screen.id}`}
+            tabIndex={-1}
+            className={styles.tourWords}
+            style={{ "--ny": `${ny}px` } as CSSProperties}
+          >
+            <h3 className={styles.tourTitle}>{screen.title}</h3>
+            <p className={styles.tourText}>{screen.text}</p>
+            <p className={styles.tourBenefit}>
+              <span aria-hidden="true">→ </span>
+              {screen.benefit}
+            </p>
+            {screen.note ? <p className={styles.tourNote}>{screen.note}</p> : null}
+          </div>
+
+          <p className={styles.note}>{note}</p>
+        </aside>
+
+        {link ? (
+          <svg className={styles.tourLink} width={link.w} height={link.h} data-on={hit ? "" : undefined} aria-hidden="true">
+            <path d={link.d} pathLength={1} />
+          </svg>
+        ) : null}
       </div>
     </div>
   );
