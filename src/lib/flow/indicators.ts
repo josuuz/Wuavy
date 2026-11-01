@@ -4,7 +4,7 @@ import type { Appointment, AppointmentFinancial, FlowData, ID } from "./types";
 
 /*
   Indicadores: the few numbers that say how the clinic is doing over a
-  period, the charts behind them, and what the Pulse reads in them. A period
+  period, the charts behind them, and what Clinavy reads in them. A period
   is a span of whole days in the clinic's clock, ending today; each number is
   compared with the span of the same length just before it.
 
@@ -181,7 +181,7 @@ const BLOCKS = [
 ] as const;
 
 /**
- * What the Pulse reads in the period, the most useful first, at most five:
+ * What Clinavy reads in the period, the most useful first, at most five:
  * a procedure selling less, the emptiest part of the week, the best margin,
  * products about to expire, revenue against the span before.
  */

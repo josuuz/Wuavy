@@ -1,5 +1,5 @@
 /*
-  Wuavy Pulse's domain. Each entity mirrors a table (supabase/migrations/
+  Clinavy's domain. Each entity mirrors a table (supabase/migrations/
   0001_flow.sql): camelCase here, snake_case there, and every row carries its
   organization, so one clinic never reads another's data. Money is in cents,
   times are ISO strings in the clinic's wall clock (see clock.ts).
@@ -175,7 +175,7 @@ export interface Product {
   brand?: string;
   category?: string;
   supplier?: string;
-  /** At or below this, the Pulse says to buy (migration 0004). Absent: it judges by the sessions left. */
+  /** At or below this, Clinavy says to buy (migration 0004). Absent: it judges by the sessions left. */
   minQuantity?: number;
 }
 
@@ -223,7 +223,7 @@ export type OpportunityKind =
   | "open_slot";
 export type OpportunityStatus = "nova" | "em_andamento" | "resolvida";
 
-/** What the Pulse found. Derived from the data today; stored and tracked once it is real. */
+/** What Clinavy found. Derived from the data today; stored and tracked once it is real. */
 export interface Opportunity {
   id: ID;
   organizationId: ID;
@@ -266,7 +266,7 @@ export interface Activity {
   actorId?: ID;
 }
 
-/** Everything the Pulse reads for one clinic. `now` is the moment the data describes. */
+/** Everything Clinavy reads for one clinic. `now` is the moment the data describes. */
 export interface FlowData {
   now: string;
   organization: Organization;

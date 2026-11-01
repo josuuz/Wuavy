@@ -10,7 +10,7 @@ import { Schedule } from "./views/Schedule";
 import { Settings } from "./views/Settings";
 import { Stock } from "./views/Stock";
 
-/* Every screen of the Pulse but the overview, by slug: the demo and the real Pulse route the same ones. */
+/* Every screen of Clinavy but the overview, by slug: the demo and the real Clinavy route the same ones. */
 
 export const SCREENS: Record<string, ComponentType> = {
   conversas: Conversations,

@@ -48,7 +48,7 @@ export function Consents() {
   return (
     <Shelf
       title="Consentimentos, em breve"
-      text="O termo assinado de cada procedimento fica guardado aqui, com a data e o nome de quem assinou. A assinatura não acontece nesta tela: um aceite clicado num formulário não é consentimento informado, e o Pulse não vai fingir que é."
+      text="O termo assinado de cada procedimento fica guardado aqui, com a data e o nome de quem assinou. A assinatura não acontece nesta tela: um aceite clicado num formulário não é consentimento informado, e o Clinavy não vai fingir que é."
       slots={["Termo assinado"]}
     />
   );

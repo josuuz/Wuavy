@@ -30,8 +30,8 @@ export { runCreateCharge, type CreateChargeOutcome } from "./create-charge";
   lib/maintenance/billing.ts (createSubscription), só que para um pagamento
   único em vez de uma assinatura. O que é genérico do Mercado Pago —
   ambiente, testSafeUrl, a assinatura HMAC — vem de lib/mercadopago/, o
-  mesmo núcleo que o Pulse e a manutenção já usam. Nada aqui toca
-  maintenance_* nem as assinaturas do Pulse (migration 0003).
+  mesmo núcleo que o Clinavy e a manutenção já usam. Nada aqui toca
+  maintenance_* nem as assinaturas do Clinavy (migration 0003).
 */
 
 const API = "https://api.mercadopago.com";
@@ -61,7 +61,7 @@ export const closedReason = () => {
   return decision.allowed ? null : REFUSAL[decision.reason];
 };
 
-/** O webhook das cobranças únicas: isolado do da manutenção e do Pulse, cada um seu. */
+/** O webhook das cobranças únicas: isolado do da manutenção e do Clinavy, cada um seu. */
 export const WEBHOOK_PATH = "/api/mercadopago/cobrancas/webhook";
 
 const returnUrl = (path: string) => testSafeUrl(path, site.url, CANONICAL_URL, testMode());

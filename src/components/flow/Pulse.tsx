@@ -7,7 +7,7 @@ import { PULSE_POSES, PULSE_WIRE, type PulsePose } from "./pulse-poses";
 import styles from "./Pulse.module.css";
 
 /*
-  The Pulse, the Wuavy Pulse assistant (Direction 6).
+  Clinavy, the Clinavy assistant (Direction 6).
 
   One character, and it is drawn. Traced from the approved renders
   (pulse-poses.ts), its volume painted on as light: a creamy body, a warm glow
@@ -46,7 +46,7 @@ const FRAME = 118;
 /*
   Blinking. Every pose traces its eyes first and its mouth, if it has one,
   last — the mouth is a fraction of an eye by area, and pulse-poses.test.mjs
-  holds that order down, so a retrace cannot quietly make the Pulse blink with
+  holds that order down, so a retrace cannot quietly make Clinavy blink with
   its mouth. Tranquilidade is left out: its eyes are shut already.
 */
 const EYES = 2;
@@ -72,7 +72,7 @@ interface PulseProps {
   still?: boolean;
   /** Leans toward the pointer or keyboard focus of its parent. */
   interactive?: boolean;
-  /** Where the Pulse is shown large: the figure fills the space it is given. */
+  /** Where Clinavy is shown large: the figure fills the space it is given. */
   solid?: boolean;
   className?: string;
   /** A name for assistive tech; omitted, the figure is decorative. */
@@ -92,7 +92,7 @@ export function Pulse({
   const [greeting, setGreeting] = useState(greet);
 
   // The welcome has its moment and goes. Anything real ends it there and
-  // then, so it cannot return once that has passed: without this the Pulse
+  // then, so it cannot return once that has passed: without this Clinavy
   // celebrates an answer and only afterwards says hello.
   useEffect(() => {
     if (!greeting) return;

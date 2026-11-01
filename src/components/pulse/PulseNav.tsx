@@ -9,7 +9,7 @@ import { subscribeFrame } from "@/lib/motion/frame";
 import styles from "./chrome.module.css";
 
 /*
-  PULSE's own header.
+  Clinavy's own header.
 
   It starts transparent over the hero and takes a ground and a rule once the
   page has moved, so the lockup never sits on top of the product's screens.
@@ -85,10 +85,7 @@ export function PulseNav({ labels, links, language }: PulseNavProps) {
     <header ref={header} className={styles.header} data-lifted={lifted ? "" : undefined}>
       <div className={styles.inner}>
         <a href="#pulse" className={styles.brand} aria-label={labels.home}>
-          <span className={styles.brandName}>PULSE</span>
-          <span className={styles.brandBy} aria-hidden="true">
-            by WUAVY
-          </span>
+          <span className={styles.brandName}>CLINAVY</span>
         </a>
 
         <nav aria-label={labels.nav} className={styles.nav}>

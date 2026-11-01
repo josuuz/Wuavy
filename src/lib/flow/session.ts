@@ -6,11 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 import { asStatus, clinicAccess, needsReread, releases, type Standing } from "./access";
 
 /** Where an invitation is accepted (and an ended access explained). */
-export const INVITE = "/pulse/convite";
+export const INVITE = "/clinavy/convite";
 
 /*
   Who is signed in and which clinic they work at, verified with Supabase Auth
-  (never read from a form or the URL). Every page and write of the real Pulse
+  (never read from a form or the URL). Every page and write of the real Clinavy
   starts here. `member` is the person's active membership: null until they
   have created their clinic or accepted an invitation, and null again once
   the owner ends their access (the database stops answering them too,
@@ -111,17 +111,17 @@ async function standing(subscription: Awaited<ReturnType<typeof getSubscription>
 
 /**
  * Where a signed-in person belongs, by the one rule of the journey: a clinic
- * → the Pulse; paid but no clinic yet → onboarding; anyone else (a lead, a
+ * → Clinavy; paid but no clinic yet → onboarding; anyone else (a lead, a
  * payment pending or cancelled) → the demo, where "Assinar" is.
  */
 export async function homePath() {
   const session = await getSession();
-  if (!session) return "/pulse/entrar";
-  if (session.member) return "/pulse/app";
+  if (!session) return "/clinavy/entrar";
+  if (session.member) return "/clinavy/app";
   // Invited to a clinic, or their access ended: the invitation page says which, and what to do.
   if (session.pending || session.ended) return INVITE;
   const subscription = await getSubscription();
-  return releases(subscription?.status) && !subscription?.organization_id ? "/pulse/comecar" : "/pulse/demo";
+  return releases(subscription?.status) && !subscription?.organization_id ? "/clinavy/comecar" : "/clinavy/demo";
 }
 
 /**

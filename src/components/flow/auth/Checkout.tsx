@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 
-import { check, subscribe, type CheckoutOutcome, type Subscribed } from "@/app/(app)/pulse/assinar/actions";
+import { check, subscribe, type CheckoutOutcome, type Subscribed } from "@/app/(app)/clinavy/assinar/actions";
 import { site } from "@/data/site";
 import { contactHref } from "@/lib/contact";
 import { PRICE } from "@/lib/flow/access";
@@ -32,7 +32,7 @@ const POLL_MS = 8000;
 interface CheckoutProps {
   stage: Stage;
   email: string;
-  /** A clinic subscribing again goes back to the Pulse, not to onboarding. */
+  /** A clinic subscribing again goes back to Clinavy, not to onboarding. */
   hasClinic: boolean;
   /** Mercado Pago is configured on the server. Without it, only the offline path shows. */
   ready: boolean;
@@ -76,7 +76,7 @@ export function Checkout({ stage: initial, email, hasClinic, ready, test }: Chec
         <Signal loop />
         <h1 className={ui.title}>Aguardando confirmação.</h1>
         <p className={ui.lead}>
-          Assim que o Mercado Pago confirmar o pagamento, o Pulse libera sozinho. Se você ainda não concluiu o
+          Assim que o Mercado Pago confirmar o pagamento, o Clinavy libera sozinho. Se você ainda não concluiu o
           pagamento no Mercado Pago, continue por aqui — é a mesma tentativa, nenhuma cobrança duplicada.
         </p>
         <div className={ui.actions}>
@@ -166,7 +166,7 @@ export function Checkout({ stage: initial, email, hasClinic, ready, test }: Chec
         </button>
       </form>
       <p className={ui.fine}>
-        Você será levado ao ambiente oficial do Mercado Pago para concluir o pagamento com segurança. O Pulse não vê
+        Você será levado ao ambiente oficial do Mercado Pago para concluir o pagamento com segurança. O Clinavy não vê
         nem guarda os dados do seu cartão.
         {test ? " Ambiente de teste: use um cartão de teste do Mercado Pago; nada é cobrado." : ""}
       </p>
@@ -215,7 +215,7 @@ function Offline({ email }: { email: string }) {
           <span>/mês</span>
         </p>
         <p className={ui.lead}>
-          Por enquanto, a contratação do Wuavy Pulse é feita direto com a Wuavy. Sua conta já está criada
+          Por enquanto, a contratação do Clinavy é feita direto com a Wuavy. Sua conta já está criada
           {email ? (
             <>
               {" "}
@@ -252,7 +252,7 @@ function Offline({ email }: { email: string }) {
   );
 }
 
-/** The Pulse's sign at work: a point, and the rings it sends out. */
+/** Clinavy's sign at work: a point, and the rings it sends out. */
 function Signal({ loop }: { loop?: boolean }) {
   return (
     <span className={styles.signal} data-loop={loop ? "" : undefined} aria-hidden="true">
@@ -264,7 +264,7 @@ function Signal({ loop }: { loop?: boolean }) {
 }
 
 /**
- * Payment confirmed: the screen dims, the Pulse's sign sends out its rings,
+ * Payment confirmed: the screen dims, Clinavy's sign sends out its rings,
  * and the sentence lands. Short, and the way forward is one button.
  */
 function Activated({ hasClinic }: { hasClinic: boolean }) {
@@ -276,13 +276,13 @@ function Activated({ hasClinic }: { hasClinic: boolean }) {
         <Signal />
         <p className={styles.confirmed}>Pagamento confirmado</p>
         <h1 id="pulse-ativo" ref={heading} tabIndex={-1} className={styles.activatedTitle}>
-          Seu Pulse está ativo.
+          Seu Clinavy está ativo.
         </h1>
         <p className={styles.activatedText}>
           {hasClinic ? "Tudo liberado de novo para a sua clínica." : "Agora vamos configurar sua clínica."}
         </p>
-        <Link href={hasClinic ? "/pulse/app" : "/pulse/comecar"} className={`${ui.primary} ${styles.activatedAction}`}>
-          {hasClinic ? "Entrar no Pulse" : "Configurar minha clínica"}
+        <Link href={hasClinic ? "/clinavy/app" : "/clinavy/comecar"} className={`${ui.primary} ${styles.activatedAction}`}>
+          {hasClinic ? "Entrar no Clinavy" : "Configurar minha clínica"}
         </Link>
       </div>
     </div>

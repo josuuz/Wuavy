@@ -32,7 +32,7 @@ import { ADJUST_REASONS, BASE } from "./copy";
 /*
   The demo's state: the clinic's data plus what the visitor did to it (a
   contact moved, a patient booked, a visit finished, stock received). It
-  lives in memory only; a reload starts the demo over. In the real Pulse
+  lives in memory only; a reload starts the demo over. In the real Clinavy
   (`live`) the data is the server's: screens write through Server Actions,
   the route refreshes and the new data arrives as `initial`. The shape of the
   screens stays the same.
@@ -340,13 +340,13 @@ interface FlowContext {
   ops: Opportunity[];
   focus: Focus | null;
   dispatch: Dispatch<Action>;
-  /** Where the screens live: the demo's or the real Pulse's address. */
+  /** Where the screens live: the demo's or the real Clinavy's address. */
   base: string;
   /** A real clinic's data (not the demo's): records live in the database. */
   live: boolean;
   /** What this clinic may do now: demo, subscription, read-only (lib/flow/access.ts). */
   access: Access;
-  /** The signed-in person, in the real Pulse. */
+  /** The signed-in person, in the real Clinavy. */
   account?: Account;
   /** Records can be created, edited and deleted in the database: a real clinic that isn't read-only. */
   editable: boolean;
@@ -356,9 +356,9 @@ interface FlowContext {
    * server and the database check it again.
    */
   can: Permissions;
-  /** The signed-in member's id, in the real Pulse. */
+  /** The signed-in member's id, in the real Clinavy. */
   me?: ID;
-  /** "Pergunte ao Pulse" from any screen: open it, with a question already asked if one is given. */
+  /** "Pergunte ao Clinavy" from any screen: open it, with a question already asked if one is given. */
   ask: (question?: string) => void;
   /** Whether it is open, and the question it was opened with: each new question starts a new conversation (`session`). */
   asking: { open: boolean; question: string; session: number };

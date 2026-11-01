@@ -11,9 +11,9 @@
     de manutenção que ele marcou como paga (maintenance_payments.paid).
   - Previsto é projeção: assinatura cobrando × valor. Não é prova de que o
     mês entrou.
-  - O Pulse entra só em previsto. Ele não guarda pagamento nenhum — a
+  - O Clinavy entra só em previsto. Ele não guarda pagamento nenhum — a
     migration 0003 guarda o estado da assinatura, não o histórico dela —
-    então qualquer "recebido" vindo do Pulse seria invenção, e aqui não tem
+    então qualquer "recebido" vindo do Clinavy seria invenção, e aqui não tem
     como ser somado por acidente: summarizePulse não devolve esse campo.
 */
 
@@ -43,7 +43,7 @@ export function paymentEvidence(payment: { status: string; status_detail?: strin
 }
 
 export interface PulseSummary {
-  /** Assinaturas que liberam o Pulse: ativas e em atraso (lib/flow/access.ts, releases). */
+  /** Assinaturas que liberam o Clinavy: ativas e em atraso (lib/flow/access.ts, releases). */
   subscribers: number;
   /** Destas, as que passam pelo Mercado Pago — as únicas a que o preço de referência se aplica. */
   billedSubscribers: number;
@@ -60,10 +60,10 @@ export interface PulseSummary {
 }
 
 /**
- * As assinaturas do Pulse contadas por estado, e a projeção mensal.
+ * As assinaturas do Clinavy contadas por estado, e a projeção mensal.
  *
  * A projeção é estimativa de verdade, não um arredondamento: o valor de cada
- * assinatura do Pulse só existe no Mercado Pago (auto_recurring.transaction_amount
+ * assinatura do Clinavy só existe no Mercado Pago (auto_recurring.transaction_amount
  * da preapproval), nunca numa coluna nossa — ao contrário da manutenção, que
  * congela amount_cents na própria linha. Então aqui multiplica-se pelo preço
  * de referência que a tela mostra ao lado, e uma clínica com preço fundador
@@ -164,7 +164,7 @@ export interface MaintenanceSummary {
  * status means the money came in"). O valor vem de amount_cents da própria
  * linha do pagamento, não da assinatura, porque é o que foi cobrado naquele
  * mês. A projeção usa amount_cents da assinatura, congelado na criação, que é
- * por isso que a manutenção não precisa de estimativa como o Pulse.
+ * por isso que a manutenção não precisa de estimativa como o Clinavy.
  */
 export function summarizeMaintenance(
   subscriptions: readonly { status: string; amount_cents: number }[],
@@ -183,11 +183,11 @@ export function summarizeMaintenance(
 }
 
 export interface Consolidated {
-  /** Dinheiro com registro que o sustente. O Pulse nunca entra aqui. */
+  /** Dinheiro com registro que o sustente. O Clinavy nunca entra aqui. */
   receivedCents: number;
-  /** Projeção mensal somada. Contém a estimativa do Pulse. */
+  /** Projeção mensal somada. Contém a estimativa do Clinavy. */
   projectedMrrCents: number;
-  /** Quanto da projeção é estimativa sem valor gravado (só o Pulse). */
+  /** Quanto da projeção é estimativa sem valor gravado (só o Clinavy). */
   estimatedMrrCents: number;
   /** Aprovado sem prova de crédito: nem recebido, nem previsto. */
   awaitingCreditCents: number;

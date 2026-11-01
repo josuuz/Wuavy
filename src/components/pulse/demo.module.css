@@ -1,6 +1,6 @@
 /*
   The two demonstrations: the small scripted one under the first screen, and the
-  clickable one in "Veja como o PULSE ajuda sua equipe a agir".
+  clickable one in "Veja como o Clinavy ajuda sua equipe a agir".
 
   They are deliberately small. One card, one idea per scene, and what is not
   needed to follow the story is not drawn: no menus, no columns, no other
@@ -54,7 +54,7 @@
   flex-direction: column;
 }
 
-/* The Pulse speaking, in one line that changes with the scene. All captions share a cell, so
+/* Clinavy speaking, in one line that changes with the scene. All captions share a cell, so
    the row is as tall as the longest and nothing moves when one gives way to the next. */
 .caption {
   display: flex;
@@ -119,7 +119,7 @@
     border-color 600ms var(--wuavy-ease-out);
 }
 
-/* The Pulse's highlight: one ring, orange, with a soft step around it. */
+/* Clinavy's highlight: one ring, orange, with a soft step around it. */
 .card[data-ring] {
   border-color: var(--pulse-accent);
   box-shadow:

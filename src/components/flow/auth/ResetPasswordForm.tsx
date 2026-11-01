@@ -12,7 +12,7 @@ import { authMessage } from "./messages";
 
 /*
   Where the "Reset your password" email lands. The link carries a one-time
-  code (PKCE, asked for on /pulse/entrar in this browser); with a custom email
+  code (PKCE, asked for on /clinavy/entrar in this browser); with a custom email
   template, a token hash; sent from the dashboard or the admin API, the
   recovery session itself in the #fragment. Any of them becomes a short
   recovery session here; only then the form appears, the new password goes
@@ -81,7 +81,7 @@ export function ResetPasswordForm() {
     }
     // A new password closes every session, this one included: the next step is signing in with it.
     await auth.signOut();
-    router.replace("/pulse/entrar?senha=redefinida");
+    router.replace("/clinavy/entrar?senha=redefinida");
   }
 
   if (stage.kind === "checking") {
@@ -99,7 +99,7 @@ export function ResetPasswordForm() {
           <p className={ui.label}>Link inválido</p>
           <p>{stage.message}</p>
         </div>
-        <Link href="/pulse/entrar?modo=recuperar" className={ui.textAction}>
+        <Link href="/clinavy/entrar?modo=recuperar" className={ui.textAction}>
           Pedir um novo link <span aria-hidden="true">→</span>
         </Link>
       </div>

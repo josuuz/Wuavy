@@ -9,7 +9,7 @@ import { permissionsFor, type Permissions } from "./roles";
 import { getClinicAccess, getSession } from "./session";
 
 /*
-  What every write of the real Pulse goes through (actions.ts, team.ts,
+  What every write of the real Clinavy goes through (actions.ts, team.ts,
   conversation-actions.ts): the clinic and the person come from the verified
   session, never from the browser; the person's role must allow the write
   (the database checks it again, migration 0009); a subscription that is not
@@ -71,9 +71,9 @@ export function describe(error: PostgrestError) {
   }
   // A column the database does not have yet: the schema is behind the app.
   if (error.code === "PGRST204" || error.code === "PGRST202" || error.code === "42703" || error.code === "42883") {
-    return "Falta atualizar o banco de dados do Pulse (migrations em supabase/migrations).";
+    return "Falta atualizar o banco de dados do Clinavy (migrations em supabase/migrations).";
   }
-  console.error("Pulse write failed", error);
+  console.error("Clinavy write failed", error);
   return "Não foi possível salvar. Tente de novo.";
 }
 

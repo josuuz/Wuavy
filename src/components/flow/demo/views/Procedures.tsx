@@ -15,7 +15,7 @@ import styles from "../ui.module.css";
 /*
   The catalogue. Each procedure's price, duration and recommended return
   feed the agenda and the opportunities; the products it consumes link a
-  finished visit to the stock. That is what lets the Pulse connect patient,
+  finished visit to the stock. That is what lets Clinavy connect patient,
   agenda, stock and next return when a visit is done.
 */
 
@@ -90,7 +90,7 @@ export function Procedures() {
           }
         >
           Cadastre o que a clínica oferece. O preço entra nos orçamentos, a duração ocupa a agenda e o retorno recomendado diz
-          ao Pulse quando convidar o paciente de volta.
+          ao Clinavy quando convidar o paciente de volta.
         </Intro>
       ) : null}
 
@@ -287,7 +287,7 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
             >
               Adicionar produto
             </button>
-            <p className={styles.fine}>Quando um atendimento é finalizado, o Pulse dá baixa dessas quantidades no estoque.</p>
+            <p className={styles.fine}>Quando um atendimento é finalizado, o Clinavy dá baixa dessas quantidades no estoque.</p>
           </>
         ) : (
           <p className={styles.fine}>Nenhum produto cadastrado ainda. Faça uma entrada em Estoque para ligar produtos a este procedimento.</p>
@@ -322,7 +322,7 @@ function ProcedureForm({ procedure, onDone }: { procedure?: Procedure; onDone: (
  * cost of their own day (Indicadores). A warning only at a loss or a thin margin.
  */
 function Margin({ price, cost, linked }: { price: number; cost: number; linked: boolean }) {
-  if (!linked) return <p className={styles.fine}>Ligue os produtos usados para o Pulse calcular o custo e a margem.</p>;
+  if (!linked) return <p className={styles.fine}>Ligue os produtos usados para o Clinavy calcular o custo e a margem.</p>;
   // In whole reais, as shown, so price − cost = profit on screen too.
   const shownCost = Math.round(cost / 100) * 100;
   const profit = price - shownCost;

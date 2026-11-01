@@ -8,8 +8,8 @@ import { BillingUnavailable, syncCharge, syncSubscription } from "@/lib/maintena
 
   Este endereço não é configurado no painel do Mercado Pago: ele vai como
   notification_url em cada assinatura que criamos
-  (lib/maintenance/billing.ts). Assim o webhook do Pulse continua recebendo
-  só o que é do Pulse, e nada da cobrança dele muda.
+  (lib/maintenance/billing.ts). Assim o webhook do Clinavy continua recebendo
+  só o que é do Clinavy, e nada da cobrança dele muda.
 
   Um aviso é só uma pista de que algo mudou. O que confirma um pagamento é a
   leitura de volta: a assinatura é lida do Mercado Pago com o nosso token de

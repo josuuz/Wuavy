@@ -84,7 +84,7 @@ export function InviteAccept({ state }: { state: InviteState }) {
       setPending(false);
       return setError(result.error);
     }
-    router.replace("/pulse/app");
+    router.replace("/clinavy/app");
     router.refresh();
   }
 
@@ -117,11 +117,11 @@ export function InviteAccept({ state }: { state: InviteState }) {
             <Field label="Confirme a senha">
               <input className={ui.input} name="confirm" type="password" required minLength={6} autoComplete="new-password" />
             </Field>
-            <p className={ui.fine}>Daqui em diante, você entra no Pulse com o seu e-mail e esta senha.</p>
+            <p className={ui.fine}>Daqui em diante, você entra no Clinavy com o seu e-mail e esta senha.</p>
           </>
         ) : (
           <p className={ui.fine}>
-            Você continua entrando com o seu e-mail e a senha que já usa no Pulse. Se não lembrar dela, use “Esqueci minha
+            Você continua entrando com o seu e-mail e a senha que já usa no Clinavy. Se não lembrar dela, use “Esqueci minha
             senha” na tela de entrada.
           </p>
         )}
@@ -168,8 +168,8 @@ export function InviteAccept({ state }: { state: InviteState }) {
         {state.signedIn ? (
           <SignOut className={ui.secondary} />
         ) : (
-          <Link href="/pulse/entrar" className={ui.textAction}>
-            Entrar no Pulse <span aria-hidden="true">→</span>
+          <Link href="/clinavy/entrar" className={ui.textAction}>
+            Entrar no Clinavy <span aria-hidden="true">→</span>
           </Link>
         )}
       </div>

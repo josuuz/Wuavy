@@ -6,7 +6,7 @@ import styles from "./demo.module.css";
 
 /*
   The small parts the two demonstrations share (the first screen's, and the
-  one in "Veja como o PULSE ajuda sua equipe a agir"): the reduced-motion
+  one in "Veja como o Clinavy ajuda sua equipe a agir"): the reduced-motion
   switch, the presence check (in view, tab in front), and the demonstrative
   cursor.
 

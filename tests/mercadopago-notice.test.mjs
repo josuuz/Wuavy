@@ -153,23 +153,23 @@ test("um molde com a parte vazia no lugar de ausente não é o mesmo molde", () 
 const CANONICAL = "https://wuavy.com";
 
 test("em produção o retorno é o domínio do site, tal como está", () => {
-  assert.equal(httpsUrl("/pulse/assinar", "https://wuavy.com", CANONICAL), "https://wuavy.com/pulse/assinar");
+  assert.equal(httpsUrl("/clinavy/assinar", "https://wuavy.com", CANONICAL), "https://wuavy.com/clinavy/assinar");
 });
 
 test("rodando em localhost o retorno cai no domínio canônico: o Mercado Pago recusa um back_url http", () => {
-  assert.equal(httpsUrl("/pulse/assinar", "http://localhost:3000", CANONICAL), "https://wuavy.com/pulse/assinar");
+  assert.equal(httpsUrl("/clinavy/assinar", "http://localhost:3000", CANONICAL), "https://wuavy.com/clinavy/assinar");
 });
 
 test("um preview em https é https, e serve como retorno de uma assinatura de teste", () => {
   assert.equal(
-    httpsUrl("/pulse/assinar", "https://wuavy-bo55.vercel.app", CANONICAL),
-    "https://wuavy-bo55.vercel.app/pulse/assinar",
+    httpsUrl("/clinavy/assinar", "https://wuavy-bo55.vercel.app", CANONICAL),
+    "https://wuavy-bo55.vercel.app/clinavy/assinar",
   );
 });
 
 test("nenhum endereço de volta sai sem https, qualquer que seja a URL configurada", () => {
   for (const configured of ["http://localhost:3000", "http://wuavy.com", "http://192.168.0.10:3000"]) {
-    assert.ok(httpsUrl("/pulse/assinar", configured, CANONICAL).startsWith("https://"), configured);
+    assert.ok(httpsUrl("/clinavy/assinar", configured, CANONICAL).startsWith("https://"), configured);
   }
 });
 

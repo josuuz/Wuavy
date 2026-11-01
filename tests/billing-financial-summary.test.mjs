@@ -51,7 +51,7 @@ test("pendente, recusado, cancelado e reembolsado não provam nada", () => {
   }
 });
 
-test("o Pulse conta por estado, e em atraso conta como cobrando", () => {
+test("o Clinavy conta por estado, e em atraso conta como cobrando", () => {
   const pulse = summarizePulse(
     [
       { status: "active" },
@@ -71,7 +71,7 @@ test("o Pulse conta por estado, e em atraso conta como cobrando", () => {
   assert.equal(pulse.estimatedMrrCents, 3 * PULSE_PRICE);
 });
 
-test("pendente e cancelada ficam fora da projeção do Pulse", () => {
+test("pendente e cancelada ficam fora da projeção do Clinavy", () => {
   const pulse = summarizePulse([{ status: "pending" }, { status: "cancelled" }], PULSE_PRICE);
   assert.equal(pulse.subscribers, 0);
   assert.equal(pulse.estimatedMrrCents, 0);
@@ -107,13 +107,13 @@ test("sem provider declarado, a assinatura conta como do Mercado Pago (o padrão
   assert.equal(pulse.estimatedMrrCents, PULSE_PRICE);
 });
 
-test("o Pulse não tem como devolver receita recebida: o campo não existe", () => {
+test("o Clinavy não tem como devolver receita recebida: o campo não existe", () => {
   const pulse = summarizePulse([{ status: "active" }], PULSE_PRICE);
   assert.equal("receivedCents" in pulse, false);
   assert.equal("receivedCount" in pulse, false);
 });
 
-test("a projeção do Pulse diz qual preço usou, porque é estimativa", () => {
+test("a projeção do Clinavy diz qual preço usou, porque é estimativa", () => {
   const pulse = summarizePulse([{ status: "active" }], 19_900);
   assert.equal(pulse.referencePriceCents, 19_900);
   assert.equal(pulse.estimatedMrrCents, 19_900);
@@ -178,7 +178,7 @@ test("uma cobrança de manutenção não paga não entra no recebido", () => {
   assert.equal(maintenance.mrrCents, 4_000);
 });
 
-test("no consolidado, o Pulse entra só na previsão — nunca no recebido", () => {
+test("no consolidado, o Clinavy entra só na previsão — nunca no recebido", () => {
   const pulse = summarizePulse([{ status: "active" }, { status: "active" }], PULSE_PRICE);
   const charges = summarizeCharges([{ status: "approved", status_detail: "accredited", amount_cents: 150_000 }], [{ status: "approved" }]);
   const maintenance = summarizeMaintenance([{ status: "active", amount_cents: 4_000 }], [{ paid: true, amount_cents: 4_000 }]);
@@ -200,7 +200,7 @@ test("o que foi só autorizado fica fora do recebido e fora da previsão", () =>
   assert.equal(total.awaitingCreditCents, 90_000);
 });
 
-test("vinte assinaturas do Pulse ativas não produzem um centavo de recebido", () => {
+test("vinte assinaturas do Clinavy ativas não produzem um centavo de recebido", () => {
   const pulse = summarizePulse(
     Array.from({ length: 20 }, () => ({ status: "active" })),
     PULSE_PRICE,
@@ -223,7 +223,7 @@ test("estado vazio: sem nada registrado, tudo é zero e a tela sabe que está va
   assert.equal(nothingYet(pulse, charges, maintenance), true);
 });
 
-test("estado vazio deixa de valer com uma assinatura do Pulse só pendente", () => {
+test("estado vazio deixa de valer com uma assinatura do Clinavy só pendente", () => {
   const pulse = summarizePulse([{ status: "pending" }], PULSE_PRICE);
   assert.equal(nothingYet(pulse, summarizeCharges([], []), summarizeMaintenance([], [])), false);
 });

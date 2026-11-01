@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
   Quem entra no painel da manutenção.
 
   A autenticação é a que o projeto já tem (Supabase Auth, as mesmas contas do
-  Pulse) mais uma lista de e-mails em WUAVY_ADMIN_EMAILS: sem senha nova,
+  Clinavy) mais uma lista de e-mails em WUAVY_ADMIN_EMAILS: sem senha nova,
   sem tabela de papéis, sem dependência nova. A lista vive só no servidor,
   então o navegador não sabe quem está nela.
 

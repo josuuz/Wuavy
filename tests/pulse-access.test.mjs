@@ -1,7 +1,7 @@
 // Quando o estado guardado de uma assinatura deixa de valer: lib/flow/access.ts.
 // O webhook do Mercado Pago é o caminho normal, e falhar nele custa dinheiro na
 // única direção que importa — uma assinatura cancelada lá que continuasse
-// liberando o Pulse aqui. Nada nestes testes fala com o Mercado Pago.
+// liberando o Clinavy aqui. Nada nestes testes fala com o Mercado Pago.
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -41,7 +41,7 @@ test("a folga é de dias, não de meses: um ciclo perdido não passa em branco",
   assert.ok(GRACE_DAYS >= 1 && GRACE_DAYS <= 10, `GRACE_DAYS = ${GRACE_DAYS}`);
 });
 
-test("só ativa e em atraso abrem o Pulse, e relê-las é o que fecha uma que caducou", () => {
+test("só ativa e em atraso abrem o Clinavy, e relê-las é o que fecha uma que caducou", () => {
   for (const status of ["active", "past_due"]) {
     assert.equal(releases(status), true, status);
     assert.equal(needsReread(linha(status, dias(30)), HOJE), true, status);
@@ -62,7 +62,7 @@ test("em atraso avisa e não bloqueia: o Mercado Pago ainda está retentando", (
 
 // ── Depois do cancelamento: o mês já pago (item dos Termos) ───
 
-test("cancelada com o mês ainda corrente: o Pulse continua funcionando até o fim dele", () => {
+test("cancelada com o mês ainda corrente: o Clinavy continua funcionando até o fim dele", () => {
   const fim = dias(-10); // a cobrança seguinte seria daqui a dez dias
   const access = clinicAccess(linha("cancelled", fim), HOJE);
   assert.equal(paidThrough(linha("cancelled", fim), HOJE), fim);

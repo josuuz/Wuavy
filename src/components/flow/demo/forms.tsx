@@ -13,7 +13,7 @@ import { useFlow, type Focus } from "./store";
 import styles from "./ui.module.css";
 
 /*
-  Pieces the screens share. A write is a Server Action in the real Pulse (or
+  Pieces the screens share. A write is a Server Action in the real Clinavy (or
   a change in memory in the demo): pending while it and the refresh it
   triggers run, its error kept next to the form, the sheet closed only when
   the write said yes.
@@ -45,7 +45,7 @@ export function useWrite() {
   return { pending, error, write, submit };
 }
 
-/** A labelled field. `guide`: the Pulse's first-run guide points at it ("todo" still empty, "ok" filled). */
+/** A labelled field. `guide`: Clinavy's first-run guide points at it ("todo" still empty, "ok" filled). */
 export function Field({ label, children, guide }: { label: string; children: ReactNode; guide?: "todo" | "ok" }) {
   return (
     <label className={styles.field} data-guide-field={guide}>
@@ -171,9 +171,9 @@ export function PaymentMethod() {
   );
 }
 
-const APPROVAL = ["Pulse identifica", "Recomenda", "Prepara", "Você aprova"] as const;
+const APPROVAL = ["Clinavy identifica", "Recomenda", "Prepara", "Você aprova"] as const;
 
-/** Where an action stands (0 to 3; 4 when it is all done). The Pulse identifies, recommends and prepares; sending always waits for a person. */
+/** Where an action stands (0 to 3; 4 when it is all done). Clinavy identifies, recommends and prepares; sending always waits for a person. */
 export function Approval({ step }: { step: number }) {
   return (
     <ol className={styles.stages} aria-label="Etapas da ação">
@@ -191,10 +191,10 @@ export function Approval({ step }: { step: number }) {
 }
 
 /**
- * A message the Pulse wrote for one person. It can be read and adjusted
+ * A message Clinavy wrote for one person. It can be read and adjusted
  * here; sending is a person's call, from the clinic's own WhatsApp: the
  * button opens it with the number and the text already filled in. Nothing is
- * sent by the Pulse itself, and in the demo the button stays off (its phone
+ * sent by Clinavy itself, and in the demo the button stays off (its phone
  * numbers are made up).
  */
 export function Prepared({
@@ -256,7 +256,7 @@ export function Prepared({
 function useSendNote() {
   const { access } = useFlow();
   if (access.isDemoMode) {
-    return "Na demo, nada é enviado. No Pulse da clínica, o botão abre o WhatsApp com o número e a mensagem prontos.";
+    return "Na demo, nada é enviado. No Clinavy da clínica, o botão abre o WhatsApp com o número e a mensagem prontos.";
   }
   if (!access.canReachOut) return READ_ONLY_MESSAGE;
   return "O botão abre o WhatsApp da clínica com o número e a mensagem prontos: você revisa e envia. Envio automático: em breve.";
@@ -279,7 +279,7 @@ export function SignOut({ className }: { className?: string }) {
       onClick={async () => {
         setLeaving(true);
         await createClient().auth.signOut();
-        router.replace("/pulse/entrar");
+        router.replace("/clinavy/entrar");
         router.refresh();
       }}
     >

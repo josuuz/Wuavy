@@ -1,5 +1,5 @@
 /*
-  The Pulse's service worker. It exists so the browser offers to install the
+  Clinavy's service worker. It exists so the browser offers to install the
   app: Chrome only shows the install prompt for a page that registers a
   worker with a fetch handler.
 

@@ -1,5 +1,5 @@
 /*
-  O cancelamento, passo a passo, sem rede — a parte que o Pulse e as
+  O cancelamento, passo a passo, sem rede — a parte que o Clinavy e as
   Assinaturas de Sites tinham copiada cada um na sua billing.ts: tentar as
   duas grafias via PUT, parar na primeira aceita, e depois disso nunca
   relatar como falha (a releitura, confirmedStatus, já é segura).

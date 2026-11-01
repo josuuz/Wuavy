@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 /*
   Mercado Pago's own Card Payment Brick: the card is typed into Mercado Pago's
   cross-origin iframes and turned into a token there. Only that token comes
-  out of here, through `onToken`. The number never touches the Pulse.
+  out of here, through `onToken`. The number never touches Clinavy.
 
   One copy, used by the checkout (the first subscription) and by Configurações
   (changing the card of one that exists), because the settings below were
@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
     what is being typed becomes invisible.
   - One installment, credit only. The subscription is monthly and recurring;
     debit and prepaid cards do not carry a recurring authorization.
-  - The button takes the Pulse's darker accent, because the Brick writes white
+  - The button takes Clinavy's darker accent, because the Brick writes white
     on it.
 */
 

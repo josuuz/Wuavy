@@ -8,7 +8,7 @@ import { billingReady, cancelSubscription, changeCard, describeError, MercadoPag
 import { getSession, getSubscription } from "./session";
 
 /*
-  Managing the subscription from inside the Pulse: cancelling it, and pointing
+  Managing the subscription from inside Clinavy: cancelling it, and pointing
   it at another card. Four rules shape every action here.
 
   - Which subscription is never asked of the browser. It comes from the
@@ -172,7 +172,7 @@ export async function replaceCard(input: { token: string }): Promise<Subscriptio
     return failed("Esta assinatura ainda não está no Mercado Pago. Assine para começar.");
   }
   if (subscription.status === "cancelled") {
-    return failed("Esta assinatura está cancelada. Assine de novo para voltar a usar o Pulse.");
+    return failed("Esta assinatura está cancelada. Assine de novo para voltar a usar o Clinavy.");
   }
   if (!billingReady()) return failed(BILLING_OFF);
 

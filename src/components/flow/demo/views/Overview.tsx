@@ -42,7 +42,7 @@ import { selection } from "./Opportunities";
   The first screen answers one question: what needs attention now? The
   clinic's numbers that ask for action, each opening where it is acted on;
   the queue of things to do today, each with the action that settles it;
-  where the money is waiting. Revenue the Pulse recovered is not tracked yet:
+  where the money is waiting. Revenue Clinavy recovered is not tracked yet:
   it says so, and the demo shows it only as a preview. No chart without an
   action next to it.
 */
@@ -53,14 +53,14 @@ const greeting = () => {
   return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
 };
 
-/** Questions the overview hands straight to "Pergunte ao Pulse", each with the icon of the screen it reads. */
+/** Questions the overview hands straight to "Pergunte ao Clinavy", each with the icon of the screen it reads. */
 const QUICK = ["O que preciso fazer hoje?", "Onde estou perdendo dinheiro?", "Quanto tenho de receita potencial?"];
 const QUICK_ICON = ["agenda", "vendas", "oportunidades"];
 
 /** Coming, and part of the plan: listed under the first steps, never as one of them. */
 const COMING = [
-  { name: "Automações inteligentes", text: "o Pulse prepara cada contato na hora certa, sozinho" },
-  { name: "Pulse AI", text: "perguntas livres sobre a clínica" },
+  { name: "Automações inteligentes", text: "o Clinavy prepara cada contato na hora certa, sozinho" },
+  { name: "Clinavy AI", text: "perguntas livres sobre a clínica" },
 ];
 
 interface Todo {
@@ -98,7 +98,7 @@ export function Overview() {
     {
       done: data.patients.length > 0,
       text: "Adicionar o primeiro paciente",
-      why: "Com o último atendimento de cada um, o Pulse já calcula quem precisa retornar.",
+      why: "Com o último atendimento de cada um, o Clinavy já calcula quem precisa retornar.",
       view: "pacientes",
     },
     {
@@ -116,7 +116,7 @@ export function Overview() {
     {
       done: data.products.length > 0,
       text: "Cadastrar o estoque",
-      why: "O Pulse avisa o que está acabando e o que vence, e dá baixa a cada atendimento finalizado.",
+      why: "O Clinavy avisa o que está acabando e o que vence, e dá baixa a cada atendimento finalizado.",
       view: "estoque",
     },
   ];
@@ -272,7 +272,7 @@ export function Overview() {
   const checklist = (
     <section className={styles.panel} aria-labelledby="prepare">
       <h2 id="prepare" className={styles.label}>
-        Prepare seu Pulse <span>{setup.filter((s) => s.done).length} de {setup.length}</span>
+        Prepare seu Clinavy <span>{setup.filter((s) => s.done).length} de {setup.length}</span>
       </h2>
       <ol className={styles.setup}>
         {setup.map((step) => (
@@ -294,7 +294,7 @@ export function Overview() {
           </li>
         ))}
       </ol>
-      <ul className={styles.soonList} aria-label="Em breve no Pulse">
+      <ul className={styles.soonList} aria-label="Em breve no Clinavy">
         {COMING.map((item) => (
           <li key={item.name}>
             <Soon />
@@ -309,11 +309,11 @@ export function Overview() {
     return (
       <div className={styles.page}>
         <h1 className={styles.greet}>
-          {hello}. <span>{can.admin ? "Seu Pulse está ativo. Vamos prepará-lo para a clínica." : "O Pulse da clínica está ativo."}</span>
+          {hello}. <span>{can.admin ? "Seu Clinavy está ativo. Vamos prepará-lo para a clínica." : "O Clinavy da clínica está ativo."}</span>
         </h1>
         {can.admin ? checklist : null}
         <p className={styles.fine}>
-          Conforme a clínica usa o Pulse, esta tela passa a mostrar o que precisa de atenção, as oportunidades e quanto cada
+          Conforme a clínica usa o Clinavy, esta tela passa a mostrar o que precisa de atenção, as oportunidades e quanto cada
           uma vale.
         </p>
       </div>
@@ -343,7 +343,7 @@ export function Overview() {
         <div className={styles.askStrip}>
           <p className={styles.askStripLabel}>
             <span className="pulse-dot" aria-hidden="true" />
-            Pergunte ao Pulse
+            Pergunte ao Clinavy
           </p>
           {(can.sales ? QUICK : QUICK.slice(0, 1)).map((q, i) => (
             <button key={q} type="button" className={styles.chipButton} onClick={() => ask(q)}>
@@ -369,12 +369,12 @@ export function Overview() {
           <div className={styles.pulseCardBody}>
             <span className={styles.pulseBadge}>Assistente da clínica</span>
             <h2 id="pulse-card" className={styles.pulseCardTitle}>
-              Olá! Sou o Pulse.
+              Olá! Sou o Clinavy.
             </h2>
             <p className={styles.fine}>Escolha uma pergunta e eu calculo a resposta com os dados {live ? "da clínica" : "da demo"}.</p>
           </div>
           <button type="button" className={styles.pulseAsk} onClick={() => ask()}>
-            Pergunte ao Pulse
+            Pergunte ao Clinavy
             <span className={styles.pulseSend} aria-hidden="true">
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 10h11M11 5.5 15.5 10 11 14.5" />
@@ -526,7 +526,7 @@ export function Overview() {
 
       {can.sales ? <section className={styles.foundBlock} aria-labelledby="encontradas">
         <h2 id="encontradas" className={styles.label}>
-          Oportunidades encontradas pelo Pulse {potential ? <span>{brl(potential)} em potencial</span> : null}
+          Oportunidades encontradas pelo Clinavy {potential ? <span>{brl(potential)} em potencial</span> : null}
         </h2>
         {found.length ? (
           <ol className={styles.found}>
@@ -555,7 +555,7 @@ export function Overview() {
         ) : (
           <p className={styles.fine}>
             {live && data.patients.length === 0
-              ? "Conforme a clínica usa o Pulse, aparecem aqui os retornos, orçamentos parados, horários vagos e produtos perto da validade."
+              ? "Conforme a clínica usa o Clinavy, aparecem aqui os retornos, orçamentos parados, horários vagos e produtos perto da validade."
               : "Nenhuma oportunidade aberta agora."}
           </p>
         )}
@@ -564,12 +564,12 @@ export function Overview() {
       {can.finance ? <section id="valor" className={styles.value} aria-labelledby="valor-titulo">
         <h2 id="valor-titulo" className={styles.valueTitle}>
           <span className="pulse-dot" aria-hidden="true" />
-          Receita recuperada pelo Pulse <Soon />
+          Receita recuperada pelo Clinavy <Soon />
         </h2>
         {live ? (
           <p className={styles.lead}>
             O rastreamento de receita recuperada está em desenvolvimento: ele vai mostrar quanto voltou de cada oportunidade
-            trabalhada. Até lá, o Pulse mostra só a receita potencial, o que está ao alcance:{" "}
+            trabalhada. Até lá, o Clinavy mostra só a receita potencial, o que está ao alcance:{" "}
             <strong>{brl(potential)}</strong> nas oportunidades abertas agora.
           </p>
         ) : (
@@ -602,7 +602,7 @@ export function Overview() {
             </dl>
             {value.revenue ? (
               <p className={styles.roi}>
-                O Pulse custa {brl(PRICE)} por mês e, neste exemplo, ajudou a recuperar {brl(value.revenue)}
+                O Clinavy custa {brl(PRICE)} por mês e, neste exemplo, ajudou a recuperar {brl(value.revenue)}
                 {multiple >= 1 ? (
                   <>
                     : <strong>{multiple}× o valor da mensalidade</strong>.
@@ -613,7 +613,7 @@ export function Overview() {
               </p>
             ) : null}
             <p className={styles.fine}>
-              Prévia com dados fictícios: é assim que o Pulse vai mostrar a receita recuperada quando o rastreamento estiver
+              Prévia com dados fictícios: é assim que o Clinavy vai mostrar a receita recuperada quando o rastreamento estiver
               disponível.
             </p>
           </>
@@ -668,7 +668,7 @@ export function Overview() {
           </ul>
           <p className={styles.fine}>
             Calculado pela agenda e pelo preço de cada procedimento. Contas a receber e inadimplência entram quando os
-            pagamentos forem registrados no Pulse.
+            pagamentos forem registrados no Clinavy.
           </p>
         </section>
       </div> : null}

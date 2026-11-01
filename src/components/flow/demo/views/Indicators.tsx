@@ -18,9 +18,9 @@ import { useFlow } from "../store";
 import styles from "../ui.module.css";
 
 /*
-  Indicadores, inside Visão geral: five numbers first, then what the Pulse
+  Indicadores, inside Visão geral: five numbers first, then what Clinavy
   reads in them, then four small charts. One period for all of it, picked
-  above. Each chart is one series in the Pulse's Signal, its value on the
+  above. Each chart is one series in Clinavy's Signal, its value on the
   tallest bar and on hover; the numbers behind each bar are in its label.
 */
 
@@ -142,7 +142,7 @@ export function Indicators() {
       {read.length ? (
         <section className={styles.readings} aria-labelledby="leitura">
           <h2 id="leitura" className={styles.label}>
-            O que o Pulse leu no período
+            O que o Clinavy leu no período
           </h2>
           <ol>
             {read.map((i) => (

@@ -1,5 +1,5 @@
 /*
-  Formatting for the Pulse. Every date is shown relative to the data's own
+  Formatting for Clinavy. Every date is shown relative to the data's own
   `now`, never the viewer's clock, so the server and the browser always
   print the same thing.
 */

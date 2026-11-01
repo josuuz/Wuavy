@@ -1,5 +1,5 @@
 /*
-  Testes de integração do checkout hospedado do Pulse (subscribe()/check(),
+  Testes de integração do checkout hospedado do Clinavy (subscribe()/check(),
   claimSubscriptionCreation/persistSubscriptionId/blockSubscriptionCreation/
   recordSubscriptionRefusal) — contra o código REAL, não uma reimplementação.
   Mesmo ambiente das Cobranças (tests/billing-integration.test.mjs): Supabase
@@ -32,7 +32,7 @@ process.env.NEXT_PUBLIC_SITE_URL = "https://teste.example.com";
 const { FakeAdmin, setFakeAdminClient } = await import("./helpers/fake-admin.mjs");
 const { setFakeSession, setFakeSubscription } = await import("./helpers/fake-session.mjs");
 const billing = await import("../src/lib/flow/billing.ts");
-const actions = await import("../src/app/(app)/pulse/assinar/actions.ts");
+const actions = await import("../src/app/(app)/clinavy/assinar/actions.ts");
 
 const USER = { user: { id: "user-1", email: "cliente@example.com" }, member: null };
 const initPointFor = (id) => `https://www.mercadopago.com/subscriptions/checkout?preapproval_id=${id}`;

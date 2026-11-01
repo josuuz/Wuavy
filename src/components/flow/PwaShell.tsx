@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 
 /*
-  What makes the Pulse behave like an installed app, in one place.
+  What makes Clinavy behave like an installed app, in one place.
 
-  The worker (public/sw.js) is registered only for /pulse/, so installing the
+  The worker (public/sw.js) is registered only for /clinavy/, so installing the
   app never captures the public site, and it stores nothing (see the file).
-  The status bar follows the Pulse's theme: the manifest can only name one
+  The status bar follows Clinavy's theme: the manifest can only name one
   colour, and the theme is a choice saved in the browser, so the meta tag is
   kept in step with the attribute the toggle writes on <html>.
 */
@@ -34,8 +34,8 @@ export function PwaShell() {
     }
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js", { scope: "/pulse/" }).catch(() => {
-        // No worker: the Pulse still works, it just cannot be installed from Chrome.
+      navigator.serviceWorker.register("/sw.js", { scope: "/clinavy/" }).catch(() => {
+        // No worker: Clinavy still works, it just cannot be installed from Chrome.
       });
     }
 

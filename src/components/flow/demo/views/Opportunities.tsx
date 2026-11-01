@@ -31,19 +31,19 @@ import styles from "../ui.module.css";
 import { BookingForm, type Draft } from "./Schedule";
 
 /*
-  The Pulse's opportunity engine: every front where money is waiting, what
-  it is worth, who the Pulse picked to start with, and the action it
-  recommends. Nothing goes out on its own: the Pulse identifies, recommends
+  Clinavy's opportunity engine: every front where money is waiting, what
+  it is worth, who Clinavy picked to start with, and the action it
+  recommends. Nothing goes out on its own: Clinavy identifies, recommends
   and prepares the message; a person reviews it and sends it from the
   clinic's WhatsApp, then books or records the contact. That is what settles
   a front: the data changes, and the person leaves the list by themselves.
 */
 
 const SHOWN = 8;
-/** How many people the Pulse picks to start with, per front. */
+/** How many people Clinavy picks to start with, per front. */
 const PICK = 8;
 
-/** One person the Pulse picked, with the message it would send them and what settles it. */
+/** One person Clinavy picked, with the message it would send them and what settles it. */
 export interface Pick {
   id: string;
   name: string;
@@ -236,7 +236,7 @@ export function Opportunities() {
       <header className={styles.head}>
         <h1 className={styles.title}>Oportunidades</h1>
         <p className={styles.lead}>
-          O motor do Pulse cruza vendas, pacientes, agenda e estoque, calcula quanto vale cada frente e separa por onde
+          O motor do Clinavy cruza vendas, pacientes, agenda e estoque, calcula quanto vale cada frente e separa por onde
           começar. Ele prepara cada mensagem; você revisa e envia pelo WhatsApp da clínica.
         </p>
       </header>
@@ -312,7 +312,7 @@ function Front({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggle:
           </div>
 
           <div className={styles.suggestion}>
-            <p className={styles.label}>Sugestão do Pulse</p>
+            <p className={styles.label}>Sugestão do Clinavy</p>
             <p>{copy.suggestion}</p>
             <Approval step={step} />
 
@@ -322,7 +322,7 @@ function Front({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggle:
               </button>
             ) : !prepared ? (
               <>
-                <ul className={styles.picks} aria-label="Quem o Pulse selecionou">
+                <ul className={styles.picks} aria-label="Quem o Clinavy selecionou">
                   {picks.map((p) => (
                     <li key={p.id}>
                       <label>
@@ -438,7 +438,7 @@ function Settle({ pick, onBook }: { pick: Pick; onBook: (draft: Draft) => void }
   );
 }
 
-/** A lot near its date, read as the Pulse reads it: the product, the procedures, the people, what it is worth. */
+/** A lot near its date, read as Clinavy reads it: the product, the procedures, the people, what it is worth. */
 export function ExpiryChain({ x, data }: { x: ExpiryOpportunity; data: FlowData }) {
   return (
     <ol className={styles.chain}>
@@ -451,12 +451,12 @@ export function ExpiryChain({ x, data }: { x: ExpiryOpportunity; data: FlowData 
         </span>
       </li>
       <li>
-        <span className={styles.label}>Pulse identifica</span>
+        <span className={styles.label}>Clinavy identifica</span>
         <strong>{x.procedures.map((p) => p.name).join(", ") || "Nenhum procedimento usa"}</strong>
         <span>procedimentos que usam o produto</span>
       </li>
       <li>
-        <span className={styles.label}>Pulse cruza</span>
+        <span className={styles.label}>Clinavy cruza</span>
         <strong>{plural(x.patients.length, "paciente compatível", "pacientes compatíveis")}</strong>
         <span>{x.patients.slice(0, 3).map((p) => p.name).join(", ") || "ninguém ainda"}</span>
       </li>

@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import styles from "./Crown.module.css";
 
 /*
-  The Pulse's crown: the mark of the subscription, wherever "Assinar" is
+  Clinavy's crown: the mark of the subscription, wherever "Assinar" is
   offered. Fine strokes in currentColor (dark on the orange button, champagne
   in the dialog), three points with a jewel each. On hover or focus of the
   control around it, it lifts a little and a small spark catches the light.

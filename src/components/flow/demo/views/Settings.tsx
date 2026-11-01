@@ -50,7 +50,7 @@ export function Settings() {
         <header className={styles.head}>
           <h1 className={styles.title}>Configurações</h1>
         </header>
-        <Intro title="Na demo">As configurações ficam no Pulse da clínica: dados, usuário, plano e privacidade.</Intro>
+        <Intro title="Na demo">As configurações ficam no Clinavy da clínica: dados, usuário, plano e privacidade.</Intro>
       </div>
     );
   }
@@ -86,7 +86,7 @@ function ClinicSettings() {
   const locked = !owner || !access.canEdit;
   const guide = useGuide();
   const guided = guide.active && !guide.saved.minimized && guide.current?.id === "clinica";
-  // The Pulse's guide points at each field the first step asks for: still empty, or already done.
+  // Clinavy's guide points at each field the first step asks for: still empty, or already done.
   const checklist = clinicChecklist(org);
   const mark = (key: ClinicField) =>
     guided ? (checklist.find((f) => f.key === key)?.filled ? "ok" : "todo") : undefined;
@@ -204,7 +204,7 @@ function ClinicSettings() {
               ))}
             </div>
           </div>
-          <p className={styles.fine}>Os horários e os dias definem a grade da agenda e os horários vagos que o Pulse procura.</p>
+          <p className={styles.fine}>Os horários e os dias definem a grade da agenda e os horários vagos que o Clinavy procura.</p>
         </fieldset>
         <FormError error={problem ?? error} />
         {saved ? (
@@ -322,7 +322,7 @@ function PlanSettings() {
         Plano
       </h2>
       <div className={styles.settingsRow}>
-        <strong>Wuavy Pulse</strong>
+        <strong>Clinavy</strong>
         <span>
           {brl(PRICE)}
           {PLAN.manage.per}
@@ -339,7 +339,7 @@ function PlanSettings() {
           <span>{next}</span>
         </div>
       ) : null}
-      {paidUntil ? <p className={styles.fine}>O Pulse funciona normalmente até {paidUntil}, o fim do mês já pago.</p> : null}
+      {paidUntil ? <p className={styles.fine}>O Clinavy funciona normalmente até {paidUntil}, o fim do mês já pago.</p> : null}
       {notice ? <p className={styles.fine}>{notice.text}</p> : null}
       <ul className={styles.soonList} aria-label="Em breve no plano">
         {PLAN.subscribe.coming.map((item) => (
@@ -543,7 +543,7 @@ function PrivacySettings() {
         <li>
           <span>Excluir a conta e os dados</span>
           <a
-            href={contactHref(site.contact.primary, "excluir a conta do Wuavy Pulse")}
+            href={contactHref(site.contact.primary, "excluir a conta do Clinavy")}
             className={styles.textAction}
             target="_blank"
             rel="noopener noreferrer"
@@ -557,7 +557,7 @@ function PrivacySettings() {
 }
 
 /*
-  How to put the Pulse on the phone's home screen. Only shown in a browser:
+  How to put Clinavy on the phone's home screen. Only shown in a browser:
   inside the installed app there is nothing left to do. iOS has no install
   prompt a site may call, so both paths are written out as steps.
 */
@@ -586,13 +586,13 @@ function InstallSettings() {
         {how === "ios"
           ? "No iPhone: toque em Compartilhar, na barra do Safari, e escolha “Adicionar à Tela de Início”."
           : "No Android: abra o menu do navegador e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”."}{" "}
-        O Pulse passa a abrir como aplicativo, em tela cheia, sem a barra do navegador.
+        O Clinavy passa a abrir como aplicativo, em tela cheia, sem a barra do navegador.
       </p>
     </section>
   );
 }
 
-/** The first-run guide, again: the Pulse walks the first steps from the start. */
+/** The first-run guide, again: Clinavy walks the first steps from the start. */
 function HelpSettings() {
   const { restart } = useGuide();
   return (

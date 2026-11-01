@@ -17,12 +17,12 @@ export const metadata: Metadata = {
 };
 
 /*
-  O painel financeiro da agência: Wuavy Pulse, manutenção de sites e cobranças
+  O painel financeiro da agência: Clinavy, manutenção de sites e cobranças
   avulsas num lugar só, somados sem se misturarem.
 
   A tela repete, em palavras, a regra que financial-summary.ts aplica nas
   contas: "recebido" é o que tem registro de pagamento sustentando, "previsto"
-  é projeção de assinatura. O Pulse aparece só do lado da projeção, porque não
+  é projeção de assinatura. O Clinavy aparece só do lado da projeção, porque não
   guarda histórico de pagamento nenhum — e a tela diz isso, em vez de mostrar
   um zero que pareceria "nada entrou".
 
@@ -79,7 +79,7 @@ export default async function FinanceiroPage() {
             <h2 className="type-chapter">Resumo consolidado</h2>
           </div>
           <p className={`type-body ${styles.empty}`}>
-            Nenhuma assinatura, cobrança ou pagamento registrado ainda nos três produtos. Quando a primeira clínica assinar o Pulse, um
+            Nenhuma assinatura, cobrança ou pagamento registrado ainda nos três produtos. Quando a primeira clínica assinar o Clinavy, um
             cliente contratar manutenção ou uma cobrança avulsa for paga, os números aparecem aqui.
           </p>
         </section>
@@ -99,7 +99,7 @@ export default async function FinanceiroPage() {
             <div className={styles.figure}>
               <span className="type-micro">Do previsto, estimado</span>
               <span className={styles.figureValue}>{brl(consolidated.estimatedMrrCents)}</span>
-              <span className={`type-micro ${styles.muted}`}>Pulse, sem valor gravado</span>
+              <span className={`type-micro ${styles.muted}`}>Clinavy, sem valor gravado</span>
             </div>
             <div className={styles.figure}>
               <span className="type-micro">Aguardando crédito</span>
@@ -110,14 +110,14 @@ export default async function FinanceiroPage() {
 
           <section className={styles.block}>
             <div className={styles.blockHead}>
-              <h2 className="type-chapter">Wuavy Pulse</h2>
+              <h2 className="type-chapter">Clinavy</h2>
               <span className={`type-micro ${styles.muted}`}>{pulse.subscribers} cobrando</span>
             </div>
 
             <div className={styles.notice}>
               <span className="type-micro">Projeção estimada, não receita</span>
               <span className={`type-body ${styles.hint}`}>
-                O Pulse não guarda histórico de pagamentos: a assinatura registra só o estado atual. Não há como esta tela dizer quanto o Pulse
+                O Clinavy não guarda histórico de pagamentos: a assinatura registra só o estado atual. Não há como esta tela dizer quanto o Clinavy
                 já recebeu — e ela não tenta. A previsão de {brl(pulse.estimatedMrrCents)} por mês é estimativa:{" "}
                 {pulse.billedSubscribers} {pulse.billedSubscribers === 1 ? "assinatura" : "assinaturas"} no Mercado Pago ×{" "}
                 {brl(pulse.referencePriceCents)} como referência provisória. O valor que cada clínica paga de fato vive no Mercado Pago, e uma
@@ -339,7 +339,7 @@ export default async function FinanceiroPage() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td className={styles.name}>Wuavy Pulse</td>
+                    <td className={styles.name}>Clinavy</td>
                     <td className={styles.muted}>sem histórico</td>
                     <td>{brl(pulse.estimatedMrrCents)} (estimado)</td>
                   </tr>

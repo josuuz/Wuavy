@@ -1,4 +1,4 @@
-// What decides whether the Pulse may charge anyone: flow/mercadopago-environment.ts,
+// What decides whether Clinavy may charge anyone: flow/mercadopago-environment.ts,
 // which src/lib/flow/billing.ts asks before every call to Mercado Pago. The
 // key's format proves nothing (a test account's token also starts with
 // APP_USR-), so the environment is declared and checked against where the
@@ -137,9 +137,9 @@ test("the checkout keeps every refusal the environment gives", () => {
 
 // ── The maintenance billing, which shares decide() and has no public key ─────
 
-test("the maintenance setup is untouched by a Pulse public key", () => {
+test("the maintenance setup is untouched by a Clinavy public key", () => {
   // Maintenance asks decide(), never checkoutDecision(): a TEST- key set for
-  // the Pulse's card form must not close its subscriptions.
+  // Clinavy's card form must not close its subscriptions.
   const key = { NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY: "TEST-00000000-0000-0000-0000-000000000000" };
   assert.deepEqual(decide({ ...production, ...key }), { allowed: true, mode: "live" });
   assert.deepEqual(decide({ ...preview, ...key }), { allowed: true, mode: "test" });

@@ -23,7 +23,7 @@ import styles from "../ui.module.css";
 type Step = "choose" | "clinic" | "personal" | "app" | "messenger" | "ready";
 
 const PRIVACY =
-  "O Pulse recebe só as mensagens que a Meta entrega oficialmente para empresas. Ele nunca acessa contatos, fotos, chamadas ou outras conversas do celular.";
+  "O Clinavy recebe só as mensagens que a Meta entrega oficialmente para empresas. Ele nunca acessa contatos, fotos, chamadas ou outras conversas do celular.";
 
 export function WhatsAppSettings() {
   const { data, access } = useFlow();
@@ -70,7 +70,7 @@ export function WhatsAppSettings() {
             {connection.test ? <Soon>Número de teste</Soon> : null}
           </div>
           {connection.businessApp ? (
-            <p className={styles.fine}>Você continua usando o WhatsApp Business no celular. As conversas também chegam ao Pulse.</p>
+            <p className={styles.fine}>Você continua usando o WhatsApp Business no celular. As conversas também chegam ao Clinavy.</p>
           ) : null}
           <FormError error={error} />
           {connection.status === "error" && canConnect ? (
@@ -86,7 +86,7 @@ export function WhatsAppSettings() {
                 {asking ? (
                   <>
                     <p className={styles.fine}>
-                      Desconectar o WhatsApp? O Pulse para de enviar e receber por ele. Pacientes, contatos, conversas, agenda e
+                      Desconectar o WhatsApp? O Clinavy para de enviar e receber por ele. Pacientes, contatos, conversas, agenda e
                       histórico continuam aqui.
                     </p>
                     <button
@@ -138,7 +138,7 @@ export function WhatsAppSettings() {
 
       {!connection && !step ? (
         <>
-          <p>Conecte o WhatsApp usado pela clínica para centralizar suas conversas no Pulse.</p>
+          <p>Conecte o WhatsApp usado pela clínica para centralizar suas conversas no Clinavy.</p>
           {canConnect ? (
             <div className={styles.actions}>
               <button type="button" className={styles.primary} onClick={start}>
@@ -151,7 +151,7 @@ export function WhatsAppSettings() {
             </p>
           )}
           <p className={styles.fine}>
-            Continue atendendo normalmente. O Pulse organiza as conversas e conecta cada contato à operação da clínica.
+            Continue atendendo normalmente. O Clinavy organiza as conversas e conecta cada contato à operação da clínica.
           </p>
         </>
       ) : null}
@@ -239,7 +239,7 @@ function ConnectSteps({ state, step, setStep, choice, setChoice, onCancel, onDon
     return (
       <>
         <p>
-          Você pode continuar usando seu número atual. As conversas comerciais conectadas poderão ser organizadas pelo Pulse.
+          Você pode continuar usando seu número atual. As conversas comerciais conectadas poderão ser organizadas pelo Clinavy.
           Para maior privacidade, recomendamos um número exclusivo da clínica no futuro.
         </p>
         <div className={styles.actions}>
@@ -285,7 +285,7 @@ function ConnectSteps({ state, step, setStep, choice, setChoice, onCancel, onDon
     return (
       <>
         <p>
-          Para conectar este número ao Pulse, será necessário configurá-lo para uso comercial no WhatsApp. O caminho mais simples
+          Para conectar este número ao Clinavy, será necessário configurá-lo para uso comercial no WhatsApp. O caminho mais simples
           é instalar o WhatsApp Business no celular e passar este número para ele. Você poderá continuar usando o mesmo número
           quando o fluxo oficial permitir.
         </p>
@@ -317,7 +317,7 @@ function TestConnect({ choice, onCancel, onDone }: { choice: NumberChoice; onCan
   return (
     <>
       <p>
-        <strong>Fase de teste.</strong> O Pulse vai usar o número de teste oficial da Meta para provar que receber, salvar e
+        <strong>Fase de teste.</strong> O Clinavy vai usar o número de teste oficial da Meta para provar que receber, salvar e
         responder funcionam. O número da clínica será conectado depois.
       </p>
       <p className={styles.fine}>{PRIVACY}</p>
@@ -474,7 +474,7 @@ function MetaConnect({
   return (
     <>
       <p>
-        Você vai entrar na sua conta da Meta, escolher a empresa e confirmar o número. O Pulse recebe a autorização
+        Você vai entrar na sua conta da Meta, escolher a empresa e confirmar o número. O Clinavy recebe a autorização
         automaticamente: não é preciso copiar nenhum código.
       </p>
       <p className={styles.fine}>{PRIVACY}</p>

@@ -12,7 +12,7 @@ import styles from "./interactive.module.css";
 
   A list beside one large number. The seven is counted once, here, big and
   light, and the list keeps to a line per front: its tag and its name. What
-  the Pulse does with it, and one fictitious example, open on demand, one at a
+  Clinavy does with it, and one fictitious example, open on demand, one at a
   time. The first is open on arrival so the pattern is plain without a click.
 
   Buttons with aria-expanded rather than <details>, because only one may be

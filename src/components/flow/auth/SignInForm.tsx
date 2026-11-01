@@ -16,14 +16,14 @@ import { authMessage } from "./messages";
   where the person came from go with the account (user metadata) and the
   database keeps them as the lead's profile (migration 0005). Supabase Auth
   runs in the browser with the publishable key; the session lands in cookies.
-  A reset link opens /pulse/redefinir-senha.
+  A reset link opens /clinavy/redefinir-senha.
 */
 
 /*
   Where the emails send people back. Still the /flow addresses: they are the
   ones on Supabase's list of allowed redirects, and next.config sends each to
-  its /pulse twin with the code intact. Once /pulse/** is on that list, these
-  can name /pulse directly.
+  its /clinavy twin with the code intact. Once /clinavy/** is on that list, these
+  can name /clinavy directly.
 */
 const EMAIL_RETURN = { confirm: "/flow/auth/callback", reset: "/flow/redefinir-senha" };
 
@@ -83,7 +83,7 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, intent,
         setPending(false);
         return;
       }
-      router.replace(then ?? "/pulse/app");
+      router.replace(then ?? "/clinavy/app");
       router.refresh();
       return;
     }
@@ -105,8 +105,8 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, intent,
       return;
     }
     if (data.session) {
-      // The Pulse sends a new account where it belongs: the demo, until it subscribes.
-      router.replace(then ?? "/pulse/app");
+      // Clinavy sends a new account where it belongs: the demo, until it subscribes.
+      router.replace(then ?? "/clinavy/app");
       router.refresh();
       return;
     }
@@ -127,7 +127,7 @@ export function SignInForm({ linkFailed, initialMode = "entrar", notice, intent,
         ) : (
           <p>
             Enviamos um link para <strong>{sent.to}</strong>. Abra-o neste navegador para{" "}
-            {intent === "assinar" ? "continuar a assinatura" : "acessar o Pulse"}.
+            {intent === "assinar" ? "continuar a assinatura" : "acessar o Clinavy"}.
           </p>
         )}
       </div>

@@ -28,7 +28,7 @@ export function organizationJsonLd(description: string) {
 }
 
 /*
-  Wuavy Pulse as a product. No price and no rating: the public page states
+  Clinavy as a product. No price and no rating: the public page states
   neither, and schema.org data that the page cannot back is what gets
   structured data penalised.
 */

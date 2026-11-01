@@ -209,7 +209,7 @@
   outline-offset: 1px;
 }
 
-/* ── Forms (the real Pulse: create and edit records) ── */
+/* ── Forms (the real Clinavy: create and edit records) ── */
 .form {
   display: grid;
   gap: 1rem;
@@ -268,7 +268,7 @@
   box-shadow: var(--pulse-shadow);
 }
 
-/* ── Value: what the Pulse found and brought back, the trial's case ── */
+/* ── Value: what Clinavy found and brought back, the trial's case ── */
 .value {
   display: grid;
   gap: 1rem;
@@ -360,7 +360,7 @@
   }
 }
 
-/* What the Pulse costs against what it brought back, said in one sentence. */
+/* What Clinavy costs against what it brought back, said in one sentence. */
 .roi {
   max-width: 62ch;
   font-size: 1.0625rem;
@@ -1185,7 +1185,7 @@
   color: var(--text-2);
 }
 
-/* ── A message the Pulse prepared and nobody sent ── */
+/* ── A message Clinavy prepared and nobody sent ── */
 .prepared {
   display: grid;
   gap: 0.6rem;
@@ -1224,7 +1224,7 @@
   }
 }
 
-/* ── Ask the Pulse ── */
+/* ── Ask Clinavy ── */
 .askPulse {
   width: 2.25rem;
   height: auto;
@@ -1256,7 +1256,7 @@
   background: var(--pulse-accent-soft);
 }
 
-/* The Pulse's answer: a soft card, the figures inside it as rows. */
+/* Clinavy's answer: a soft card, the figures inside it as rows. */
 .answer {
   display: grid;
   gap: 0.6rem;
@@ -1306,7 +1306,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The Pulse at work: its sign sends rings out while the words breathe. */
+/* Clinavy at work: its sign sends rings out while the words breathe. */
 .thinking {
   display: flex;
   align-items: center;
@@ -1805,7 +1805,7 @@
   color: var(--pulse-on-accent);
 }
 
-/* ── Overview: today, what needs attention, what the Pulse found ── */
+/* ── Overview: today, what needs attention, what Clinavy found ── */
 .todayLine {
   font-size: 1.125rem;
   font-weight: 640;
@@ -1933,7 +1933,7 @@
   color: var(--text-2);
 }
 
-/* ── Oportunidades: the front's line, who the Pulse picked, the approval ── */
+/* ── Oportunidades: the front's line, who Clinavy picked, the approval ── */
 .oppMain {
   display: grid;
   gap: 0.3rem;
@@ -1987,7 +1987,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Patients: each of the Pulse's lists says how many are in it ── */
+/* ── Patients: each of Clinavy's lists says how many are in it ── */
 .chipCount {
   margin-left: 0.4em;
   font-variant-numeric: tabular-nums;
@@ -2104,7 +2104,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Ask the Pulse: the questions it answers, before the first one ── */
+/* ── Ask Clinavy: the questions it answers, before the first one ── */
 .askStart {
   display: grid;
   gap: 0.9rem;
@@ -3049,7 +3049,7 @@
   height: 1.15rem;
 }
 
-/* ── Visão geral: the greeting and the questions, the Pulse beside them ── */
+/* ── Visão geral: the greeting and the questions, Clinavy beside them ── */
 .overviewTop {
   display: grid;
   gap: 1.25rem;
@@ -3102,7 +3102,7 @@
   line-height: 1.15;
 }
 
-/* Opens "Pergunte ao Pulse": shaped like the field it will be with Pulse AI, honest that today it is a list of questions. */
+/* Opens "Pergunte ao Clinavy": shaped like the field it will be with Clinavy AI, honest that today it is a list of questions. */
 .pulseAsk {
   grid-column: 1 / -1;
   display: flex;
@@ -3284,7 +3284,7 @@
   }
 }
 
-/* The Pulse's guide highlights the panel to fill: a Signal edge, nothing louder. */
+/* Clinavy's guide highlights the panel to fill: a Signal edge, nothing louder. */
 .panel[data-guide] {
   border-color: var(--pulse-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--pulse-accent) 18%, transparent);
@@ -3781,7 +3781,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Visão geral: the month in one line, and what the Pulse read in it. */
+/* Visão geral: the month in one line, and what Clinavy read in it. */
 .monthStrip {
   display: grid;
   gap: 0.5rem;

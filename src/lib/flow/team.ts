@@ -18,7 +18,7 @@ import { Invalid, describe, id, oneOf, required, text, write, type Result } from
 
   How someone joins:
   - an e-mail with no account: the account is created, invited, and the
-    owner gets a link to send (WhatsApp or e-mail). It opens /pulse/convite,
+    owner gets a link to send (WhatsApp or e-mail). It opens /clinavy/convite,
     where the person sets their password and joins;
   - an account nobody has used yet: the same, with a new link;
   - an account already in use (say, someone who tried the demo): no link,
@@ -58,7 +58,7 @@ function admin() {
 }
 
 /**
- * A one-time link that signs the invited person in on /pulse/convite, made
+ * A one-time link that signs the invited person in on /clinavy/convite, made
  * without sending any e-mail (the owner sends it). "invite" creates the
  * account when there is none, or renews an account still unconfirmed; an
  * account confirmed but never used gets a sign-in link instead.
@@ -76,7 +76,7 @@ async function joinLink(email: string, name?: string) {
     throw new Invalid("Não foi possível gerar o link de convite. Tente de novo.");
   }
   const params = new URLSearchParams({ token_hash: data.properties.hashed_token, type });
-  return { userId: data.user.id, link: `${await origin()}/pulse/convite?${params}` };
+  return { userId: data.user.id, link: `${await origin()}/clinavy/convite?${params}` };
 }
 
 /** Adds someone to the team, invited until they join. Returns the link to send them, when there is one. */
@@ -103,7 +103,7 @@ export async function inviteMember(form: FormData): Promise<InviteResult> {
       if (here?.status === "active") throw new Invalid("Essa pessoa já faz parte da equipe.");
       if (here?.status === "invited") throw new Invalid("Essa pessoa já foi convidada. Use “Gerar novo link” na lista da equipe.");
       if (here?.status === "disabled") throw new Invalid("Essa pessoa já fez parte da equipe. Reative o acesso dela na lista.");
-      if (memberships.some((m) => m.status !== "disabled")) throw new Invalid("Este e-mail já está na equipe de outra clínica do Pulse.");
+      if (memberships.some((m) => m.status !== "disabled")) throw new Invalid("Este e-mail já está na equipe de outra clínica do Clinavy.");
     }
 
     let userId = account?.id;
@@ -125,7 +125,7 @@ export async function inviteMember(form: FormData): Promise<InviteResult> {
       invited_by: who.userId,
       invited_at: new Date().toISOString(),
     });
-    if (inserted.error?.code === "23505") throw new Invalid("Este e-mail já está na equipe de outra clínica do Pulse.");
+    if (inserted.error?.code === "23505") throw new Invalid("Este e-mail já está na equipe de outra clínica do Clinavy.");
     return inserted.error;
   }, (can) => can.team);
   return result.error ? result : { link, existing };

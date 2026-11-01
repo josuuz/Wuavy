@@ -31,9 +31,9 @@ import { BookingForm } from "./Schedule";
 import { ChiefComplaint, ClinicalRecords } from "./ClinicalRecords";
 
 /*
-  Pacientes, the center of the Pulse: one record per person, from how they
+  Pacientes, the center of Clinavy: one record per person, from how they
   arrived to their next return. Commercial and operational only, never a
-  medical record. The list opens already sorted by what to do: the Pulse's
+  medical record. The list opens already sorted by what to do: Clinavy's
   filters say who needs a call and why, so nobody has to search for them.
 */
 
@@ -75,7 +75,7 @@ function stakeOf(d: FlowData, p: Patient, step: NextStep) {
   return returnValue(d, p);
 }
 
-/** The Pulse's lists, each already in the order to work through it. */
+/** Clinavy's lists, each already in the order to work through it. */
 function groupsOf(d: FlowData, steps: Map<string, NextStep>): Record<PatientFilter, Patient[]> {
   const step = (p: Patient) => steps.get(p.id)!;
   const missedAt = (p: Patient) => {
@@ -156,11 +156,11 @@ export function Patients() {
           }
         >
           Quem agenda vira paciente aqui, com a origem que veio de Vendas. Para quem já é cliente da clínica, use Novo paciente
-          e informe o último atendimento: o Pulse calcula o retorno e avisa quando chegar a hora.
+          e informe o último atendimento: o Clinavy calcula o retorno e avisa quando chegar a hora.
         </Intro>
       ) : (
         <>
-          <div className={styles.chips} role="group" aria-label="Listas do Pulse">
+          <div className={styles.chips} role="group" aria-label="Listas do Clinavy">
             {FILTERS.map((f) => (
               <button key={f.id} type="button" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
                 {f.label}
@@ -345,7 +345,7 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
           <p className={styles.nextText}>
             Em dia.{" "}
             {patient.nextReturnAt
-              ? `Próximo retorno previsto ${relDay(data.now, patient.nextReturnAt)}: o Pulse avisa quando chegar a hora.`
+              ? `Próximo retorno previsto ${relDay(data.now, patient.nextReturnAt)}: o Clinavy avisa quando chegar a hora.`
               : "Nada pendente."}
           </p>
         )}
@@ -534,7 +534,7 @@ function Record({ patient, onDone }: { patient: Patient; onDone: () => void }) {
 }
 
 /**
- * A patient's details. A visit from before the Pulse can come with them (or
+ * A patient's details. A visit from before Clinavy can come with them (or
  * be added later): with it, the last visit and the next return are known from
  * day one, and the return engine starts working at once.
  */
@@ -573,7 +573,7 @@ function PatientForm({ patient, onDone }: { patient?: Patient; onDone: () => voi
             </Field>
           </div>
           <p className={styles.fine}>
-            Um atendimento de antes do Pulse. Entra no histórico e o próximo retorno é calculado pelo intervalo do procedimento.
+            Um atendimento de antes do Clinavy. Entra no histórico e o próximo retorno é calculado pelo intervalo do procedimento.
             Não mexe no estoque.
           </p>
         </fieldset>

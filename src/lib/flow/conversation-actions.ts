@@ -91,13 +91,13 @@ async function conversationFor(db: Db, org: string, person: PersonRef): Promise<
       .maybeSingle();
     if (again.data) return again.data.id;
   }
-  console.error("Pulse: conversation", made.error);
+  console.error("Clinavy: conversation", made.error);
   throw new Invalid("Não foi possível abrir a conversa. Tente de novo.");
 }
 
 /**
  * Opens the conversation with someone: a contact or patient already in the
- * Pulse, or someone new. A new person is matched by phone first, so nobody is
+ * Clinavy, or someone new. A new person is matched by phone first, so nobody is
  * registered twice; otherwise they enter Vendas as a new contact.
  */
 export async function startConversation(form: FormData): Promise<StartResult> {

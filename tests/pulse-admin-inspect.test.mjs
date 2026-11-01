@@ -1,5 +1,5 @@
 /*
-  Regressão: /pulse/admin ("Mercado Pago answered 400" relatado em produção
+  Regressão: /clinavy/admin ("Mercado Pago answered 400" relatado em produção
   para uma assinatura sem nenhuma cobrança ainda). inspectSubscription
   (lib/flow/billing.ts) chamava /authorized_payments/search sem a mesma
   resiliência que syncStanding já tem para essa busca (chargesFetchFailed) —

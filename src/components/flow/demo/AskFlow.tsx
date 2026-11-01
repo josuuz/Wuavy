@@ -12,15 +12,15 @@ import { useFlow } from "./store";
 import styles from "./ui.module.css";
 
 /*
-  "Pergunte ao Pulse": the operation's assistant, the Pulse. Today, the questions
+  "Pergunte ao Clinavy": the operation's assistant, Clinavy. Today, the questions
   it can answer by calculation, each from the clinic's own data; free
-  questions wait for Pulse AI, shown here as coming, never faked. Any screen
+  questions wait for Clinavy AI, shown here as coming, never faked. Any screen
   can open it with a question already asked (the overview does). The
   assistant is swappable: point `assistant` at an API-backed FlowAssistant
   and nothing else changes.
 
   The conversation itself (AskConversation) lives in two places: this sheet,
-  over any screen, and Conversas, where the Pulse is the pinned internal thread.
+  over any screen, and Conversas, where Clinavy is the pinned internal thread.
 */
 
 const assistant: FlowAssistant = localAssistant;
@@ -35,9 +35,9 @@ interface AskConversationProps {
   question?: string;
   /** Called when a link inside an answer is followed (the sheet closes). */
   onNavigate?: () => void;
-  /** The Pulse's state as the conversation moves: thinking while calculating, a short joy when the answer lands. */
+  /** Clinavy's state as the conversation moves: thinking while calculating, a short joy when the answer lands. */
   onState?: (state: PulseState) => void;
-  /** "pane": inside Conversas, the answers carry the Pulse beside them, as messages. */
+  /** "pane": inside Conversas, the answers carry Clinavy beside them, as messages. */
   variant?: "sheet" | "pane";
 }
 
@@ -93,7 +93,7 @@ export function AskConversation({ question = "", onNavigate, onState, variant = 
             <p className={styles.askIntro}>
               Escolha uma pergunta. Eu leio vendas, pacientes, agenda e estoque da {live ? "clínica" : "demo"} e mostro onde agir.
             </p>
-            <ul className={styles.askList} aria-label="Perguntas que o Pulse responde">
+            <ul className={styles.askList} aria-label="Perguntas que o Clinavy responde">
               {SUGGESTED.map((q) => (
                 <li key={q}>
                   <button type="button" className={styles.askOption} onClick={() => ask(q)} disabled={busy}>
@@ -153,14 +153,14 @@ export function AskConversation({ question = "", onNavigate, onState, variant = 
 
       <div className={styles.askForm}>
         <label className="sr-only" htmlFor={pane ? "flow-ask-pane" : "flow-ask"}>
-          Pergunta livre (Pulse AI, em breve)
+          Pergunta livre (Clinavy AI, em breve)
         </label>
         <input id={pane ? "flow-ask-pane" : "flow-ask"} className={styles.input} disabled placeholder="Pergunte do seu jeito" />
-        <Soon>Pulse AI · Em breve</Soon>
+        <Soon>Clinavy AI · Em breve</Soon>
       </div>
       <p className={styles.fine}>
         Cada resposta é calculada na hora com os dados {live ? "da clínica" : "da demo"}, sem IA. Perguntas livres chegam com o
-        Pulse AI.
+        Clinavy AI.
       </p>
     </>
   );
@@ -172,7 +172,7 @@ export function AskFlow({ open, question, onClose }: { open: boolean; question: 
     <Sheet
       open={open}
       onClose={onClose}
-      title="Pergunte ao Pulse"
+      title="Pergunte ao Clinavy"
       kicker="Assistente da operação"
       icon={<Pulse className={styles.askPulse} state={state} greet={!question} />}
     >

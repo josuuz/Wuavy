@@ -101,7 +101,7 @@
   background: var(--pulse-accent-soft);
 }
 
-/* The Pulse, pinned above the people: the clinic's internal thread. */
+/* Clinavy, pinned above the people: the clinic's internal thread. */
 .pinned {
   padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--pulse-border-soft);
@@ -272,7 +272,7 @@
   cursor: pointer;
 }
 
-/* The Pulse's one word about this conversation. */
+/* Clinavy's one word about this conversation. */
 .signal {
   display: flex;
   flex-wrap: wrap;
@@ -659,7 +659,7 @@
     grid-template-columns: 20rem minmax(0, 1fr) 19rem;
   }
 
-  /* The Pulse has no person beside it: the chat takes the room. */
+  /* Clinavy has no person beside it: the chat takes the room. */
   .inbox[data-assistant] {
     grid-template-columns: 20rem minmax(0, 1fr);
   }

@@ -6,8 +6,8 @@ import { defaultLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
 /*
-  The 404 outside the public site (an unknown Pulse address), in pt-BR like
-  the Pulse. A missing site address gets (site)/[locale]/not-found instead, in
+  The 404 outside the public site (an unknown Clinavy address), in pt-BR like
+  Clinavy. A missing site address gets (site)/[locale]/not-found instead, in
   the visitor's language. Static: reading the cookie here would make every
   page dynamic.
 */

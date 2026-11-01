@@ -19,10 +19,10 @@ import { organizationJsonLd, shareImage } from "@/lib/seo";
   wear the same one:
 
   · (marketing) — the agency: the site header with its whole menu, the footer.
-  · (produto)   — PULSE: its own header and a short footer, so the agency's
+  · (produto)   — Clinavy: its own header and a short footer, so the agency's
                   services never compete with subscribing to the product.
 
-  Route groups do not appear in the address, so /pulse is still /pulse.
+  Route groups do not appear in the address, so /clinavy is still /clinavy.
 */
 
 export function generateStaticParams() {

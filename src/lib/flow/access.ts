@@ -1,7 +1,7 @@
 import type { BillingStatus } from "@/lib/mercadopago/notice";
 
 /*
-  What a clinic can do in the Pulse, decided here and nowhere else. Two
+  What a clinic can do in Clinavy, decided here and nowhere else. Two
   things set it:
 
   - the demo: fictitious data; every action is simulated in the browser and
@@ -10,7 +10,7 @@ import type { BillingStatus } from "@/lib/mercadopago/notice";
     (lib/flow/billing.ts): active; past_due, a late payment, which warns and
     does not lock; pending, a payment still being confirmed; cancelled.
 
-  Pending and cancelled make the Pulse read-only: every record still shows,
+  Pending and cancelled make Clinavy read-only: every record still shows,
   nothing can change and no data is deleted. The screens ask `canEdit` /
   `canReachOut`; the server's writes ask again (lib/flow/actions.ts), so the
   browser is never the only check.
@@ -42,11 +42,11 @@ export interface Access {
   subscriptionStatus: SubscriptionStatus | null;
   /** Records can be created, edited and deleted (in the demo, in memory only). */
   canEdit: boolean;
-  /** Effects outside the Pulse: send messages, run automations, export, integrations. */
+  /** Effects outside Clinavy: send messages, run automations, export, integrations. */
   canReachOut: boolean;
   /**
    * Cancelled, and the month already paid for runs to this date (ISO): the
-   * Pulse works until then. null whenever that is not the case.
+   * Clinavy works until then. null whenever that is not the case.
    */
   paidUntil: string | null;
   /** When Mercado Pago charges next, as it last said (ISO). null while there is nothing to charge. */
@@ -65,7 +65,7 @@ const FULL: Access = {
 
 export const DEMO_ACCESS: Access = { ...FULL, isDemoMode: true, canReachOut: false };
 
-/** The statuses that open the real Pulse: onboarding, writes, automations. */
+/** The statuses that open the real Clinavy: onboarding, writes, automations. */
 export const releases = (status: SubscriptionStatus | null | undefined) => status === "active" || status === "past_due";
 
 /** A status from the database, or null when the value is not one. */
@@ -107,7 +107,7 @@ export interface Standing {
 /**
  * Cancelled, and the month already paid for has not run out: the terms say a
  * cancellation stops the charges that follow, not the month already charged,
- * so the Pulse keeps working to that date. No date is nothing to honour.
+ * so Clinavy keeps working to that date. No date is nothing to honour.
  */
 export function paidThrough(subscription: Standing | null, now: Date = new Date()): string | null {
   if (subscription?.status !== "cancelled" || !subscription.current_period_end) return null;
@@ -139,7 +139,7 @@ export function clinicAccess(subscription: Standing | null, now: Date = new Date
   card, says so, and the status is written from its answer. But a webhook that
   was never configured, or was removed, fails silently in the one direction
   that costs money — a subscription cancelled at Mercado Pago would keep the
-  Pulse open forever, because nothing would ever come to say otherwise.
+  Clinavy open forever, because nothing would ever come to say otherwise.
 
   So the stored status has a shelf life. current_period_end is the date Mercado
   Pago said it would charge next; a few days past it with nothing new written
@@ -154,7 +154,7 @@ export const GRACE_DAYS = 3;
 
 /**
  * The stored status can no longer be taken at its word. Only for a status that
- * opens the Pulse: a pending or cancelled one already shows the least, and
+ * opens Clinavy: a pending or cancelled one already shows the least, and
  * re-reading it would change nothing. No date (a subscription that never
  * charged, a clinic from before subscriptions) is nothing to go on.
  */
@@ -167,5 +167,5 @@ export function needsReread(
   return Number.isFinite(due) && now.getTime() - due > GRACE_DAYS * 86_400_000;
 }
 
-/** What a write answers when the Pulse is read-only. */
-export const READ_ONLY_MESSAGE = "A assinatura do Pulse não está ativa. Assine para voltar a criar e editar.";
+/** What a write answers when Clinavy is read-only. */
+export const READ_ONLY_MESSAGE = "A assinatura do Clinavy não está ativa. Assine para voltar a criar e editar.";

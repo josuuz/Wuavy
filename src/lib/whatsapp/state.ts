@@ -11,7 +11,7 @@ type Session = NonNullable<Awaited<ReturnType<typeof getSession>>>;
  * The clinic's WhatsApp as its screens may know it. Only the front office
  * (owner and reception) reads it, under row-level security; the owner also
  * learns how to connect. Before migration 0012 there is nothing to read: the
- * Pulse shows no WhatsApp at all, as before.
+ * Clinavy shows no WhatsApp at all, as before.
  */
 export async function whatsappState(session: Session): Promise<WhatsAppState | undefined> {
   const member = session.member;

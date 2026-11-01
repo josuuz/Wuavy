@@ -1,4 +1,4 @@
-/* ── The app: Black ground, Carbon rail, hairlines, Signal only where the Pulse points ── */
+/* ── The app: Black ground, Carbon rail, hairlines, Signal only where Clinavy points ── */
 .app {
   min-height: 100svh;
   background: var(--surface);
@@ -6,7 +6,7 @@
   font-size: 0.9375rem;
 }
 
-/* ── The top bar: plan, theme and "Pergunte ao Pulse". Hidden on a phone — the bottom bar carries the screens there instead ── */
+/* ── The top bar: plan, theme and "Pergunte ao Clinavy". Hidden on a phone — the bottom bar carries the screens there instead ── */
 .bar {
   display: none;
 }
@@ -78,7 +78,7 @@
   gap: 0.5rem;
 }
 
-/* The Pulse, kept in reach beside the clinic's own numbers. Desktop only: a phone already carries
+/* Clinavy, kept in reach beside the clinic's own numbers. Desktop only: a phone already carries
    the quick "Pergunte" in the brand row and the full button in the top bar once it shows. */
 .mascot {
   display: none;
@@ -240,7 +240,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    /* Top padding centers PULSE on the same line as Assinar: the button's own
+    /* Top padding centers Clinavy on the same line as Assinar: the button's own
        padding makes it taller than bare text, so matching tops isn't enough. */
     padding: 1.65rem 1.25rem max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
     overflow-y: auto;
@@ -370,7 +370,7 @@
   }
 }
 
-/* The Pulse's sign beside "Pergunte ao Pulse": it is listening. On the
+/* Clinavy's sign beside "Pergunte ao Clinavy": it is listening. On the
    hovered Signal button the point and its ring turn Black. */
 @media (hover: hover) and (pointer: fine) {
   .ask:hover :global(.pulse-dot) {
@@ -513,7 +513,7 @@
   }
 }
 
-/* ── The rail's running total: what the Pulse brought back, on every screen ── */
+/* ── The rail's running total: what Clinavy brought back, on every screen ── */
 .railValue {
   display: none;
 }
@@ -570,7 +570,7 @@
   }
 }
 
-/* The Pulse's guide points here: a ring on the entry, and a nudging arrow. */
+/* Clinavy's guide points here: a ring on the entry, and a nudging arrow. */
 .navLink[data-guide] {
   color: var(--text);
   box-shadow: inset 0 0 0 1px var(--pulse-accent);

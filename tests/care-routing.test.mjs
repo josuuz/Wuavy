@@ -10,7 +10,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { CARE, CARE_SESSION, PULSE_APP, PULSE_SESSION } from "../src/lib/care-routing.ts";
+import { CARE, CARE_SESSION, clinavyPath, PULSE_APP, PULSE_SESSION } from "../src/lib/care-routing.ts";
 
 test("/cobrancas e suas sub-rotas passam direto, nunca caem no catch-all de locale", () => {
   for (const path of ["/cobrancas", "/cobrancas/clientes", "/cobrancas/servicos", "/cobrancas/lancamentos"]) {
@@ -38,16 +38,58 @@ test("só o painel de manutenção (/manutencao/admin) renova a sessão — a p�
 });
 
 test("nada parecido com /cobrancas ou /manutencao em outro lugar do site é capturado por engano", () => {
-  for (const path of ["/", "/sobre", "/pulse", "/pulse/entrar", "/cobrancas-promocao", "/manutencaox", "/algo/cobrancas"]) {
+  for (const path of ["/", "/sobre", "/clinavy", "/clinavy/entrar", "/cobrancas-promocao", "/manutencaox", "/algo/cobrancas"]) {
     assert.equal(CARE.test(path), false, path);
   }
 });
 
-test("as rotas do Pulse continuam exatamente como eram, sem interferência do grupo (care)", () => {
-  assert.equal(PULSE_SESSION.test("/pulse/entrar"), true);
-  assert.equal(PULSE_SESSION.test("/pulse/app"), true);
-  assert.equal(PULSE_SESSION.test("/pulse/app/vendas"), true);
-  assert.equal(PULSE_APP.test("/pulse/qualquer-coisa"), true);
-  assert.equal(CARE.test("/pulse/entrar"), false);
-  assert.equal(CARE_SESSION.test("/pulse/entrar"), false);
+test("as rotas do Clinavy continuam exatamente como eram, sem interferência do grupo (care)", () => {
+  assert.equal(PULSE_SESSION.test("/clinavy/entrar"), true);
+  assert.equal(PULSE_SESSION.test("/clinavy/app"), true);
+  assert.equal(PULSE_SESSION.test("/clinavy/app/vendas"), true);
+  assert.equal(PULSE_APP.test("/clinavy/qualquer-coisa"), true);
+  assert.equal(CARE.test("/clinavy/entrar"), false);
+  assert.equal(CARE_SESSION.test("/clinavy/entrar"), false);
+});
+
+test("os endereços antigos do produto (/pulse, /flow) viram o /clinavy equivalente", () => {
+  assert.equal(clinavyPath("/pulse"), "/clinavy");
+  assert.equal(clinavyPath("/pulse/entrar"), "/clinavy/entrar");
+  assert.equal(clinavyPath("/pulse/app/pacientes"), "/clinavy/app/pacientes");
+  assert.equal(clinavyPath("/pulse/assinar"), "/clinavy/assinar");
+  assert.equal(clinavyPath("/pulse/auth/callback"), "/clinavy/auth/callback");
+  assert.equal(clinavyPath("/pulse/convite"), "/clinavy/convite");
+  assert.equal(clinavyPath("/flow"), "/clinavy");
+  assert.equal(clinavyPath("/flow/redefinir-senha"), "/clinavy/redefinir-senha");
+  assert.equal(clinavyPath("/flow/auth/callback"), "/clinavy/auth/callback");
+});
+
+test("a tela de CRM antiga cai em Vendas, na demo e no app", () => {
+  assert.equal(clinavyPath("/pulse/demo/crm"), "/clinavy/demo/vendas");
+  assert.equal(clinavyPath("/pulse/app/crm"), "/clinavy/app/vendas");
+  assert.equal(clinavyPath("/flow/demo/crm"), "/clinavy/demo/vendas");
+});
+
+test("a versão pt-PT da página do produto mantém o idioma", () => {
+  assert.equal(clinavyPath("/pt-pt/pulse"), "/pt-pt/clinavy");
+  assert.equal(clinavyPath("/pt-PT/pulse"), "/pt-PT/clinavy");
+  assert.equal(clinavyPath("/pt-br/pulse"), "/pt-br/clinavy");
+});
+
+test("o que não é o produto antigo não é tocado: /clinavy, APIs, webhooks, outras rotas parecidas", () => {
+  for (const path of [
+    "/",
+    "/clinavy",
+    "/clinavy/entrar",
+    "/pulsex",
+    "/pulse-icon-192.png",
+    "/pt-pt",
+    "/pt-pt/clinavy",
+    "/trabalho/pulse",
+    "/api/mercadopago/webhook",
+    "/api/pulse/algo",
+    "/manutencao/admin",
+  ]) {
+    assert.equal(clinavyPath(path), null, path);
+  }
 });

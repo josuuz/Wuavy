@@ -46,10 +46,10 @@ test("every pose wears a whole pair", () => {
 });
 
 /*
-  Pulse.tsx blinks `face[0]` and `face[1]` and nothing else. It cannot work out
+  Clinavy.tsx blinks `face[0]` and `face[1]` and nothing else. It cannot work out
   which marks are eyes at runtime — the generator already did that — so it
   trusts the order the art was traced in. This is what makes that trust safe:
-  if a retrace ever put the mouth first, the Pulse would blink with its mouth,
+  if a retrace ever put the mouth first, Clinavy would blink with its mouth,
   and this fails instead.
 */
 test("the eyes are traced first, the mouth last", () => {

@@ -1,4 +1,4 @@
-/* ── The Pulse's doors: one column on the Pulse ground, the form in the middle ── */
+/* ── Clinavy's doors: one column on Clinavy ground, the form in the middle ── */
 .frame {
   min-height: 100svh;
   display: grid;
@@ -176,7 +176,7 @@
   font-weight: 640;
 }
 
-/* The Pulse's sign at work: a point and the rings it sends out. */
+/* Clinavy's sign at work: a point and the rings it sends out. */
 .signal {
   position: relative;
   display: grid;

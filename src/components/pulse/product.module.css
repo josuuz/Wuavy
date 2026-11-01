@@ -49,21 +49,13 @@
   gap: 0.4rem;
 }
 
-/* PULSE leads; WUAVY signs it underneath, as in the official lockup. */
+/* CLINAVY alone, as in the official lockup. */
 .brandName {
   font-size: 1.0625rem;
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1;
   color: var(--pulse-accent-text);
-}
-
-.brandBy {
-  font-size: 0.5625rem;
-  font-weight: 500;
-  font-style: italic;
-  letter-spacing: 0.02em;
-  color: var(--pulse-muted);
 }
 
 .org {

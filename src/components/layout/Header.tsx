@@ -98,7 +98,7 @@ export function Header({ nav, cta, labels, language }: HeaderProps) {
     };
   }, [pathname]);
 
-  // The document speaks the site's language; leaving for the Pulse (pt-BR) puts it back.
+  // The document speaks the site's language; leaving for Clinavy (pt-BR) puts it back.
   const lang = language.current;
   useEffect(() => {
     document.documentElement.lang = lang;

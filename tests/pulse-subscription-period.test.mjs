@@ -4,7 +4,7 @@
   OU o fim do mês já pago (lib/flow/access.ts:paidThrough) deveriam significar.
   syncStanding escrevia sempre a primeira, mesmo quando o status virava
   'cancelled' — apagando, no exato momento em que uma clínica cancelava, a
-  data que mantém o Pulse funcionando até o fim do mês já pago.
+  data que mantém o Clinavy funcionando até o fim do mês já pago.
 
   Contra o código REAL (lib/flow/billing.ts, lib/flow/access.ts), com
   Supabase em memória (fake-admin.mjs) e Mercado Pago simulado por um mock
@@ -97,7 +97,7 @@ test("2) cancelamento durante o mês pago: current_period_end vem da cobrança c
   const row = admin.row("subscriptions", "row-periodo-1");
   const future = new Date("2026-10-20T00:00:00.000Z");
   assert.equal(paidThrough({ status: row.status, current_period_end: row.current_period_end }, future), "2026-11-13T10:00:00.000Z");
-  assert.equal(clinicAccess({ status: row.status, current_period_end: row.current_period_end }, future).isReadOnly, false, "o Pulse continua funcionando até o fim do mês pago");
+  assert.equal(clinicAccess({ status: row.status, current_period_end: row.current_period_end }, future).isReadOnly, false, "o Clinavy continua funcionando até o fim do mês pago");
 });
 
 // ── 3. Mercado Pago retorna next_payment_date: null, mas ainda ativa ──

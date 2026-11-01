@@ -48,7 +48,7 @@ import styles from "../ui.module.css";
   booking with its status, a filter by professional. The hours and days are
   the clinic's own (onboarding, Configurações). A free hour books in two
   taps; a booking is confirmed, finished, marked as a no-show or rescheduled
-  from its card. When a cancellation opens an hour, the Pulse ranks who could
+  from its card. When a cancellation opens an hour, Clinavy ranks who could
   take it and prepares the invite. The waiting list sits beside it.
 */
 
@@ -89,7 +89,7 @@ export function Schedule() {
   const book = can.book ? (startsAt: string) => setDraft({ startsAt }) : undefined;
   const appointment = data.appointments.find((a) => a.id === managing);
   const pros = professionals(data);
-  // Cancellations still ahead, today and tomorrow: each one is an hour the Pulse can fill.
+  // Cancellations still ahead, today and tomorrow: each one is an hour Clinavy can fill.
   const freed = [0, 1].flatMap((offset) =>
     daySlots(data, offset).filter((s) => s.status === "cancelado" && s.startsAt > data.now),
   );
@@ -140,7 +140,7 @@ export function Schedule() {
             <p className={styles.matchLead}>
               <span className="pulse-dot" aria-hidden="true" />
               {matches.length
-                ? `Pulse encontrou ${plural(matches.length, "paciente compatível", "pacientes compatíveis")}`
+                ? `Clinavy encontrou ${plural(matches.length, "paciente compatível", "pacientes compatíveis")}`
                 : "Ninguém da lista de espera ou com retorno próximo combina com este horário."}
             </p>
             <SlotInvites startsAt={slot.startsAt} onBook={setDraft} />
@@ -311,7 +311,7 @@ function DayView({ offset, pro, onBook, onOpen }: CalendarProps & { offset: numb
   const closed = !opensOn(data, slotTime(data, offset, 0, 0));
   const suggested = (startsAt: string) => {
     const n = slotMatches(data, startsAt).length;
-    return n ? `Pulse sugere ${plural(n, "paciente", "pacientes")} · ` : "";
+    return n ? `Clinavy sugere ${plural(n, "paciente", "pacientes")} · ` : "";
   };
 
   return (
@@ -602,7 +602,7 @@ function Waitlist({ onBook, onAdd }: { onBook: (draft: Draft) => void; onAdd?: (
         </h2>
         <span>{data.waitlist.length}</span>
       </header>
-      <p className={styles.fine}>Quem quer um horário antes. Quando um horário abre, o Pulse sugere quem pode ocupar.</p>
+      <p className={styles.fine}>Quem quer um horário antes. Quando um horário abre, o Clinavy sugere quem pode ocupar.</p>
       {data.waitlist.length ? (
         <ol className={styles.waitlist}>
           {data.waitlist.map((w) => {
@@ -800,7 +800,7 @@ export function BookingForm({ draft, onDone }: { draft: Draft; onDone: () => voi
 
       {candidates.length ? (
         <div className={styles.suggestion}>
-          <p className={styles.label}>Pulse sugere para este horário</p>
+          <p className={styles.label}>Clinavy sugere para este horário</p>
           <ul className={styles.pickList}>
             {candidates.map((c) => (
               <li key={c.patient.id}>
@@ -975,7 +975,7 @@ function AppointmentDetail({
 
       {open && procedure && !finishing ? (
         <div className={styles.suggestion}>
-          <p className={styles.label}>Ao finalizar, o Pulse</p>
+          <p className={styles.label}>Ao finalizar, o Clinavy</p>
           <ol className={styles.effects}>
             {uses.length ? (
               uses.map((use) => {
@@ -1366,7 +1366,7 @@ function DepositFields({ price, due, initial }: { price: number; due: string; in
   );
 }
 
-/** The deposit on a booking: its amount and status, marked paid by hand until payments run through the Pulse. */
+/** The deposit on a booking: its amount and status, marked paid by hand until payments run through Clinavy. */
 function DepositPanel({ appointment: a, price }: { appointment: Appointment; price: number }) {
   const { data, dispatch, live, access } = useFlow();
   const { pending, error, write, submit } = useWrite();

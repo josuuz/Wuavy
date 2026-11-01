@@ -4,16 +4,16 @@ import type { ReactNode } from "react";
 import { PwaShell } from "@/components/flow/PwaShell";
 
 /*
-  The Pulse's chrome: only the skip link (its screens hold #conteudo). The app
+  Clinavy's chrome: only the skip link (its screens hold #conteudo). The app
   speaks pt-BR.
 
-  It is also where the Pulse becomes installable. The manifest is linked here
+  It is also where Clinavy becomes installable. The manifest is linked here
   and nowhere else, so the public site is never offered as an app: its scope
-  is /pulse/, which starts the app on /pulse/app and leaves wuavy.com alone.
+  is /clinavy/, which starts the app on /clinavy/app and leaves wuavy.com alone.
 
   Safari builds no launch screen of its own (WebKit 268643), so every iPhone
   size is listed below; Android draws its own from the manifest. The screens
-  are the Pulse's light ground with the mark, so the launch runs into the app.
+  are Clinavy's light ground with the mark, so the launch runs into the app.
 */
 
 /** Portrait iPhones in circulation: CSS width, CSS height, pixel ratio. */
@@ -33,10 +33,10 @@ const IPHONES = [
 ] as const;
 
 export const metadata: Metadata = {
-  manifest: "/pulse.webmanifest",
+  manifest: "/clinavy.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Pulse",
+    title: "Clinavy",
     statusBarStyle: "default",
     startupImage: IPHONES.map(([w, h, ratio]) => ({
       url: `/splash/${w * ratio}x${h * ratio}.png`,

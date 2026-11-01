@@ -15,7 +15,7 @@ import { viewHref } from "./copy";
 import { useFlow } from "./store";
 
 /*
-  The conversations, held by the Pulse's shell rather than by the Conversas
+  The conversations, held by Clinavy's shell rather than by the Conversas
   screen, so what was written, noted or scheduled there is still there after
   a visit to Vendas or the agenda. Only what belongs to the conversation
   lives here (its messages, status, owner, follow-up); everything about the

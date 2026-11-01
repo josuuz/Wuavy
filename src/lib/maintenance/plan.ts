@@ -2,9 +2,9 @@
   O que a Wuavy mantém, e por quanto. Um lugar só: a página do cliente, o
   painel e o que vai ao Mercado Pago leem daqui.
 
-  Este é um produto separado do Wuavy Pulse. O preço do Pulse está em
+  Este é um produto separado do Clinavy. O preço do Clinavy está em
   src/lib/flow/access.ts e não tem relação com o desta página. MaintenanceStatus
-  é o mesmo tipo que o Pulse usa (src/lib/mercadopago/notice.ts), só o nome
+  é o mesmo tipo que o Clinavy usa (src/lib/mercadopago/notice.ts), só o nome
   muda — mas statusFrom não é reexportado daqui: um reexport de valor faria
   este arquivo (importado por ClientForm.tsx, um componente de cliente) puxar
   node:crypto para o pacote do navegador por causa de verifyNotice, do outro

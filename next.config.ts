@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 /*
-  Headers every response carries: no framing of the site or the Pulse by
+  Headers every response carries: no framing of the site or Clinavy by
   another page (clickjacking), no guessing of content types, no full URLs
   leaked to other sites, and no camera, microphone or location. HTTPS (HSTS)
   is Vercel's.
@@ -26,11 +26,10 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // The Pulse's CRM screen is called Vendas now; old links still land on it.
-      { source: "/:base(flow|pulse)/demo/crm", destination: "/pulse/demo/vendas", permanent: true },
-      { source: "/:base(flow|pulse)/app/crm", destination: "/pulse/app/vendas", permanent: true },
-      // Wuavy Flow is Wuavy Pulse now: every old address, query included, lands on its twin.
-      { source: "/flow/:path*", destination: "/pulse/:path*", permanent: true },
+      // The installed app's old manifest address: a browser that checks it for updates is sent to the new one.
+      { source: "/pulse.webmanifest", destination: "/clinavy.webmanifest", permanent: true },
+      // The product's pages (/pulse, and /flow before it) are redirected in src/proxy.ts, only for GET and HEAD,
+      // never for the API or for a POST: a redirect here would answer every method.
     ];
   },
 };

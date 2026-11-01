@@ -1,6 +1,6 @@
 # Known issue: `potentialOf()` can double-count a patient across fronts
 
-Found 2026-10-21, auditing the Wuavy Pulse commercial page before launch.
+Found 2026-10-21, auditing the Clinavy commercial page before launch.
 Recorded here, not fixed: it reaches into `insights.ts`'s calculation logic,
 which is out of scope for a landing-page pass and deserves its own review.
 
@@ -49,6 +49,6 @@ for a shared patient. Whichever is chosen, say so explicitly next to the
 number.
 
 This was not fixed as part of the commercial redesign
-(`src/app/(site)/[locale]/pulse`) — that page no longer shows a consolidated
+(`src/app/(site)/[locale]/clinavy`) — that page no longer shows a consolidated
 total for this reason; see its `fronts.caveat` and `interfaces.lead` copy
 in the dictionaries.

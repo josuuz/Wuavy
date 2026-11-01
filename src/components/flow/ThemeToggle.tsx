@@ -5,7 +5,7 @@ import { useSyncExternalStore } from "react";
 import styles from "./ThemeToggle.module.css";
 
 /*
-  Light or dark, for every screen of the Pulse. Light is the default: the
+  Light or dark, for every screen of Clinavy. Light is the default: the
   boot script in app/layout.tsx sets data-pulse-theme="light" on <html>
   before first paint unless "dark" was saved in localStorage, so a first
   visit opens light and a reload never flashes the other theme. Where the browser has

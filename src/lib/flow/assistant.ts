@@ -18,7 +18,7 @@ import {
 import type { FlowData, OpportunityKind } from "./types";
 
 /*
-  "Pergunte ao Pulse". The contract a real model will implement later (Pulse
+  "Pergunte ao Clinavy". The contract a real model will implement later (Clinavy
   AI: an API route answering free questions with the clinic's data as
   context). Today no AI is called: each of the questions below is answered
   by a calculation over the same insights the screens use, so every answer
@@ -28,7 +28,7 @@ import type { FlowData, OpportunityKind } from "./types";
 export interface FlowAnswer {
   text: string;
   items?: { label: string; value: string }[];
-  link?: { label: string; /** A screen of the Pulse, as in VIEWS. */ view: string };
+  link?: { label: string; /** A screen of Clinavy, as in VIEWS. */ view: string };
 }
 
 export interface FlowAssistant {
@@ -170,7 +170,7 @@ function leaks(d: FlowData): FlowAnswer {
   };
 }
 
-/** The questions the Pulse answers today, each by its own calculation. */
+/** The questions Clinavy answers today, each by its own calculation. */
 const ANSWERS: Record<string, (d: FlowData) => FlowAnswer> = {
   "O que preciso fazer hoje?": today,
   "Quem precisa retornar?": returns,
@@ -189,7 +189,7 @@ export const localAssistant: FlowAssistant = {
     const answer = ANSWERS[question];
     if (answer) return answer(d);
     return {
-      text: "Perguntas livres chegam com o Pulse AI, em breve. Por enquanto, escolha uma destas: cada resposta é calculada na hora com os dados da clínica.",
+      text: "Perguntas livres chegam com o Clinavy AI, em breve. Por enquanto, escolha uma destas: cada resposta é calculada na hora com os dados da clínica.",
       items: SUGGESTED.map((s) => ({ label: s, value: "" })),
     };
   },

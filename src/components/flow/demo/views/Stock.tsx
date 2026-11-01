@@ -22,7 +22,7 @@ import styles from "../ui.module.css";
 
 /*
   Stock, read as money. A lot near its date is not a number to watch: the
-  Pulse finds the procedures that use it and the patients who already did
+  Clinavy finds the procedures that use it and the patients who already did
   them, and says what using it in time would bring. Then the products, with
   a few filters (running low, near their date, by brand) and each one's
   alert on its own row; the lots, one tap away, with a way to set one to
@@ -96,7 +96,7 @@ export function Stock() {
     <div className={styles.page}>
       <header className={styles.head}>
         <h1 className={styles.title}>Estoque</h1>
-        <p className={styles.lead}>O que comprar e o que usar antes de vencer. A cada atendimento finalizado, o Pulse dá baixa sozinho.</p>
+        <p className={styles.lead}>O que comprar e o que usar antes de vencer. A cada atendimento finalizado, o Clinavy dá baixa sozinho.</p>
         {can.stock ? (
           <div className={styles.actions}>
             <button type="button" className={styles.primary} onClick={() => setEntering(true)}>
@@ -108,7 +108,7 @@ export function Stock() {
 
       {data.products.length === 0 ? (
         <Intro title="Como funciona">
-          Registre os produtos que a clínica usa, lote por lote. O Pulse avisa o que está acabando e o que precisa ser usado
+          Registre os produtos que a clínica usa, lote por lote. O Clinavy avisa o que está acabando e o que precisa ser usado
           antes de vencer.
         </Intro>
       ) : (
@@ -465,7 +465,7 @@ function AdjustForm({ lot, onDone }: { lot: InventoryLot; onDone: () => void }) 
   return (
     <form className={styles.form} onSubmit={submit(live ? (form) => adjustLot(lot.id, form) : demoAdjust, onDone)}>
       <p className={styles.note}>
-        Lote {lot.lotCode}: o Pulse conta {units(lot.quantity, product?.unit ?? "un")}. Se na prateleira há outra quantidade,
+        Lote {lot.lotCode}: o Clinavy conta {units(lot.quantity, product?.unit ?? "un")}. Se na prateleira há outra quantidade,
         corrija aqui.
       </p>
       <Field label={`Quantidade real${product ? ` (${product.unit})` : ""}`}>
@@ -499,7 +499,7 @@ function AdjustForm({ lot, onDone }: { lot: InventoryLot; onDone: () => void }) 
   );
 }
 
-/** A product's details and its minimum: at or below it, the Pulse says to buy. */
+/** A product's details and its minimum: at or below it, Clinavy says to buy. */
 function ProductForm({ product, onDone }: { product: Product; onDone: () => void }) {
   const { can } = useFlow();
   const { pending, error, submit } = useWrite();
@@ -549,7 +549,7 @@ function ProductForm({ product, onDone }: { product: Product; onDone: () => void
         />
       </Field>
       <p className={styles.fine}>
-        Sem mínimo, o Pulse avisa quando o produto dá para menos de 5 atendimentos. A quantidade de cada lote muda em Ajustar.
+        Sem mínimo, o Clinavy avisa quando o produto dá para menos de 5 atendimentos. A quantidade de cada lote muda em Ajustar.
       </p>
       <FormError error={error} />
       <div className={styles.actions}>

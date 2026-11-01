@@ -7,7 +7,7 @@ import styles from "./chrome.module.css";
   The product's footer: short on purpose. The agency's footer lists services,
   cases and channels, which would end this page by sending a clinic that was
   about to subscribe somewhere else. This one closes the product — the
-  sections of this page, the two doors into PULSE, the legal pages — and
+  sections of this page, the two doors into Clinavy, the legal pages — and
   leaves one line back to the agency.
 */
 
@@ -37,10 +37,7 @@ export function PulseFooter({ footer, links, back, legal, talk }: PulseFooterPro
       <div className={`frame ${styles.footerGrid}`}>
         <div className={styles.footerLead}>
           <p className={styles.footerBrand}>
-            <span className={styles.footerBrandName}>PULSE</span>
-            <span className={styles.footerBrandBy} aria-hidden="true">
-              by WUAVY
-            </span>
+            <span className={styles.footerBrandName}>CLINAVY</span>
           </p>
           <p className={styles.footerSignature}>{footer.signature}</p>
           <TextLink href={talk} className={styles.footerTalk}>

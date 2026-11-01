@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
-import { markSubscribeIntent } from "@/app/(app)/pulse/demo/actions";
+import { markSubscribeIntent } from "@/app/(app)/clinavy/demo/actions";
 import { site } from "@/data/site";
 import { contactHref } from "@/lib/contact";
 import { PRICE, type Access } from "@/lib/flow/access";
@@ -29,9 +29,9 @@ import ui from "./ui.module.css";
 import styles from "./FlowDemo.module.css";
 
 /*
-  The Pulse's app shell: the clinic and its screens on the left (a strip
+  Clinavy's app shell: the clinic and its screens on the left (a strip
   across the top on phones), the current screen's name, the plan with its
-  "Assinar", the theme switch and "Pergunte ao Pulse" above the work. The
+  "Assinar", the theme switch and "Pergunte ao Clinavy" above the work. The
   rail keeps the revenue within reach (the open opportunities) in sight on
   every screen. Data comes in from the route's layout, with what the clinic
   may do (`access`): the demo's in memory, or a real clinic's from Supabase.
@@ -40,7 +40,7 @@ import styles from "./FlowDemo.module.css";
 interface FlowDemoProps {
   initial: FlowData;
   access: Access;
-  /** The signed-in member, in the real Pulse. */
+  /** The signed-in member, in the real Clinavy. */
   account?: Account;
   children: ReactNode;
 }
@@ -134,7 +134,7 @@ function Shell({ children }: { children: ReactNode }) {
     <div className={styles.app} data-pulse="">
       <aside className={styles.side} data-pulse-surface="rail">
         <div className={styles.brandRow}>
-          <Link href="/pulse" className={styles.brand} aria-label="Wuavy Pulse: voltar à página do produto">
+          <Link href="/clinavy" className={styles.brand} aria-label="Clinavy: voltar à página do produto">
             <PulseLogo />
           </Link>
           <div className={styles.rowTools}>
@@ -157,12 +157,12 @@ function Shell({ children }: { children: ReactNode }) {
           ) : null}
           {account ? <SignOut className={styles.signOut} /> : null}
         </p>
-        <nav aria-label="Telas do Pulse" className={styles.sideNav}>
+        <nav aria-label="Telas do Clinavy" className={styles.sideNav}>
           <ol>{menu.map((view) => navItem(view))}</ol>
         </nav>
         <button type="button" className={styles.mascot} onClick={() => ask()} aria-haspopup="dialog">
           <Pulse interactive className={styles.mascotFigure} />
-          <span className={styles.mascotLabel}>Pergunte ao Pulse</span>
+          <span className={styles.mascotLabel}>Pergunte ao Clinavy</span>
         </button>
         <GuideCard />
         <GuidePill />
@@ -176,8 +176,8 @@ function Shell({ children }: { children: ReactNode }) {
           </Link>
         ) : null}
         {account && !access.isDemoMode ? null : (
-          <Link href="/pulse" className={styles.back}>
-            <span aria-hidden="true">←</span> Voltar ao Wuavy Pulse
+          <Link href="/clinavy" className={styles.back}>
+            <span aria-hidden="true">←</span> Voltar ao Clinavy
           </Link>
         )}
       </aside>
@@ -203,7 +203,7 @@ function Shell({ children }: { children: ReactNode }) {
             <ThemeToggle className={styles.barToggle} />
             <button type="button" className={styles.ask} onClick={() => ask()} data-cursor="action">
               <span className="pulse-dot" aria-hidden="true" />
-              Pergunte ao Pulse
+              Pergunte ao Clinavy
             </button>
           </div>
         </header>
@@ -254,7 +254,7 @@ function Shell({ children }: { children: ReactNode }) {
         </ol>
       </nav>
 
-      <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="Mais telas" kicker="Pulse">
+      <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="Mais telas" kicker="Clinavy">
         <ol className={styles.moreList}>{moreMenu.map((view) => navItem(view, () => setMoreOpen(false)))}</ol>
       </Sheet>
 

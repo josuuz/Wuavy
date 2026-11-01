@@ -1,5 +1,5 @@
 /*
-  A parte sem rede da criação de uma assinatura do Pulse: puro, sem
+  A parte sem rede da criação de uma assinatura do Clinavy: puro, sem
   credenciais, sem fetch e sem Supabase — a mesma separação de
   mercadopago/notice.ts (runCancel, runCardChange) e de
   billing/create-charge.ts (runCreateCharge, claimDecision,

@@ -7,7 +7,7 @@ import { legalContext } from "@/lib/legal";
 import { shareImage } from "@/lib/seo";
 
 /*
-  The terms of use of Wuavy Pulse: what the service is, the plan, fair use,
+  The terms of use of Clinavy: what the service is, the plan, fair use,
   and what it does not promise. The text is the dictionaries' legal.terms.
 */
 

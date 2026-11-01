@@ -7,7 +7,7 @@ import { legalContext } from "@/lib/legal";
 import { shareImage } from "@/lib/seo";
 
 /*
-  The privacy policy (LGPD), for the site and for Wuavy Pulse: what is
+  The privacy policy (LGPD), for the site and for Clinavy: what is
   collected, why, who else handles it, and how to ask for access, a copy or
   deletion. Kept to what the system really does. The text is the
   dictionaries' legal.privacy.

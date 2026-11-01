@@ -7,7 +7,7 @@ import { BillingUnavailable, MercadoPagoError, syncPayment } from "@/lib/billing
   Os avisos do Mercado Pago sobre cobranças únicas (Checkout Pro).
 
   Este endereço vai como notification_url em cada Preference que criamos
-  (lib/billing/charges.ts). O webhook da manutenção e o do Pulse não mudam —
+  (lib/billing/charges.ts). O webhook da manutenção e o do Clinavy não mudam —
   cada produto recebe só o que é seu.
 
   O mesmo princípio dos outros dois: um aviso é uma pista, nunca uma

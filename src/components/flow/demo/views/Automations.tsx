@@ -24,7 +24,7 @@ export function Automations() {
           Automações inteligentes <Soon />
         </h1>
         <p className={styles.lead}>
-          O Pulse vai acompanhar cada sinal da clínica sozinho e preparar o próximo contato na hora certa. Ainda não estão
+          O Clinavy vai acompanhar cada sinal da clínica sozinho e preparar o próximo contato na hora certa. Ainda não estão
           disponíveis: nenhuma automação roda e nenhuma mensagem é enviada sozinha.
         </p>
       </header>
@@ -32,7 +32,7 @@ export function Automations() {
       <section className={styles.intro} aria-label="O que já funciona">
         <p className={styles.kicker}>Já funciona hoje</p>
         <p className={styles.introText}>
-          As mesmas frentes aparecem em Oportunidades, calculadas com os dados da clínica: o Pulse identifica, recomenda e
+          As mesmas frentes aparecem em Oportunidades, calculadas com os dados da clínica: o Clinavy identifica, recomenda e
           prepara cada mensagem; você revisa e envia pelo WhatsApp.
         </p>
         <div className={styles.actions}>

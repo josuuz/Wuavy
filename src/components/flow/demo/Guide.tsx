@@ -11,12 +11,12 @@ import { useFlow } from "./store";
 import styles from "./Guide.module.css";
 
 /*
-  The first-run guide. The Pulse greets a clinic on its first visit, points at
+  The first-run guide. Clinavy greets a clinic on its first visit, points at
   where to start (Configurações, in a real clinic) and walks a short list:
   each step is done when the data says so (a procedure exists, a patient,
   a booking) or, for the two screens to get to know, when they were opened.
   Any step can be skipped, the whole guide left for later or hidden; the
-  Pulse stays usable throughout. Where it stands is kept in this browser
+  Clinavy stays usable throughout. Where it stands is kept in this browser
   (localStorage, per clinic) until there is a place for it on the server.
 */
 
@@ -205,7 +205,7 @@ export function GuideProvider({ children }: { children: ReactNode }) {
   return <Context value={value}>{children}</Context>;
 }
 
-/** The Pulse beside the guide: welcoming while there is a next step to show, at ease otherwise. */
+/** Clinavy beside the guide: welcoming while there is a next step to show, at ease otherwise. */
 function GuidePulse({ point, calm }: { point?: boolean; calm?: boolean }) {
   return <Pulse className={styles.pulse} state={calm ? "calm" : point ? "welcome" : "idle"} interactive />;
 }
@@ -213,7 +213,7 @@ function GuidePulse({ point, calm }: { point?: boolean; calm?: boolean }) {
 /**
  * Where the guide is drawn: `inline` is its copy inside the page, shown below the rail layout, where the rail's
  * own copy steps aside (both through CSS, so the layout decides, not the script). A fixed card there would land
- * on ordinary page content — not only the overview's Pulse card or Configurações' team list, but on every
+ * on ordinary page content — not only the overview's Clinavy card or Configurações' team list, but on every
  * screen's own top (Pacientes' filters, for one) — so the in-page copy is used everywhere, not just those two.
  */
 function placement(inline?: boolean) {
@@ -340,7 +340,7 @@ export function GuidePill({ inline }: { inline?: boolean }) {
 /** Tips shown during this page load: they stay until dismissed, though already marked as seen. */
 const shownThisVisit = new Set<string>();
 
-/** The Pulse's tip on a screen's first visit: shown once, gone for good once seen. */
+/** Clinavy's tip on a screen's first visit: shown once, gone for good once seen. */
 export function ScreenTip() {
   const { slug, ready, saved, seeTip } = useGuide();
   const tip = SCREEN_TIPS[slug];
@@ -357,8 +357,8 @@ export function ScreenTip() {
 
   if (!tip || !shownThisVisit.has(slug) || dismissed.includes(slug)) return null;
   return (
-    <aside className={styles.tip} aria-label="Dica do Pulse">
-      {/* A tip is for reading: the Pulse settles while it is on screen. */}
+    <aside className={styles.tip} aria-label="Dica do Clinavy">
+      {/* A tip is for reading: Clinavy settles while it is on screen. */}
       <GuidePulse calm />
       <p>{tip}</p>
       <button type="button" className={styles.quiet} onClick={() => setDismissed((d) => [...d, slug])}>

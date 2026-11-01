@@ -14,7 +14,7 @@ import { track } from "./track";
   twenty seconds, one idea in each. It plays by itself, in a loop.
 
     1  A quote went unanswered      the card, alone: name, what, "Sem resposta"
-    2  The Pulse picks it out       a ring, and "Ver oportunidade" appears
+    2  Clinavy picks it out       a ring, and "Ver oportunidade" appears
     3  A click opens it             the cursor glides to the button, rests, presses
                                     it; the details open as a result
     4  Another click                the cursor goes on to "Ver sugestão de mensagem"
@@ -211,7 +211,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
     <div ref={region} className={className ? `${styles.demo} ${className}` : styles.demo} data-mode={mode}>
       <ProductSurface className={`${styles.stage} ${styles.heroStage}`}>
         <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
-          {/* The Pulse's caption, one scene at a time: the sentence the scene is for. */}
+          {/* Clinavy's caption, one scene at a time: the sentence the scene is for. */}
           <div className={styles.caption}>
             <span className={styles.avatar}>
               <Pulse still state={at === last ? "calm" : "idle"} />
@@ -233,7 +233,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
                 <span className={styles.chip}>{demo.patient.status}</span>
               </header>
 
-              {/* The Pulse's doing: the button that was not there appears with the ring, and stays,
+              {/* Clinavy's doing: the button that was not there appears with the ring, and stays,
                   marked as done, until the next click needs the room. */}
               <div className={styles.collapse} data-open={at >= 1 && at < 3 ? "" : undefined}>
                 <div>

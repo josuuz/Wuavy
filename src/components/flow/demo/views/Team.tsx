@@ -14,7 +14,7 @@ import styles from "../ui.module.css";
   size: someone working alone sees a short note and a way to add someone
   later; a small team, a plain list; a large one, the same list with filters.
   Everyone has their own login: the owner adds a person by name, e-mail and
-  role and sends them the one-time link the Pulse makes. The role decides
+  role and sends them the one-time link Clinavy makes. The role decides
   what each person sees; there is nothing else to set. Someone who leaves is
   disabled, never deleted, so their name stays on what they did. The server
   and the database check all of it again (lib/flow/team.ts, migration 0009).
@@ -75,14 +75,14 @@ export function TeamSettings() {
   ) : null;
   const ready = sent ? <InviteSent name={sent.name} email={sent.email} result={sent.result} onClose={() => setSent(null)} /> : null;
 
-  // Working alone is a normal way to use the Pulse: no list, no nudge, just the way to add someone later.
+  // Working alone is a normal way to use Clinavy: no list, no nudge, just the way to add someone later.
   if (alone) {
     return (
       <section className={styles.panel} aria-labelledby="equipe">
         <h2 id="equipe" className={styles.label}>
           Equipe
         </h2>
-        <p className={styles.teamSolo}>Você está usando o Pulse sozinho.</p>
+        <p className={styles.teamSolo}>Você está usando o Clinavy sozinho.</p>
         <p className={styles.fine}>
           Quando sua clínica crescer, você pode adicionar recepção ou profissionais sem compartilhar sua senha.
         </p>
@@ -260,7 +260,7 @@ function Member({
           <p>
             {status === "invited"
               ? `O link de ${first} deixa de funcionar.`
-              : `${first} deixa de entrar no Pulse na hora. O que já registrou continua salvo, com o nome.`}
+              : `${first} deixa de entrar no Clinavy na hora. O que já registrou continua salvo, com o nome.`}
           </p>
           <div className={styles.actions}>
             <button
@@ -373,7 +373,7 @@ function InviteSent({ name, email, result, onClose }: { name: string; email?: st
       <div className={styles.suggestion} role="status">
         <p className={styles.label}>Convite registrado</p>
         <p>
-          {first} já tem conta no Pulse. Peça para entrar com o próprio e-mail e senha: o convite para a{" "}
+          {first} já tem conta no Clinavy. Peça para entrar com o próprio e-mail e senha: o convite para a{" "}
           {data.organization.name} aparece ao entrar.
         </p>
         <button type="button" className={styles.quiet} onClick={onClose}>
@@ -382,7 +382,7 @@ function InviteSent({ name, email, result, onClose }: { name: string; email?: st
       </div>
     );
   }
-  const message = `Olá, ${first}! Você foi convidado(a) para a equipe da ${data.organization.name} no Wuavy Pulse. Para criar sua senha e entrar, abra: ${result.link}`;
+  const message = `Olá, ${first}! Você foi convidado(a) para a equipe da ${data.organization.name} no Clinavy. Para criar sua senha e entrar, abra: ${result.link}`;
   return (
     <div className={styles.suggestion} role="status">
       <p className={styles.label}>Convite pronto para {first}</p>

@@ -11,7 +11,7 @@ import { focusTab, onTabKeys, tabIndex } from "./tabs";
 import { track } from "./track";
 
 /*
-  "Veja como o PULSE ajuda sua equipe a agir" — a simulation that shows itself,
+  "Veja como o Clinavy ajuda sua equipe a agir" — a simulation that shows itself,
   and that the visitor may also operate.
 
   Three situations to choose from, and one stage. On the stage, one card and
@@ -254,7 +254,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
       <div id="sim-palco" role="tabpanel" aria-labelledby={`sim-${item.id}`} className={styles.demo}>
         <ProductSurface className={cn(styles.stage, styles.simStage)}>
           <div ref={box} className={styles.inner} data-fading={fading ? "" : undefined}>
-            {/* The Pulse's sentence for the step. Every one of them is in the same cell. */}
+            {/* Clinavy's sentence for the step. Every one of them is in the same cell. */}
             <div className={styles.caption}>
               <span className={styles.avatar} aria-hidden="true">
                 <Pulse still state={st === 2 ? "calm" : "idle"} />

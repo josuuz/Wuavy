@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/seo";
 
 /*
-  The Pulse's signed-in routes are kept out of search by `noindex` on the
+  Clinavy's signed-in routes are kept out of search by `noindex` on the
   pages themselves (login, onboarding, demo, invite, the app), not by a
   Disallow: a crawler has to fetch a page to read its noindex, and a blocked
   address can still be listed from a link elsewhere. So the whole site stays

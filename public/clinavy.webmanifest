@@ -1,0 +1,19 @@
+{
+  "name": "Clinavy",
+  "short_name": "Clinavy",
+  "description": "A operação da clínica em um só lugar: agenda, pacientes, conversas, vendas e estoque.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "id": "/pulse/app",
+  "start_url": "/clinavy/app",
+  "scope": "/clinavy/",
+  "display": "standalone",
+  "background_color": "#f6f4ee",
+  "theme_color": "#f6f4ee",
+  "categories": ["business", "medical", "productivity"],
+  "icons": [
+    { "src": "/pulse-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pulse-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/pulse-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

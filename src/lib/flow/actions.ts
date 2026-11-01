@@ -34,7 +34,7 @@ import {
 } from "./write";
 
 /*
-  The real Pulse's writes: contacts, patients, procedures, the agenda, the
+  The real Clinavy's writes: contacts, patients, procedures, the agenda, the
   stock, and the clinic's own profile. Each one takes the clinic from the
   verified session, never from the browser, says which roles may make it
   (lib/flow/roles.ts), checks its input, scopes every query to that clinic
@@ -161,7 +161,7 @@ export async function deleteLead(leadId: string): Promise<Result> {
 /* ── Patients ──────────────────────────────────────────────── */
 
 /**
- * A patient, and optionally a visit from before the Pulse (a day and a
+ * A patient, and optionally a visit from before Clinavy (a day and a
  * procedure): it is recorded as a finished appointment, so the last visit,
  * the spend and the next return follow from it as from any other, and the
  * return engine has something to work with from the first day. The stock is
@@ -495,7 +495,7 @@ export async function saveDeposit(appointmentId: string, form: FormData): Promis
   }, (can) => can.book);
 }
 
-/** The deposit was received (or that was a mistake). Marked by hand until payments run through the Pulse. */
+/** The deposit was received (or that was a mistake). Marked by hand until payments run through Clinavy. */
 export async function setDepositPaid(appointmentId: string, paid: boolean): Promise<Result> {
   return write(
     async (db, org) =>
@@ -704,7 +704,7 @@ export async function updateClinic(form: FormData): Promise<Result> {
  * A clinical record: written and read only by the owner and the professionals
  * (the database refuses anyone else, and a professional writes only for the
  * patients of their own agenda, migration 0009). Edited in place; never
- * deleted from the Pulse. The author and the last editor are stamped by the
+ * deleted from Clinavy. The author and the last editor are stamped by the
  * database.
  */
 export async function saveRecord(recordId: string | null, patientId: string, form: FormData): Promise<Result> {

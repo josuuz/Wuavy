@@ -10,8 +10,8 @@ import styles from "./product.module.css";
 
   These are not screenshots and not illustrations: they are HTML and CSS
   reading the product's own tokens (components/flow/pulse-theme.css) — its
-  light theme, its radii, its type — so a crop here looks like the Pulse
-  because it is painted with the Pulse's palette. That buys three things a
+  light theme, its radii, its type — so a crop here looks like Clinavy
+  because it is painted with Clinavy's palette. That buys three things a
   PNG cannot: it is legible on a phone, it reflows, and the motions in the
   sections around it can move its parts.
 
@@ -20,7 +20,7 @@ import styles from "./product.module.css";
   · the shapes copy the real screens. An opportunity shows a tag, a headline
     with a count, the sentence, what the front is worth, and a button
     (components/flow/demo/views/Opportunities.tsx). Opening it shows "Sugestão
-    do Pulse", then whom the Pulse picked, then the drafted message — in that
+    do Clinavy", then whom Clinavy picked, then the drafted message — in that
     order, because that is the order the product has;
   · nothing here ends in a message sent. The last state of every sequence is
     a draft waiting for a person, which is what the product does today.
@@ -72,8 +72,7 @@ export function AppFrame({
       <ProductSurface className={styles.frame}>
         <div className={styles.rail} data-pulse-surface="rail" aria-hidden="true">
           <p className={styles.brand}>
-            <span className={styles.brandName}>PULSE</span>
-            <span className={styles.brandBy}>by WUAVY</span>
+            <span className={styles.brandName}>CLINAVY</span>
           </p>
           <p className={styles.org}>
             Clínica Aurora
@@ -124,7 +123,7 @@ export interface OppScreen {
 
 /** What the product calls the parts of an opportunity, in its own pt-BR. */
 export const OPP_LABELS = {
-  suggestion: "Sugestão do Pulse",
+  suggestion: "Sugestão do Clinavy",
   draft: "Mensagem pronta",
   review: "A equipe revisa e envia pelo WhatsApp da clínica.",
   whatsapp: "Abrir no WhatsApp",

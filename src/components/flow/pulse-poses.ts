@@ -1,5 +1,5 @@
 /*
-  The Pulse, traced from the approved art (Direction 6 — Pulse Pulse): the
+  Clinavy, traced from the approved art (Direction 6 — Clinavy): the
   silhouette and the face of each pose were followed off the original
   renders (reference ZIP, 01_REFERENCIA_APROVADA and 02_EXPRESSOES), not
   redrawn. Each pose sits in a box 100 units tall; `w` is its width.

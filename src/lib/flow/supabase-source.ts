@@ -33,7 +33,7 @@ import type {
   role may not see simply does not come back (the front desk gets no
   clinical records, a professional no sales); what only the owner may see
   (costs, the visits' frozen money) is not even asked for by anyone else.
-  Rows go from snake_case to the Pulse's types; times are normalised to the
+  Rows go from snake_case to Clinavy's types; times are normalised to the
   same ISO form the demo uses, because the schedule compares them as strings.
 */
 
@@ -72,7 +72,7 @@ export function supabaseSource(db: Db, role: string): FlowSource {
       const failed = [org, members, leads, patients, appointments, waitlist, procedures, products, lots, uses, rules, runs, activities].find(
         (result) => result.error,
       );
-      if (failed?.error) throw new Error(`Pulse: could not load the clinic (${failed.error.message})`);
+      if (failed?.error) throw new Error(`Clinavy: could not load the clinic (${failed.error.message})`);
 
       const [records, costs, financials, conversations] = await Promise.all([
         can.records
@@ -90,7 +90,7 @@ export function supabaseSource(db: Db, role: string): FlowSource {
           : none,
       ]);
       const extra = [records, costs, financials, conversations].find((result) => result.error);
-      if (extra?.error) throw new Error(`Pulse: could not load the clinic (${extra.error.message})`);
+      if (extra?.error) throw new Error(`Clinavy: could not load the clinic (${extra.error.message})`);
 
       const o = org.data!;
       // Before migration 0003 the profile's columns are not there: no logo, no WhatsApp, the default hours.

@@ -91,7 +91,7 @@ const SENT: Record<string, string> = {
   contacts: "Contato compartilhado",
 };
 
-/** What the Pulse shows for a message, and the media's metadata (never the file). */
+/** What Clinavy shows for a message, and the media's metadata (never the file). */
 export function readMessage(m: Obj, direction: "in" | "out"): { kind: MessageKind; body: string; media: Record<string, string> | null } | null {
   const type = str(m.type, 40) ?? "unsupported";
   if (type === "text") {

@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { LOCALE_COOKIE, localizePath, PT_PREFIX, resolveLocale } from "@/i18n/config";
-import { CARE, CARE_SESSION, PULSE_APP, PULSE_SESSION } from "@/lib/care-routing";
+import { CARE, CARE_SESSION, clinavyPath, PULSE_APP, PULSE_SESSION } from "@/lib/care-routing";
 
 /*
   Three jobs, on separate paths.
@@ -15,15 +15,15 @@ import { CARE, CARE_SESSION, PULSE_APP, PULSE_SESSION } from "@/lib/care-routing
   Crawlers are never redirected by country. Unknown addresses land inside
   their language too, so the 404 wears the right header and footer.
 
-  The Pulse's signed-in routes: the Supabase session is kept fresh. An expired
+  Clinavy's signed-in routes: the Supabase session is kept fresh. An expired
   access token is refreshed here and the new cookies go out with the response
   (Server Components can read cookies but not write them). The rest of the
-  Pulse app passes through untouched.
+  Clinavy app passes through untouched.
 
   A manutenção de sites (/manutencao) e o Wuavy Cobranças (/cobrancas):
   nenhum dos dois é localizado. O painel de manutenção (/manutencao/admin) e
   todo o /cobrancas (só painel, sem página pública) têm a sessão renovada
-  como as rotas do Pulse; a página de assinatura de um cliente de manutenção
+  como as rotas do Clinavy; a página de assinatura de um cliente de manutenção
   passa direto, porque o que a abre é o token na própria URL. Os regex que
   decidem isso vivem em lib/care-routing.ts, puros, para poderem ser
   testados sem o runtime do Next.
@@ -90,8 +90,28 @@ async function refreshSession(request: NextRequest): Promise<NextResponse> {
   return response;
 }
 
+/*
+  The old product addresses (/pulse, and /flow before it) live on as links in
+  e-mails, bookmarks, the Mercado Pago return and installed apps. A page
+  (GET or HEAD) is sent to its /clinavy twin with the query intact. Anything
+  else, such as a Server Action posted from a tab opened before the change,
+  is not redirected: it is served from the new address and keeps its method
+  and body. The API and its webhooks never get here (see the matcher).
+*/
+function legacyProduct(request: NextRequest): NextResponse | null {
+  const moved = clinavyPath(request.nextUrl.pathname);
+  if (!moved) return null;
+  const url = request.nextUrl.clone();
+  url.pathname = moved;
+  return request.method === "GET" || request.method === "HEAD"
+    ? NextResponse.redirect(url, 308)
+    : NextResponse.rewrite(url);
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const legacy = legacyProduct(request);
+  if (legacy) return legacy;
   if (PULSE_SESSION.test(pathname) || CARE_SESSION.test(pathname)) return refreshSession(request);
   if (PULSE_APP.test(pathname) || CARE.test(pathname)) return NextResponse.next();
   return localize(request);

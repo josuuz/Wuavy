@@ -22,7 +22,7 @@ Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4. Nenhum
 | O quê | Arquivo |
 |---|---|
 | Todos os textos do site (pt-BR e pt-PT) | `src/i18n/dictionaries/pt-BR.tsx` e `pt-PT.tsx`: mesma forma, o TypeScript acusa o que faltar em um dos dois |
-| Idiomas e URLs | `src/i18n/config.ts`: pt-BR nas URLs atuais, pt-PT em `/pt-pt`. O `src/proxy.ts` leva para `/pt-pt` quem escolheu pt-PT (cookie) ou, sem escolha, quem está em Portugal (`x-vercel-ip-country`); robôs e o app Pulse nunca são redirecionados |
+| Idiomas e URLs | `src/i18n/config.ts`: pt-BR nas URLs atuais, pt-PT em `/pt-pt`. O `src/proxy.ts` leva para `/pt-pt` quem escolheu pt-PT (cookie) ou, sem escolha, quem está em Portugal (`x-vercel-ip-country`); robôs e o app Clinavy nunca são redirecionados |
 | Serviços | `src/data/services.ts` (adicione um item; `status: "soon"` esconde; textos nos dicionários) |
 | Cases | `src/data/cases.ts` (fatos e mídia; textos nos dicionários, em `cases`; siga o "Padrão de case" abaixo) |
 | Contato, redes, WhatsApp oficial | `src/data/site.ts` (troque e-mail por WhatsApp, calendário ou formulário aqui) |

@@ -48,7 +48,7 @@ import styles from "./Conversations.module.css";
 /*
   Conversas: the clinic's WhatsApp beside its CRM. Three columns on a wide
   screen (the list, the chat, the person), one at a time on a phone. Every
-  conversation is tied to the contact or patient the rest of the Pulse
+  conversation is tied to the contact or patient the rest of Clinavy
   knows, so the stage, the procedure, the value and the next action change
   here and everywhere at once, and booking uses the agenda's own form.
 
@@ -138,7 +138,7 @@ function DemoConversations() {
   const [booking, setBooking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [note, setNote] = useState(false);
-  // The Pulse, the pinned internal thread: when open, the chat column is its.
+  // Clinavy, the pinned internal thread: when open, the chat column is its.
   const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
@@ -201,7 +201,7 @@ function DemoConversations() {
           </h1>
           <p className={ui.lead}>
             O atendimento pelo WhatsApp, ao lado de Vendas: cada conversa com a etapa, o procedimento e a próxima ação da
-            pessoa. Chega com a integração do WhatsApp; até lá, nenhuma mensagem passa pelo Pulse.
+            pessoa. Chega com a integração do WhatsApp; até lá, nenhuma mensagem passa pelo Clinavy.
           </p>
         </header>
         {asked ? <ContactToStart asked={asked} /> : null}
@@ -505,7 +505,7 @@ function Chat({ conversation: c, thread, send, onBack, onInfo, onBook, notice, f
             }
           }}
         />
-        {suggested ? <p className={styles.review}>Sugestão do Pulse: revise e ajuste antes de enviar.</p> : null}
+        {suggested ? <p className={styles.review}>Sugestão do Clinavy: revise e ajuste antes de enviar.</p> : null}
         <div className={styles.tools}>
           <button type="button" onClick={() => flash("Anexos chegam com a integração do WhatsApp.")}>
             Anexar
@@ -858,7 +858,7 @@ function TextField({ value, placeholder, onSave }: { value: string; placeholder:
 /**
  * A real clinic, before WhatsApp is connected: the person "Iniciar contato"
  * brought here, the message to review, a way to send it from the clinic's own
- * WhatsApp, and the contact recorded in Vendas. Nothing is sent by the Pulse.
+ * WhatsApp, and the contact recorded in Vendas. Nothing is sent by Clinavy.
  */
 function ContactToStart({ asked }: { asked: Extract<Focus, { to: "conversation" }> }) {
   const { data } = useFlow();
@@ -894,7 +894,7 @@ function ContactToStart({ asked }: { asked: Extract<Focus, { to: "conversation" 
           </FocusLink>
         ) : null}
       </div>
-      <p className={ui.fine}>Quando o WhatsApp estiver conectado ao Pulse, esta conversa passa a acontecer aqui.</p>
+      <p className={ui.fine}>Quando o WhatsApp estiver conectado ao Clinavy, esta conversa passa a acontecer aqui.</p>
     </section>
   );
 }
@@ -929,7 +929,7 @@ interface PendingPerson {
  * or an internal note), how (WhatsApp, a call, in person), when, and who
  * registered it. The list shows the latest entry of each conversation; a
  * thread loads when it is opened, a page at a time. Nothing is sent or
- * received by the Pulse: messages go from the clinic's own WhatsApp, and
+ * received by Clinavy: messages go from the clinic's own WhatsApp, and
  * what happened is registered here.
  */
 function LiveConversations() {
@@ -1504,12 +1504,12 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
           <FormError error={error} />
           <p className={ui.fine}>
             {sending
-              ? "Enviar pelo WhatsApp entrega a mensagem pelo WhatsApp da clínica. Registrar só anota o que aconteceu fora do Pulse."
+              ? "Enviar pelo WhatsApp entrega a mensagem pelo WhatsApp da clínica. Registrar só anota o que aconteceu fora do Clinavy."
               : whatsapp?.status === "error"
                 ? "O WhatsApp da clínica precisa ser reconectado em Configurações. Enquanto isso, registre aqui o que aconteceu."
                 : whatsapp
                   ? "As mensagens recebidas pelo WhatsApp da clínica aparecem aqui. Registre também o que aconteceu fora dele."
-                  : "O Pulse ainda não envia nem recebe pelo WhatsApp: as mensagens saem do WhatsApp da clínica, e aqui fica registrado o que aconteceu."}
+                  : "O Clinavy ainda não envia nem recebe pelo WhatsApp: as mensagens saem do WhatsApp da clínica, e aqui fica registrado o que aconteceu."}
           </p>
         </form>
       ) : (
@@ -1519,7 +1519,7 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
   );
 }
 
-/** Who the conversation is with, as the rest of the Pulse knows them, and what to do next. */
+/** Who the conversation is with, as the rest of Clinavy knows them, and what to do next. */
 function LivePerson({ conversation: c, onBack, onBook }: { conversation: Conversation; onBack: () => void; onBook: () => void }) {
   const { data, access, can } = useFlow();
   const [notice, setNotice] = useState<string | null>(null);
@@ -1647,7 +1647,7 @@ function LivePerson({ conversation: c, onBack, onBook }: { conversation: Convers
 }
 
 /**
- * Starts a conversation: with someone already in the Pulse, or someone new.
+ * Starts a conversation: with someone already in Clinavy, or someone new.
  * A new person with a phone already registered is recognized, so nobody is
  * registered twice; otherwise they enter Vendas as a new contact.
  */
@@ -1719,7 +1719,7 @@ function StartConversation({ onDone }: { onDone: (id: ID) => void }) {
             </select>
           </Field>
           <p className={ui.fine}>
-            Se o telefone já estiver no Pulse, a conversa abre com essa pessoa: ninguém é cadastrado duas vezes. Quem é novo
+            Se o telefone já estiver no Clinavy, a conversa abre com essa pessoa: ninguém é cadastrado duas vezes. Quem é novo
             entra em Vendas como contato.
           </p>
         </>
@@ -1735,7 +1735,7 @@ function StartConversation({ onDone }: { onDone: (id: ID) => void }) {
 }
 
 /*
-  The Pulse in Conversas: the clinic's internal thread with its assistant, pinned
+  Clinavy in Conversas: the clinic's internal thread with its assistant, pinned
   above the people. It is never a WhatsApp conversation and says so; what it
   answers is calculated from the clinic's own data (AskConversation).
 */
@@ -1746,7 +1746,7 @@ function PulsePinned({ current, onOpen }: { current: boolean; onOpen: () => void
         <Pulse className={styles.pulseAvatar} still />
         <span className={styles.itemMain}>
           <span className={styles.itemTop}>
-            <strong>Pulse</strong>
+            <strong>Clinavy</strong>
             <span className={styles.kind}>Interno</span>
           </span>
           <span className={styles.preview}>Pergunte sobre agenda, vendas, pacientes e estoque.</span>
@@ -1759,14 +1759,14 @@ function PulsePinned({ current, onOpen }: { current: boolean; onOpen: () => void
 function PulsePane({ onBack }: { onBack: () => void }) {
   const [state, setState] = useState<PulseState>("idle");
   return (
-    <section className={styles.chatCol} aria-label="Conversa com o Pulse">
+    <section className={styles.chatCol} aria-label="Conversa com o Clinavy">
       <header className={styles.chatHead}>
         <button type="button" className={styles.back} onClick={onBack} aria-label="Voltar às conversas">
           ←
         </button>
         <Pulse className={styles.pulseHead} state={state} greet />
         <div className={styles.chatWho}>
-          <strong>Pulse</strong>
+          <strong>Clinavy</strong>
           <span>Assistente da clínica · conversa interna, nada é enviado a pacientes</span>
         </div>
       </header>

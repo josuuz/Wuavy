@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 
-import { createClinic } from "@/app/(app)/pulse/comecar/actions";
+import { createClinic } from "@/app/(app)/clinavy/comecar/actions";
 import { LOGO_MAX, LOGO_TYPES, SEGMENTS, TEAM_SIZES } from "@/lib/flow/types";
 import { SEGMENT_LABEL, TEAM_LABEL, WEEK } from "../demo/copy";
 import { Field, FormError } from "../demo/forms";
@@ -18,8 +18,8 @@ import styles from "./AuthFrame.module.css";
 */
 
 const STEPS = [
-  { short: "Clínica", title: "Vamos configurar seu Pulse", lead: "Três passos curtos. Dá para mudar tudo depois." },
-  { short: "Operação", title: "Sobre sua operação", lead: "Para o Pulse falar a língua da sua clínica." },
+  { short: "Clínica", title: "Vamos configurar seu Clinavy", lead: "Três passos curtos. Dá para mudar tudo depois." },
+  { short: "Operação", title: "Sobre sua operação", lead: "Para o Clinavy falar a língua da sua clínica." },
   { short: "Personalização", title: "Personalização", lead: "O jeito da sua clínica. O logo é opcional; o resto já vem preenchido." },
 ];
 
@@ -256,7 +256,7 @@ function Ready({ team }: { team: boolean }) {
         <span />
       </span>
       <h1 id="pronto" className={ui.title}>
-        Seu Pulse está pronto.
+        Seu Clinavy está pronto.
       </h1>
       {team ? (
         <>
@@ -264,10 +264,10 @@ function Ready({ team }: { team: boolean }) {
             A clínica foi criada. Quer adicionar sua equipe agora? Cada pessoa entra com o próprio e-mail e senha.
           </p>
           <div className={ui.actions}>
-            <Link href="/pulse/app/configuracoes#equipe" className={ui.primary}>
+            <Link href="/clinavy/app/configuracoes#equipe" className={ui.primary}>
               Adicionar equipe
             </Link>
-            <Link href="/pulse/app" className={ui.quiet}>
+            <Link href="/clinavy/app" className={ui.quiet}>
               Fazer isso depois
             </Link>
           </div>
@@ -275,10 +275,10 @@ function Ready({ team }: { team: boolean }) {
       ) : (
         <>
           <p className={ui.lead}>
-            A clínica foi criada. No primeiro acesso, o Pulse mostra o que preparar para começar a encontrar oportunidades.
+            A clínica foi criada. No primeiro acesso, o Clinavy mostra o que preparar para começar a encontrar oportunidades.
           </p>
-          <Link href="/pulse/app" className={ui.primary}>
-            Entrar no Pulse
+          <Link href="/clinavy/app" className={ui.primary}>
+            Entrar no Clinavy
           </Link>
         </>
       )}

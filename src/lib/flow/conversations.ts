@@ -9,7 +9,7 @@ import type { FlowData, ID, Lead, Patient } from "./types";
   conversation_messages, migration 0009): one conversation per person, each
   entry with its direction, channel, time and author. Until WhatsApp is
   connected, the team registers what happened by hand (a message, a call, a
-  note); the Pulse never presents one of those as received or sent by
+  note); Clinavy never presents one of those as received or sent by
   WhatsApp itself. When the integration comes, its messages enter the same
   conversations with channel "whatsapp" and their provider id (which keeps a
   message from entering twice).
@@ -76,7 +76,7 @@ export interface Message {
   authorId?: ID;
   /** A real clinic's entries say how they happened. */
   channel?: Channel;
-  /** Sent through WhatsApp by the Pulse: where it is (sending, sent, delivered, read, failed). */
+  /** Sent through WhatsApp by Clinavy: where it is (sending, sent, delivered, read, failed). */
   delivery?: DeliveryStatus;
 }
 
@@ -167,7 +167,7 @@ export function personOf(data: FlowData, c: Conversation): { lead?: Lead; patien
 }
 
 /**
- * The conversation as the rest of the Pulse knows the person now: the name
+ * The conversation as the rest of Clinavy knows the person now: the name
  * and phone come from the contact or the patient, never from a copy taken
  * when the conversation was loaded, so an edit in Vendas or Pacientes shows here.
  */
@@ -195,7 +195,7 @@ export function waitingOnClinic(messages: Message[]) {
   return last?.direction === "in";
 }
 
-/** At most one thing the Pulse wants said about this conversation, the most urgent first. */
+/** At most one thing Clinavy wants said about this conversation, the most urgent first. */
 export type ConversationSignal =
   | { kind: "stale"; text: string; action: string }
   | { kind: "return"; text: string; action: string }

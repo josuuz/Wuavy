@@ -17,7 +17,7 @@ import type { ptBR } from "./pt-BR";
 */
 
 const nav: NavItem[] = [
-  { label: "Pulse", href: "/pulse", hint: "Crescimento para clínicas" },
+  { label: "Clinavy", href: "/clinavy", hint: "Crescimento para clínicas" },
   { label: "Serviços", href: "/#servicos" },
   { label: "Sistemas", href: "/#sistemas" },
   { label: "Projetos", href: "/#projetos" },
@@ -250,12 +250,12 @@ const passo: PassoCopy = {
 */
 const privacy = ({ email, whatsapp, talk }: LegalContext): LegalDoc => ({
   metaTitle: "Política de Privacidade",
-  metaDescription: "Como a Wuavy trata dados pessoais no site e no Wuavy Pulse, nos termos da LGPD.",
+  metaDescription: "Como a Wuavy trata dados pessoais no site e no Clinavy, nos termos da LGPD.",
   title: "Política de Privacidade",
   updated: "Atualizada a 7 de outubro de 2026",
   lead: (
     <>
-      Como a Wuavy trata dados pessoais no site wuavy.com e no Wuavy Pulse, o sistema de gestão e crescimento para
+      Como a Wuavy trata dados pessoais no site wuavy.com e no Clinavy, o sistema de gestão e crescimento para
       clínicas, nos termos da Lei Geral de Proteção de Dados do Brasil (Lei 13.709/2018).
     </>
   ),
@@ -264,10 +264,10 @@ const privacy = ({ email, whatsapp, talk }: LegalContext): LegalDoc => ({
       title: "Quem faz o quê",
       body: (
         <p>
-          No Wuavy Pulse, a <strong>clínica é a responsável pelo tratamento</strong> dos dados dos seus pacientes e
+          No Clinavy, a <strong>clínica é a responsável pelo tratamento</strong> dos dados dos seus pacientes e
           contactos: é ela que decide o que registar e para quê. A <strong>Wuavy é a subcontratante</strong>: trata esses
           dados apenas para prestar o serviço, de acordo com as instruções da clínica. Quanto aos dados da conta de quem usa
-          o Pulse e de quem fala com a Wuavy através do site, a responsável é a Wuavy.
+          o Clinavy e de quem fala com a Wuavy através do site, a responsável é a Wuavy.
         </p>
       ),
     },
@@ -293,7 +293,7 @@ const privacy = ({ email, whatsapp, talk }: LegalContext): LegalDoc => ({
             <strong>Processo clínico, se a clínica o usar:</strong> queixa principal e notas de cada consulta. São dados de
             saúde, sensíveis à luz da LGPD: só o responsável e os profissionais da clínica os leem ou escrevem, nunca a
             receção, e a restrição é aplicada na base de dados. A clínica é a responsável pelo tratamento e responde pelas
-            regras da sua ordem profissional sobre registos clínicos; o registo no Pulse não tem certificação digital.
+            regras da sua ordem profissional sobre registos clínicos; o registo no Clinavy não tem certificação digital.
           </li>
           <li>
             <strong>Pagamento:</strong> quando a subscrição é feita online, o cartão é introduzido no formulário do Mercado
@@ -314,7 +314,7 @@ const privacy = ({ email, whatsapp, talk }: LegalContext): LegalDoc => ({
           cobrar a subscrição, dar apoio, manter a segurança e cumprir obrigações legais. Os fundamentos são a execução do
           contrato, o interesse legítimo (segurança e prevenção de fraude) e o cumprimento de obrigações legais. Para os
           dados dos pacientes, o fundamento é definido pela clínica, enquanto responsável. Com a conta criada para a
-          demonstração, a Wuavy pode entrar em contacto consigo sobre o Pulse (interesse legítimo).
+          demonstração, a Wuavy pode entrar em contacto consigo sobre o Clinavy (interesse legítimo).
         </p>
       ),
     },
@@ -324,8 +324,8 @@ const privacy = ({ email, whatsapp, talk }: LegalContext): LegalDoc => ({
         <p>
           Apenas com os fornecedores necessários para o serviço funcionar: Supabase (base de dados e autenticação), Vercel
           (alojamento) e Mercado Pago (pagamentos, quando a subscrição é online). Alguns destes fornecedores podem tratar
-          dados em servidores fora do Brasil. As mensagens preparadas pelo Pulse são enviadas pela própria clínica, no
-          WhatsApp dela: o Pulse não envia mensagens. A Wuavy não vende dados pessoais.
+          dados em servidores fora do Brasil. As mensagens preparadas pelo Clinavy são enviadas pela própria clínica, no
+          WhatsApp dela: o Clinavy não envia mensagens. A Wuavy não vende dados pessoais.
         </p>
       ),
     },
@@ -359,16 +359,16 @@ const privacy = ({ email, whatsapp, talk }: LegalContext): LegalDoc => ({
             <a href={talk} target="_blank" rel="noopener noreferrer">
               WhatsApp, {whatsapp}
             </a>
-            . Se é paciente de uma clínica que usa o Pulse, faça o pedido à clínica: a Wuavy ajuda a clínica a responder.
+            . Se é paciente de uma clínica que usa o Clinavy, faça o pedido à clínica: a Wuavy ajuda a clínica a responder.
           </p>
-          <p>A exportação dos dados da clínica diretamente no Pulse chega em breve; até lá, é feita a pedido.</p>
+          <p>A exportação dos dados da clínica diretamente no Clinavy chega em breve; até lá, é feita a pedido.</p>
         </>
       ),
     },
     {
       title: "Alterações a esta política",
       body: (
-        <p>Quando esta política mudar, a data acima é atualizada e as alterações importantes são avisadas no Pulse.</p>
+        <p>Quando esta política mudar, a data acima é atualizada e as alterações importantes são avisadas no Clinavy.</p>
       ),
     },
   ],
@@ -376,12 +376,12 @@ const privacy = ({ email, whatsapp, talk }: LegalContext): LegalDoc => ({
 
 const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
   metaTitle: "Termos de Utilização",
-  metaDescription: "Os termos de utilização do Wuavy Pulse, o sistema de gestão e crescimento para clínicas.",
+  metaDescription: "Os termos de utilização do Clinavy, o sistema de gestão e crescimento para clínicas.",
   title: "Termos de Utilização",
   updated: "Atualizados a 6 de outubro de 2026",
   lead: (
     <>
-      Estes termos aplicam-se à utilização do Wuavy Pulse. Ao criar uma conta, aceita estes termos e a{" "}
+      Estes termos aplicam-se à utilização do Clinavy. Ao criar uma conta, aceita estes termos e a{" "}
       <Link href={privacyHref}>Política de Privacidade</Link>.
     </>
   ),
@@ -390,8 +390,8 @@ const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
       title: "O serviço",
       body: (
         <p>
-          O Wuavy Pulse é um sistema web para as clínicas organizarem pacientes, vendas, agenda, procedimentos e stock, e
-          encontrarem oportunidades a partir desses dados. O que aparece no Pulse marcado como <strong>Em breve</strong> ainda
+          O Clinavy é um sistema web para as clínicas organizarem pacientes, vendas, agenda, procedimentos e stock, e
+          encontrarem oportunidades a partir desses dados. O que aparece no Clinavy marcado como <strong>Em breve</strong> ainda
           não faz parte do serviço.
         </p>
       ),
@@ -400,7 +400,7 @@ const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
       title: "A conta",
       body: (
         <p>
-          Quem cria a conta responde pela clínica no Pulse e pela informação registada. Mantenha a palavra-passe em segredo e
+          Quem cria a conta responde pela clínica no Clinavy e pela informação registada. Mantenha a palavra-passe em segredo e
           avise a Wuavy se suspeitar de um acesso indevido.
         </p>
       ),
@@ -409,9 +409,9 @@ const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
       title: "Plano e pagamento",
       body: (
         <p>
-          O plano Wuavy Pulse custa {price} por mês, cobrados mensalmente. A contratação é feita com a Wuavy ou, quando
+          O plano Clinavy custa {price} por mês, cobrados mensalmente. A contratação é feita com a Wuavy ou, quando
           disponível, online, com cobrança recorrente no cartão através do Mercado Pago. Com a subscrição em atraso ou
-          cancelada, o Pulse fica disponível apenas para consulta: nenhum dado é apagado por isso. O cancelamento interrompe
+          cancelada, o Clinavy fica disponível apenas para consulta: nenhum dado é apagado por isso. O cancelamento interrompe
           as cobranças seguintes.
         </p>
       ),
@@ -422,13 +422,13 @@ const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
         <ul>
           <li>Registe apenas os dados de que a clínica precisa para atender e vender, com fundamento legal para isso (LGPD).</li>
           <li>
-            O processo clínico do Pulse (queixa principal e notas) é um registo de apoio, sem certificação digital: não
+            O processo clínico do Clinavy (queixa principal e notas) é um registo de apoio, sem certificação digital: não
             substitui o registo clínico exigido pela ordem profissional da clínica, que continua responsável por ele. Só o
             responsável e os profissionais acedem a estes registos.
           </li>
           <li>
-            As mensagens preparadas pelo Pulse são enviadas pela clínica, no WhatsApp dela, e são da responsabilidade da
-            clínica. Não use o Pulse para mensagens em massa sem consentimento.
+            As mensagens preparadas pelo Clinavy são enviadas pela clínica, no WhatsApp dela, e são da responsabilidade da
+            clínica. Não use o Clinavy para mensagens em massa sem consentimento.
           </li>
           <li>Não tente aceder a dados de outra clínica nem interferir no funcionamento do serviço.</li>
         </ul>
@@ -444,10 +444,10 @@ const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
       ),
     },
     {
-      title: "O que o Pulse não promete",
+      title: "O que o Clinavy não promete",
       body: (
         <p>
-          O Pulse sugere ações a partir dos dados registados. A receita potencial que mostra é uma estimativa do que está ao
+          O Clinavy sugere ações a partir dos dados registados. A receita potencial que mostra é uma estimativa do que está ao
           alcance, não uma garantia de faturação; as decisões e os contactos são da clínica. A Wuavy trabalha para manter o
           serviço disponível, sem garantir funcionamento ininterrupto.
         </p>
@@ -457,7 +457,7 @@ const terms = ({ talk, price, privacyHref }: LegalContext): LegalDoc => ({
       title: "Alterações e contacto",
       body: (
         <p>
-          Quando estes termos mudarem, a data acima é atualizada e as alterações importantes são avisadas no Pulse. Estes
+          Quando estes termos mudarem, a data acima é atualizada e as alterações importantes são avisadas no Clinavy. Estes
           termos regem-se pela legislação brasileira. Dúvidas:{" "}
           <a href={talk} target="_blank" rel="noopener noreferrer">
             fale com a Wuavy
@@ -506,7 +506,7 @@ export const ptPT: typeof ptBR = {
 
   contact: {
     whatsapp: "Olá! Cheguei através do site da Wuavy.",
-    topics: { question: "Dúvida", privacy: "privacidade e dados", terms: "termos do Wuavy Pulse" },
+    topics: { question: "Dúvida", privacy: "privacidade e dados", terms: "termos do Clinavy" },
   },
 
   home: {
@@ -683,45 +683,44 @@ export const ptPT: typeof ptBR = {
   passo,
 
   /*
-    PULSE by WUAVY, em pt-PT. A mesma estrutura do pt-BR (é ele que define o
+    Clinavy, em pt-PT. A mesma estrutura do pt-BR (é ele que define o
     tipo Dictionary): os mesmos factos, nas palavras de Portugal. O produto em
-    si corre apenas em pt-BR, por isso os nomes dos ecrãs do PULSE — "Visão
+    si corre apenas em pt-BR, por isso os nomes dos ecrãs do Clinavy — "Visão
     geral", "Configurações → Plano" — ficam como o produto os mostra.
   */
   pulse: {
-    name: "Wuavy Pulse",
-    brand: "PULSE",
-    byline: "by WUAVY",
+    name: "Clinavy",
+    brand: "Clinavy",
     pitch: "Sistema de gestão para clínicas de estética",
     meta: {
-      title: "PULSE by WUAVY: sistema de gestão para clínicas de estética",
+      title: "Clinavy: sistema de gestão para clínicas de estética",
       description:
-        "O PULSE reúne a rotina da sua clínica de estética — agenda, pacientes, orçamentos, procedimentos e stock — e mostra o que precisa de atenção hoje: orçamentos sem resposta, regressos previstos e horários vagos.",
+        "O Clinavy reúne a rotina da sua clínica de estética — agenda, pacientes, orçamentos, procedimentos e stock — e mostra o que precisa de atenção hoje: orçamentos sem resposta, regressos previstos e horários vagos.",
     },
 
     chrome: {
-      home: "PULSE by WUAVY: ir para o início da página",
+      home: "Clinavy: ir para o início da página",
       nav: "Secções desta página",
       menu: "Abrir o menu",
       close: "Fechar o menu",
       links: [
         { label: "Como funciona", href: "#como-funciona" },
-        { label: "Por dentro do PULSE", href: "#por-dentro" },
+        { label: "Por dentro do Clinavy", href: "#por-dentro" },
         { label: "Plano", href: "#plano" },
       ],
-      signIn: { label: "Entrar", href: "/pulse/entrar" },
+      signIn: { label: "Entrar", href: "/clinavy/entrar" },
       cta: { label: "Ver a demonstração", href: "#como-funciona" },
       back: { label: "Wuavy", title: "Ir para o site da Wuavy", href: "/" },
       footer: {
-        signature: "PULSE é o sistema de gestão da Wuavy para clínicas de estética.",
+        signature: "Clinavy é o sistema de gestão da Wuavy para clínicas de estética.",
         agency: "Conheça a Wuavy",
         navTitle: "Nesta página",
         productTitle: "Produto",
         legalTitle: "Legal",
         rights: "Todos os direitos reservados.",
         product: [
-          { label: "Entrar no PULSE", href: "/pulse/entrar" },
-          { label: "Assinar", href: "/pulse/assinar" },
+          { label: "Entrar no Clinavy", href: "/clinavy/entrar" },
+          { label: "Assinar", href: "/clinavy/assinar" },
         ],
       },
     },
@@ -729,14 +728,14 @@ export const ptPT: typeof ptBR = {
     hero: {
       label: "Sistema para clínicas de estética",
       title: "A sua clínica pode estar a deixar dinheiro parado.",
-      titleAccent: "O PULSE mostra onde.",
+      titleAccent: "O Clinavy mostra onde.",
       lead: "Organize a sua clínica de estética e encontre orçamentos esquecidos, pacientes sem regresso e horários que precisam de atenção.",
       cta: "Veja como funciona",
       ctaHref: "#como-funciona",
       secondary: { label: "Conhecer o plano", href: "#plano" },
 
       demo: {
-        label: "O PULSE em quatro cenas",
+        label: "O Clinavy em quatro cenas",
         note: "Demonstração com dados fictícios. Nada é enviado daqui.",
         pause: "Pausar",
         resume: "Continuar",
@@ -753,7 +752,7 @@ export const ptPT: typeof ptBR = {
         draftNote: "É um rascunho. Nada foi enviado.",
         scenes: [
           { title: "Um orçamento ficou sem resposta.", caption: "Um orçamento ficou sem resposta." },
-          { title: "O PULSE destaca a oportunidade.", caption: "O PULSE mostra o que merece atenção." },
+          { title: "O Clinavy destaca a oportunidade.", caption: "O Clinavy mostra o que merece atenção." },
           { title: "Um clique abre os detalhes.", caption: "Um clique abre os detalhes." },
           { title: "Outro clique traz a sugestão.", caption: "Outro clique traz a sugestão de mensagem." },
           { title: "A mensagem espera a equipa.", caption: "A sua equipa revê e decide o contacto." },
@@ -778,12 +777,12 @@ export const ptPT: typeof ptBR = {
           detail: "Um cancelamento abriu as 14h de amanhã. A agenda do dia continua cheia; só aquele horário ficou aberto.",
         },
       ],
-      close: "Os sinais já estão nos dados da clínica. O PULSE reúne-os e mostra por onde começar.",
+      close: "Os sinais já estão nos dados da clínica. O Clinavy reúne-os e mostra por onde começar.",
     },
 
     scenarios: {
       chapter: "Como funciona",
-      title: "Veja como o PULSE ajuda a sua equipa a agir.",
+      title: "Veja como o Clinavy ajuda a sua equipa a agir.",
       lead: "Escolha uma situação e clique para experimentar.",
       pick: "Escolha uma situação",
       hint: "Clique para experimentar",
@@ -795,7 +794,7 @@ export const ptPT: typeof ptBR = {
         nextLabel: "Próximo passo",
         draftLabel: "Sugestão de mensagem",
         draftNote: "É um rascunho. Nada foi enviado.",
-        explain: "O PULSE explica o motivo e o próximo passo.",
+        explain: "O Clinavy explica o motivo e o próximo passo.",
         closing: "A sua equipa revê e decide o contacto.",
         step: "Passo {n} de {total}",
       },
@@ -842,11 +841,11 @@ export const ptPT: typeof ptBR = {
     fronts: {
       chapter: "O que ele acompanha",
       title: "Veja o que ele acompanha.",
-      lead: "Sete frentes de oportunidade, calculadas a partir dos dados que a clínica já regista. Cada uma aparece separada, com o valor que representa e o que o PULSE faz com ela.",
+      lead: "Sete frentes de oportunidade, calculadas a partir dos dados que a clínica já regista. Cada uma aparece separada, com o valor que representa e o que o Clinavy faz com ela.",
       count: "7",
-      countLabel: "frentes de oportunidade que o PULSE acompanha",
-      hint: "Escolha uma frente para ver o que o PULSE faz com ela.",
-      doesLabel: "O que o PULSE faz",
+      countLabel: "frentes de oportunidade que o Clinavy acompanha",
+      hint: "Escolha uma frente para ver o que o Clinavy faz com ela.",
+      doesLabel: "O que o Clinavy faz",
       caveatLabel: "Sobre os valores",
       caveat:
         "Receita potencial estimada. Não representa venda realizada. Cada frente é calculada e mostrada separadamente, porque a mesma pessoa pode aparecer em mais de uma: o total não é cumulativo. A decisão e a mensagem final são sempre da sua equipa.",
@@ -904,25 +903,25 @@ export const ptPT: typeof ptBR = {
     },
 
     routine: {
-      chapter: "Por dentro do PULSE",
+      chapter: "Por dentro do Clinavy",
       title: "E a rotina da clínica fica organizada.",
       lead: "Agenda, pacientes, prontuário e oportunidades no mesmo lugar. Um ecrã de cada vez; tudo o que aparece aqui é dado fictício.",
       hint: "Escolha um ecrã",
-      sidebar: "Ecrãs do PULSE",
-      note: "Ecrãs do PULSE com dados fictícios.",
+      sidebar: "Ecrãs do Clinavy",
+      note: "Ecrãs do Clinavy com dados fictícios.",
       screens: [
         {
           id: "visao-geral",
           nav: "Visão geral",
           title: "O dia inteiro num ecrã.",
           text: "O que pede atenção agora, as consultas do dia e a receita potencial em aberto — sem ser preciso abrir um relatório à parte.",
-          benefit: "A sua equipa abre o PULSE e já sabe por onde começar.",
+          benefit: "A sua equipa abre o Clinavy e já sabe por onde começar.",
         },
         {
           id: "agenda",
           nav: "Agenda",
           title: "A agenda que também avisa o que sobrou.",
-          text: "Horários, profissionais e salas no mesmo quadro. Um cancelamento abre espaço, e o PULSE mostra quem pode ocupar.",
+          text: "Horários, profissionais e salas no mesmo quadro. Um cancelamento abre espaço, e o Clinavy mostra quem pode ocupar.",
           benefit: "Menos horário vazio, sem ninguém ter de conferir a agenda de hora a hora.",
         },
         {
@@ -944,7 +943,7 @@ export const ptPT: typeof ptBR = {
           id: "oportunidades",
           nav: "Oportunidades",
           title: "As sete frentes, com valor e ação.",
-          text: "Cada frente com o que representa, quem o PULSE separou para começar e a mensagem pronta para a equipa revisar.",
+          text: "Cada frente com o que representa, quem o Clinavy separou para começar e a mensagem pronta para a equipa revisar.",
           benefit: "A decisão fica rápida porque o trabalho de garimpar os dados já foi feito.",
         },
       ],
@@ -959,18 +958,18 @@ export const ptPT: typeof ptBR = {
           text: "Crie uma conta gratuita e navegue pela demo completa, com os dados fictícios da Clínica Aurora. Nenhuma mensagem, automação ou integração é executada ali.",
           detail: "Precisa de nome, e-mail e palavra-passe. Não precisa de cartão.",
           cta: "Abrir a demo completa",
-          href: "/pulse/demo",
+          href: "/clinavy/demo",
         },
         {
           label: "Assinar",
           text: "A assinatura é feita no cartão, pelo Mercado Pago. A primeira cobrança acontece na contratação e as seguintes a cada mês, na mesma data.",
           detail: "Sem contrato de fidelização e sem taxa de implementação.",
-          cta: "Quero começar com o PULSE",
-          href: "/pulse/assinar",
+          cta: "Quero começar com o Clinavy",
+          href: "/clinavy/assinar",
         },
         {
           label: "Configurar a clínica e começar a usar",
-          text: "Registra a clínica, a equipa, os primeiros procedimentos e pacientes. Um guia de primeiros passos acompanha essa parte dentro do próprio PULSE.",
+          text: "Registra a clínica, a equipa, os primeiros procedimentos e pacientes. Um guia de primeiros passos acompanha essa parte dentro do próprio Clinavy.",
           detail: "Com o acompanhamento da Wuavy, se a clínica quiser.",
         },
       ],
@@ -981,7 +980,7 @@ export const ptPT: typeof ptBR = {
       chapter: "Plano",
       title: "Quanto custa e como começar.",
       lead: "Sem contrato de fidelização e sem taxa de implementação: a assinatura paga o uso do mês.",
-      planName: "PULSE para a sua clínica",
+      planName: "Clinavy para a sua clínica",
       price: "R$ 297",
       per: "/mês",
       billing:
@@ -999,18 +998,18 @@ export const ptPT: typeof ptBR = {
       comingLabel: "Ainda não faz parte do plano",
       coming: [
         "Automações inteligentes",
-        "Pulse AI",
+        "Clinavy AI",
         "Registo de receita recuperada",
         "Fotografias e consentimento no prontuário",
       ],
       cancelLabel: "Cancelamento",
       cancel:
-        "Cancela sozinho, a qualquer momento, em Configurações → Plano. O cancelamento interrompe as cobranças seguintes; o mês já cobrado continua a funcionar até ao fim. Depois disso o PULSE fica só para consulta, e nenhum dado é apagado.",
+        "Cancela sozinho, a qualquer momento, em Configurações → Plano. O cancelamento interrompe as cobranças seguintes; o mês já cobrado continua a funcionar até ao fim. Depois disso o Clinavy fica só para consulta, e nenhum dado é apagado.",
       founderLabel: "Primeiras cinco clínicas",
       founder:
         "As cinco primeiras clínicas a assinar mantêm R$ 297 por mês enquanto a assinatura seguir ativa, mesmo que o valor suba para quem assinar depois. A garantia acompanha a assinatura: se for cancelada, uma nova contratação passa a valer pelo preço em vigor nesse momento.",
-      cta: "Quero começar com o PULSE",
-      ctaHref: "/pulse/assinar",
+      cta: "Quero começar com o Clinavy",
+      ctaHref: "/clinavy/assinar",
       talk: "Falar com a Wuavy",
     },
 
@@ -1019,20 +1018,20 @@ export const ptPT: typeof ptBR = {
       title: "Antes de assinar.",
       items: [
         {
-          q: "Para que clínicas serve o PULSE?",
-          a: "O PULSE foi feito para clínicas de estética: é nelas que procedimento, intervalo de regresso, orçamento e stock encaixam como o sistema espera. Se a sua clínica é de outra área, fale com a Wuavy antes de assinar.",
+          q: "Para que clínicas serve o Clinavy?",
+          a: "O Clinavy foi feito para clínicas de estética: é nelas que procedimento, intervalo de regresso, orçamento e stock encaixam como o sistema espera. Se a sua clínica é de outra área, fale com a Wuavy antes de assinar.",
         },
         {
           q: "Preciso de instalar algo?",
-          a: "Não. O PULSE funciona no navegador, no computador e no telemóvel. No telemóvel, pode adicionar o PULSE ao ecrã inicial e ele abre como uma aplicação — sem loja de aplicações e sem instalar nada.",
+          a: "Não. O Clinavy funciona no navegador, no computador e no telemóvel. No telemóvel, pode adicionar o Clinavy ao ecrã inicial e ele abre como uma aplicação — sem loja de aplicações e sem instalar nada.",
         },
         {
           q: "Como funciona a demo?",
-          a: "São duas coisas diferentes. A demonstração desta página é uma apresentação: corre aqui mesmo, com dados fictícios, e não cria conta. A demo completa é o PULSE inteiro navegável: pede uma conta gratuita (nome, e-mail e palavra-passe) e usa os dados da Clínica Aurora, uma clínica fictícia. Nela, toda a ação é simulada no navegador — nenhuma mensagem, automação ou integração é executada.",
+          a: "São duas coisas diferentes. A demonstração desta página é uma apresentação: corre aqui mesmo, com dados fictícios, e não cria conta. A demo completa é o Clinavy inteiro navegável: pede uma conta gratuita (nome, e-mail e palavra-passe) e usa os dados da Clínica Aurora, uma clínica fictícia. Nela, toda a ação é simulada no navegador — nenhuma mensagem, automação ou integração é executada.",
         },
         {
-          q: "O PULSE envia mensagens sozinho?",
-          a: "Não. O PULSE identifica a oportunidade, escolhe por onde começar e deixa a mensagem pronta, com o histórico da pessoa. Quem lê, ajusta e envia é alguém da sua equipa, pelo WhatsApp da própria clínica — e a responsabilidade pela mensagem é da clínica. Automações inteligentes e recuperação automática de receita estão entre os recursos que ainda não existem.",
+          q: "O Clinavy envia mensagens sozinho?",
+          a: "Não. O Clinavy identifica a oportunidade, escolhe por onde começar e deixa a mensagem pronta, com o histórico da pessoa. Quem lê, ajusta e envia é alguém da sua equipa, pelo WhatsApp da própria clínica — e a responsabilidade pela mensagem é da clínica. Automações inteligentes e recuperação automática de receita estão entre os recursos que ainda não existem.",
         },
         {
           q: "O que significa receita potencial?",
@@ -1040,15 +1039,15 @@ export const ptPT: typeof ptBR = {
         },
         {
           q: "Como começo a usar?",
-          a: "Crie a conta gratuita e conheça a demo completa. Quando decidir, assine pelo cartão e registre a clínica, a equipa, os primeiros procedimentos e pacientes — um guia de primeiros passos acompanha essa parte dentro do PULSE. Não há migração automática de outro sistema: o que já existe é registado por quem conhece a clínica, com o acompanhamento da Wuavy se quiserem.",
+          a: "Crie a conta gratuita e conheça a demo completa. Quando decidir, assine pelo cartão e registre a clínica, a equipa, os primeiros procedimentos e pacientes — um guia de primeiros passos acompanha essa parte dentro do Clinavy. Não há migração automática de outro sistema: o que já existe é registado por quem conhece a clínica, com o acompanhamento da Wuavy se quiserem.",
         },
         {
           q: "Como funciona a assinatura?",
-          a: "R$ 297 por mês, no cartão, pelo Mercado Pago. A primeira cobrança acontece na contratação e as seguintes a cada mês, na mesma data, no mesmo cartão, até ao cancelamento. Não há contrato de fidelização nem taxa de implementação. Se uma cobrança atrasar, o PULSE continua disponível enquanto o Mercado Pago tenta de novo; o cartão é trocado no mesmo ecrã do plano.",
+          a: "R$ 297 por mês, no cartão, pelo Mercado Pago. A primeira cobrança acontece na contratação e as seguintes a cada mês, na mesma data, no mesmo cartão, até ao cancelamento. Não há contrato de fidelização nem taxa de implementação. Se uma cobrança atrasar, o Clinavy continua disponível enquanto o Mercado Pago tenta de novo; o cartão é trocado no mesmo ecrã do plano.",
         },
         {
           q: "Como funciona o cancelamento?",
-          a: "O responsável pela clínica cancela sozinho, a qualquer momento, em Configurações → Plano, sem precisar de falar com ninguém. O cancelamento vale a partir do pedido e interrompe as cobranças seguintes; o mês já cobrado não é devolvido e, em troca, o PULSE continua a funcionar até ao fim dele. Depois disso o PULSE fica disponível só para consulta — nenhum dado é apagado.",
+          a: "O responsável pela clínica cancela sozinho, a qualquer momento, em Configurações → Plano, sem precisar de falar com ninguém. O cancelamento vale a partir do pedido e interrompe as cobranças seguintes; o mês já cobrado não é devolvido e, em troca, o Clinavy continua a funcionar até ao fim dele. Depois disso o Clinavy fica disponível só para consulta — nenhum dado é apagado.",
         },
       ],
     },
@@ -1057,10 +1056,10 @@ export const ptPT: typeof ptBR = {
       chapter: "Começar",
       title: "Veja o próximo passo da sua clínica com mais clareza.",
       lead: "Conheça a demo completa com dados fictícios e, quando fizer sentido, assine e comece com os dados da sua própria clínica.",
-      cta: "Quero começar com o PULSE",
-      ctaHref: "/pulse/assinar",
+      cta: "Quero começar com o Clinavy",
+      ctaHref: "/clinavy/assinar",
       talk: "Falar com a Wuavy",
-      demo: { href: "/pulse/demo", ready: true, label: "Abrir a demo completa", soon: "Demo interativa em breve" },
+      demo: { href: "/clinavy/demo", ready: true, label: "Abrir a demo completa", soon: "Demo interativa em breve" },
     },
   },
 

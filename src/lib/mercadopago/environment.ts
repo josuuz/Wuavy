@@ -1,6 +1,6 @@
 /*
   Em que ambiente a cobrança pode falar com o Mercado Pago, e com quais
-  credenciais. Compartilhado pelo Pulse e pelas Assinaturas de Sites: os dois
+  credenciais. Compartilhado pelo Clinavy e pelas Assinaturas de Sites: os dois
   usam a mesma conta do Mercado Pago, então a regra é uma só.
 
   O formato da chave não diz nada: o Access Token de uma conta de teste
@@ -68,7 +68,7 @@ export function decide(env: Env): Decision {
 }
 
 /**
- * A decisão para o checkout do Pulse, que usa a chave pública no navegador:
+ * A decisão para o checkout do Clinavy, que usa a chave pública no navegador:
  * além de `decide`, uma chave pública "TEST-" (essa sim prova ser de teste)
  * não convive com um ambiente declarado como real. A cobrança da manutenção
  * não usa a chave pública e continua decidindo só por `decide`.

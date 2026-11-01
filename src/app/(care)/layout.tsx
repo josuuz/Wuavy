@@ -6,12 +6,12 @@ import { brandColors } from "@/lib/brand";
 /*
   A manutenção de sites: a página de assinatura de cada cliente e o painel.
 
-  Um grupo de rotas separado, fora do (app): a manutenção não é o Pulse e não
+  Um grupo de rotas separado, fora do (app): a manutenção não é o Clinavy e não
   herda o manifesto PWA nem o tema dele. Herda do documento (app/layout.tsx)
   a fonte, os tokens da marca e os observadores de movimento — a identidade
   do site, que é de quem este produto é.
 
-  Em pt-BR, como o Pulse: estas páginas não são públicas e não entram no
+  Em pt-BR, como o Clinavy: estas páginas não são públicas e não entram no
   mapa de idiomas do site.
 */
 

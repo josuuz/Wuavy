@@ -160,7 +160,7 @@ export interface SignupResult {
 /**
  * Meta's Embedded Signup finished in the owner's browser: the code becomes the
  * clinic's token here, the ids the browser relayed are checked against what
- * that token reaches, and the number starts sending its messages to the Pulse.
+ * that token reaches, and the number starts sending its messages to Clinavy.
  */
 export async function completeEmbeddedSignup(input: SignupResult): Promise<Result> {
   const who = await allowed((can) => can.admin);

@@ -3,7 +3,7 @@
   sua última cobrança significam, e a conferência da assinatura HMAC de um
   aviso (webhook).
 
-  Módulo compartilhado: o Pulse (lib/flow/billing.ts) e as Assinaturas de
+  Módulo compartilhado: o Clinavy (lib/flow/billing.ts) e as Assinaturas de
   Sites (lib/maintenance/billing.ts) importam daqui, em vez de cada um ter a
   sua própria cópia de statusFrom e companhia. Puro de propósito — nada de
   credenciais, de fetch e de Supabase — para poder ser testado sem rede
@@ -145,7 +145,7 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
  * endereço https que seja o próprio domínio canônico (ou um subdomínio dele)
  * também falha. Qualquer outro https é um endereço de teste válido. Fora do
  * modo de teste, o comportamento é idêntico ao de httpsUrl — isto não muda
- * nada em produção nem no Pulse, que continua chamando httpsUrl direto.
+ * nada em produção nem no Clinavy, que continua chamando httpsUrl direto.
  */
 export function testSafeUrl(path: string, siteUrl: string, canonical: string, isTestMode: boolean): string {
   if (!isTestMode) return httpsUrl(path, siteUrl, canonical);
@@ -176,7 +176,7 @@ export function testSafeUrl(path: string, siteUrl: string, canonical: string, is
   billing.ts:syncStanding escrevia esse campo (ou a ausência dele) direto em
   current_period_end, qualquer que fosse o status — o que apagava, no exato
   momento em que uma clínica cancelava, a data que lib/flow/access.ts:
-  paidThrough usa para manter o Pulse funcionando até o fim do mês já pago.
+  paidThrough usa para manter o Clinavy funcionando até o fim do mês já pago.
 */
 
 /*
@@ -319,7 +319,7 @@ export async function confirmedStatus(
  * Pago recusa — o mesmo contrato que o erro de cada produto já tem, sem este
  * módulo precisar conhecer a classe de erro de nenhum dos dois.
  *
- * O Pulse (flow/billing.ts) e as Assinaturas de Sites (maintenance/billing.ts)
+ * O Clinavy (flow/billing.ts) e as Assinaturas de Sites (maintenance/billing.ts)
  * ligam as chamadas de verdade; só a ordem e a decisão de repetir moram aqui.
  */
 export async function runCancel(

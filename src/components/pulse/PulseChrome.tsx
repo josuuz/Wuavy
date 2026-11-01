@@ -6,7 +6,7 @@ import { PulseFooter } from "./PulseFooter";
 import { PulseNav } from "./PulseNav";
 
 /*
-  The chrome PULSE wears: its own header, its own short footer.
+  The chrome Clinavy wears: its own header, its own short footer.
 
   The agency's header is not reused on purpose. Its menu is the agency's —
   Serviços, Sistemas, Projetos, FAQ, Contato — and on this page those compete

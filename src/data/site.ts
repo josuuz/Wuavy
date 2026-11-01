@@ -17,9 +17,9 @@ const email: ContactChannel = {
 
 /*
   O WhatsApp Business oficial da WUAVY: todos os CTAs do site, a entrega do
-  diagnóstico do PASSO e o "falar com a Wuavy" do Pulse. Não é o número das
-  clínicas no Pulse (esse é de cada clínica, conectado pela Meta em
-  lib/whatsapp). A mensagem aqui é a pt-BR, que o app Pulse usa; o site troca
+  diagnóstico do PASSO e o "falar com a Wuavy" do Clinavy. Não é o número das
+  clínicas no Clinavy (esse é de cada clínica, conectado pela Meta em
+  lib/whatsapp). A mensagem aqui é a pt-BR, que o app Clinavy usa; o site troca
   pela do idioma escolhido (dictionaries → contact.whatsapp).
 */
 export const whatsapp = {

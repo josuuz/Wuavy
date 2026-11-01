@@ -1,6 +1,6 @@
 /*
   inspectPayment (lib/flow/billing.ts) — GET /v1/payments/{id}, a ferramenta
-  mínima que o painel /pulse/admin usa para diagnosticar uma recusa quando o
+  mínima que o painel /clinavy/admin usa para diagnosticar uma recusa quando o
   suporte do Mercado Pago só devolve o status_detail por esse endpoint (não
   /preapproval nem /authorized_payments). Nunca repassa pagador, cartão ou
   identificação — só os campos testados abaixo.

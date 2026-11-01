@@ -14,7 +14,7 @@ import type {
 } from "./types";
 
 /*
-  How the Pulse finds opportunities. Plain functions over FlowData: the same
+  How Clinavy finds opportunities. Plain functions over FlowData: the same
   rules run on the demo's data today and on a clinic's real data later.
 */
 
@@ -634,7 +634,7 @@ export function recovered(d: FlowData) {
 }
 
 /**
- * What the Pulse found and brought back in the last 30 days: the case a trial
+ * What Clinavy found and brought back in the last 30 days: the case a trial
  * makes for itself. The same count over the demo's data or a real clinic's.
  */
 export function valueDelivered(d: FlowData, ops: Opportunity[]) {

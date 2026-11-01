@@ -1,5 +1,5 @@
 /*
-  PULSE's header and footer. Brand tokens only (styles/tokens.css): the page
+  Clinavy's header and footer. Brand tokens only (styles/tokens.css): the page
   belongs to the Wuavy site, so it is black, off-white and the Signal orange —
   the same orange the product uses as its accent.
 */
@@ -51,22 +51,13 @@
   gap: 0.05rem;
 }
 
-/* PULSE leads the mark; WUAVY signs it underneath, small. */
+/* CLINAVY alone: the agency is reached by the link back, not signed under the mark. */
 .brandName {
   font-size: clamp(1.125rem, 0.95rem + 0.5vw, 1.5rem);
   font-weight: 900;
   letter-spacing: 0.01em;
   line-height: 1;
   color: var(--wuavy-signal);
-}
-
-.brandBy {
-  font-size: 0.5rem;
-  font-weight: 500;
-  font-style: italic;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  color: var(--wuavy-stone);
 }
 
 .nav {
@@ -205,14 +196,6 @@
   letter-spacing: 0.005em;
   line-height: 1;
   color: var(--wuavy-signal);
-}
-
-.footerBrandBy {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  font-style: italic;
-  letter-spacing: 0.04em;
-  color: var(--text-2);
 }
 
 .footerSignature {

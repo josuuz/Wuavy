@@ -380,7 +380,7 @@ export function createDemoData(clock = new Date()): FlowData {
     });
 
   // Most earlier patients started as a contact too: that is where their origin comes from.
-  // Every third one came before the Pulse and was registered straight as a patient.
+  // Every third one came before Clinavy and was registered straight as a patient.
   patients.forEach((patient, i) => {
     const first = firstProcedure.get(patient.id);
     if (!first || i % 3 === 2) return;
@@ -452,7 +452,7 @@ export function createDemoData(clock = new Date()): FlowData {
 
   const activities: Activity[] = (
     [
-      [0, 8, "O Pulse encontrou 23 orçamentos sem resposta."],
+      [0, 8, "O Clinavy encontrou 23 orçamentos sem resposta."],
       [0, 8, "O lote SB-2407 de skinbooster entrou nos 30 dias finais de validade."],
       [0, 8, "Cancelamento de hoje às 16h30: o horário está livre."],
       [-1, 18, "A recepção confirmou 3 atendimentos de amanhã."],

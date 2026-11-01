@@ -14,13 +14,13 @@ import type {
 import type { Focus } from "./store";
 
 /*
-  The Pulse's words: its screens, and how each thing is said. Plain words for
+  Clinavy's words: its screens, and how each thing is said. Plain words for
   a front desk that never used a CRM: contact, sale, patient, return.
 */
 
-/** The demo's address. The real Pulse runs the same screens under APP_BASE. */
-export const BASE = "/pulse/demo";
-export const APP_BASE = "/pulse/app";
+/** The demo's address. The real Clinavy runs the same screens under APP_BASE. */
+export const BASE = "/clinavy/demo";
+export const APP_BASE = "/clinavy/app";
 
 /**
  * The screens, in the menu's order: what needs attention, where the money is,
@@ -61,7 +61,7 @@ const FOCUS_VIEW: Record<Focus["to"], string> = {
 export const focusHref = (focus: Focus, base = BASE) => viewHref(FOCUS_VIEW[focus.to], base);
 
 /** Where subscribing happens: the checkout, after signing in or creating the account. */
-export const CHECKOUT = "/pulse/assinar";
+export const CHECKOUT = "/clinavy/assinar";
 
 /**
  * Whether the online checkout (Mercado Pago) is configured. Without it, the
@@ -69,17 +69,17 @@ export const CHECKOUT = "/pulse/assinar";
  */
 export const ONLINE_CHECKOUT = Boolean(process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY);
 
-/** What the Pulse says about the clinic's plan: the demo, the subscription and how it stands. */
+/** What Clinavy says about the clinic's plan: the demo, the subscription and how it stands. */
 export const PLAN = {
   demo: {
     badge: "Demo",
     text: "Você está vendo dados fictícios. Nenhuma mensagem, automação ou integração real é executada.",
-    cta: "Quero ver o Pulse com meus dados",
-    topic: "Wuavy Pulse com os dados da minha clínica",
+    cta: "Quero ver o Clinavy com meus dados",
+    topic: "Clinavy com os dados da minha clínica",
   },
   subscribe: {
     open: "Assinar",
-    title: "Wuavy Pulse",
+    title: "Clinavy",
     text: "Transforme dados da sua clínica em oportunidades de crescimento.",
     includes: [
       "Pacientes, vendas e orçamentos",
@@ -89,19 +89,19 @@ export const PLAN = {
       "Mensagens prontas para enviar pelo WhatsApp",
     ],
     /** Part of the plan once they exist: shown, marked as not here yet. */
-    coming: ["Automações inteligentes", "Pulse AI", "Rastreamento de receita recuperada"],
-    cta: "Assinar Pulse — R$ 297/mês",
+    coming: ["Automações inteligentes", "Clinavy AI", "Rastreamento de receita recuperada"],
+    cta: "Assinar Clinavy — R$ 297/mês",
     /** Without the online checkout: the plan is contracted with Wuavy. */
     offline: {
       cta: "Falar com a Wuavy para assinar",
-      note: "Estamos finalizando a ativação online. Por enquanto, a contratação é feita direto com a Wuavy, que ativa o Pulse nesta mesma conta.",
+      note: "Estamos finalizando a ativação online. Por enquanto, a contratação é feita direto com a Wuavy, que ativa o Clinavy nesta mesma conta.",
     },
     back: { demo: "Continuar explorando a demo", other: "Agora não" },
-    topic: "assinar o Wuavy Pulse",
+    topic: "assinar o Clinavy",
   },
   /** The plan's chip, by status: discreet once the clinic pays. */
   chip: {
-    active: "Plano Pulse",
+    active: "Plano Clinavy",
     past_due: "Pagamento em atraso",
     pending: "Pagamento em processamento",
     cancelled: "Assinatura cancelada",
@@ -121,7 +121,7 @@ export const PLAN = {
       title: "Novo cartão",
       submit: "Salvar cartão",
       close: "Agora não",
-      safe: "Os dados do cartão vão direto para o Mercado Pago: o Pulse não vê nem guarda o número do cartão.",
+      safe: "Os dados do cartão vão direto para o Mercado Pago: o Clinavy não vê nem guarda o número do cartão.",
       test: "Ambiente de teste: use um cartão de teste do Mercado Pago; nada é cobrado.",
       /*
         O cartão foi aceito e a assinatura foi lida de volta. Ainda assim a
@@ -144,12 +144,12 @@ export const PLAN = {
     },
     cancel: {
       open: "Cancelar assinatura",
-      ask: "Cancelar a assinatura do Pulse?",
+      ask: "Cancelar a assinatura do Clinavy?",
       /** O que acontece, dito antes de confirmar: sem surpresa depois. */
       what: [
         "As próximas cobranças param. Nada mais é cobrado no cartão.",
-        "O mês já pago continua valendo: o Pulse funciona normalmente até o fim dele.",
-        "Depois disso o Pulse fica só para consulta. Nenhum dado é apagado.",
+        "O mês já pago continua valendo: o Clinavy funciona normalmente até o fim dele.",
+        "Depois disso o Clinavy fica só para consulta. Nenhum dado é apagado.",
         "Você pode assinar de novo quando quiser — pelo preço em vigor naquele momento.",
       ],
       confirm: "Sim, cancelar a assinatura",
@@ -165,10 +165,10 @@ export const PLAN = {
     },
     pending: {
       title: "Seu pagamento está sendo processado.",
-      text: "Assim que o Mercado Pago confirmar, o Pulse volta a liberar tudo. Seus dados continuam aqui.",
+      text: "Assim que o Mercado Pago confirmar, o Clinavy volta a liberar tudo. Seus dados continuam aqui.",
     },
     cancelled: {
-      title: "Sua assinatura do Pulse foi cancelada.",
+      title: "Sua assinatura do Clinavy foi cancelada.",
       text: "Seus dados continuam aqui, só para consulta. Assine de novo para voltar a criar e editar.",
       cta: "Assinar de novo",
     },
@@ -176,7 +176,7 @@ export const PLAN = {
 };
 
 /**
- * The first-run guide, told by the Pulse: a short list the clinic can follow,
+ * The first-run guide, told by Clinavy: a short list the clinic can follow,
  * skip or leave for later. `go` is said away from the step's screen, `here`
  * on it. Six steps everywhere; in the demo the first is already done (its
  * clinic comes configured, and the demo has no settings).
@@ -184,8 +184,8 @@ export const PLAN = {
 export const GUIDE = {
   welcome: {
     /** When the first step is the clinic's profile. */
-    clinic: "Vamos deixar o Pulse com a cara da sua clínica?",
-    tour: "Quer conhecer o Pulse pelo que ele faz de melhor? Leva um minuto.",
+    clinic: "Vamos deixar o Clinavy com a cara da sua clínica?",
+    tour: "Quer conhecer o Clinavy pelo que ele faz de melhor? Leva um minuto.",
     start: { clinic: "Começar configuração", tour: "Começar" },
     later: "Agora não",
   },
@@ -196,20 +196,20 @@ export const GUIDE = {
   go: (label: string) => `Ir para ${label}`,
   hide: "Ocultar guia",
   done: {
-    text: "Tudo pronto. O Pulse já conhece a sua clínica e começa a apontar o que fazer.",
+    text: "Tudo pronto. O Clinavy já conhece a sua clínica e começa a apontar o que fazer.",
     /** Some steps were skipped: they stay in the count, and the tutorial can be seen again. */
     skipped: (n: number) =>
       `Você pulou ${n === 1 ? "1 etapa" : `${n} etapas`}. Ela${n === 1 ? "" : "s"} continua${n === 1 ? "" : "m"} aqui: dá para rever o tutorial em Configurações.`,
     cta: "Concluir",
   },
-  restart: { title: "Ajuda e tutorial", text: "Reveja os primeiros passos com o Pulse quando quiser.", cta: "Rever o tutorial" },
+  restart: { title: "Ajuda e tutorial", text: "Reveja os primeiros passos com o Clinavy quando quiser.", cta: "Rever o tutorial" },
   steps: [
     {
       id: "clinica",
       view: "configuracoes",
       title: "Personalizar a clínica",
-      go: "Comece pelas Configurações: logo, nome, WhatsApp e horários deixam o Pulse com a cara da clínica.",
-      here: "Primeiro, vamos deixar o Pulse com a identidade da sua clínica. Preencha o que estiver destacado e salve.",
+      go: "Comece pelas Configurações: logo, nome, WhatsApp e horários deixam o Clinavy com a cara da clínica.",
+      here: "Primeiro, vamos deixar o Clinavy com a identidade da sua clínica. Preencha o que estiver destacado e salve.",
     },
     {
       id: "procedimento",
@@ -243,8 +243,8 @@ export const GUIDE = {
       id: "oportunidades",
       view: "oportunidades",
       title: "Ver as oportunidades",
-      go: "Por último, onde o Pulse mostra o dinheiro parado.",
-      here: "Aqui o Pulse junta os sinais da clínica em ações, com o valor de cada uma.",
+      go: "Por último, onde o Clinavy mostra o dinheiro parado.",
+      here: "Aqui o Clinavy junta os sinais da clínica em ações, com o valor de cada uma.",
     },
   ],
   /** What the clinic step looks for in Configurações. The logo is optional: it never holds the step back. */
@@ -259,12 +259,12 @@ export const GUIDE = {
 
 export type GuideStepId = (typeof GUIDE.steps)[number]["id"];
 
-/** The Pulse's one-time tip on a screen's first visit. */
+/** Clinavy's one-time tip on a screen's first visit. */
 export const SCREEN_TIPS: Record<string, string> = {
-  procedimentos: "Cadastre os serviços da clínica para o Pulse conseguir cruzar agenda, pacientes e estoque.",
+  procedimentos: "Cadastre os serviços da clínica para o Clinavy conseguir cruzar agenda, pacientes e estoque.",
   estoque: "Depois vamos relacionar produtos aos procedimentos para identificar oportunidades.",
-  conversas: "Aqui sua equipe poderá atender sem sair do Pulse.",
-  oportunidades: "É aqui que o Pulse transforma sinais da operação em ações.",
+  conversas: "Aqui sua equipe poderá atender sem sair do Clinavy.",
+  oportunidades: "É aqui que o Clinavy transforma sinais da operação em ações.",
 };
 
 export const STAGE_LABEL: Record<LeadStage, string> = {
@@ -339,14 +339,14 @@ export const STATUS_LABEL: Record<OpportunityStatus, string> = {
 
 interface KindCopy {
   tag: string;
-  /** What the Pulse found, in a few words. */
+  /** What Clinavy found, in a few words. */
   headline: (o: Opportunity) => string;
   /** The longer sentence: how it was found. */
   sentence: (o: Opportunity) => string;
   valueLabel: string;
   /** The recommended action: what the overview's button says, and what opens the approval on Oportunidades. */
   action: string;
-  /** Who the Pulse picked to start with, by count. */
+  /** Who Clinavy picked to start with, by count. */
   picked: (n: number) => string;
   /** The screen where the records behind it live. */
   view: string;
@@ -367,7 +367,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
       `${plural(o.count, "pessoa recebeu", "pessoas receberam")} orçamento e não ${o.count === 1 ? "respondeu" : "responderam"} há 3 dias ou mais.`,
     valueLabel: "em orçamentos abertos",
     action: "Preparar follow-up",
-    picked: (n) => `Pulse selecionou ${top(n, "contato", "contatos")}.`,
+    picked: (n) => `Clinavy selecionou ${top(n, "contato", "contatos")}.`,
     view: "vendas",
     suggestion: "Retomar o procedimento de interesse de cada pessoa, começando pelos orçamentos maiores e mais recentes.",
     review: "Ver pessoas",
@@ -380,7 +380,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     sentence: (o) => `${plural(o.count, "paciente está", "pacientes estão")} no período de retorno, sem nada marcado.`,
     valueLabel: "em retornos prováveis",
     action: "Preparar convites",
-    picked: (n) => `Pulse selecionou ${top(n, "paciente", "pacientes")}, pela chance de retorno.`,
+    picked: (n) => `Clinavy selecionou ${top(n, "paciente", "pacientes")}, pela chance de retorno.`,
     view: "pacientes",
     suggestion: "Um convite de retorno com os horários livres da semana, no intervalo recomendado de cada procedimento.",
     review: "Ver pessoas",
@@ -394,7 +394,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
       `${plural(o.count, "paciente não volta", "pacientes não voltam")} há mais de 90 dias e não ${o.count === 1 ? "tem" : "têm"} nada marcado: é a base da clínica esfriando.`,
     valueLabel: "se voltarem para o último procedimento",
     action: "Reconquistar",
-    picked: (n) => `Pulse selecionou ${top(n, "paciente", "pacientes")}, de quem mais investiu na clínica.`,
+    picked: (n) => `Clinavy selecionou ${top(n, "paciente", "pacientes")}, de quem mais investiu na clínica.`,
     view: "pacientes",
     suggestion: "Uma mensagem pessoal lembrando o último procedimento, com um motivo para voltar agora.",
     review: "Ver pessoas",
@@ -408,7 +408,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
       `${plural(o.count, "contato ainda sem orçamento está", "contatos ainda sem orçamento estão")} sem conversa há 2 dias ou mais.`,
     valueLabel: "em interesse declarado",
     action: "Retomar conversas",
-    picked: (n) => `Pulse selecionou ${top(n, "contato", "contatos")}.`,
+    picked: (n) => `Clinavy selecionou ${top(n, "contato", "contatos")}.`,
     view: "vendas",
     suggestion: "Uma mensagem curta retomando a conversa no ponto em que parou, com a avaliação como próximo passo.",
     review: "Ver pessoas",
@@ -421,7 +421,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     sentence: (o) => `${plural(o.count, "horário está livre", "horários estão livres")} entre hoje e amanhã.`,
     valueLabel: "em horários a preencher",
     action: "Preencher horários",
-    picked: (n) => `Pulse encontrou ${plural(n, "paciente compatível", "pacientes compatíveis")}, um por horário.`,
+    picked: (n) => `Clinavy encontrou ${plural(n, "paciente compatível", "pacientes compatíveis")}, um por horário.`,
     view: "agenda",
     suggestion: "Oferecer cada horário a quem mais combina: a lista de espera do mesmo período primeiro, depois quem tem retorno próximo.",
     review: "Ver pessoas",
@@ -436,7 +436,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     valueLabel: "em procedimentos possíveis",
     action: "Ver oportunidade",
     picked: (n) =>
-      `Pulse selecionou ${n === 1 ? "a pessoa mais relevante" : `as ${n} pessoas mais relevantes`}: quem tem orçamento em aberto, quem perguntou e quem já fez.`,
+      `Clinavy selecionou ${n === 1 ? "a pessoa mais relevante" : `as ${n} pessoas mais relevantes`}: quem tem orçamento em aberto, quem perguntou e quem já fez.`,
     view: "estoque",
     suggestion: "Uma campanha para quem já fez os procedimentos que usam esses produtos, antes do vencimento.",
     review: "Ver pessoas",
@@ -449,7 +449,7 @@ export const KIND: Record<OpportunityKind, KindCopy> = {
     sentence: (o) => `${plural(o.count, "paciente faltou", "pacientes faltaram")} nos últimos 14 dias e não ${o.count === 1 ? "tem" : "têm"} nada marcado.`,
     valueLabel: "em atendimentos a remarcar",
     action: "Remarcar",
-    picked: (n) => `Pulse separou ${plural(n, "paciente", "pacientes")} para remarcar enquanto o interesse está vivo.`,
+    picked: (n) => `Clinavy separou ${plural(n, "paciente", "pacientes")} para remarcar enquanto o interesse está vivo.`,
     view: "pacientes",
     suggestion: "Um convite para remarcar o mesmo procedimento, com os próximos horários livres.",
     review: "Ver pessoas",

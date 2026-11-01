@@ -6,7 +6,7 @@ export interface LegalContext {
   whatsapp: string;
   /** A WhatsApp link with the topic already typed. */
   talk: string;
-  /** The Pulse plan's monthly price, formatted. */
+  /** Clinavy plan's monthly price, formatted. */
   price: string;
   /** The privacy policy, in the page's language. */
   privacyHref: string;

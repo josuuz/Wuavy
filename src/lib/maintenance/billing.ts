@@ -19,8 +19,8 @@ import { asMaintenanceStatus, chargeFailed, type MaintenanceStatus } from "./pla
   recebe o cartão.
 
   Cada assinatura leva o seu próprio notification_url, o webhook desta pasta
-  (/api/mercadopago/manutencao/webhook). O webhook do Pulse não muda e
-  continua recebendo só o que é do Pulse.
+  (/api/mercadopago/manutencao/webhook). O webhook do Clinavy não muda e
+  continua recebendo só o que é do Clinavy.
 
   Qual é o estado de uma assinatura vem de um lugar só: syncSubscription, que
   pergunta ao Mercado Pago pela assinatura e pelas suas cobranças e escreve a
@@ -30,7 +30,7 @@ import { asMaintenanceStatus, chargeFailed, type MaintenanceStatus } from "./pla
 
   O que é genérico do Mercado Pago — a classe de erro, o pagador de teste, a
   conferência da assinatura HMAC — é importado de lib/flow/billing: um lugar
-  só para a mesma regra, sem alterar a cobrança do Pulse.
+  só para a mesma regra, sem alterar a cobrança do Clinavy.
 */
 
 const API = "https://api.mercadopago.com";
@@ -63,10 +63,10 @@ export const WEBHOOK_PATH = "/api/mercadopago/manutencao/webhook";
  * contra a API real (Tarefa 6): o Mercado Pago recusa um back_url que não
  * seja um endereço público de verdade — nem "http://localhost", nem
  * "https://localhost" servem — e absoluteUrl() sozinho não tinha essa
- * proteção, diferente do Pulse (lib/flow/billing.ts, returnUrl).
+ * proteção, diferente do Clinavy (lib/flow/billing.ts, returnUrl).
  *
  * Em produção, cai para o domínio canônico quando necessário (o mesmo que
- * o Pulse já faz). Em teste (testMode()), o fallback de produção é recusado
+ * o Clinavy já faz). Em teste (testMode()), o fallback de produção é recusado
  * de propósito: foi validando a manutenção de verdade que uma assinatura de
  * teste mandou seu aviso para o webhook de PRODUÇÃO, porque o domínio
  * canônico é sempre um domínio real. testSafeUrl (mercadopago/notice.ts)
@@ -175,7 +175,7 @@ const CONFIRM_WAIT_MS = 1200;
  *
  * A ordem dos passos, as duas grafias, e a regra de nada ser falha depois de
  * um PUT aceito moram em runCancel (mercadopago/notice.ts, testado com
- * chamadas injetadas) — o mesmo laço que o Pulse usa. Isto só liga as
+ * chamadas injetadas) — o mesmo laço que o Clinavy usa. Isto só liga as
  * chamadas de verdade.
  */
 export const cancelSubscription = (providerId: string): Promise<MaintenanceStatus | null> =>

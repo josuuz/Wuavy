@@ -8,7 +8,7 @@ import { ThemeToggle } from "../ThemeToggle";
 import styles from "./AuthFrame.module.css";
 
 /*
-  The frame of the Pulse's doors (sign in, subscribe, set up the clinic): the
+  The frame of Clinavy's doors (sign in, subscribe, set up the clinic): the
   product mark, a title, one form. Steps that change their own title (the
   checkout, onboarding) leave it out and draw their header inside.
 */
@@ -18,7 +18,7 @@ export function AuthFrame({ title, lead, children }: { title?: string; lead?: st
     <main id="conteudo" className={styles.frame} data-pulse="">
       <div className={styles.card}>
         <div className={styles.top}>
-          <Link href="/pulse" className={styles.brand} aria-label="Wuavy Pulse: página do produto">
+          <Link href="/clinavy" className={styles.brand} aria-label="Clinavy: página do produto">
             <PulseLogo />
           </Link>
           <ThemeToggle />

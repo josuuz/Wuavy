@@ -1,6 +1,6 @@
 /*
-  Wuavy Pulse: the product's colours, shape and depth, in one place. Every
-  Pulse root carries data-pulse (the app shell, the sign-in frame); its
+  Clinavy: the product's colours, shape and depth, in one place. Every
+  Clinavy root carries data-pulse (the app shell, the sign-in frame); its
   surfaces inside carry data-pulse-surface. Light is the product's default:
   html[data-pulse-theme="light"] is set before first paint by the boot script
   in app/layout.tsx unless the person chose dark (the theme switch). Without
@@ -8,8 +8,8 @@
   site's semantic tokens (--surface, --text, --text-2, --border, --mark,
   --focus) are mapped onto these, so the screens' CSS never names a raw colour.
 
-  Direction 6 — Pulse Pulse: the Wuavy palette (black #0B0B0B, graphite
-  #2A2A2A, off-white #F6F4EE, Pulse orange #FF7A3D), softened. Black is lifted
+  Direction 6 — Clinavy: the Wuavy palette (black #0B0B0B, graphite
+  #2A2A2A, off-white #F6F4EE, Clinavy orange #FF7A3D), softened. Black is lifted
   off pure black, contrasts are calmer than the agency site's, and the orange
   is an accent, never a field behind words. As words it shifts to
   --pulse-accent-text, which holds WCAG AA on every surface here; on an orange
@@ -67,7 +67,7 @@
 
 /* Light: the Wuavy off-white ground, white cards on a soft shadow, a
    softened black for words. */
-/* The second selector is for a Pulse that must be light wherever it is shown,
+/* The second selector is for a Clinavy that must be light wherever it is shown,
    whatever the visitor chose inside the app: the product's screens on the
    public page, which sit on the site's own dark surfaces and are the light
    half of that contrast. Same values, so there is one light theme. */
@@ -112,8 +112,8 @@
   --border: var(--pulse-border-soft);
 }
 
-/* The Pulse's sign: a point and the ring it sends out, a signal being read.
-   Used where the Pulse is listening or working, never as decoration. */
+/* Clinavy's sign: a point and the ring it sends out, a signal being read.
+   Used where Clinavy is listening or working, never as decoration. */
 .pulse-dot {
   position: relative;
   display: inline-block;

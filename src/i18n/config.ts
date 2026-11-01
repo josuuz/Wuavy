@@ -4,7 +4,7 @@
   pt-PT lives under /pt-pt (/pt-pt/termos). Both are static renders of
   app/(site)/[locale]; the proxy maps the public address to the segment and
   sends a visitor to their language by cookie (manual choice) or country.
-  The Pulse app (/pulse/…) is pt-BR only and never localized. This file is
+  Clinavy app (/clinavy/…) is pt-BR only and never localized. This file is
   light on purpose: client components and the proxy import it.
 */
 
@@ -34,9 +34,9 @@ export function resolveLocale(cookie: string | undefined, country: string | null
   return country?.toUpperCase() === "PT" ? "pt-PT" : defaultLocale;
 }
 
-const PULSE_APP = /^\/pulse\/./;
+const PULSE_APP = /^\/clinavy\/./;
 
-/** A site address in `locale`. Hashes, external links and the Pulse app stay as they are. */
+/** A site address in `locale`. Hashes, external links and Clinavy app stay as they are. */
 export function localizePath(locale: Locale, href: string): string {
   if (locale === defaultLocale || !href.startsWith("/") || PULSE_APP.test(href)) return href;
   if (href === "/") return PT_PREFIX;

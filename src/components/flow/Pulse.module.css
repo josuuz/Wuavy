@@ -1,4 +1,4 @@
-/* The Pulse's motion: it breathes, floats and leans; never jumps or flashes. */
+/* Clinavy's motion: it breathes, floats and leans; never jumps or flashes. */
 .pulse {
   display: block;
   flex: none;
@@ -16,7 +16,7 @@
 /*
   A blink. The eyes shut for about a tenth of a second, twice in a cycle and
   at uneven spacing, so it reads as someone blinking rather than as a metronome.
-  Only the eyes carry this class (Pulse.tsx), so the mouth never joins in, and
+  Only the eyes carry this class (Clinavy.tsx), so the mouth never joins in, and
   the glasses are drawn in their own group and stay put.
 */
 .eye {

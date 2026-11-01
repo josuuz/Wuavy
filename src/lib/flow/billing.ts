@@ -36,7 +36,7 @@ import { PRICE, type Standing, type SubscriptionStatus } from "./access";
   without any card data (/preapproval, status "pending", no card_token_id).
   Mercado Pago answers with init_point, its own hosted checkout page, where
   the person enters the card. Nothing about the card — not even a token —
-  ever reaches the Pulse for this step; only Mercado Pago's own id and
+  ever reaches Clinavy for this step; only Mercado Pago's own id and
   init_point do. Changing the card on a subscription that already exists
   (changeCard, below) is a different, narrower operation and still uses
   Mercado Pago's Card Payment Brick for a token, the same as before.
@@ -157,7 +157,7 @@ export async function createSubscription(input: { reference: string; email: stri
     method: "POST",
     idempotencyKey: input.reference,
     body: {
-      reason: "Wuavy Pulse",
+      reason: "Clinavy",
       external_reference: input.reference,
       payer_email: payerEmail(input.email),
       // The amount is stored inside the subscription: Mercado Pago charges this
@@ -604,7 +604,7 @@ export interface Inspection {
 
 /**
  * A mesma leitura de syncStanding, só para inspeção administrativa — nunca
- * grava nada. Usada pelo painel (/pulse/admin) para decidir se uma linha
+ * grava nada. Usada pelo painel (/clinavy/admin) para decidir se uma linha
  * precisa de reconciliação antes de gravar (syncSubscription/syncStanding).
  *
  * A leitura do preapproval é obrigatória: falhando, não há nada para

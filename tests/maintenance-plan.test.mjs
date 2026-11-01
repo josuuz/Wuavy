@@ -1,6 +1,6 @@
 /*
   O estado da manutenção, a partir do que o Mercado Pago relata. statusFrom
-  vem direto de src/lib/mercadopago/notice.ts — a mesma regra do Pulse, e é
+  vem direto de src/lib/mercadopago/notice.ts — a mesma regra do Clinavy, e é
   o que maintenance/billing.ts chama; não é reexportado por plan.ts (um
   reexport de valor puxaria node:crypto para o pacote do ClientForm, um
   componente de cliente que importa plan.ts só pelo preço e pelos rótulos).
