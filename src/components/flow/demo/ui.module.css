@@ -1018,6 +1018,10 @@
 .modal .sheetInner {
   gap: 1.25rem;
   padding: 1.35rem 1.4rem 1.4rem;
+  /* The side panel gives .sheetInner height: 100% from 768px up. A compact dialog sizes itself to its content
+     (height: fit-content), so a percentage here has nothing to be a percentage of — and on an iPad in landscape
+     Safari then sized the dialog to the padding alone, leaving only a strip of the header. Its own height. */
+  height: auto;
 }
 
 .price {
