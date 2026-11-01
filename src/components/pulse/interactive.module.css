@@ -394,8 +394,9 @@
 
 @media (min-width: 64rem) {
   .tourGrid {
-    grid-template-columns: minmax(0, 1fr) 19.5rem;
-    column-gap: clamp(2.25rem, 4.5vw, 4rem);
+    /* The column gives way before the window does: the window keeps the product's own rail down to a small laptop. */
+    grid-template-columns: minmax(0, 1fr) clamp(16rem, 18vw, 19.5rem);
+    column-gap: clamp(1.75rem, 3vw, 4rem);
     align-items: start;
   }
 

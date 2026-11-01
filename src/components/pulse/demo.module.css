@@ -1688,7 +1688,7 @@ html[data-perf="lite"] .piece {
 
 @media (min-width: 40rem) {
   .sceneBox {
-    height: 33rem;
+    height: 35rem;
   }
 }
 
@@ -1722,7 +1722,7 @@ html[data-perf="lite"] .piece {
   .cutSlot {
     --cl: 1.6rem;
     --ct: 1.6rem;
-    width: min(21rem, 56cqw);
+    width: min(22.5rem, 58cqw);
   }
 
   .sim[data-st="0"] .cutSlot {
@@ -1976,8 +1976,9 @@ html[data-perf="lite"] .piece {
 /* The estimate: how long it has waited, in days. From the fourth day on the dots are the late ones. */
 .waiting {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.35rem 0.8rem;
   padding: 0 1rem 0.85rem;
 }
 
