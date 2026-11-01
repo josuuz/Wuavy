@@ -4,7 +4,16 @@ import { useEffect, useRef, useState } from "react";
 
 import { Pulse } from "@/components/flow/Pulse";
 import { cn } from "@/lib/utils";
-import { DemoCursor, pointAt, useReducedMotion, useTyped, type CursorSpot } from "./demo-kit";
+import {
+  DemoCursor,
+  playLabel,
+  pointAt,
+  usePresence,
+  useReducedMotion,
+  useTyped,
+  type CursorSpot,
+  type PlayMode,
+} from "./demo-kit";
 import styles from "./demo.module.css";
 import { ProductSurface } from "./product";
 import { focusTab, onTabKeys, tabIndex } from "./tabs";
@@ -27,26 +36,34 @@ import { track } from "./track";
   Everything else is left out on purpose — no menu, no columns, no other
   patients, no numbers. The tour further down shows the whole interface.
 
-  How it behaves:
+  How it behaves — one mode (PlayMode in demo-kit) says where it is, and one
+  button follows it: "Reproduzir demonstração" · "Pausar" · "Continuar" ·
+  "Repetir".
 
-  · it starts when it comes into view and plays once, then stays on the last
-    scene. "Pausar" holds it, "Repetir" plays it again;
-  · one clock (requestAnimationFrame) runs it, only while it is on screen and
-    not paused, and it resumes where it stopped;
+  · normal motion: it starts by itself when it is in view enough, plays once
+    and rests on the last scene, where "Repetir" plays it again;
+  · one clock (requestAnimationFrame) runs it, only while it is in view and the
+    tab is in front, and it resumes where it stopped;
   · the four scene marks are buttons: pressing one hands the scene to the
-    visitor, who then steps through it by hand and nothing plays on its own;
+    visitor ("manual"), who then steps through it by hand and nothing plays on
+    its own. Hovering or focusing is not an act: only a press is. "Reproduzir
+    demonstração" takes it back and plays it from the start;
   · the picture is aria-hidden; what a screen reader gets is the four scenes
     (each named) and the sentence of the one that is showing;
-  · with reduced motion it does not play at all. It waits on the first scene,
-    the visitor moves it with the scene marks (or the arrows), and there is no
-    cursor and no typing — each scene appears in its finished state.
+  · reduced motion reduces, it does not remove: nothing starts by itself and
+    "Reproduzir demonstração" is there from the first paint. Pressed, it plays
+    a calm version: the scenes change one after the other, with no cursor, no
+    travel and no typing — each scene appears in its finished state. The scene
+    marks (and the arrows) step through it by hand all the same.
 
   The title, the lead and the buttons above it are plain server-rendered
   markup: nothing in the first screen waits for this.
 */
 
-/** How long each scene stays, in ms: about fifteen seconds in all. */
-const DWELL = [2600, 3200, 4200, 4800] as const;
+/** How long each scene stays, in ms: about sixteen seconds in all. */
+const DWELL = [2600, 3200, 4200, 6000] as const;
+/** The calm version has no cursor to wait for, so scene 3 is shorter. */
+const CALM_DWELL = [2800, 3400, 3400, 6000] as const;
 /** In scene 3 the cursor arrives, presses at CLICK_AT and the details open. */
 const CLICK_AT = 1500;
 const PRESS_FROM = 1300;
@@ -55,8 +72,10 @@ const PRESS_TO = 1750;
 export interface HeroDemoCopy {
   label: string;
   note: string;
+  /** Before it has played, and to watch it again after the visitor took it. */
   play: string;
   pause: string;
+  resume: string;
   replay: string;
   /** "Cena {n} de {total}: {title}" — each scene mark's accessible name. */
   scene: string;
@@ -76,10 +95,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   const [at, setAt] = useState(0);
   const [clicked, setClicked] = useState(false);
   const [press, setPress] = useState(false);
-  const [playing, setPlaying] = useState(true);
-  const [taken, setTaken] = useState(false);
-  const [done, setDone] = useState(false);
-  const [onScreen, setOnScreen] = useState(false);
+  const [mode, setMode] = useState<PlayMode>("ready");
   const [spot, setSpot] = useState<CursorSpot | null>(null);
 
   const region = useRef<HTMLDivElement>(null);
@@ -89,29 +105,32 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   const atRef = useRef(0);
   const clock = useRef(0);
   const flags = useRef({ press: false, clicked: false });
+  const started = useRef(false);
 
   useEffect(() => {
     atRef.current = at;
   }, [at]);
 
-  /** In the visitor's hands (or with reduced motion) a scene shows how it ends, and nothing plays. */
-  const manual = taken || reduced;
-  const running = playing && onScreen && !manual && !done;
-  const opened = at >= 3 || (at === 2 && (clicked || manual));
-  const typed = useTyped(demo.draft, at === 3, reduced || taken, 900);
+  const inView = usePresence(region, 0.5);
+  /** The first act of any kind, by itself or by the visitor, is the demonstration's start. */
+  const begin = () => {
+    if (started.current) return;
+    started.current = true;
+    track("demo_start");
+  };
+  /** Calm: each scene shows how it ends, with no cursor, no typing and no travel. */
+  const calm = reduced || mode === "manual";
+  const running = mode === "playing" && inView;
+  const opened = at >= 3 || (at === 2 && (clicked || calm));
+  const typed = useTyped(demo.draft, at === 3, calm, 900);
 
-  // It starts when it comes into view, not before: nothing plays behind the fold.
+  // Normal motion starts itself, once, when it comes into view: nothing plays behind the fold.
+  // Reduced motion waits for "Reproduzir demonstração".
   useEffect(() => {
-    const el = region.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting), { threshold: 0.5 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (onScreen) track("demo_start");
-  }, [onScreen]);
+    if (reduced || !inView || mode !== "ready" || started.current) return;
+    begin();
+    setMode("playing");
+  }, [reduced, inView, mode]);
 
   // The one clock: it advances scenes, and in scene 3 it times the press and the opening.
   useEffect(() => {
@@ -124,7 +143,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       const t = clock.current;
       const index = atRef.current;
 
-      if (index === 2) {
+      if (index === 2 && !reduced) {
         const pressNow = t >= PRESS_FROM && t < PRESS_TO;
         if (pressNow !== flags.current.press) {
           flags.current.press = pressNow;
@@ -137,23 +156,23 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
         }
       }
 
-      if (t >= (DWELL[index] ?? DWELL[0])) {
+      if (t >= ((reduced ? CALM_DWELL : DWELL)[index] ?? DWELL[0])) {
         clock.current = 0;
         flags.current = { press: false, clicked: false };
         setPress(false);
         setClicked(false);
-        if (index >= scenes.length - 1) setDone(true);
+        if (index >= scenes.length - 1) setMode("done");
         else setAt(index + 1);
       }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [running, scenes.length]);
+  }, [running, reduced, scenes.length]);
 
   // The cursor goes to "Ver oportunidade" once the card has settled where it will be pressed.
   useEffect(() => {
-    if (manual || at !== 2) return;
+    if (calm || at !== 2) return;
     const place = () => setSpot(pointAt(box.current, actionRef.current));
     const settle = window.setTimeout(place, 250);
     window.addEventListener("resize", place);
@@ -161,29 +180,30 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       window.clearTimeout(settle);
       window.removeEventListener("resize", place);
     };
-  }, [at, manual]);
+  }, [at, calm]);
 
-  /** Pressing a scene mark hands the demonstration to the visitor, for good. */
-  const take = (next: number) => {
+  const reset = (next: number) => {
     clock.current = 0;
     flags.current = { press: false, clicked: false };
     setPress(false);
     setClicked(false);
     setAt(next);
-    setPlaying(false);
-    setTaken(true);
-    setDone(false);
   };
 
-  const replay = () => {
-    clock.current = 0;
-    flags.current = { press: false, clicked: false };
-    setPress(false);
-    setClicked(false);
-    setAt(0);
-    setDone(false);
-    setTaken(false);
-    setPlaying(true);
+  /** Pressing a scene mark hands the demonstration to the visitor, until "Reproduzir demonstração". */
+  const take = (next: number) => {
+    begin();
+    reset(next);
+    setMode("manual");
+  };
+
+  /** The one control: it plays, holds, resumes or replays, whichever the mode asks for. */
+  const control = () => {
+    if (mode === "playing") return setMode("paused");
+    if (mode === "paused") return setMode("playing");
+    begin();
+    reset(0);
+    setMode("playing");
   };
 
   const scene = scenes[at] ?? scenes[0];
@@ -194,7 +214,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       .replace("{title}", scenes[i]?.title ?? "");
 
   return (
-    <div ref={region} className={cn(styles.demo, className)}>
+    <div ref={region} className={cn(styles.demo, className)} data-mode={mode}>
       <ProductSurface className={cn(styles.stage, styles.heroStage)}>
         <div ref={box} className={styles.inner} aria-hidden="true">
           {/* The Pulse's caption, one scene at a time: the sentence the scene is for. */}
@@ -211,7 +231,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
             </div>
           </div>
 
-          <div className={cn(styles.deck, styles.heroDeck)} data-scene={at} data-clicked={opened ? "" : undefined}>
+          <div className={styles.deck} data-scene={at} data-clicked={opened ? "" : undefined}>
             <article className={styles.card} data-ring={at === 1 || at === 2 ? "" : undefined}>
               <header className={styles.head}>
                 <p className={styles.name}>{demo.patient.name}</p>
@@ -265,7 +285,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
             </article>
           </div>
 
-          <DemoCursor spot={spot} on={!manual && at === 2} press={press} />
+          <DemoCursor spot={spot} on={!calm && at === 2} press={press} />
         </div>
       </ProductSurface>
 
@@ -304,13 +324,8 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
           ))}
         </div>
 
-        {manual || done ? null : (
-          <button type="button" className={styles.ghost} onClick={() => setPlaying((on) => !on)}>
-            {playing ? demo.pause : demo.play}
-          </button>
-        )}
-        <button type="button" className={styles.ghost} onClick={replay}>
-          {demo.replay}
+        <button type="button" className={styles.ghost} onClick={control}>
+          {playLabel(mode, demo)}
         </button>
         <p className={styles.fine}>{demo.note}</p>
       </div>

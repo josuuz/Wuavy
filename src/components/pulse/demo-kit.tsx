@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useState, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
 
 import styles from "./demo.module.css";
 
@@ -25,6 +25,57 @@ const subscribe = (notify: () => void) => {
 /** Whether the visitor asked for less motion. On the server it is false, and corrected on hydration. */
 export function useReducedMotion() {
   return useSyncExternalStore(subscribe, () => window.matchMedia(REDUCED).matches, () => false);
+}
+
+/**
+ * Whether `target` is in view enough (`threshold`) AND the tab is the one in
+ * front. A demonstration only has a reason to run while both are true; when
+ * either stops being, its clock rests, and it resumes from the same place.
+ */
+export function usePresence(target: RefObject<Element | null>, threshold: number) {
+  const [inView, setInView] = useState(false);
+  const [shown, setShown] = useState(true);
+
+  useEffect(() => {
+    const el = target.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target, threshold]);
+
+  useEffect(() => {
+    const sync = () => setShown(document.visibilityState === "visible");
+    sync();
+    document.addEventListener("visibilitychange", sync);
+    return () => document.removeEventListener("visibilitychange", sync);
+  }, []);
+
+  return inView && shown;
+}
+
+/**
+ * Where a demonstration is in its life, and the one button that follows it:
+ *
+ *   ready    never played            "Reproduzir demonstração"
+ *   playing  running                 "Pausar"
+ *   paused   held by the visitor     "Continuar"
+ *   done     reached the last scene  "Repetir"
+ *   manual   the visitor took it     "Reproduzir demonstração" (watch it again)
+ *
+ * "manual" is entered only by an explicit act: pressing a scene, a situation or a
+ * button of the simulation. Moving the pointer over it, or focusing it, is not one.
+ */
+export type PlayMode = "ready" | "playing" | "paused" | "done" | "manual";
+
+export function playLabel(
+  mode: PlayMode,
+  copy: { play: string; pause: string; resume: string; replay: string },
+) {
+  if (mode === "playing") return copy.pause;
+  if (mode === "paused") return copy.resume;
+  if (mode === "done") return copy.replay;
+  return copy.play;
 }
 
 /**

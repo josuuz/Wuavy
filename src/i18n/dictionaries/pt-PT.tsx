@@ -738,8 +738,9 @@ export const ptPT: typeof ptBR = {
       demo: {
         label: "O PULSE em quatro cenas",
         note: "Demonstração com dados fictícios. Nada é enviado daqui.",
-        play: "Retomar",
+        play: "Reproduzir demonstração",
         pause: "Pausar",
+        resume: "Continuar",
         replay: "Repetir",
         scene: "Cena {n} de {total}: {title}",
         patient: { name: "Carla", sent: "Orçamento enviado há 6 dias", status: "Sem resposta" },
@@ -787,8 +788,9 @@ export const ptPT: typeof ptBR = {
       pick: "Escolha uma situação",
       hint: "Clique para experimentar",
       note: "Exemplo com dados fictícios. Nada é enviado.",
-      play: "Retomar",
+      play: "Reproduzir demonstração",
       pause: "Pausar",
+      resume: "Continuar",
       replay: "Repetir",
       labels: {
         reasonLabel: "Por que merece atenção",

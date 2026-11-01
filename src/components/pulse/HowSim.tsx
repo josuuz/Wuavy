@@ -4,7 +4,16 @@ import { useEffect, useRef, useState } from "react";
 
 import { Pulse } from "@/components/flow/Pulse";
 import { cn } from "@/lib/utils";
-import { DemoCursor, pointAt, useReducedMotion, useTyped, type CursorSpot } from "./demo-kit";
+import {
+  DemoCursor,
+  playLabel,
+  pointAt,
+  usePresence,
+  useReducedMotion,
+  useTyped,
+  type CursorSpot,
+  type PlayMode,
+} from "./demo-kit";
 import styles from "./demo.module.css";
 import { ProductSurface } from "./product";
 import { focusTab, onTabKeys, tabIndex } from "./tabs";
@@ -33,11 +42,15 @@ import { track } from "./track";
 
   · when it comes into view it demonstrates the first situation: a cursor goes
     to each button and presses it, and the stage follows. It plays once;
-  · the first thing the visitor does — a situation, a button, a step — takes
-    the control, and from then on nothing advances by itself;
+  · the first thing the visitor presses — a situation, a button, a step — takes
+    the control ("manual"), and from then on nothing advances by itself. Moving
+    the pointer over it is not an act. "Reproduzir demonstração" takes it back
+    and plays the situation on show again, from the first step;
   · choosing a situation starts its sequence over, at the first step;
-  · with reduced motion nothing plays by itself, there is no cursor and no
-    typing: the visitor steps through it, and each step is shown finished.
+  · reduced motion reduces, it does not remove: nothing starts by itself and
+    "Reproduzir demonstração" is there from the first paint. Pressed, it plays
+    a calm version — step after step, no cursor, no travel, no typing — and the
+    real buttons work all the same.
 
   The stage is built from stacked layers, one cell for every card, caption and
   panel, so it is as tall as the tallest and nothing moves when the situation
@@ -52,6 +65,8 @@ const PRESS = [
   [3700, 4150],
 ] as const;
 const LAST = 6200;
+/** The calm version has no cursor to wait for. */
+const CALM_READ = [3000, 4200] as const;
 
 export interface SimItem {
   id: string;
@@ -70,8 +85,10 @@ export interface SimCopy {
   pick: string;
   hint: string;
   note: string;
+  /** Before it has played, and to watch it again after the visitor took it. */
   play: string;
   pause: string;
+  resume: string;
   replay: string;
   labels: {
     reasonLabel: string;
@@ -92,10 +109,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
   const [sc, setSc] = useState(0);
   const [st, setSt] = useState(0);
   const [press, setPress] = useState(false);
-  const [playing, setPlaying] = useState(true);
-  const [taken, setTaken] = useState(false);
-  const [done, setDone] = useState(false);
-  const [onScreen, setOnScreen] = useState(false);
+  const [mode, setMode] = useState<PlayMode>("ready");
   const [spot, setSpot] = useState<CursorSpot | null>(null);
 
   const region = useRef<HTMLDivElement>(null);
@@ -105,24 +119,25 @@ export function HowSim({ copy }: { copy: SimCopy }) {
   const stRef = useRef(0);
   const clock = useRef(0);
   const pressing = useRef(false);
+  const started = useRef(false);
 
   useEffect(() => {
     stRef.current = st;
   }, [st]);
 
-  const manual = taken || reduced;
-  const running = playing && onScreen && !manual && !done;
+  const inView = usePresence(region, 0.45);
+  /** Calm: each step shows how it ends, with no cursor, no typing and no travel. */
+  const calm = reduced || mode === "manual";
+  const running = mode === "playing" && inView;
   const item = items[sc] ?? items[0];
-  const typed = useTyped(item.draft, st === 2, reduced || taken, 600);
+  const typed = useTyped(item.draft, st === 2, calm, 600);
 
-  // It demonstrates itself when it comes into view, not before.
+  // Normal motion demonstrates itself, once, when it comes into view; reduced motion waits for the button.
   useEffect(() => {
-    const el = region.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting), { threshold: 0.45 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    if (reduced || !inView || mode !== "ready" || started.current) return;
+    started.current = true;
+    setMode("playing");
+  }, [reduced, inView, mode]);
 
   // The one clock of the demonstration: it presses each button in turn, then rests on the draft.
   useEffect(() => {
@@ -137,29 +152,29 @@ export function HowSim({ copy }: { copy: SimCopy }) {
 
       if (step < 2) {
         const [from, to] = PRESS[step];
-        const pressNow = t >= from && t < to;
+        const pressNow = !reduced && t >= from && t < to;
         if (pressNow !== pressing.current) {
           pressing.current = pressNow;
           setPress(pressNow);
         }
-        if (t >= READ[step] - 250) {
+        if (t >= (reduced ? CALM_READ : READ)[step] - 250) {
           clock.current = 0;
           pressing.current = false;
           setPress(false);
           setSt(step + 1);
         }
       } else if (t >= LAST) {
-        setDone(true);
+        setMode("done");
       }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [running]);
+  }, [running, reduced]);
 
   // The cursor goes to the button of the step, once the stage has settled.
   useEffect(() => {
-    if (manual || st > 1) return;
+    if (calm || st > 1) return;
     const place = () => setSpot(pointAt(box.current, buttons.current[`${sc}:${st === 0 ? "open" : "suggest"}`] ?? null));
     const settle = window.setTimeout(place, st === 0 ? 300 : 1000);
     window.addEventListener("resize", place);
@@ -167,7 +182,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
       window.clearTimeout(settle);
       window.removeEventListener("resize", place);
     };
-  }, [sc, st, manual]);
+  }, [sc, st, calm]);
 
   const stopClock = () => {
     clock.current = 0;
@@ -175,11 +190,11 @@ export function HowSim({ copy }: { copy: SimCopy }) {
     setPress(false);
   };
 
-  /** Anything the visitor does hands the simulation over for good. */
+  /** Anything the visitor presses hands the simulation over, until "Reproduzir demonstração". */
   const take = () => {
     stopClock();
-    setPlaying(false);
-    setTaken(true);
+    started.current = true;
+    setMode("manual");
   };
 
   const go = (next: number) => {
@@ -191,22 +206,24 @@ export function HowSim({ copy }: { copy: SimCopy }) {
     take();
     setSc(next);
     setSt(0);
-    setDone(false);
     track("scenario", items[next]?.id);
   };
 
-  const replay = () => {
+  /** The one control: it plays, holds, resumes or replays, whichever the mode asks for. */
+  const control = () => {
+    if (mode === "playing") return setMode("paused");
+    if (mode === "paused") return setMode("playing");
     stopClock();
+    started.current = true;
     setSt(0);
-    setDone(false);
-    if (!taken) setPlaying(true);
+    setMode("playing");
   };
 
   const caption = (s: number, it: SimItem) => (s === 0 ? it.intro : s === 1 ? labels.explain : labels.closing);
   const stepName = labels.step.replace("{n}", String(st + 1)).replace("{total}", String(STEPS));
 
   return (
-    <div ref={region} className={styles.sim}>
+    <div ref={region} className={styles.sim} data-mode={mode}>
       <div
         ref={picks}
         className={styles.picks}
@@ -363,18 +380,13 @@ export function HowSim({ copy }: { copy: SimCopy }) {
               ))}
             </div>
 
-            <DemoCursor spot={spot} on={!manual && st <= 1} press={press} />
+            <DemoCursor spot={spot} on={!calm && mode !== "ready" && st <= 1} press={press} />
           </div>
         </ProductSurface>
 
         <div className={styles.controls}>
-          {manual || done ? null : (
-            <button type="button" className={styles.ghost} onClick={() => setPlaying((on) => !on)}>
-              {playing ? copy.pause : copy.play}
-            </button>
-          )}
-          <button type="button" className={styles.ghost} onClick={replay}>
-            {copy.replay}
+          <button type="button" className={styles.ghost} onClick={control}>
+            {playLabel(mode, copy)}
           </button>
           <p className={styles.fine}>{copy.note}</p>
         </div>
