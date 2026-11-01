@@ -85,8 +85,25 @@ const outcome = (status: SubscriptionStatus | null): CheckoutOutcome =>
  * init_point veio, redireciona para o checkout hospedado — nunca retorna
  * nesse caminho. Retorna normalmente em qualquer outro desfecho.
  */
-async function createAndRedirect(rowId: string, email: string, backPath: string): Promise<Subscribed> {
-  const result = await runCreateSubscription(() => createSubscription({ reference: rowId, email, backPath }));
+/**
+ * Quando a linha nasceu: é ela que decide o corpo da criação (nome e volta),
+ * para uma retomada repetir exatamente o que a primeira tentativa enviou
+ * (lib/flow/subscription-payload.ts). Se não der para ler, null: vale o corpo
+ * de antes, o único que nunca contradiz uma tentativa que possa já ter saído.
+ */
+async function rowCreatedAt(rowId: string): Promise<string | null> {
+  try {
+    const { data } = await createAdminClient().from("subscriptions").select("created_at").eq("id", rowId).maybeSingle();
+    return (data?.created_at as string | undefined) ?? null;
+  } catch (error) {
+    console.error("subscribe: ler a data da linha", rowId, error);
+    return null;
+  }
+}
+
+async function createAndRedirect(rowId: string, email: string): Promise<Subscribed> {
+  const rowCreated = await rowCreatedAt(rowId);
+  const result = await runCreateSubscription(() => createSubscription({ reference: rowId, email, rowCreatedAt: rowCreated }));
 
   if (result.outcome === "ours") {
     // Ours, not theirs: credentials or rate limit. Nada foi criado — libera
@@ -159,7 +176,7 @@ async function resumeCheckout(rowId: string, providerId: string, email: string):
     return { outcome: "pending" };
   }
   if (fresh !== "pending") return { outcome: outcome(fresh) };
-  return createAndRedirect(rowId, email, "/clinavy/assinar");
+  return createAndRedirect(rowId, email);
 }
 
 export async function subscribe(): Promise<Subscribed> {
@@ -250,7 +267,7 @@ export async function subscribe(): Promise<Subscribed> {
   if (claim === "blocked") return { outcome: "unresolved" };
   if (claim === "in_progress") return { outcome: "pending" };
 
-  return createAndRedirect(rowId, email, "/clinavy/assinar");
+  return createAndRedirect(rowId, email);
 }
 
 /** Where the signed-in person's subscription stands, read again from Mercado Pago while it is pending. */

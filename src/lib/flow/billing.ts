@@ -2,6 +2,7 @@ import "server-only";
 
 import { CANONICAL_URL, site } from "@/data/site";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { subscriptionCreationFor } from "@/lib/flow/subscription-payload";
 import {
   claimDecision,
   runCreateSubscription,
@@ -145,19 +146,22 @@ export const returnUrl = (path: string) => httpsUrl(path, site.url, CANONICAL_UR
  * click, a reload, resuming a pending checkout the person never finished —
  * gets the same subscription back, with the same init_point, instead of a
  * second one. Mercado Pago's idempotency key is what guarantees this; this
- * function always sends the identical body for the same reference).
+ * function always sends the identical body for the same reference: the
+ * `reason` and the return path come from the row's own creation date, never
+ * from the code version — lib/flow/subscription-payload.ts says why).
  *
  * No card data goes in this call. Status "pending" and no card_token_id is
  * what makes Mercado Pago answer with init_point: its own hosted checkout
  * page, where the person enters the card. The subscription is not charged,
  * and is not even authorized, until they do.
  */
-export async function createSubscription(input: { reference: string; email: string; backPath: string }) {
+export async function createSubscription(input: { reference: string; email: string; rowCreatedAt: string | null }) {
+  const { reason, backPath } = subscriptionCreationFor(input.rowCreatedAt);
   return mp<Preapproval>("/preapproval", {
     method: "POST",
     idempotencyKey: input.reference,
     body: {
-      reason: "Clinavy",
+      reason,
       external_reference: input.reference,
       payer_email: payerEmail(input.email),
       // The amount is stored inside the subscription: Mercado Pago charges this
@@ -165,7 +169,7 @@ export async function createSubscription(input: { reference: string; email: stri
       // prices new subscriptions only — which is what keeps the five founding
       // clinics at theirs (lib/flow/access.ts).
       auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: PRICE / 100, currency_id: "BRL" },
-      back_url: returnUrl(input.backPath),
+      back_url: returnUrl(backPath),
       status: "pending",
     },
   });
