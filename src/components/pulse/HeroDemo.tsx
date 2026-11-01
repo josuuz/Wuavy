@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Pulse } from "@/components/flow/Pulse";
-import { DemoCursor, usePresence, useDemoCursor, useReducedMotion, type PlayMode } from "./demo-kit";
+import { DemoCursor, MotionSwitch, useDemoCursor, useMotion, usePresence, type PlayMode } from "./demo-kit";
 import styles from "./demo.module.css";
 import { ProductSurface } from "./product";
 import { focusTab, onTabKeys, tabIndex } from "./tabs";
@@ -39,7 +39,9 @@ import { track } from "./track";
     never read, hidden or moved;
   · reduced motion reduces, it does not remove: the scenes still advance by
     themselves at an easy pace, each in its finished state, with no cursor, no
-    glide, no press and no zoom, only the content changing;
+    glide, no press and no zoom, only the content changing. A small switch,
+    "Ativar animação completa", plays the whole thing with the cursor anyway,
+    without touching a setting of the computer, and goes back; it lasts the session;
   · the picture is aria-hidden; what a screen reader gets is the five scenes
     (each named) and the sentence of the one that is showing.
 
@@ -71,6 +73,9 @@ export interface HeroDemoCopy {
   note: string;
   pause: string;
   resume: string;
+  /** The switch to the full animation, and back, offered when the system asks for less motion. */
+  motionOn: string;
+  motionOff: string;
   /** "Cena {n} de {total}: {title}" — each scene mark's accessible name. */
   scene: string;
   patient: { name: string; sent: string; status: string };
@@ -88,7 +93,7 @@ export interface HeroDemoCopy {
 export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: string }) {
   const { scenes } = demo;
   const last = scenes.length - 1;
-  const reduced = useReducedMotion();
+  const { reduced, full, calm } = useMotion();
   const [at, setAt] = useState(0);
   const [clicked, setClicked] = useState(false);
   const [press, setPress] = useState(false);
@@ -114,8 +119,6 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
 
   const inView = usePresence(region, 0.35);
   const running = mode === "playing" && inView;
-  /** Calm (reduced motion): each scene shows how it ends, with no cursor, no glide and no press. */
-  const calm = reduced;
   const opened = at >= 3 || (at === 2 && (clicked || calm));
 
   useEffect(() => {
@@ -146,7 +149,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       const t = clock.current;
       const index = atRef.current;
       const f = flags.current;
-      const beat = reduced ? undefined : BEATS[index];
+      const beat = calm ? undefined : BEATS[index];
 
       if (beat) {
         const target = index === 2 ? actionRef.current : suggestRef.current;
@@ -173,7 +176,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
         }
       }
 
-      const dwell = (reduced ? CALM_DWELL : DWELL)[index] ?? DWELL[0];
+      const dwell = (calm ? CALM_DWELL : DWELL)[index] ?? DWELL[0];
       if (index < last) {
         if (t >= dwell) begin(index + 1);
       } else if (t >= dwell + FADE) {
@@ -187,7 +190,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [running, reduced, last]);
+  }, [running, calm, last]);
 
   /** A scene mark jumps to its scene; the story carries on from there. */
   const jump = (next: number) => {
@@ -208,7 +211,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       .replace("{title}", scenes[i]?.title ?? "");
 
   return (
-    <div ref={region} className={className ? `${styles.demo} ${className}` : styles.demo} data-mode={mode}>
+    <div ref={region} className={className ? `${styles.demo} ${className}` : styles.demo} data-mode={mode} data-calm={calm ? "" : undefined}>
       <ProductSurface className={`${styles.stage} ${styles.heroStage}`}>
         <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
           {/* The Pulse's caption, one scene at a time: the sentence the scene is for. */}
@@ -338,6 +341,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
         >
           {mode === "playing" ? demo.pause : demo.resume}
         </button>
+        {reduced ? <MotionSwitch full={full} copy={demo} /> : null}
         <p className={styles.fine}>{demo.note}</p>
       </div>
     </div>

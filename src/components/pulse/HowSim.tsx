@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Pulse } from "@/components/flow/Pulse";
 import { cn } from "@/lib/utils";
-import { DemoCursor, usePresence, useDemoCursor, useReducedMotion, type PlayMode } from "./demo-kit";
+import { DemoCursor, MotionSwitch, useDemoCursor, useMotion, usePresence, type PlayMode } from "./demo-kit";
 import styles from "./demo.module.css";
 import { ProductSurface } from "./product";
 import { focusTab, onTabKeys, tabIndex } from "./tabs";
@@ -42,7 +42,8 @@ import { track } from "./track";
   · the visitor's one control is "Pausar" / "Continuar";
   · reduced motion reduces, it does not remove: the steps still advance by
     themselves at an easy pace, each in its finished state, with no cursor, no
-    glide and no press, only the content changing.
+    glide and no press, only the content changing. "Ativar animação completa"
+    plays it with the cursor anyway, and goes back; it lasts the session.
 
   The stage is built from stacked layers, one cell for every card, caption and
   panel, so it is as tall as the tallest and nothing moves when the situation
@@ -85,6 +86,9 @@ export interface SimCopy {
   note: string;
   pause: string;
   resume: string;
+  /** The switch to the full animation, and back, offered when the system asks for less motion. */
+  motionOn: string;
+  motionOff: string;
   labels: {
     reasonLabel: string;
     nextLabel: string;
@@ -100,7 +104,7 @@ export interface SimCopy {
 
 export function HowSim({ copy }: { copy: SimCopy }) {
   const { items, labels } = copy;
-  const reduced = useReducedMotion();
+  const { reduced, full, calm } = useMotion();
   const [sc, setSc] = useState(0);
   const [st, setSt] = useState(0);
   const [press, setPress] = useState(false);
@@ -127,8 +131,6 @@ export function HowSim({ copy }: { copy: SimCopy }) {
 
   const inView = usePresence(region, 0.35);
   const running = mode === "playing" && inView;
-  /** Calm (reduced motion): each step shows how it ends, with no cursor, no glide and no press. */
-  const calm = reduced;
   const item = items[sc] ?? items[0];
 
   useEffect(() => {
@@ -158,7 +160,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
       const t = clock.current;
       const step = stRef.current;
       const f = flags.current;
-      const beat = reduced ? undefined : BEATS[step];
+      const beat = calm ? undefined : BEATS[step];
 
       if (beat) {
         const target = buttons.current[`${scRef.current}:${step === 0 ? "open" : "suggest"}`] ?? null;
@@ -180,7 +182,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
         }
       }
 
-      const dwell = (reduced ? CALM_DWELL : DWELL)[step] ?? DWELL[0];
+      const dwell = (calm ? CALM_DWELL : DWELL)[step] ?? DWELL[0];
       if (step < STEPS - 1) {
         if (t >= dwell) begin(step + 1);
       } else if (t >= dwell + FADE) {
@@ -194,7 +196,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [running, reduced]);
+  }, [running, calm]);
 
   /** Moves the story to `step` and lets it carry on from there. */
   const restart = (step: number) => {
@@ -220,7 +222,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
   const stepName = labels.step.replace("{n}", String(st + 1)).replace("{total}", String(STEPS));
 
   return (
-    <div ref={region} className={styles.sim} data-mode={mode}>
+    <div ref={region} className={styles.sim} data-mode={mode} data-calm={calm ? "" : undefined}>
       <div
         ref={picks}
         className={styles.picks}
@@ -381,6 +383,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
           >
             {mode === "playing" ? copy.pause : copy.resume}
           </button>
+          {reduced ? <MotionSwitch full={full} copy={copy} /> : null}
           <p className={styles.fine}>{copy.note}</p>
         </div>
       </div>

@@ -34,7 +34,7 @@
 
 /* Fixed, so no scene moves the page: tall enough for the last one (card, details and draft). */
 .heroStage {
-  height: 30rem;
+  height: 27.5rem;
 }
 
 /* The positioning box of a stage: the cursor and every measurement are relative to it. */
@@ -49,9 +49,17 @@
   opacity: 0;
 }
 
+/* The caption and the card are one block, centred in the stage: the Pulse speaks right above
+   the thing it is about, and the room that is left is split above and below, not in the middle.
+   The block grows from its middle as rows open, so nothing jumps. */
 .heroStage .inner {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+}
+
+.heroStage .caption {
+  padding-bottom: 1.15rem;
 }
 
 /* The Pulse speaking, in one line that changes with the scene. All captions share a cell, so
@@ -100,14 +108,12 @@
 
 /* ── The card: the one thing on stage ────────────────────────────────────── */
 
-/* The first screen's card is centred in what the caption leaves. It grows from the middle as
-   its rows open, so the page never jumps and the early scenes have no dead area under them. */
+/* The card sits right under the Pulse's caption, and the pair is centred in the stage (see
+   .heroStage .inner). It grows from the middle as its rows open, so nothing jumps. */
 .deck {
   display: flex;
-  flex: 1;
+  flex: none;
   flex-direction: column;
-  justify-content: center;
-  min-height: 0;
 }
 
 .card {
@@ -132,7 +138,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.2rem 0.75rem;
-  padding: 1.4rem 1.5rem;
+  padding: 1.2rem 1.5rem;
 }
 
 .name {
@@ -176,7 +182,7 @@
 }
 
 .actionRow {
-  padding: 0 1.5rem 1.5rem;
+  padding: 0 1.5rem 1.35rem;
 }
 
 /* The button, drawn like the product's: a pill, and the only thing here that asks to be pressed. */
@@ -211,7 +217,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 0.9rem 1.5rem 1.1rem;
+  padding: 0.75rem 1.5rem 0.9rem;
   border-top: 1px solid var(--pulse-border-soft);
 }
 
@@ -233,8 +239,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin: 0 1.5rem 1.5rem;
-  padding: 0.95rem 1.1rem 1rem;
+  margin: 0 1.5rem 1.25rem;
+  padding: 0.8rem 1.1rem 0.85rem;
   border: 1px solid var(--pulse-field);
   border-radius: var(--pulse-r-md);
   background: var(--pulse-raised);
@@ -297,9 +303,9 @@
   position: absolute;
   top: 3.5px;
   left: 5.8px;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: -1.125rem 0 0 -1.125rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.875rem 0 0 -0.875rem;
   border: 2px solid var(--pulse-accent);
   border-radius: 50%;
   opacity: 0;
@@ -312,13 +318,13 @@
 
 @keyframes demo-click {
   from {
-    opacity: 0.95;
+    opacity: 0.8;
     transform: scale(0.3);
   }
 
   to {
     opacity: 0;
-    transform: scale(1.25);
+    transform: scale(1.1);
   }
 }
 
@@ -409,8 +415,6 @@
   color: var(--text-2);
   text-wrap: pretty;
 }
-
-/* ── The first screen: where the card sits in each scene ─────────────────── */
 
 /* ── The clickable one ───────────────────────────────────────────────────── */
 
@@ -597,7 +601,7 @@
   }
 
   .heroStage {
-    height: 38rem;
+    height: 39rem;
   }
 
   .caption {
@@ -629,26 +633,49 @@
   }
 }
 
-/* ── Reduced motion: the scenes stay, the cursor, the travel and the loops go ─ */
+/* ── The calm version: the scenes stay, the cursor, the travel and the loops go ─
+   It is the demonstration's own mode (data-calm), not the system's media query: the
+   visitor can switch the full animation on without changing a setting of the computer. */
 
-@media (prefers-reduced-motion: reduce) {
-  .line,
-  .layer {
-    transform: none;
-  }
+:is(.demo, .sim)[data-calm] .line,
+:is(.demo, .sim)[data-calm] .layer {
+  transform: none;
+}
 
-  .collapse,
-  .cursor {
-    transition-duration: 1ms;
-  }
+:is(.demo, .sim)[data-calm] .collapse,
+:is(.demo, .sim)[data-calm] .cursor {
+  transition-duration: 1ms;
+}
 
-  .line,
-  .layer {
-    transition-duration: 200ms, 1ms, 0s;
-  }
+:is(.demo, .sim)[data-calm] .line,
+:is(.demo, .sim)[data-calm] .layer {
+  transition-duration: 200ms, 1ms, 0s;
+}
 
-  .cursor {
-    display: none;
-  }
+:is(.demo, .sim)[data-calm] .cursor {
+  display: none;
+}
 
+/* The switch: small, plain, and clearly a control. */
+.motion {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.4rem;
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-thickness: max(1px, 0.06em);
+  text-underline-offset: 0.28em;
+  cursor: pointer;
+  transition: color var(--duration-ui) var(--wuavy-ease-out);
+}
+
+.motion:hover {
+  color: var(--text);
+}
+
+.motion:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }

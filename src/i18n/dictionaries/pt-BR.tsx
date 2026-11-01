@@ -775,6 +775,8 @@ export const ptBR = {
         note: "Demonstração com dados fictícios. Nada é enviado daqui.",
         pause: "Pausar",
         resume: "Continuar",
+        motionOn: "Ativar animação completa",
+        motionOff: "Voltar à animação suave",
         scene: "Cena {n} de {total}: {title}",
         patient: { name: "Carla", sent: "Orçamento enviado há 6 dias", status: "Sem resposta" },
         action: "Ver oportunidade",
@@ -841,6 +843,8 @@ export const ptBR = {
       note: "Exemplo com dados fictícios. Nada é enviado.",
       pause: "Pausar",
       resume: "Continuar",
+      motionOn: "Ativar animação completa",
+      motionOff: "Voltar à animação suave",
       labels: {
         reasonLabel: "Por que merece atenção",
         nextLabel: "Próximo passo",
