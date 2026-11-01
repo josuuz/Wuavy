@@ -772,9 +772,6 @@ export const ptBR = {
       demo: {
         label: "O Clinavy em quatro cenas",
         note: "Demonstração com dados fictícios. Nada é enviado daqui.",
-        pause: "Pausar",
-        resume: "Continuar",
-        scene: "Cena {n} de {total}: {title}",
         patient: { name: "Carla", sent: "Orçamento enviado há 6 dias", status: "Sem resposta" },
         action: "Ver oportunidade",
         suggest: "Ver sugestão de mensagem",
@@ -834,12 +831,9 @@ export const ptBR = {
     scenarios: {
       chapter: "Como funciona",
       title: "Veja como o Clinavy ajuda sua equipe a agir.",
-      lead: "Escolha uma situação e clique para experimentar.",
+      lead: "Escolha uma situação e veja o Clinavy em ação.",
       pick: "Escolha uma situação",
-      hint: "Clique para experimentar",
       note: "Exemplo com dados fictícios. Nada é enviado.",
-      pause: "Pausar",
-      resume: "Continuar",
       labels: {
         reasonLabel: "Por que merece atenção",
         nextLabel: "Próximo passo",

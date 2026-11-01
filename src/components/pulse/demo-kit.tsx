@@ -7,7 +7,7 @@ import styles from "./demo.module.css";
 /*
   The small parts the two demonstrations share (the first screen's, and the
   one in "Veja como o Clinavy ajuda sua equipe a agir"): the reduced-motion
-  switch, the presence check (in view, tab in front), and the demonstrative
+  query, the presence check (in view, tab in front), and the demonstrative
   cursor.
 
   Kept apart so the two scenes can differ in what they tell and still behave
@@ -54,14 +54,6 @@ export function usePresence(target: RefObject<Element | null>, threshold: number
 
   return inView && shown;
 }
-
-/**
- * Both demonstrations play by themselves, in a loop, while they are in view and
- * the tab is in front. The visitor's only control is to hold them:
- * "Pausar" / "Continuar". Everything else (a scene mark, a situation, a button of
- * the simulation) just moves the story and lets it carry on from there.
- */
-export type PlayMode = "playing" | "paused";
 
 /*
   The demonstrative cursor is an ordinary arrow: white, dark outline, drawn at

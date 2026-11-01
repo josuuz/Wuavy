@@ -34,13 +34,14 @@
 
 /* Fixed, so no scene moves the page: tall enough for the last one (card, details and draft). */
 .heroStage {
-  height: 30rem;
+  height: 27.5rem;
 }
 
 /* The positioning box of a stage: the cursor and every measurement are relative to it. */
 .inner {
   position: relative;
   height: 100%;
+  user-select: none;
   transition: opacity 450ms var(--wuavy-ease-out);
 }
 
@@ -49,9 +50,17 @@
   opacity: 0;
 }
 
+/* The caption and the card are one block, centred in the stage: Clinavy speaks right above
+   the thing it is about, and the room that is left is split above and below, not in the middle.
+   The block grows from its middle as rows open, so nothing jumps. */
 .heroStage .inner {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+}
+
+.heroStage .caption {
+  padding-bottom: 1.15rem;
 }
 
 /* Clinavy speaking, in one line that changes with the scene. All captions share a cell, so
@@ -100,14 +109,12 @@
 
 /* ── The card: the one thing on stage ────────────────────────────────────── */
 
-/* The first screen's card is centred in what the caption leaves. It grows from the middle as
-   its rows open, so the page never jumps and the early scenes have no dead area under them. */
+/* The card sits right under Clinavy's caption, and the pair is centred in the stage (see
+   .heroStage .inner). It grows from the middle as its rows open, so nothing jumps. */
 .deck {
   display: flex;
-  flex: 1;
+  flex: none;
   flex-direction: column;
-  justify-content: center;
-  min-height: 0;
 }
 
 .card {
@@ -132,7 +139,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.2rem 0.75rem;
-  padding: 1.4rem 1.5rem;
+  padding: 1.2rem 1.5rem;
 }
 
 .name {
@@ -176,7 +183,7 @@
 }
 
 .actionRow {
-  padding: 0 1.5rem 1.5rem;
+  padding: 0 1.5rem 1.35rem;
 }
 
 /* The button, drawn like the product's: a pill, and the only thing here that asks to be pressed. */
@@ -211,7 +218,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 0.9rem 1.5rem 1.1rem;
+  padding: 0.75rem 1.5rem 0.9rem;
   border-top: 1px solid var(--pulse-border-soft);
 }
 
@@ -233,8 +240,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin: 0 1.5rem 1.5rem;
-  padding: 0.95rem 1.1rem 1rem;
+  margin: 0 1.5rem 1.25rem;
+  padding: 0.8rem 1.1rem 0.85rem;
   border: 1px solid var(--pulse-field);
   border-radius: var(--pulse-r-md);
   background: var(--pulse-raised);
@@ -297,9 +304,9 @@
   position: absolute;
   top: 3.5px;
   left: 5.8px;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: -1.125rem 0 0 -1.125rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.875rem 0 0 -0.875rem;
   border: 2px solid var(--pulse-accent);
   border-radius: 50%;
   opacity: 0;
@@ -312,13 +319,13 @@
 
 @keyframes demo-click {
   from {
-    opacity: 0.95;
+    opacity: 0.8;
     transform: scale(0.3);
   }
 
   to {
     opacity: 0;
-    transform: scale(1.25);
+    transform: scale(1.1);
   }
 }
 
@@ -332,75 +339,6 @@
   gap: 0.25rem 0.75rem;
 }
 
-.dots {
-  display: flex;
-  gap: 0.2rem;
-}
-
-/* A scene: a touch target of its own, with only a short rule showing. */
-.dot {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  cursor: pointer;
-}
-
-.dotMark {
-  width: 1.5rem;
-  height: 3px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--text) 26%, transparent);
-  transition:
-    background-color var(--duration-element) var(--wuavy-ease-out),
-    transform var(--duration-element) var(--wuavy-ease-out);
-}
-
-.dot[data-done] .dotMark,
-.dot[aria-selected="true"] .dotMark {
-  background: var(--mark);
-}
-
-.dot[aria-selected="true"] .dotMark {
-  transform: scaleY(1.7);
-}
-
-.ghost {
-  min-height: 2.75rem;
-  padding: 0.45rem 0.9rem;
-  border: var(--rule) solid var(--glass-ctl-edge);
-  border-radius: var(--radius-button);
-  background: var(--glass-ctl-fill);
-  box-shadow: var(--glass-ctl-shadow);
-  font-size: var(--fs-micro);
-  font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  cursor: pointer;
-  transition:
-    background-color var(--duration-ui) var(--wuavy-ease-out),
-    border-color var(--duration-ui) var(--wuavy-ease-out),
-    box-shadow var(--duration-ui) var(--wuavy-ease-out);
-}
-
-.ghost:hover {
-  background: var(--glass-ctl-fill-hover);
-  border-color: var(--glass-ctl-edge-hover);
-  box-shadow: var(--glass-ctl-shadow-hover);
-}
-
-/* The press answers in light, not in position: the glass sinks, the layout stays. */
-.ghost:active {
-  background: var(--glass-ctl-fill-active);
-  box-shadow: var(--glass-ctl-shadow-active);
-}
-
-.ghost:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-}
-
 .fine {
   flex-basis: 100%;
   font-size: var(--fs-micro);
@@ -409,8 +347,6 @@
   color: var(--text-2);
   text-wrap: pretty;
 }
-
-/* ── The first screen: where the card sits in each scene ─────────────────── */
 
 /* ── The clickable one ───────────────────────────────────────────────────── */
 
@@ -459,7 +395,7 @@
 }
 
 /* The chosen situation is the one place Signal fills a secondary control, as before. */
-.pick[aria-selected="true"] {
+.pick[aria-pressed="true"] {
   background: var(--glass-cta-sheen), var(--mark);
   border-color: var(--mark);
   box-shadow: var(--glass-cta-shadow);
@@ -473,45 +409,11 @@
   padding-bottom: 1.2rem;
 }
 
-/* "Clique para experimentar": there while there is something to press, gone once it has been. */
-.try {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: var(--pulse-r-pill);
-  background: var(--pulse-ink);
-  font-size: 0.8125rem;
-  font-weight: 640;
-  letter-spacing: 0.02em;
-  color: var(--pulse-bg);
-}
-
-.tryRow {
-  display: flex;
-  justify-content: flex-start;
-  padding: 1rem 0 0 1.35rem;
-}
-
 .row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem 0.9rem;
-}
-
-/* A real button of the simulation: it takes focus, answers the keyboard and shows where the focus is. */
-.real {
-  cursor: pointer;
-}
-
-.real:disabled {
-  cursor: default;
-}
-
-.real:focus-visible {
-  outline: 2px solid var(--pulse-ink);
-  outline-offset: 3px;
 }
 
 /* Stacked layers: every scenario's card and every step's panel sit in one cell, the stage is as
@@ -556,21 +458,6 @@
   margin: 0;
 }
 
-/* What waits to be pressed: a ring that goes out and comes back, until the visitor presses it. */
-.await {
-  position: relative;
-}
-
-.await::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border: 2px solid var(--pulse-accent);
-  border-radius: var(--pulse-r-pill);
-  opacity: 0.55;
-  pointer-events: none;
-}
-
 .simSteps {
   display: flex;
   justify-content: center;
@@ -597,7 +484,7 @@
   }
 
   .heroStage {
-    height: 38rem;
+    height: 39rem;
   }
 
   .caption {
@@ -629,26 +516,53 @@
   }
 }
 
-/* ── Reduced motion: the scenes stay, the cursor, the travel and the loops go ─ */
+/* ── Soft motion: the cursor stays, only the way it moves is gentler ─────────
+   Asked for by the system (reduce motion). The arrow is never hidden: it goes to each
+   button in a short, soft move, the press is shown without zoom, and the click is a
+   quiet fade, not a ring that grows. Content changes cross-fade, they do not travel. */
 
-@media (prefers-reduced-motion: reduce) {
-  .line,
-  .layer {
-    transform: none;
+:is(.demo, .sim)[data-soft] .line,
+:is(.demo, .sim)[data-soft] .layer {
+  transform: none;
+  transition-duration: 300ms, 1ms, 0s;
+}
+
+:is(.demo, .sim)[data-soft] .collapse {
+  transition-duration: 300ms;
+}
+
+:is(.demo, .sim)[data-soft] .action[data-press] {
+  transform: none;
+  filter: brightness(0.9);
+}
+
+:is(.demo, .sim)[data-soft] .cursor[data-on] {
+  transition:
+    transform 400ms ease-out,
+    opacity 200ms linear;
+}
+
+:is(.demo, .sim)[data-soft] .cursor[data-on][data-follow] {
+  transition: opacity 200ms linear;
+}
+
+:is(.demo, .sim)[data-soft] .cursor[data-press] svg {
+  transform: none;
+}
+
+:is(.demo, .sim)[data-soft] .cursor[data-press]::after {
+  animation: demo-click-soft 450ms linear both;
+  transform: scale(0.9);
+}
+
+@keyframes demo-click-soft {
+  0%,
+  100% {
+    opacity: 0;
   }
 
-  .collapse,
-  .cursor {
-    transition-duration: 1ms;
+  30%,
+  60% {
+    opacity: 0.7;
   }
-
-  .line,
-  .layer {
-    transition-duration: 200ms, 1ms, 0s;
-  }
-
-  .cursor {
-    display: none;
-  }
-
 }

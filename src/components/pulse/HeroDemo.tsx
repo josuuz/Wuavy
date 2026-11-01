@@ -3,10 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Pulse } from "@/components/flow/Pulse";
-import { DemoCursor, usePresence, useDemoCursor, useReducedMotion, type PlayMode } from "./demo-kit";
+import { DemoCursor, useDemoCursor, usePresence, useReducedMotion } from "./demo-kit";
 import styles from "./demo.module.css";
 import { ProductSurface } from "./product";
-import { focusTab, onTabKeys, tabIndex } from "./tabs";
 import { track } from "./track";
 
 /*
@@ -28,20 +27,20 @@ import { track } from "./track";
   How it behaves:
 
   · it starts by itself when it is in view enough, and loops. Out of view, or
-    with the tab hidden, its clock rests and resumes where it stopped;
+    with the tab hidden, its clock rests and resumes where it stopped. There is
+    nothing to press: no play, pause, replay or scene marks, and a hover, a
+    tap or a click on the stage does nothing;
   · one clock (requestAnimationFrame) runs everything: the scenes, the cursor
     and the presses. A click is never earlier than the cursor's arrival: it
     leaves, arrives, rests, and only then the button shows pressed and its
     result opens;
-  · the visitor's one control is "Pausar" / "Continuar". The scene marks jump to
-    a scene and the story carries on from there. Nothing needs pressing;
-  · the cursor is the demonstration's own drawing. The visitor's pointer is
-    never read, hidden or moved;
-  · reduced motion reduces, it does not remove: the scenes still advance by
-    themselves at an easy pace, each in its finished state, with no cursor, no
-    glide, no press and no zoom, only the content changing;
-  · the picture is aria-hidden; what a screen reader gets is the five scenes
-    (each named) and the sentence of the one that is showing.
+  · the cursor is the demonstration's own drawing, on every device and with
+    every motion setting. The visitor's pointer is never read, hidden or moved;
+  · reduced motion changes how it moves, never whether it plays: the same story,
+    the same cursor and the same two clicks, with a short soft glide, a press
+    shown without zoom, a quiet fade for the click and content that cross-fades;
+  · the picture is aria-hidden; what a screen reader gets is the sentence of
+    the scene that is showing.
 
   The title, the lead and the buttons above it are plain server-rendered
   markup: nothing in the first screen waits for this.
@@ -49,8 +48,6 @@ import { track } from "./track";
 
 /** How long each scene stays, in ms. */
 const DWELL = [2800, 3200, 5200, 3300, 7000] as const;
-/** Without a cursor to wait for, the scenes of the calm version each get a steady beat. */
-const CALM_DWELL = [3000, 3600, 4000, 4000, 7000] as const;
 /** The soft let-go between the last scene and the first. */
 const FADE = 450;
 
@@ -69,10 +66,6 @@ const CLICK_LAG = 100;
 export interface HeroDemoCopy {
   label: string;
   note: string;
-  pause: string;
-  resume: string;
-  /** "Cena {n} de {total}: {title}" — each scene mark's accessible name. */
-  scene: string;
   patient: { name: string; sent: string; status: string };
   action: string;
   /** The second button, on the opened card. */
@@ -88,16 +81,14 @@ export interface HeroDemoCopy {
 export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: string }) {
   const { scenes } = demo;
   const last = scenes.length - 1;
-  const reduced = useReducedMotion();
+  const soft = useReducedMotion();
   const [at, setAt] = useState(0);
   const [clicked, setClicked] = useState(false);
   const [press, setPress] = useState(false);
   const [fading, setFading] = useState(false);
-  const [mode, setMode] = useState<PlayMode>("playing");
 
   const region = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
-  const marks = useRef<HTMLDivElement>(null);
   const actionRef = useRef<HTMLSpanElement>(null);
   const suggestRef = useRef<HTMLSpanElement>(null);
   const atRef = useRef(0);
@@ -113,21 +104,18 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   });
 
   const inView = usePresence(region, 0.35);
-  const running = mode === "playing" && inView;
-  /** Calm (reduced motion): each scene shows how it ends, with no cursor, no glide and no press. */
-  const calm = reduced;
-  const opened = at >= 3 || (at === 2 && (clicked || calm));
+  const opened = at >= 3 || (at === 2 && clicked);
 
   useEffect(() => {
-    if (running && !started.current) {
+    if (inView && !started.current) {
       started.current = true;
       track("demo_start");
     }
-  }, [running]);
+  }, [inView]);
 
   // The one clock: scenes, cursor and presses, in order, and the loop.
   useEffect(() => {
-    if (!running) return;
+    if (!inView) return;
     let frame = 0;
     let before = performance.now();
 
@@ -146,7 +134,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
       const t = clock.current;
       const index = atRef.current;
       const f = flags.current;
-      const beat = reduced ? undefined : BEATS[index];
+      const beat = BEATS[index];
 
       if (beat) {
         const target = index === 2 ? actionRef.current : suggestRef.current;
@@ -173,7 +161,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
         }
       }
 
-      const dwell = (reduced ? CALM_DWELL : DWELL)[index] ?? DWELL[0];
+      const dwell = DWELL[index] ?? DWELL[0];
       if (index < last) {
         if (t >= dwell) begin(index + 1);
       } else if (t >= dwell + FADE) {
@@ -187,28 +175,18 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [running, reduced, last]);
-
-  /** A scene mark jumps to its scene; the story carries on from there. */
-  const jump = (next: number) => {
-    clock.current = 0;
-    flags.current = { parked: false, went: false, press: false, clicked: false, fade: false };
-    setPress(false);
-    setClicked(false);
-    setFading(false);
-    cursor.hide();
-    setAt(next);
-  };
+  }, [inView, last]);
 
   const scene = scenes[at] ?? scenes[0];
-  const naming = (i: number) =>
-    demo.scene
-      .replace("{n}", String(i + 1))
-      .replace("{total}", String(scenes.length))
-      .replace("{title}", scenes[i]?.title ?? "");
 
   return (
-    <div ref={region} className={className ? `${styles.demo} ${className}` : styles.demo} data-mode={mode}>
+    <div
+      ref={region}
+      className={className ? `${styles.demo} ${className}` : styles.demo}
+      data-soft={soft ? "" : undefined}
+      role="group"
+      aria-label={demo.label}
+    >
       <ProductSurface className={`${styles.stage} ${styles.heroStage}`}>
         <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
           {/* Clinavy's caption, one scene at a time: the sentence the scene is for. */}
@@ -292,52 +270,15 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
             </article>
           </div>
 
-          {calm ? null : <DemoCursor spot={cursor.spot} press={press} />}
+          <DemoCursor spot={cursor.spot} press={press} />
         </div>
       </ProductSurface>
 
-      <p className="sr-only" role="tabpanel">
+      <p className="sr-only">
         {scene.title} {scene.caption}
       </p>
 
       <div className={styles.controls}>
-        <div
-          ref={marks}
-          className={styles.dots}
-          role="tablist"
-          aria-label={demo.label}
-          onKeyDown={(event) =>
-            onTabKeys(event, at, scenes.length, (next) => {
-              jump(next);
-              focusTab(marks.current, next);
-            })
-          }
-        >
-          {scenes.map((item, i) => (
-            <button
-              key={item.title}
-              type="button"
-              role="tab"
-              data-tab=""
-              aria-selected={i === at}
-              aria-label={naming(i)}
-              tabIndex={tabIndex(i, at)}
-              data-done={i < at ? "" : undefined}
-              className={styles.dot}
-              onClick={() => jump(i)}
-            >
-              <span className={styles.dotMark} aria-hidden="true" />
-            </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          className={styles.ghost}
-          onClick={() => setMode((m) => (m === "playing" ? "paused" : "playing"))}
-        >
-          {mode === "playing" ? demo.pause : demo.resume}
-        </button>
         <p className={styles.fine}>{demo.note}</p>
       </div>
     </div>
