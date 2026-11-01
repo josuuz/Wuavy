@@ -3,16 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Pulse } from "@/components/flow/Pulse";
-import { cn } from "@/lib/utils";
-import { DemoCursor, MotionSwitch, useDemoCursor, useMotion, usePresence, type PlayMode } from "./demo-kit";
+import { DemoCursor, useDemoCursor, usePresence, useReducedMotion } from "./demo-kit";
 import styles from "./demo.module.css";
 import { ProductSurface } from "./product";
-import { focusTab, onTabKeys, tabIndex } from "./tabs";
 import { track } from "./track";
 
 /*
-  "Veja como o PULSE ajuda sua equipe a agir" — a simulation that shows itself,
-  and that the visitor may also operate.
+  "Veja como o PULSE ajuda sua equipe a agir" — a simulation that shows itself.
 
   Three situations to choose from, and one stage. On the stage, one card and
   one step at a time:
@@ -25,25 +22,22 @@ import { track } from "./track";
   Nothing is shown at once that the story has not reached: no list of
   patients, no total, no explanation beside the suggestion beside the message.
 
-  The two buttons are real buttons and they work inside the simulation. They
-  go nowhere and send nothing; the last step is a draft, and says so.
+  The two buttons are drawings: the cursor presses them, nothing else can. They go
+  nowhere and send nothing; the last step is a draft, and says so.
 
   How it behaves:
 
   · it plays the situation on show by itself, in a loop, while it is in view and
     the tab is in front: a cursor goes to each button, rests, presses it, and the
     stage follows. At the end it holds the draft for a few seconds, lets go
-    softly and begins again;
+    softly and begins again. A hover, a tap or a click on the stage does nothing;
   · choosing another situation starts its story at once, by itself. The choices
-    are for exploring other examples; nothing needs pressing to follow the story.
-    Pressing one of the real buttons moves the story to that step and it carries on;
+    are for exploring other examples; nothing needs pressing to follow the story;
   · one clock runs everything, and the cursor is driven by it: it always arrives
-    before the click, and a pause freezes all of it together;
-  · the visitor's one control is "Pausar" / "Continuar";
-  · reduced motion reduces, it does not remove: the steps still advance by
-    themselves at an easy pace, each in its finished state, with no cursor, no
-    glide and no press, only the content changing. "Ativar animação completa"
-    plays it with the cursor anyway, and goes back; it lasts the session.
+    before the click;
+  · the cursor is there on every device and with every motion setting. Reduced
+    motion changes how it moves, never whether it plays: a short soft glide, a
+    press shown without zoom, a quiet fade for the click, content that cross-fades.
 
   The stage is built from stacked layers, one cell for every card, caption and
   panel, so it is as tall as the tallest and nothing moves when the situation
@@ -53,8 +47,6 @@ import { track } from "./track";
 const STEPS = 3;
 /** Per step, in ms: how long it stays. The last one is the draft, held for reading. */
 const DWELL = [3100, 4400, 7000] as const;
-/** Without a cursor to wait for, each step of the calm version gets a steady beat. */
-const CALM_DWELL = [3400, 4800, 7000] as const;
 /** The soft let-go between the last step and the first. */
 const FADE = 450;
 /**
@@ -82,13 +74,7 @@ export interface SimItem {
 
 export interface SimCopy {
   pick: string;
-  hint: string;
   note: string;
-  pause: string;
-  resume: string;
-  /** The switch to the full animation, and back, offered when the system asks for less motion. */
-  motionOn: string;
-  motionOff: string;
   labels: {
     reasonLabel: string;
     nextLabel: string;
@@ -104,17 +90,15 @@ export interface SimCopy {
 
 export function HowSim({ copy }: { copy: SimCopy }) {
   const { items, labels } = copy;
-  const { reduced, full, calm } = useMotion();
+  const soft = useReducedMotion();
   const [sc, setSc] = useState(0);
   const [st, setSt] = useState(0);
   const [press, setPress] = useState(false);
   const [fading, setFading] = useState(false);
-  const [mode, setMode] = useState<PlayMode>("playing");
 
   const region = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
-  const picks = useRef<HTMLDivElement>(null);
-  const buttons = useRef<Record<string, HTMLButtonElement | null>>({});
+  const buttons = useRef<Record<string, HTMLSpanElement | null>>({});
   const stRef = useRef(0);
   const scRef = useRef(0);
   const clock = useRef(0);
@@ -130,19 +114,18 @@ export function HowSim({ copy }: { copy: SimCopy }) {
   });
 
   const inView = usePresence(region, 0.35);
-  const running = mode === "playing" && inView;
   const item = items[sc] ?? items[0];
 
   useEffect(() => {
-    if (running && !started.current) {
+    if (inView && !started.current) {
       started.current = true;
       track("demo_start", "sim");
     }
-  }, [running]);
+  }, [inView]);
 
   // The one clock: steps, cursor and presses, in order, and the loop.
   useEffect(() => {
-    if (!running) return;
+    if (!inView) return;
     let frame = 0;
     let before = performance.now();
 
@@ -160,7 +143,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
       const t = clock.current;
       const step = stRef.current;
       const f = flags.current;
-      const beat = calm ? undefined : BEATS[step];
+      const beat = BEATS[step];
 
       if (beat) {
         const target = buttons.current[`${scRef.current}:${step === 0 ? "open" : "suggest"}`] ?? null;
@@ -182,7 +165,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
         }
       }
 
-      const dwell = (calm ? CALM_DWELL : DWELL)[step] ?? DWELL[0];
+      const dwell = DWELL[step] ?? DWELL[0];
       if (step < STEPS - 1) {
         if (t >= dwell) begin(step + 1);
       } else if (t >= dwell + FADE) {
@@ -196,25 +179,17 @@ export function HowSim({ copy }: { copy: SimCopy }) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [running, calm]);
+  }, [inView]);
 
-  /** Moves the story to `step` and lets it carry on from there. */
-  const restart = (step: number) => {
+  /** Another situation starts its own story at once, by itself. */
+  const choose = (next: number) => {
     clock.current = 0;
     flags.current = { parked: false, went: false, press: false, fade: false };
     setPress(false);
     setFading(false);
     cursor.hide();
-    setSt(step);
-  };
-
-  const go = (next: number) => restart(next);
-
-  /** Another situation starts its own story at once, by itself, even from a pause. */
-  const choose = (next: number) => {
-    restart(0);
+    setSt(0);
     setSc(next);
-    setMode("playing");
     track("scenario", items[next]?.id);
   };
 
@@ -222,29 +197,14 @@ export function HowSim({ copy }: { copy: SimCopy }) {
   const stepName = labels.step.replace("{n}", String(st + 1)).replace("{total}", String(STEPS));
 
   return (
-    <div ref={region} className={styles.sim} data-mode={mode} data-calm={calm ? "" : undefined}>
-      <div
-        ref={picks}
-        className={styles.picks}
-        role="tablist"
-        aria-label={copy.pick}
-        onKeyDown={(event) =>
-          onTabKeys(event, sc, items.length, (next) => {
-            choose(next);
-            focusTab(picks.current, next);
-          })
-        }
-      >
+    <div ref={region} className={styles.sim} data-soft={soft ? "" : undefined}>
+      <div className={styles.picks} role="group" aria-label={copy.pick}>
         {items.map((it, i) => (
           <button
             key={it.id}
             type="button"
-            role="tab"
-            data-tab=""
             id={`sim-${it.id}`}
-            aria-selected={i === sc}
-            aria-controls="sim-palco"
-            tabIndex={tabIndex(i, sc)}
+            aria-pressed={i === sc}
             className={styles.pick}
             onClick={() => choose(i)}
           >
@@ -253,15 +213,19 @@ export function HowSim({ copy }: { copy: SimCopy }) {
         ))}
       </div>
 
-      <div id="sim-palco" role="tabpanel" aria-labelledby={`sim-${item.id}`} className={styles.demo}>
-        <ProductSurface className={cn(styles.stage, styles.simStage)}>
-          <div ref={box} className={styles.inner} data-fading={fading ? "" : undefined}>
+      <div id="sim-palco" className={styles.demo}>
+        <p className="sr-only">
+          {stepName}. {caption(st, item)}
+        </p>
+
+        <ProductSurface className={`${styles.stage} ${styles.simStage}`}>
+          <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
             {/* The Pulse's sentence for the step. Every one of them is in the same cell. */}
             <div className={styles.caption}>
-              <span className={styles.avatar} aria-hidden="true">
+              <span className={styles.avatar}>
                 <Pulse still state={st === 2 ? "calm" : "idle"} />
               </span>
-              <div className={styles.lines} aria-hidden="true">
+              <div className={styles.lines}>
                 {items.map((it, i) =>
                   Array.from({ length: STEPS }, (_, s) => (
                     <p key={`${it.id}-${s}`} className={styles.line} data-on={i === sc && s === st ? "" : undefined}>
@@ -271,37 +235,30 @@ export function HowSim({ copy }: { copy: SimCopy }) {
                 )}
               </div>
             </div>
-            <p className="sr-only">
-              {stepName}. {caption(st, item)}
-            </p>
 
             {/* The card, one per situation: the same place, the same size. */}
             <div className={styles.layers}>
               {items.map((it, i) => {
                 const here = i === sc;
-                const waiting = here && st === 0;
                 return (
                   <div key={it.id} className={styles.layer} data-on={here ? "" : undefined}>
-                    <article className={styles.card} data-ring={waiting ? "" : undefined}>
+                    <article className={styles.card} data-ring={here && st === 0 ? "" : undefined}>
                       <header className={styles.head}>
                         <p className={styles.name}>{it.card.name}</p>
                         <p className={styles.what}>{it.card.what}</p>
                         <span className={styles.chip}>{it.card.status}</span>
                       </header>
                       <div className={styles.actionRow}>
-                        <button
+                        <span
                           ref={(node) => {
                             buttons.current[`${i}:open`] = node;
                           }}
-                          type="button"
-                          className={cn(styles.action, styles.real, waiting && styles.await)}
-                          data-press={waiting && press ? "" : undefined}
+                          className={styles.action}
+                          data-press={here && st === 0 && press ? "" : undefined}
                           data-done={st >= 1 ? "" : undefined}
-                          disabled={st >= 1}
-                          onClick={() => go(1)}
                         >
                           {it.open}
-                        </button>
+                        </span>
                       </div>
                     </article>
                   </div>
@@ -309,16 +266,8 @@ export function HowSim({ copy }: { copy: SimCopy }) {
               })}
             </div>
 
-            {/* The step's panel. At the first step it only says to press; the story is not told before it is asked for. */}
+            {/* The step's panel: only what the story has reached. */}
             <div className={styles.layers}>
-              <div className={styles.layer} data-on={st === 0 ? "" : undefined}>
-                <p className={styles.tryRow}>
-                  <span className={styles.try} data-on="">
-                    <span aria-hidden="true">↑</span> {copy.hint}
-                  </span>
-                </p>
-              </div>
-
               {items.map((it, i) => (
                 <div key={`${it.id}-1`} className={styles.layer} data-on={i === sc && st === 1 ? "" : undefined}>
                   <div className={styles.panel}>
@@ -331,19 +280,14 @@ export function HowSim({ copy }: { copy: SimCopy }) {
                       <span className={styles.text}>{it.next}</span>
                     </p>
                     <div className={styles.row}>
-                      <button
+                      <span
                         ref={(node) => {
                           buttons.current[`${i}:suggest`] = node;
                         }}
-                        type="button"
-                        className={cn(styles.action, styles.real, i === sc && st === 1 && styles.await)}
+                        className={styles.action}
                         data-press={i === sc && st === 1 && press ? "" : undefined}
-                        onClick={() => go(2)}
                       >
                         {it.suggest}
-                      </button>
-                      <span className={styles.try} data-on="">
-                        {copy.hint}
                       </span>
                     </div>
                   </div>
@@ -365,25 +309,17 @@ export function HowSim({ copy }: { copy: SimCopy }) {
               ))}
             </div>
 
-            <div className={styles.simSteps} aria-hidden="true">
+            <div className={styles.simSteps}>
               {Array.from({ length: STEPS }, (_, s) => (
                 <span key={s} className={styles.simStep} data-on={s <= st ? "" : undefined} />
               ))}
             </div>
 
-            {calm ? null : <DemoCursor spot={cursor.spot} press={press} />}
+            <DemoCursor spot={cursor.spot} press={press} />
           </div>
         </ProductSurface>
 
         <div className={styles.controls}>
-          <button
-            type="button"
-            className={styles.ghost}
-            onClick={() => setMode((m) => (m === "playing" ? "paused" : "playing"))}
-          >
-            {mode === "playing" ? copy.pause : copy.resume}
-          </button>
-          {reduced ? <MotionSwitch full={full} copy={copy} /> : null}
           <p className={styles.fine}>{copy.note}</p>
         </div>
       </div>

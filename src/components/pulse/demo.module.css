@@ -41,6 +41,7 @@
 .inner {
   position: relative;
   height: 100%;
+  user-select: none;
   transition: opacity 450ms var(--wuavy-ease-out);
 }
 
@@ -338,75 +339,6 @@
   gap: 0.25rem 0.75rem;
 }
 
-.dots {
-  display: flex;
-  gap: 0.2rem;
-}
-
-/* A scene: a touch target of its own, with only a short rule showing. */
-.dot {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  cursor: pointer;
-}
-
-.dotMark {
-  width: 1.5rem;
-  height: 3px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--text) 26%, transparent);
-  transition:
-    background-color var(--duration-element) var(--wuavy-ease-out),
-    transform var(--duration-element) var(--wuavy-ease-out);
-}
-
-.dot[data-done] .dotMark,
-.dot[aria-selected="true"] .dotMark {
-  background: var(--mark);
-}
-
-.dot[aria-selected="true"] .dotMark {
-  transform: scaleY(1.7);
-}
-
-.ghost {
-  min-height: 2.75rem;
-  padding: 0.45rem 0.9rem;
-  border: var(--rule) solid var(--glass-ctl-edge);
-  border-radius: var(--radius-button);
-  background: var(--glass-ctl-fill);
-  box-shadow: var(--glass-ctl-shadow);
-  font-size: var(--fs-micro);
-  font-weight: var(--wuavy-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  cursor: pointer;
-  transition:
-    background-color var(--duration-ui) var(--wuavy-ease-out),
-    border-color var(--duration-ui) var(--wuavy-ease-out),
-    box-shadow var(--duration-ui) var(--wuavy-ease-out);
-}
-
-.ghost:hover {
-  background: var(--glass-ctl-fill-hover);
-  border-color: var(--glass-ctl-edge-hover);
-  box-shadow: var(--glass-ctl-shadow-hover);
-}
-
-/* The press answers in light, not in position: the glass sinks, the layout stays. */
-.ghost:active {
-  background: var(--glass-ctl-fill-active);
-  box-shadow: var(--glass-ctl-shadow-active);
-}
-
-.ghost:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-}
-
 .fine {
   flex-basis: 100%;
   font-size: var(--fs-micro);
@@ -463,7 +395,7 @@
 }
 
 /* The chosen situation is the one place Signal fills a secondary control, as before. */
-.pick[aria-selected="true"] {
+.pick[aria-pressed="true"] {
   background: var(--glass-cta-sheen), var(--mark);
   border-color: var(--mark);
   box-shadow: var(--glass-cta-shadow);
@@ -477,45 +409,11 @@
   padding-bottom: 1.2rem;
 }
 
-/* "Clique para experimentar": there while there is something to press, gone once it has been. */
-.try {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: var(--pulse-r-pill);
-  background: var(--pulse-ink);
-  font-size: 0.8125rem;
-  font-weight: 640;
-  letter-spacing: 0.02em;
-  color: var(--pulse-bg);
-}
-
-.tryRow {
-  display: flex;
-  justify-content: flex-start;
-  padding: 1rem 0 0 1.35rem;
-}
-
 .row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem 0.9rem;
-}
-
-/* A real button of the simulation: it takes focus, answers the keyboard and shows where the focus is. */
-.real {
-  cursor: pointer;
-}
-
-.real:disabled {
-  cursor: default;
-}
-
-.real:focus-visible {
-  outline: 2px solid var(--pulse-ink);
-  outline-offset: 3px;
 }
 
 /* Stacked layers: every scenario's card and every step's panel sit in one cell, the stage is as
@@ -558,21 +456,6 @@
 
 .panel .draft {
   margin: 0;
-}
-
-/* What waits to be pressed: a ring that goes out and comes back, until the visitor presses it. */
-.await {
-  position: relative;
-}
-
-.await::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border: 2px solid var(--pulse-accent);
-  border-radius: var(--pulse-r-pill);
-  opacity: 0.55;
-  pointer-events: none;
 }
 
 .simSteps {
@@ -633,49 +516,53 @@
   }
 }
 
-/* ── The calm version: the scenes stay, the cursor, the travel and the loops go ─
-   It is the demonstration's own mode (data-calm), not the system's media query: the
-   visitor can switch the full animation on without changing a setting of the computer. */
+/* ── Soft motion: the cursor stays, only the way it moves is gentler ─────────
+   Asked for by the system (reduce motion). The arrow is never hidden: it goes to each
+   button in a short, soft move, the press is shown without zoom, and the click is a
+   quiet fade, not a ring that grows. Content changes cross-fade, they do not travel. */
 
-:is(.demo, .sim)[data-calm] .line,
-:is(.demo, .sim)[data-calm] .layer {
+:is(.demo, .sim)[data-soft] .line,
+:is(.demo, .sim)[data-soft] .layer {
+  transform: none;
+  transition-duration: 300ms, 1ms, 0s;
+}
+
+:is(.demo, .sim)[data-soft] .collapse {
+  transition-duration: 300ms;
+}
+
+:is(.demo, .sim)[data-soft] .action[data-press] {
+  transform: none;
+  filter: brightness(0.9);
+}
+
+:is(.demo, .sim)[data-soft] .cursor[data-on] {
+  transition:
+    transform 400ms ease-out,
+    opacity 200ms linear;
+}
+
+:is(.demo, .sim)[data-soft] .cursor[data-on][data-follow] {
+  transition: opacity 200ms linear;
+}
+
+:is(.demo, .sim)[data-soft] .cursor[data-press] svg {
   transform: none;
 }
 
-:is(.demo, .sim)[data-calm] .collapse,
-:is(.demo, .sim)[data-calm] .cursor {
-  transition-duration: 1ms;
+:is(.demo, .sim)[data-soft] .cursor[data-press]::after {
+  animation: demo-click-soft 450ms linear both;
+  transform: scale(0.9);
 }
 
-:is(.demo, .sim)[data-calm] .line,
-:is(.demo, .sim)[data-calm] .layer {
-  transition-duration: 200ms, 1ms, 0s;
-}
+@keyframes demo-click-soft {
+  0%,
+  100% {
+    opacity: 0;
+  }
 
-:is(.demo, .sim)[data-calm] .cursor {
-  display: none;
-}
-
-/* The switch: small, plain, and clearly a control. */
-.motion {
-  min-height: 2.75rem;
-  padding: 0.45rem 0.4rem;
-  font-size: var(--fs-micro);
-  font-weight: var(--wuavy-micro);
-  letter-spacing: 0.02em;
-  color: var(--text-2);
-  text-decoration: underline;
-  text-decoration-thickness: max(1px, 0.06em);
-  text-underline-offset: 0.28em;
-  cursor: pointer;
-  transition: color var(--duration-ui) var(--wuavy-ease-out);
-}
-
-.motion:hover {
-  color: var(--text);
-}
-
-.motion:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
+  30%,
+  60% {
+    opacity: 0.7;
+  }
 }

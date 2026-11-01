@@ -7,7 +7,7 @@ import styles from "./demo.module.css";
 /*
   The small parts the two demonstrations share (the first screen's, and the
   one in "Veja como o PULSE ajuda sua equipe a agir"): the reduced-motion
-  switch, the presence check (in view, tab in front), and the demonstrative
+  query, the presence check (in view, tab in front), and the demonstrative
   cursor.
 
   Kept apart so the two scenes can differ in what they tell and still behave
@@ -26,61 +26,6 @@ const subscribe = (notify: () => void) => {
 /** Whether the visitor asked for less motion. On the server it is false, and corrected on hydration. */
 export function useReducedMotion() {
   return useSyncExternalStore(subscribe, () => window.matchMedia(REDUCED).matches, () => false);
-}
-
-/*
-  Motion, in two layers. The system's "reduce motion" asks for a calmer page, and
-  by default the demonstrations answer with the calm version: the scenes still
-  advance by themselves, with no cursor. But a visitor should be able to watch the
-  whole thing without changing a setting of the computer, so a small switch on the
-  demonstration turns the full animation on, and back. The choice lasts the session
-  and is shared by both demonstrations.
-*/
-const FULL_KEY = "wuavy-demo-full";
-let fullMemory = false;
-const fullListeners = new Set<() => void>();
-
-const readFull = () => {
-  try {
-    return sessionStorage.getItem(FULL_KEY) === "1";
-  } catch {
-    return fullMemory;
-  }
-};
-
-const subscribeFull = (notify: () => void) => {
-  fullListeners.add(notify);
-  return () => void fullListeners.delete(notify);
-};
-
-function setFullMotion(on: boolean) {
-  fullMemory = on;
-  try {
-    if (on) sessionStorage.setItem(FULL_KEY, "1");
-    else sessionStorage.removeItem(FULL_KEY);
-  } catch {
-    // Storage can be blocked; the choice then lasts as long as the page does.
-  }
-  fullListeners.forEach((notify) => notify());
-}
-
-/**
- * `reduced`: the system asks for less motion. `full`: the visitor chose the full
- * animation anyway. `calm`: what the demonstrations draw: the soft version.
- */
-export function useMotion() {
-  const reduced = useReducedMotion();
-  const full = useSyncExternalStore(subscribeFull, readFull, () => false);
-  return { reduced, full, calm: reduced && !full };
-}
-
-/** The switch between the soft and the full animation. It is only there when the system asks for less motion. */
-export function MotionSwitch({ full, copy }: { full: boolean; copy: { motionOn: string; motionOff: string } }) {
-  return (
-    <button type="button" className={styles.motion} aria-pressed={full} onClick={() => setFullMotion(!full)}>
-      {full ? copy.motionOff : copy.motionOn}
-    </button>
-  );
 }
 
 /**
@@ -109,14 +54,6 @@ export function usePresence(target: RefObject<Element | null>, threshold: number
 
   return inView && shown;
 }
-
-/**
- * Both demonstrations play by themselves, in a loop, while they are in view and
- * the tab is in front. The visitor's only control is to hold them:
- * "Pausar" / "Continuar". Everything else (a scene mark, a situation, a button of
- * the simulation) just moves the story and lets it carry on from there.
- */
-export type PlayMode = "playing" | "paused";
 
 /*
   The demonstrative cursor is an ordinary arrow: white, dark outline, drawn at
