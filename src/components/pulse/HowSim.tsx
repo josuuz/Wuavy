@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { Pulse } from "@/components/flow/Pulse";
 import { DemoCursor, useDemoCursor, usePresence, useReducedMotion } from "./demo-kit";
@@ -59,11 +59,28 @@ const BEATS = [
   { leave: 2200, press: 3600, release: 4050 },
 ] as const;
 
+/** What each situation draws: an estimate and its days, a timeline, or a slice of tomorrow's agenda. */
+export interface SimVisual {
+  kind: string;
+  kicker?: string;
+  procedure?: string;
+  days?: number;
+  last?: { what: string; when: string };
+  today?: string;
+  due?: { what: string; when: string };
+  day?: string;
+  busy?: string;
+  free?: string;
+  slots?: readonly string[];
+  pick?: string;
+}
+
 export interface SimItem {
   id: string;
   choice: string;
   intro: string;
   card: { name: string; what: string; status: string };
+  visual: SimVisual;
   open: string;
   reason: string;
   next: string;
@@ -86,6 +103,125 @@ export interface SimCopy {
     step: string;
   };
   items: readonly SimItem[];
+}
+
+interface CellProps {
+  it: SimItem;
+  here: boolean;
+  st: number;
+  press: boolean;
+  /** Registers the thing the cursor goes to: a button, or the free slot. */
+  target: (node: HTMLElement | null) => void;
+}
+
+/** The estimate: who, what for, and the days that went by, one dot each; the last ones are the late ones. */
+function QuoteCell({ it, here, st, press, target }: CellProps) {
+  const v = it.visual;
+  const days = v.days ?? 6;
+  return (
+    <article className={styles.card} data-kind="quote" data-ring={here && st === 0 ? "" : undefined}>
+      <header className={styles.head}>
+        <p className={styles.scKick}>{v.kicker}</p>
+        <p className={styles.name}>{it.card.name}</p>
+        <p className={styles.what}>{v.procedure}</p>
+        <span className={styles.chip}>{it.card.status}</span>
+      </header>
+      <div className={styles.waiting}>
+        <span className={styles.dayDots} aria-hidden="true" data-open={here && st >= 1 ? "" : undefined}>
+          {Array.from({ length: days }, (_, d) => (
+            <i key={d} data-late={d >= 3 ? "" : undefined} style={{ "--n": d } as CSSProperties} />
+          ))}
+        </span>
+        <span className={styles.waitText}>{it.card.what}</span>
+      </div>
+      <div className={styles.actionRow}>
+        <span
+          ref={target}
+          className={styles.action}
+          data-press={here && st === 0 && press ? "" : undefined}
+          data-done={st >= 1 ? "" : undefined}
+        >
+          {it.open}
+        </span>
+      </div>
+    </article>
+  );
+}
+
+/** The patient's timeline: the last visit, today, and the return that nobody scheduled. */
+function TimelineCell({ it, here, st, press, target }: CellProps) {
+  const v = it.visual;
+  return (
+    <article className={styles.card} data-kind="timeline">
+      <header className={styles.head}>
+        <p className={styles.name}>{it.card.name}</p>
+        <p className={styles.what}>{it.card.what}</p>
+        <span className={styles.chip}>{it.card.status}</span>
+      </header>
+      <div className={styles.tl} data-hot={here && st === 0 ? "" : undefined} data-fill={here && st >= 1 ? "" : undefined}>
+        <span className={styles.tlLine} aria-hidden="true">
+          <i />
+        </span>
+        <div className={styles.tlNode} data-k="last">
+          <b>{v.last?.what}</b>
+          <span>{v.last?.when}</span>
+        </div>
+        <div className={styles.tlNode} data-k="today">
+          <b>{v.today}</b>
+        </div>
+        <div className={styles.tlNode} data-k="due">
+          <b>{v.due?.what}</b>
+          <span>{v.due?.when}</span>
+        </div>
+      </div>
+      <div className={styles.actionRow}>
+        <span
+          ref={target}
+          className={styles.action}
+          data-press={here && st === 0 && press ? "" : undefined}
+          data-done={st >= 1 ? "" : undefined}
+        >
+          {it.open}
+        </span>
+      </div>
+    </article>
+  );
+}
+
+/** Tomorrow's agenda: a day that is full, and one hour that is free. The free hour is what the cursor selects. */
+function AgendaCell({ it, here, st, press, target }: CellProps) {
+  const v = it.visual;
+  return (
+    <article className={styles.card} data-kind="agenda">
+      <header className={styles.head}>
+        <p className={styles.name}>{it.card.name}</p>
+        <p className={styles.what}>{it.card.what}</p>
+        <span className={styles.chip}>{it.card.status}</span>
+      </header>
+      <ul className={styles.agList}>
+        {(v.slots ?? []).map((t) =>
+          t === v.pick ? (
+            <li
+              key={t}
+              ref={target}
+              className={styles.agFree}
+              data-hot={here && st === 0 ? "" : undefined}
+              data-press={here && st === 0 && press ? "" : undefined}
+              data-picked={st >= 1 ? "" : undefined}
+            >
+              <b>{t}</b>
+              <span>{v.free}</span>
+            </li>
+          ) : (
+            <li key={t} className={styles.agBusy}>
+              <b>{t}</b>
+              <span>{v.busy}</span>
+            </li>
+          ),
+        )}
+      </ul>
+    </article>
+  );
 }
 
 export function HowSim({ copy }: { copy: SimCopy }) {
@@ -197,7 +333,7 @@ export function HowSim({ copy }: { copy: SimCopy }) {
   const stepName = labels.step.replace("{n}", String(st + 1)).replace("{total}", String(STEPS));
 
   return (
-    <div ref={region} className={styles.sim} data-soft={soft ? "" : undefined}>
+    <div ref={region} className={styles.sim} data-soft={soft ? "" : undefined} data-st={st} data-sc={sc}>
       <div className={styles.picks} role="group" aria-label={copy.pick}>
         {items.map((it, i) => (
           <button
@@ -218,6 +354,9 @@ export function HowSim({ copy }: { copy: SimCopy }) {
           {stepName}. {caption(st, item)}
         </p>
 
+        <div className={styles.tablet}>
+          <span className={styles.tabletCam} aria-hidden="true" />
+          <div className={styles.tabletScreen}>
         <ProductSurface className={`${styles.stage} ${styles.simStage}`}>
           <div ref={box} className={styles.inner} aria-hidden="true" data-fading={fading ? "" : undefined}>
             {/* Clinavy's sentence for the step. Every one of them is in the same cell. */}
@@ -236,31 +375,21 @@ export function HowSim({ copy }: { copy: SimCopy }) {
               </div>
             </div>
 
-            {/* The card, one per situation: the same place, the same size. */}
+            {/* The scene, one per situation, each its own drawing in the same place and the same size. */}
             <div className={styles.layers}>
               {items.map((it, i) => {
-                const here = i === sc;
+                const cell = {
+                  it,
+                  here: i === sc,
+                  st,
+                  press,
+                  target: (node: HTMLElement | null) => {
+                    buttons.current[`${i}:open`] = node;
+                  },
+                };
                 return (
-                  <div key={it.id} className={styles.layer} data-on={here ? "" : undefined}>
-                    <article className={styles.card} data-ring={here && st === 0 ? "" : undefined}>
-                      <header className={styles.head}>
-                        <p className={styles.name}>{it.card.name}</p>
-                        <p className={styles.what}>{it.card.what}</p>
-                        <span className={styles.chip}>{it.card.status}</span>
-                      </header>
-                      <div className={styles.actionRow}>
-                        <span
-                          ref={(node) => {
-                            buttons.current[`${i}:open`] = node;
-                          }}
-                          className={styles.action}
-                          data-press={here && st === 0 && press ? "" : undefined}
-                          data-done={st >= 1 ? "" : undefined}
-                        >
-                          {it.open}
-                        </span>
-                      </div>
-                    </article>
+                  <div key={it.id} className={styles.layer} data-on={i === sc ? "" : undefined}>
+                    {it.visual.kind === "timeline" ? <TimelineCell {...cell} /> : it.visual.kind === "agenda" ? <AgendaCell {...cell} /> : <QuoteCell {...cell} />}
                   </div>
                 );
               })}
@@ -318,6 +447,8 @@ export function HowSim({ copy }: { copy: SimCopy }) {
             <DemoCursor spot={cursor.spot} press={press} />
           </div>
         </ProductSurface>
+          </div>
+        </div>
 
         <div className={styles.controls}>
           <p className={styles.fine}>{copy.note}</p>

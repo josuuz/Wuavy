@@ -54,6 +54,9 @@ export function AppFrame({
   chip,
   children,
   className,
+  bodyClassName,
+  contentKey,
+  pressSlug,
 }: {
   /** The screen's name, shown above the work. */
   screen: string;
@@ -63,6 +66,12 @@ export function AppFrame({
   chip?: string;
   children: ReactNode;
   className?: string;
+  /** Class of the work area: the tour animates it, so a new screen comes in while the frame and the rail stay put. */
+  bodyClassName?: string;
+  /** Changes with the screen: only the work area is remounted, never the frame. */
+  contentKey?: string;
+  /** The rail item that is being pressed right now (the demonstration's cursor), by slug. */
+  pressSlug?: string;
 }) {
   // The host carries the container; the frame inside answers the query. A
   // container query styles what is inside a container, never the container
@@ -80,7 +89,12 @@ export function AppFrame({
           </p>
           <ul className={styles.nav}>
             {VIEWS.map((view) => (
-              <li key={view.slug} data-here={view.slug === rail ? "" : undefined}>
+              <li
+                key={view.slug}
+                data-slug={view.slug}
+                data-here={view.slug === rail ? "" : undefined}
+                data-press={view.slug === pressSlug ? "" : undefined}
+              >
                 {view.label}
               </li>
             ))}
@@ -91,7 +105,9 @@ export function AppFrame({
           <p className={styles.bar} aria-hidden="true">
             {screen}
           </p>
-          <div className={styles.body}>{children}</div>
+          <div key={contentKey} className={cn(styles.body, bodyClassName)}>
+            {children}
+          </div>
         </div>
       </ProductSurface>
     </div>
@@ -303,7 +319,12 @@ export function AgendaCrop() {
       <p className={styles.kicker}>Quinta-feira · Dra. Helena</p>
       <ul className={styles.day}>
         {SAMPLE.agenda.map((slot, i) => (
-          <li key={slot.hour} data-free={slot.name ? undefined : ""} style={{ "--i": i } as CSSProperties}>
+          <li
+            key={slot.hour}
+            data-free={slot.name ? undefined : ""}
+            data-focus={slot.name ? undefined : ""}
+            style={{ "--i": i } as CSSProperties}
+          >
             <span className={styles.rowHour}>{slot.hour}</span>
             <span className={styles.rowText}>
               {slot.name ?? slot.what}
@@ -326,7 +347,7 @@ export function PatientsCrop() {
       <p className={styles.kicker}>Pacientes · 248 no total</p>
       <ul className={styles.rows}>
         {SAMPLE.patients.map((patient, i) => (
-          <li key={patient.name} style={{ "--i": i } as CSSProperties}>
+          <li key={patient.name} data-focus={patient.tone === "due" ? "" : undefined} style={{ "--i": i } as CSSProperties}>
             <span className={styles.rowText}>
               {patient.name}
               <small>{patient.last}</small>
@@ -350,7 +371,7 @@ export function RecordCrop() {
     <div className={styles.block}>
       <p className={styles.kicker}>{patient} · Prontuário</p>
 
-      <section className={styles.complaint}>
+      <section className={styles.complaint} data-focus="">
         <p className={styles.kicker}>Queixa principal</p>
         <p className={styles.complaintText}>{complaint}</p>
         <p className={styles.fine}>{complaintAt}</p>
@@ -389,7 +410,7 @@ export function OpportunitiesCrop({ fronts }: { fronts: readonly { tag: string; 
       <p className={styles.kicker}>Oportunidades · 7 frentes</p>
       <ul className={styles.rows}>
         {fronts.map((front, i) => (
-          <li key={front.name} style={{ "--i": i } as CSSProperties}>
+          <li key={front.name} data-focus={i === 0 ? "" : undefined} style={{ "--i": i } as CSSProperties}>
             <span className={styles.rowTag}>{front.tag}</span>
             <span className={styles.rowText}>{front.name}</span>
             <span className={styles.rowValue}>{SAMPLE.frontValues[i] ?? ""}</span>

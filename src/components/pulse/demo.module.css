@@ -1205,3 +1205,345 @@ html[data-perf="lite"] .piece {
     padding: 0.7rem 0.85rem;
   }
 }
+
+/* ── The situations: a tablet, and a scene for each one ──────────────────────────
+   The first screen has a laptop; this one has a tablet, so the two never look alike. Inside it the same
+   light product surface, but each situation draws its own thing: an estimate and the days that went by,
+   a patient's timeline, a slice of tomorrow's agenda. One clock, one thing at a time, as before. */
+
+.sim {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  gap: 1.1rem;
+  --spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  .sim {
+    --spring: linear(0, 0.18 4%, 0.58 9%, 0.92 15%, 1.08 21%, 1.12 25%, 1.09 30%, 1.03 38%, 0.995 48%, 1);
+  }
+}
+
+/* A soft warm light on the floor under the tablet: it ties the light screen to the black around it. */
+.sim::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: -8%;
+  width: min(100vw, 72rem);
+  height: 62%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse 50% 46% at 50% 70%, rgb(214 84 32 / 0.26), rgb(214 84 32 / 0.08) 55%, transparent 80%);
+  pointer-events: none;
+}
+
+.sim .demo {
+  max-width: 48rem;
+}
+
+.tablet {
+  position: relative;
+  padding: 0.8rem;
+  border-radius: 1.9rem;
+  background: linear-gradient(180deg, #343437 0%, #1f1f21 100%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    0 40px 70px -40px rgb(0 0 0 / 0.95),
+    0 14px 28px -18px rgb(0 0 0 / 0.8);
+}
+
+.tabletCam {
+  position: absolute;
+  top: 0.32rem;
+  left: 50%;
+  width: 0.34rem;
+  height: 0.34rem;
+  margin-left: -0.17rem;
+  border-radius: 50%;
+  background: #090909;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+.tabletScreen {
+  overflow: hidden;
+  border-radius: 1.15rem;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.7);
+}
+
+/* The stage fills the tablet's screen: no card of its own, no second set of corners. */
+.sim .simStage {
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 1.1rem 1.4rem 1rem;
+}
+
+/* The card of the scene settles into place with the short spring of the first screen's pieces. */
+.sim .layer .card {
+  transform: translateY(0.9rem) scale(0.975);
+  transition:
+    transform 900ms var(--spring) 120ms,
+    box-shadow 600ms var(--wuavy-ease-out),
+    border-color 600ms var(--wuavy-ease-out);
+}
+
+.sim .layer[data-on] .card {
+  transform: none;
+}
+
+.sim[data-soft] .layer .card {
+  transform: none;
+  transition: box-shadow 250ms linear, border-color 250ms linear;
+}
+
+.scKick {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  font-weight: 620;
+  color: var(--pulse-muted);
+}
+
+/* The estimate: how long it has waited, in days. From the fourth day on the dots are the late ones. */
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0 1.5rem 1rem;
+}
+
+.dayDots {
+  display: inline-flex;
+  gap: 0.32rem;
+}
+
+.dayDots i {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--pulse-ink) 16%, transparent);
+  transition:
+    background-color 500ms var(--wuavy-ease-out),
+    transform 700ms var(--spring) calc(var(--n, 0) * 70ms);
+}
+
+.dayDots i[data-late] {
+  background: color-mix(in srgb, var(--pulse-accent) 55%, transparent);
+}
+
+.dayDots[data-open] i[data-late] {
+  background: var(--pulse-accent);
+  transform: scale(1.15);
+}
+
+.waitText {
+  font-size: 0.9375rem;
+  color: var(--pulse-muted);
+}
+
+/* The timeline: the last visit, today, and the return nobody scheduled. */
+.tl {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.6rem;
+  padding: 1.1rem 1.5rem 1.15rem;
+}
+
+.tlLine {
+  position: absolute;
+  left: 1.9rem;
+  right: 1.9rem;
+  top: calc(1.1rem + 0.4rem - 1px);
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--pulse-ink) 14%, transparent);
+}
+
+.tlLine i {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: var(--pulse-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tl[data-fill] .tlLine i {
+  transform: scaleX(1);
+}
+
+.tlNode {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  padding-top: 1.15rem;
+}
+
+.tlNode::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--pulse-ink);
+}
+
+.tlNode b {
+  font-size: 0.9375rem;
+  font-weight: 640;
+}
+
+.tlNode span {
+  font-size: 0.875rem;
+  color: var(--pulse-muted);
+}
+
+.tlNode[data-k="last"]::before {
+  left: 0;
+}
+
+.tlNode[data-k="today"] {
+  align-items: center;
+}
+
+.tlNode[data-k="today"]::before {
+  left: 50%;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: 0.125rem 0 0 -0.275rem;
+  background: color-mix(in srgb, var(--pulse-ink) 40%, transparent);
+}
+
+.tlNode[data-k="due"] {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.tlNode[data-k="due"]::before {
+  right: 0;
+  background: var(--pulse-card);
+  box-shadow: inset 0 0 0 2px var(--pulse-accent);
+  transition: box-shadow 500ms var(--wuavy-ease-out);
+}
+
+/* The point that deserves attention takes a ring, as the card does in the other scenes. */
+.tl[data-hot] .tlNode[data-k="due"]::before {
+  box-shadow:
+    inset 0 0 0 2px var(--pulse-accent),
+    0 0 0 4px color-mix(in srgb, var(--pulse-accent) 22%, transparent);
+}
+
+.tl[data-fill] .tlNode[data-k="due"]::before {
+  background: var(--pulse-accent);
+}
+
+/* The agenda: a day that is full, and one free hour. The free hour is what the cursor selects. */
+.agList {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0 1.5rem 1.15rem;
+  list-style: none;
+}
+
+.agList li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--pulse-ink) 5%, transparent);
+  font-size: 0.9375rem;
+  color: var(--pulse-muted);
+}
+
+.agList b {
+  font-weight: 650;
+  color: var(--pulse-ink);
+}
+
+.agFree {
+  background: var(--pulse-accent-soft) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pulse-accent) 45%, transparent);
+  color: var(--pulse-accent-text) !important;
+  transition:
+    transform 160ms var(--wuavy-ease-out),
+    background-color 400ms var(--wuavy-ease-out),
+    box-shadow 500ms var(--wuavy-ease-out);
+}
+
+.agFree[data-hot] {
+  box-shadow:
+    inset 0 0 0 1px var(--pulse-accent),
+    0 0 0 5px color-mix(in srgb, var(--pulse-accent) 18%, transparent);
+}
+
+.agFree[data-press] {
+  transform: scale(0.97);
+}
+
+.agFree[data-picked] {
+  background: var(--pulse-accent) !important;
+  color: var(--pulse-on-accent) !important;
+}
+
+.agFree[data-picked] b {
+  color: var(--pulse-on-accent);
+}
+
+/* A narrow window: the tablet slims down and the card stacks its chip, as the phone does above. */
+@media (max-width: 47.99rem) {
+  .tablet {
+    padding: 0.5rem;
+    border-radius: 1.4rem;
+  }
+
+  .tabletScreen {
+    border-radius: 0.95rem;
+  }
+
+  .sim .simStage {
+    padding: 0.9rem 0.8rem 0.8rem;
+  }
+
+  .sim .head {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.9rem 1rem 0.8rem;
+  }
+
+  .sim .chip {
+    grid-row: auto;
+    grid-column: 1;
+    justify-self: start;
+    margin-top: 0.4rem;
+  }
+
+  .waiting,
+  .tl,
+  .agList {
+    padding-inline: 1rem;
+  }
+
+  .waiting {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .tlLine {
+    left: 1.4rem;
+    right: 1.4rem;
+  }
+
+  .sim .actionRow {
+    padding: 0 1rem 1rem;
+  }
+}
+

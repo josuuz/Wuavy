@@ -152,7 +152,7 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/clinavy
 
       {/* ── 3. The same situations, with the product ────────────────────── */}
       <Section id="como-funciona" surface="black" label={scenarios.chapter} className={`tx-grain ${styles.section}`}>
-        <div className={styles.wide}>
+        <div className={`${styles.wide} ${styles.wideTight}`}>
           <header className={`${styles.head} ${styles.headCenter}`}>
             <h2 className={`${styles.h2} ${styles.center}`}>{scenarios.title}</h2>
             <p className={`${styles.sectionLead} ${styles.center}`}>{scenarios.lead}</p>
@@ -164,7 +164,7 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/clinavy
 
       {/* ── 4. The rest of the day, one screen at a time ────────────────── */}
       <Section id="por-dentro" surface="carbon" label={routine.chapter} className={`tx-grain ${styles.section}`}>
-        <div className={styles.wide}>
+        <div className={`${styles.wide} ${styles.wideTight}`}>
           <header className={`${styles.head} ${styles.headCenter}`}>
             <h2 className={`${styles.h2} ${styles.center}`}>{routine.title}</h2>
             <p className={`${styles.sectionLead} ${styles.center}`}>{routine.lead}</p>

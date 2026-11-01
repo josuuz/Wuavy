@@ -105,7 +105,15 @@
   /* The lit item changes hands when the screen does: a fade, not a jump. */
   transition:
     background-color 0.5s var(--wuavy-ease-out),
-    color 0.5s var(--wuavy-ease-out);
+    color 0.5s var(--wuavy-ease-out),
+    transform 160ms var(--wuavy-ease-out);
+}
+
+/* The item the demonstration's cursor presses: it answers the click before the screen changes. */
+.nav li[data-press] {
+  transform: scale(0.94);
+  background: var(--pulse-sand);
+  color: var(--pulse-fg);
 }
 
 .nav li[data-here] {
