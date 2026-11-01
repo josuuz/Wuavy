@@ -79,21 +79,20 @@ const outcome = (status: SubscriptionStatus | null): CheckoutOutcome =>
   releases(status) ? "active" : status === "cancelled" ? "declined" : "pending";
 
 /**
- * O que termina uma criação (ou uma retomada): chama o Mercado Pago, trata
- * cada desfecho exatamente como subscribe() sempre tratou
- * (recusado/nosso/incerto/criado) e, só quando a assinatura existe e o
- * init_point veio, redireciona para o checkout hospedado — nunca retorna
- * nesse caminho. Retorna normalmente em qualquer outro desfecho.
- */
-/**
  * Quando a linha nasceu: é ela que decide o corpo da criação (nome e volta),
  * para uma retomada repetir exatamente o que a primeira tentativa enviou
- * (lib/flow/subscription-payload.ts). Se não der para ler, null: vale o corpo
- * de antes, o único que nunca contradiz uma tentativa que possa já ter saído.
+ * (lib/flow/subscription-payload.ts). A coluna nunca é nula; null aqui quer
+ * dizer que não deu para ler (erro, ou a linha sumiu), e nesse caso nada é
+ * enviado: qualquer corpo seria um palpite, e um palpite errado reusa a chave
+ * de idempotência com outro corpo.
  */
 async function rowCreatedAt(rowId: string): Promise<string | null> {
   try {
-    const { data } = await createAdminClient().from("subscriptions").select("created_at").eq("id", rowId).maybeSingle();
+    const { data, error } = await createAdminClient().from("subscriptions").select("created_at").eq("id", rowId).maybeSingle();
+    if (error) {
+      console.error("subscribe: ler a data da linha", rowId, error.message);
+      return null;
+    }
     return (data?.created_at as string | undefined) ?? null;
   } catch (error) {
     console.error("subscribe: ler a data da linha", rowId, error);
@@ -101,8 +100,20 @@ async function rowCreatedAt(rowId: string): Promise<string | null> {
   }
 }
 
+/**
+ * O que termina uma criação (ou uma retomada): chama o Mercado Pago, trata
+ * cada desfecho exatamente como subscribe() sempre tratou
+ * (recusado/nosso/incerto/criado) e, só quando a assinatura existe e o
+ * init_point veio, redireciona para o checkout hospedado — nunca retorna
+ * nesse caminho. Retorna normalmente em qualquer outro desfecho.
+ */
 async function createAndRedirect(rowId: string, email: string): Promise<Subscribed> {
   const rowCreated = await rowCreatedAt(rowId);
+  if (!rowCreated) {
+    // Nada foi enviado: libera a reserva, a mesma linha pode tentar de novo depois.
+    await releaseSubscriptionClaim(rowId);
+    return { outcome: "unavailable" };
+  }
   const result = await runCreateSubscription(() => createSubscription({ reference: rowId, email, rowCreatedAt: rowCreated }));
 
   if (result.outcome === "ours") {

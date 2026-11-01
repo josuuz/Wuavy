@@ -15,9 +15,11 @@
   Então: linha criada antes de CLINAVY_PAYLOAD_FROM leva exatamente o corpo de
   antes (reason "Wuavy Pulse", volta por /pulse/assinar, que redireciona para
   /clinavy/assinar com a query intacta); linha criada depois leva o corpo novo.
-  Sem data legível, vale o corpo de antes: na dúvida, nunca se muda o que pode
-  já ter sido enviado. É uma função pura da data da linha, então dá o mesmo
-  resultado hoje e daqui a um ano, e em qualquer instância do servidor.
+  Sem data legível a função devolve o corpo de antes, mas o fluxo real nem
+  chega aqui: createAndRedirect (assinar/actions.ts) não envia nada quando não
+  consegue ler a data da linha, porque qualquer corpo seria um palpite. É uma
+  função pura da data da linha, então dá o mesmo resultado hoje e daqui a um
+  ano, e em qualquer instância do servidor.
 
   CLINAVY_PAYLOAD_FROM tem de ser POSTERIOR ao instante em que o código com o
   nome novo entra no ar: assim nenhuma linha criada pelo código antigo é

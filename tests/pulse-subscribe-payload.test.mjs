@@ -173,3 +173,42 @@ test("duas tentativas da mesma linha antiga enviam corpos byte a byte iguais", a
   assert.equal(JSON.stringify(a.body), JSON.stringify(b.body));
   assert.equal(a.key, b.key);
 });
+
+// ── a leitura da data da linha falha: nunca se adivinha um corpo ──
+
+/** Faz só a leitura de created_at falhar (o resto do banco responde normalmente). */
+function breakCreatedAtRead(admin, { asMissingRow = false } = {}) {
+  const realFrom = admin.from.bind(admin);
+  admin.from = (table) => {
+    const query = realFrom(table);
+    if (table !== "subscriptions") return query;
+    const realSelect = query.select.bind(query);
+    query.select = (cols) =>
+      cols === "created_at"
+        ? { eq: () => ({ maybeSingle: async () => (asMissingRow ? { data: null, error: null } : { data: null, error: { message: "simulado: leitura falhou" } }) }) }
+        : realSelect(cols);
+    return query;
+  };
+}
+
+for (const [name, opts] of [
+  ["erro de leitura", {}],
+  ["linha que não existe mais", { asMissingRow: true }],
+]) {
+  test(`${name} na data da linha: nenhuma criação sai (nem com o corpo antigo, nem com o novo) e a reserva é liberada`, async () => {
+    // Uma linha NOVA: se o código "chutasse" o corpo antigo, contradiria a primeira tentativa.
+    const admin = setup([row("row-read-fail", { created_at: AFTER, updated_at: AFTER })]);
+    breakCreatedAtRead(admin, opts);
+    let posts = 0;
+    const result = await withFetchMock(
+      async (url, init) => {
+        if (url.endsWith("/preapproval") && init?.method === "POST") posts += 1;
+        throw new Error("não deveria chamar o Mercado Pago: " + url);
+      },
+      () => actions.subscribe(),
+    );
+    assert.deepEqual(result, { outcome: "unavailable" });
+    assert.equal(posts, 0, "nada foi enviado ao Mercado Pago");
+    assert.equal(admin.row("subscriptions", "row-read-fail").creation_claimed_at, null, "a linha fica livre para outra tentativa");
+  });
+}
