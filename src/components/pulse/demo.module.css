@@ -791,14 +791,14 @@
 
 .gQuote {
   top: 5%;
-  right: calc(100% - 0.9rem);
+  right: calc(100% - 0.2rem);
   width: 11.5rem;
   transform-origin: right center;
 }
 
 .gAgenda {
   top: 69%;
-  right: calc(100% - 0.3rem);
+  right: calc(100% - 0.1rem);
   width: 9.75rem;
   transform-origin: right center;
 }
