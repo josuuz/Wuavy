@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { ClinavyWordmark } from "@/components/brand/ClinavyWordmark";
 import { LocaleSwitch, type LanguageSwitchProps } from "@/components/layout/LocaleSwitch";
 import { Button } from "@/components/ui/Button";
 import { subscribeFrame } from "@/lib/motion/frame";
@@ -85,7 +86,7 @@ export function PulseNav({ labels, links, language }: PulseNavProps) {
     <header ref={header} className={styles.header} data-lifted={lifted ? "" : undefined}>
       <div className={styles.inner}>
         <a href="#pulse" className={styles.brand} aria-label={labels.home}>
-          <span className={styles.brandName}>CLINAVY</span>
+          <ClinavyWordmark decorative className={styles.wordmark} />
         </a>
 
         <nav aria-label={labels.nav} className={styles.nav}>

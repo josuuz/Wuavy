@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ClinavyWordmark } from "@/components/brand/ClinavyWordmark";
 import { TextLink } from "@/components/ui/TextLink";
 import styles from "./chrome.module.css";
 
@@ -37,7 +38,7 @@ export function PulseFooter({ footer, links, back, legal, talk }: PulseFooterPro
       <div className={`frame ${styles.footerGrid}`}>
         <div className={styles.footerLead}>
           <p className={styles.footerBrand}>
-            <span className={styles.footerBrandName}>CLINAVY</span>
+            <ClinavyWordmark decorative className={styles.footerWordmark} />
           </p>
           <p className={styles.footerSignature}>{footer.signature}</p>
           <TextLink href={talk} className={styles.footerTalk}>
