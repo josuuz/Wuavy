@@ -54,10 +54,12 @@
   align-items: center;
 }
 
-/* The wordmark, vector, in the product's orange. The agency is reached by the link back, not signed under the mark. */
-.wordmark {
-  width: auto;
-  height: 1.3rem;
+/* CLINAVY alone: the agency is reached by the link back, not signed under the mark. */
+.brandName {
+  font-size: clamp(1.125rem, 0.95rem + 0.5vw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1;
   color: var(--wuavy-signal);
 }
 
@@ -193,9 +195,11 @@
   gap: 0.05rem;
 }
 
-.footerWordmark {
-  width: auto;
-  height: clamp(1.9rem, 1.3rem + 1.8vw, 3rem);
+.footerBrandName {
+  font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.75rem);
+  font-weight: 900;
+  letter-spacing: 0.005em;
+  line-height: 1;
   color: var(--wuavy-signal);
 }
 
