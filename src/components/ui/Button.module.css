@@ -6,7 +6,10 @@
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--radius-button);
-  background: var(--mark);
+  background: var(--glass-cta-sheen), var(--mark);
+  /* Depth, not decoration: a lit top edge, a shaded bottom and a soft Signal shadow under it.
+     The fill stays the full mark colour. */
+  box-shadow: var(--glass-cta-shadow);
   color: var(--on-mark);
   font-weight: 640;
   letter-spacing: -0.005em;
@@ -46,6 +49,12 @@
 
 .button:focus-visible {
   outline-color: var(--text);
+}
+
+/* On the surface where the mark is Black, the reflection and the Signal shadow would be noise. */
+[data-surface="signal"] .button {
+  background: var(--mark);
+  box-shadow: none;
 }
 
 .label {

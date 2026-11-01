@@ -26,10 +26,14 @@
   min-height: 3.5rem;
   margin-inline: auto;
   padding: 0.5rem 0.625rem 0.5rem 1.125rem;
-  border: var(--rule) solid color-mix(in srgb, var(--wuavy-paper) 14%, transparent);
+  border: var(--rule) solid var(--glass-edge);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--wuavy-black) 86%, transparent);
-  backdrop-filter: blur(10px);
+  /* Dark glass (styles/glass.css): the page shows through, softly blurred, with a
+     hairline and a reflection on the top edge. Still: nothing here moves or recomputes. */
+  background: var(--glass-sheen), var(--glass-bar-fill);
+  -webkit-backdrop-filter: var(--glass-bar-filter);
+  backdrop-filter: var(--glass-bar-filter);
+  box-shadow: var(--glass-bar-shadow);
   pointer-events: auto;
   transition: border-color var(--duration-element) var(--wuavy-ease-out);
 }

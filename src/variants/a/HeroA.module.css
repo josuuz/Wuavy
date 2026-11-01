@@ -129,8 +129,9 @@
   }
 }
 
-/* The card: the one sentence and the one action, on a deep tint. No backdrop
-   blur: it was recomputed on every frame the photo behind it moved. */
+/* The card: the one sentence and the one action, on a deep tint. It has the glass's edge,
+   top reflection and shadow (styles/glass.css) but no backdrop blur: the photo behind it
+   moves, and the blur was recomputed on every frame. */
 .card {
   grid-column: 1 / -1;
   display: grid;
@@ -139,8 +140,9 @@
   max-width: 30rem;
   padding: var(--space-2) var(--space-2) var(--space-2);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--wuavy-black) 66%, transparent);
-  border: 1px solid color-mix(in srgb, var(--wuavy-paper) 16%, transparent);
+  background: var(--glass-sheen), color-mix(in srgb, var(--wuavy-black) 66%, transparent);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-bar-shadow);
   animation: up 1000ms var(--wuavy-ease-out) 980ms both;
 }
 

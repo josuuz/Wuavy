@@ -8,33 +8,35 @@
   view-transition-name: site-header;
 }
 
-/* T05: once the wordmark has docked, content passes under a band of the
-   current surface. Over the hero it stays clear, so the flying wordmark is
-   never covered on its way in. No backdrop blur: at this opacity it was
-   invisible, and it was recomputed on every scroll frame. */
-.header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: color-mix(in srgb, var(--surface) 96%, transparent);
-  border-bottom: var(--rule) solid var(--border);
+/* T05: once the wordmark has docked, content passes under a band of dark
+   glass (.glass, beside the header) (styles/glass.css): translucent, softly blurred, a hairline under it
+   and a reflection on its top edge. Over the hero it stays clear, so the
+   flying wordmark is never covered on its way in. The blur is still: only the
+   band's opacity ever changes. */
+.glass {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 49;
+  height: var(--header-h);
+  pointer-events: none;
+  background: var(--glass-sheen), var(--glass-bar-fill);
+  -webkit-backdrop-filter: var(--glass-bar-filter);
+  backdrop-filter: var(--glass-bar-filter);
+  border-bottom: var(--rule) solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 var(--glass-edge-lit);
   opacity: 0;
-  transition:
-    opacity var(--duration-element) var(--wuavy-ease-out),
-    background-color var(--duration-ui) linear;
+  transition: opacity var(--duration-element) var(--wuavy-ease-out);
 }
 
-.header[data-docked]::before {
+.glass[data-docked] {
   opacity: 1;
 }
 
 /* Until the script has read the page (first paint, a reload halfway down, a
    slow connection) the band follows the scroll on its own: clear over the
-   hero, solid past it. It is Black then, the server default, so the white
-   links always sit on it and never vanish into a Paper section. */
+   hero, glass past it. */
 @supports (animation-timeline: scroll()) {
-  .header:not([data-live])::before {
+  .glass:not([data-live]) {
     animation: band linear both;
     animation-timeline: scroll(root block);
     animation-range: 0 60svh;

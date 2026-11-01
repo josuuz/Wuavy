@@ -358,22 +358,37 @@
 .ghost {
   min-height: 2.75rem;
   padding: 0.45rem 0.9rem;
-  border: var(--rule) solid var(--border);
+  border: var(--rule) solid var(--glass-ctl-edge);
   border-radius: var(--radius-button);
+  background: var(--glass-ctl-fill);
+  box-shadow: var(--glass-ctl-shadow);
   font-size: var(--fs-micro);
   font-weight: var(--wuavy-micro);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-2);
+  color: var(--text);
   cursor: pointer;
   transition:
-    color var(--duration-ui) var(--wuavy-ease-out),
-    border-color var(--duration-ui) var(--wuavy-ease-out);
+    background-color var(--duration-ui) var(--wuavy-ease-out),
+    border-color var(--duration-ui) var(--wuavy-ease-out),
+    box-shadow var(--duration-ui) var(--wuavy-ease-out);
 }
 
 .ghost:hover {
-  color: var(--text);
-  border-color: var(--text);
+  background: var(--glass-ctl-fill-hover);
+  border-color: var(--glass-ctl-edge-hover);
+  box-shadow: var(--glass-ctl-shadow-hover);
+}
+
+/* The press answers in light, not in position: the glass sinks, the layout stays. */
+.ghost:active {
+  background: var(--glass-ctl-fill-active);
+  box-shadow: var(--glass-ctl-shadow-active);
+}
+
+.ghost:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }
 
 .fine {
@@ -407,9 +422,10 @@
 .pick {
   min-height: 2.875rem;
   padding: 0.6rem 1.3rem;
-  border: var(--rule) solid color-mix(in srgb, var(--text) 32%, transparent);
+  border: var(--rule) solid var(--glass-ctl-edge);
   border-radius: 999px;
-  background: transparent;
+  background: var(--glass-ctl-fill);
+  box-shadow: var(--glass-ctl-shadow);
   font-size: 0.9375rem;
   font-weight: 560;
   color: var(--text);
@@ -417,16 +433,26 @@
   transition:
     background-color var(--duration-ui) var(--wuavy-ease-out),
     border-color var(--duration-ui) var(--wuavy-ease-out),
+    box-shadow var(--duration-ui) var(--wuavy-ease-out),
     color var(--duration-ui) var(--wuavy-ease-out);
 }
 
 .pick:hover {
-  border-color: var(--text);
+  background: var(--glass-ctl-fill-hover);
+  border-color: var(--glass-ctl-edge-hover);
+  box-shadow: var(--glass-ctl-shadow-hover);
 }
 
+.pick:active {
+  background: var(--glass-ctl-fill-active);
+  box-shadow: var(--glass-ctl-shadow-active);
+}
+
+/* The chosen situation is the one place Signal fills a secondary control, as before. */
 .pick[aria-selected="true"] {
-  background: var(--mark);
+  background: var(--glass-cta-sheen), var(--mark);
   border-color: var(--mark);
+  box-shadow: var(--glass-cta-shadow);
   color: var(--on-mark);
 }
 

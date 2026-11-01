@@ -36,15 +36,15 @@ interface SectionMark {
 }
 
 /**
- * The header takes the surface of the section under it, so it never needs a
- * blend mode. The small wordmark docks in once the hero wordmark has left.
+ * The header is a band of dark glass, so its white links read on every section
+ * under it, light or dark, with no blend mode. The small wordmark docks in once
+ * the hero wordmark has left.
  * The frequency index (one line per section, the current one in Signal)
  * shows where you are: density as position.
  */
 export function Header({ nav, cta, labels, language }: HeaderProps) {
   const pathname = usePathname();
   const ref = useRef<HTMLElement>(null);
-  const [surface, setSurface] = useState("black");
   const [docked, setDocked] = useState(false);
   // Set with the first measured frame: until then the band follows the scroll in CSS.
   const [live, setLive] = useState(false);
@@ -54,9 +54,14 @@ export function Header({ nav, cta, labels, language }: HeaderProps) {
   useEffect(() => {
     const header = ref.current;
     if (!header) return;
-    const els = Array.from(document.querySelectorAll<HTMLElement>("[data-section]"));
-    const dockTarget = document.querySelector<HTMLElement>("[data-dock-target]");
-    setSections(els.map((el) => ({ id: el.id, label: el.dataset.section ?? "" })));
+    const els = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-section]"),
+    );
+    const dockTarget =
+      document.querySelector<HTMLElement>("[data-dock-target]");
+    setSections(
+      els.map((el) => ({ id: el.id, label: el.dataset.section ?? "" })),
+    );
 
     // When the hero choreography runs, it owns the dock moment (the wordmark
     // flies into the header); otherwise dock when the hero wordmark leaves.
@@ -67,25 +72,20 @@ export function Header({ nav, cta, labels, language }: HeaderProps) {
     };
     window.addEventListener("wuavy:dock", onDock);
 
-    let nextSurface = "black";
     let nextActive = 0;
     let nextDocked = false;
     const read = () => {
-      // The header takes the surface of the section just below it, so it reads
-      // as part of what you are looking at (also right after an anchor jump).
-      const probe = header.offsetHeight + 1;
       const readLine = window.innerHeight * 0.45;
-      nextSurface = "black";
       nextActive = 0;
       els.forEach((el, i) => {
-        const rect = el.getBoundingClientRect();
-        if (rect.top <= probe && rect.bottom > probe) nextSurface = el.dataset.surface ?? "black";
-        if (rect.top <= readLine) nextActive = i;
+        if (el.getBoundingClientRect().top <= readLine) nextActive = i;
       });
-      if (!choreographed) nextDocked = dockTarget ? dockTarget.getBoundingClientRect().top < header.offsetHeight : true;
+      if (!choreographed)
+        nextDocked = dockTarget
+          ? dockTarget.getBoundingClientRect().top < header.offsetHeight
+          : true;
     };
     const write = () => {
-      setSurface(nextSurface);
       setActive(nextActive);
       if (!choreographed) setDocked(nextDocked);
       setLive(true);
@@ -108,80 +108,96 @@ export function Header({ nav, cta, labels, language }: HeaderProps) {
   }, [lang]);
 
   return (
-    <header
-      ref={ref}
-      className={styles.header}
-      data-surface={surface}
-      data-docked={docked ? "" : undefined}
-      data-live={live ? "" : undefined}
-    >
-      <div className={styles.inner}>
-        <Link
-          href={labels.homeHref}
-          className={styles.brand}
-          aria-label={labels.home}
-          tabIndex={docked ? 0 : -1}
-          data-header-brand=""
-        >
-          <Wordmark size="small" decorative />
-        </Link>
+    <>
+      {/* The glass is a sibling of the header, not inside it: the header carries a view-transition name,
+          and that isolates everything inside it from the page behind, so a blur there would see nothing. */}
+      <div
+        className={styles.glass}
+        aria-hidden="true"
+        data-docked={docked ? "" : undefined}
+        data-live={live ? "" : undefined}
+      />
+      <header
+        ref={ref}
+        className={styles.header}
+        data-surface="black"
+        data-docked={docked ? "" : undefined}
+      >
+        <div className={styles.inner}>
+          <Link
+            href={labels.homeHref}
+            className={styles.brand}
+            aria-label={labels.home}
+            tabIndex={docked ? 0 : -1}
+            data-header-brand=""
+          >
+            <Wordmark size="small" decorative />
+          </Link>
 
-        {sections.length > 1 ? (
-          <div className={styles.index} aria-hidden="true">
-            {sections.map((section, i) => (
-              <a
-                key={section.id}
-                href={`#${section.id}`}
-                tabIndex={-1}
-                title={section.label}
-                className={cn(styles.tick, i === active && styles.tickActive)}
-              />
-            ))}
-          </div>
-        ) : null}
+          {sections.length > 1 ? (
+            <div className={styles.index} aria-hidden="true">
+              {sections.map((section, i) => (
+                <a
+                  key={section.id}
+                  href={`#${section.id}`}
+                  tabIndex={-1}
+                  title={section.label}
+                  className={cn(styles.tick, i === active && styles.tickActive)}
+                />
+              ))}
+            </div>
+          ) : null}
 
-        {/* PASSO's spot once he has walked up from the hero: he peeks over its bottom edge (PassoJourney). */}
-        <span className={styles.passoDock} data-passo-dock="" aria-hidden="true" />
+          {/* PASSO's spot once he has walked up from the hero: he peeks over its bottom edge (PassoJourney). */}
+          <span
+            className={styles.passoDock}
+            data-passo-dock=""
+            aria-hidden="true"
+          />
 
-        <nav aria-label={labels.nav} className={styles.nav}>
-          <ul>
-            {nav.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={cn(styles.navLink, item.hint && styles.navProduct)}
-                  aria-current={
-                    pathname === item.href
-                      ? "page"
-                      : sections[active]?.id === item.href.split("#")[1]
-                        ? "location"
-                        : undefined
-                  }
-                >
-                  {item.label}
-                  {item.hint ? (
-                    <>
-                      <span className={styles.navArrow} aria-hidden="true">
-                        ↗
-                      </span>
-                      <span className={styles.navHint}>{item.hint}</span>
-                    </>
-                  ) : null}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+          <nav aria-label={labels.nav} className={styles.nav}>
+            <ul>
+              {nav.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      styles.navLink,
+                      item.hint && styles.navProduct,
+                    )}
+                    aria-current={
+                      pathname === item.href
+                        ? "page"
+                        : sections[active]?.id === item.href.split("#")[1]
+                          ? "location"
+                          : undefined
+                    }
+                  >
+                    {item.label}
+                    {item.hint ? (
+                      <>
+                        <span className={styles.navArrow} aria-hidden="true">
+                          ↗
+                        </span>
+                        <span className={styles.navHint}>{item.hint}</span>
+                      </>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-        <LocaleSwitch {...language} className={styles.locale} />
+          <LocaleSwitch {...language} className={styles.locale} />
 
-        <Button href={cta.href} size="sm" className={styles.cta}>
-          <span className={styles.ctaFull}>{cta.label}</span>
-          <span className={styles.ctaShort}>{cta.short}</span>
-        </Button>
+          <Button href={cta.href} size="sm" className={styles.cta}>
+            <span className={styles.ctaFull}>{cta.label}</span>
+            <span className={styles.ctaShort}>{cta.short}</span>
+          </Button>
 
-        <MobileMenu nav={nav} cta={cta} labels={labels} language={language} />
-      </div>
-    </header>
+          <MobileMenu nav={nav} cta={cta} labels={labels} language={language} />
+        </div>
+      </header>
+    </>
   );
 }
