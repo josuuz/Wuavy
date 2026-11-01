@@ -76,25 +76,13 @@ export interface HeroDemoCopy {
   draft: string;
   draftNote: string;
   scenes: readonly { title: string; caption: string }[];
-  /** What is laid around the screen: three short labels, the rest is drawn. */
+  /** Three pieces of the routine laid around the screen: each a few real words. */
   aside: {
-    quote: { label: string };
-    agenda: { label: string };
-    next: { kicker: string; title: string };
+    quote: { kicker: string; review: string };
+    agenda: { day: string; free: string; busy: string };
+    back: { kicker: string; name: string; note: string };
   };
 }
-
-/** The arrow of the next step. Drawn here, not imported. */
-function ArrowIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      <path d="M5 12h13M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
-/** Seven columns by four rows of the little calendar; the two lit cells are the predicted return. */
-const CELLS = Array.from({ length: 28 }, (_, n) => n);
 
 export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: string }) {
   const { scenes } = demo;
@@ -104,6 +92,8 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   const [clicked, setClicked] = useState(false);
   const [press, setPress] = useState(false);
   const [fading, setFading] = useState(false);
+  /** True from the first moment the scene is on screen: the pieces come in once, then stay. */
+  const [ready, setReady] = useState(false);
 
   const region = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -127,6 +117,7 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   useEffect(() => {
     if (inView && !started.current) {
       started.current = true;
+      setReady(true);
       track("demo_start");
     }
   }, [inView]);
@@ -210,68 +201,74 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
     >
       {/* The device is the stage: the signals and the next step are laid around it, on the same clock. */}
       <div ref={region} className={styles.device}>
-        {/* The room: a graphite floor, a burnt-orange light low behind the laptop, fine grain, two wide arcs
-            that the laptop hides in part. Static; only the lit stretch of the first arc moves, once a lap. */}
+        {/* The room: a graphite floor, a burnt-orange light low behind the laptop, a trace of grain and one
+            arc that leads the eye from the estimate to the screen. Static; only the lit stretch moves. */}
         <div className={styles.backdrop} aria-hidden="true">
           <span className={styles.floor} />
           <span className={styles.glow} />
           <span className={styles.grain} />
-          <svg className={styles.arcs} viewBox="0 0 1440 743" preserveAspectRatio="xMidYMid slice" fill="none">
-            <defs>
-              <linearGradient id="arcFade" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stopColor="#f6f4ee" stopOpacity="0" />
-                <stop offset="0.24" stopColor="#f6f4ee" stopOpacity="0.55" />
-                <stop offset="0.76" stopColor="#f6f4ee" stopOpacity="0.42" />
-                <stop offset="1" stopColor="#f6f4ee" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path className={styles.arcWide} d="M30 700 C 150 600, 250 460, 368 385 C 520 300, 800 262, 1072 285 C 1200 296, 1320 240, 1410 160" />
-            <path className={styles.arcA} d="M30 700 C 150 600, 250 460, 368 385 C 520 300, 800 262, 1072 285 C 1200 296, 1320 240, 1410 160" />
-            <path className={styles.arcB} d="M1420 400 C 1390 560, 1260 598, 1072 604 L 368 604 C 200 602, 90 560, 40 480" />
-            <path className={styles.arcLit} d="M30 700 C 150 600, 250 460, 368 385 C 520 300, 800 262, 1072 285 C 1200 296, 1320 240, 1410 160" pathLength="100" />
-          </svg>
         </div>
+        <svg className={styles.arcs} viewBox="0 0 1440 400" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="arcFade" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="#f6f4ee" stopOpacity="0" />
+              <stop offset="0.24" stopColor="#f6f4ee" stopOpacity="0.4" />
+              <stop offset="0.76" stopColor="#f6f4ee" stopOpacity="0.3" />
+              <stop offset="1" stopColor="#f6f4ee" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path className={styles.arcA} d="M30 440 C 150 360, 250 225, 368 156 C 520 80, 800 44, 1072 52 C 1200 56, 1320 14, 1410 -50" />
+          <path className={styles.arcLit} d="M30 440 C 150 360, 250 225, 368 156 C 520 80, 800 44, 1072 52 C 1200 56, 1320 14, 1410 -50" pathLength="100" />
+        </svg>
 
-        <div className={styles.sides} aria-hidden="true">
-          {/* An estimate that nobody answered: a sheet seen from the side, another under it. */}
-          <div className={`${styles.group} ${styles.gQuote}`}>
-            <span className={styles.under} />
-            <span className={styles.sheet}>
-              <i className={styles.dot} />
-              <i className={styles.ln} style={{ width: "58%" }} />
-              <i className={styles.ln} style={{ width: "92%" }} />
-              <i className={styles.ln} style={{ width: "80%" }} />
-              <i className={styles.ln} style={{ width: "46%" }} />
-              <i className={styles.rule} />
-              <i className={styles.pill} />
-            </span>
-            <span className={styles.tag}>{aside.quote.label}</span>
+        {/* Three pieces of the routine, in layers around the laptop. They come in once, with a short spring,
+            in the order the story needs them; then they only change contrast with the scenes. */}
+        <div className={styles.sides} aria-hidden="true" data-ready={ready ? "" : undefined}>
+          <div className={`${styles.piece} ${styles.pAgenda}`}>
+            <p className={styles.pKick}>{aside.agenda.day}</p>
+            <ul className={styles.slots}>
+              <li>
+                <b>10h30</b>
+                <span>{aside.agenda.busy}</span>
+              </li>
+              <li data-free="">
+                <b>14h</b>
+                <span>{aside.agenda.free}</span>
+              </li>
+              <li>
+                <b>15h30</b>
+                <span>{aside.agenda.busy}</span>
+              </li>
+            </ul>
           </div>
 
-          {/* The agenda: a month in cells, two of them lit. */}
-          <div className={`${styles.group} ${styles.gAgenda}`}>
-            <span className={styles.under} />
-            <span className={styles.sheet}>
-              <i className={styles.ln} style={{ width: "44%" }} />
-              <span className={styles.cells}>
-                {CELLS.map((n) => (
-                  <i key={n} data-on={n === 9 || n === 17 ? "" : undefined} data-soft={n === 17 ? "" : undefined} />
-                ))}
-              </span>
-            </span>
-            <span className={styles.tag}>{aside.agenda.label}</span>
+          <div className={`${styles.piece} ${styles.pBack}`}>
+            <p className={styles.pKick}>{aside.back.kicker}</p>
+            <div className={styles.pRow}>
+              <span className={styles.pAvatar}>{aside.back.name.slice(0, 1)}</span>
+              <div>
+                <p className={styles.pName}>{aside.back.name}</p>
+                <p className={styles.pNote}>{aside.back.note}</p>
+              </div>
+            </div>
           </div>
 
-          {/* The next step, on the other side: it takes the light when the message is on the screen. */}
-          <div className={`${styles.group} ${styles.gNext}`}>
-            <span className={styles.under} />
-            <span className={styles.sheet}>
-              <span className={styles.nextIcon}>
-                <ArrowIcon />
+          <div className={`${styles.piece} ${styles.pQuote}`}>
+            <p className={styles.pKick}>{aside.quote.kicker}</p>
+            <div className={styles.pRow}>
+              <span className={styles.pAvatar}>{demo.patient.name.slice(0, 1)}</span>
+              <div>
+                <p className={styles.pName}>{demo.patient.name}</p>
+                <p className={styles.pNote}>{demo.patient.sent}</p>
+              </div>
+            </div>
+            <span className={styles.pChip}>
+              <i />
+              <span className={styles.pChipText} data-state="waiting">
+                {demo.patient.status}
               </span>
-              <span className={styles.nextText}>
-                <small>{aside.next.kicker}</small>
-                <strong>{aside.next.title}</strong>
+              <span className={styles.pChipText} data-state="review">
+                {aside.quote.review}
               </span>
             </span>
           </div>

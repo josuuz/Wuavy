@@ -782,12 +782,13 @@ export const ptBR = {
         draftLabel: "Mensagem para revisão",
         draft: "Oi Carla! Passando para saber se ficou alguma dúvida sobre o orçamento de harmonização facial. Se quiser, já deixo um horário reservado para você.",
         draftNote: "É um rascunho. Nada foi enviado.",
-        // Around the screen, three small layered compositions. Only their short labels are text;
-        // the rest is shape. Nothing here says a message was sent, a visit booked or money recovered.
+        // Three small pieces of the clinic's routine around the screen, with a few real words each: the
+        // estimate (its name and state come from `patient`), tomorrow's agenda, and a return that is due.
+        // None of them says anything was sent, booked or recovered.
         aside: {
-          quote: { label: "Orçamento sem resposta" },
-          agenda: { label: "Retorno previsto" },
-          next: { kicker: "Próximo passo", title: "Revisar contato" },
+          quote: { kicker: "Orçamento pendente", review: "Mensagem para revisão" },
+          agenda: { day: "Amanhã", free: "Livre", busy: "Ocupado" },
+          back: { kicker: "Retorno previsto", name: "Ana", note: "Skinbooster · há 4 meses" },
         },
         scenes: [
           { title: "Um orçamento ficou sem resposta.", caption: "Um orçamento ficou sem resposta." },

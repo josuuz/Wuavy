@@ -659,23 +659,19 @@
 }
 
 /* ── The room around the laptop ─────────────────────
-   A graphite floor with a burnt-orange light low behind the base, a fine static grain, and two wide
-   arcs the laptop hides in part: signals scattered around a centre, which is the radar idea without
-   a sweep. It sits behind the device and to its sides, fades out toward every edge, and leaves the
-   space behind the title and the buttons quiet. Nothing here moves except one lit stretch of the
-   first arc, once a lap, and only because the story reached the step it belongs to. */
+   A graphite floor, a soft burnt-orange light low behind the base, a trace of grain, and one arc that leads
+   the eye from the estimate to the screen. It sits behind the device, fades out on every side, and leaves the
+   black behind the title and the buttons alone. Static, but for the lit stretch of the arc. */
 
 .backdrop {
   position: absolute;
-  z-index: -1;
+  z-index: -2;
   left: 50%;
   top: -20%;
   bottom: -30%;
   width: min(100vw, 90rem);
   transform: translateX(-50%);
   pointer-events: none;
-  /* Fades to nothing on all four sides, so the box has no edge: the top most of all (the title and the
-     buttons keep a quiet black), then the sides and the foot, where it hands over to the next section. */
   -webkit-mask-image:
     linear-gradient(to right, transparent 0%, #000 24%, #000 76%, transparent 100%),
     linear-gradient(to bottom, transparent 4%, rgb(0 0 0 / 0.35) 20%, #000 40%, #000 62%, transparent 100%);
@@ -694,51 +690,46 @@
 }
 
 .floor {
-  background: radial-gradient(ellipse 50% 44% at 50% 60%, rgb(62 62 66 / 0.9), rgb(34 34 37 / 0.6) 55%, transparent 84%);
+  background: radial-gradient(ellipse 50% 44% at 50% 60%, rgb(54 54 58 / 0.8), rgb(30 30 33 / 0.5) 55%, transparent 84%);
 }
 
 .glow {
-  background: radial-gradient(ellipse 44% 22% at 50% 72%, rgb(214 84 32 / 0.7), rgb(214 84 32 / 0.26) 54%, transparent 84%);
+  background: radial-gradient(ellipse 42% 20% at 50% 74%, rgb(214 84 32 / 0.5), rgb(214 84 32 / 0.17) 56%, transparent 84%);
 }
 
-/* The site's own grain tile (tokens.css), still, without a blend mode: it costs nothing to draw twice. */
+/* The site's own grain tile, much quieter than before: a surface, not a haze. */
 .grain {
   background-image: var(--grain);
   background-size: 180px 180px;
-  opacity: 0.44;
+  opacity: 0.12;
 }
 
+/* The arc is drawn in the device's own coordinates (the lid's left edge is x=368, the card's height y=233),
+   so it enters the laptop at the card, wherever the window is. Wider than the box on purpose. */
 .arcs {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  z-index: -1;
+  left: 50%;
+  top: 0;
+  width: 90rem;
+  max-width: none; /* the reset caps every svg at its parent: this one is meant to be wider */
+  height: 25rem;
+  transform: translateX(-50%);
   overflow: visible;
+  pointer-events: none;
 }
 
-.arcA,
-.arcB {
+.arcA {
   stroke: url(#arcFade);
-  stroke-width: 1.6;
+  stroke-width: 1.5;
 }
 
-.arcB {
-  opacity: 0.9;
-}
-
-/* The same curve, wide and faint: a band, not a line, so the arc has some body. */
-.arcWide {
-  stroke: url(#arcFade);
-  stroke-width: 26;
-  opacity: 0.2;
-}
-
-/* The lit stretch: short, orange, it goes in from the left toward the laptop and stays hidden behind it. */
+/* The lit stretch: short, orange, it goes in from the left, past the estimate, into the laptop. */
 .arcLit {
   stroke: var(--wuavy-signal);
   stroke-width: 2.4;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 5px rgb(255 69 19 / 0.85));
+  filter: drop-shadow(0 0 5px rgb(255 69 19 / 0.8));
   stroke-dasharray: 11 100;
   stroke-dashoffset: 11;
   opacity: 0;
@@ -748,14 +739,13 @@
 }
 
 .scene:not([data-at="0"]) .arcLit {
-  stroke-dashoffset: -21;
+  stroke-dashoffset: -20;
   opacity: 1;
 }
 
-/* It has arrived: the streak settles to a glow while the story is on the card, then goes with the last scene. */
 .scene[data-at="2"] .arcLit,
 .scene[data-at="3"] .arcLit {
-  opacity: 0.5;
+  opacity: 0.45;
   transition-duration: 1500ms, 900ms;
 }
 
@@ -764,7 +754,19 @@
   transition-duration: 1500ms, 700ms;
 }
 
-/* ── What is laid around the screen ───────────────── */
+/* ── Three pieces of the routine ───────────────────── */
+
+.scene {
+  /* A short spring: it overshoots a little and settles, as the pricing cards of the reference do.
+     The plain cubic-bezier is what browsers without linear() get. */
+  --spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  .scene {
+    --spring: linear(0, 0.18 4%, 0.58 9%, 0.92 15%, 1.08 21%, 1.12 25%, 1.09 30%, 1.03 38%, 0.995 48%, 1);
+  }
+}
 
 .sides {
   position: absolute;
@@ -780,280 +782,227 @@
   opacity: 0;
 }
 
-/* Three groups, each a sheet over an under-sheet, in smoked glass: the lid is drawn over them, so each one
-   is partly behind the laptop. Only the sheets tilt (a few degrees); the labels stay level. */
-.group {
+/* Dark glass with real words on it. The lid is drawn over them, so each is partly behind the laptop; only
+   these pieces have perspective, and it is a few degrees: the screen itself stays flat. */
+.piece {
   position: absolute;
+  width: var(--w);
   scale: var(--k);
-  opacity: 0.4;
-  transition: opacity 650ms var(--wuavy-ease-out);
-}
-
-.gQuote {
-  top: 5%;
-  right: calc(100% - 0.2rem);
-  width: 11.5rem;
-  transform-origin: right center;
-}
-
-.gAgenda {
-  top: 69%;
-  right: calc(100% - 0.1rem);
-  width: 9.75rem;
-  transform-origin: right center;
-}
-
-.gNext {
-  opacity: 0.55;
-  top: 41%;
-  left: calc(100% - 0.7rem);
-  width: 12rem;
-  transform-origin: left center;
-}
-
-.sheet,
-.under {
-  display: grid;
-  gap: 0.5rem;
-  padding: 0.85rem 0.9rem 1rem;
-  border: 1px solid rgb(255 255 255 / 0.14);
-  border-top-color: rgb(255 255 255 / 0.26);
-  border-radius: 0.95rem;
-  background:
-    linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 0.07) 49%, transparent 60%),
-    linear-gradient(158deg, rgb(255 255 255 / 0.13) 0%, rgb(255 255 255 / 0.04) 34%, rgb(8 8 9 / 0.58) 100%);
-  -webkit-backdrop-filter: blur(11px) saturate(1.15);
-  backdrop-filter: blur(11px) saturate(1.15);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.12),
-    0 20px 38px -20px rgb(0 0 0 / 0.95);
-  transition:
-    border-color 650ms var(--wuavy-ease-out),
-    box-shadow 650ms var(--wuavy-ease-out);
-}
-
-.sheet {
-  position: relative;
-}
-
-.under {
-  position: absolute;
-  inset: 0;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  opacity: 0.55;
-}
-
-.gQuote .sheet {
-  rotate: -2.5deg;
-}
-
-.gQuote .under {
-  transform: translate(-0.8rem, -0.6rem);
-  rotate: -7deg;
-}
-
-.gAgenda .sheet {
-  rotate: 2deg;
-}
-
-.gAgenda .under {
-  transform: translate(0.55rem, 0.55rem);
-  rotate: 6deg;
-}
-
-.gNext .sheet {
-  rotate: 1.8deg;
-}
-
-.gNext .under {
-  transform: translate(0.7rem, 0.55rem);
-  rotate: 6deg;
-}
-
-/* Shapes that suggest a document, not text to be read. */
-.ln {
-  display: block;
-  height: 0.32rem;
-  border-radius: 0.2rem;
-  background: rgb(255 255 255 / 0.2);
-}
-
-.dot {
-  display: block;
-  width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 0.22);
-}
-
-.rule {
-  display: block;
-  height: 1px;
-  background: rgb(255 255 255 / 0.12);
-}
-
-.pill {
-  display: block;
-  width: 44%;
-  height: 0.72rem;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.14);
-}
-
-.cells {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.24rem;
-}
-
-.cells i {
-  aspect-ratio: 1;
-  border-radius: 0.22rem;
-  background: rgb(255 255 255 / 0.1);
-}
-
-.cells i[data-on] {
-  background: rgb(255 255 255 / 0.34);
-}
-
-.cells i[data-soft] {
-  background: var(--wuavy-signal);
-  box-shadow: 0 0 0.9rem rgb(255 69 19 / 0.45);
-}
-
-/* A short label on the edge of a sheet. It is the only text in the groups. */
-.tag {
-  position: absolute;
-  left: 0.4rem;
-  bottom: -0.8rem;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  max-width: calc(100% - 0.9rem);
-  padding: 0.24rem 0.65rem;
+  transform-origin: var(--origin, center);
+  padding: 0.8rem 0.95rem 0.9rem;
   border: 1px solid rgb(255 255 255 / 0.16);
-  border-radius: 999px;
-  background: rgb(10 10 11 / 0.72);
+  border-top-color: rgb(255 255 255 / 0.3);
+  border-radius: 1rem;
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.03) 42%, rgb(10 10 11 / 0.4)),
+    rgb(22 22 24 / 0.64);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  backdrop-filter: blur(12px) saturate(1.15);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 22px 40px -22px rgb(0 0 0 / 0.95);
+  color: var(--wuavy-paper);
+  opacity: var(--o, 0.6);
+  transform: translate3d(var(--tx, 0), var(--ty, 0), 0) perspective(900px) rotateY(var(--ry, 0deg));
+  transition:
+    opacity 600ms var(--wuavy-ease-out) var(--d, 0ms),
+    transform 1100ms var(--spring) var(--d, 0ms),
+    border-color 600ms var(--wuavy-ease-out),
+    box-shadow 600ms var(--wuavy-ease-out);
+}
+
+/* Before the scene is ready they wait a little off their places, small and unseen; then they settle in the
+   order the story needs them: the agenda, the return, and last the estimate. */
+.sides:not([data-ready]) .piece {
+  opacity: 0;
+  transform: translate3d(var(--ex, 0), 1.1rem, 0) perspective(900px) rotateY(var(--ry, 0deg)) scale(0.93);
+}
+
+.pQuote {
+  --w: 14.5rem;
+  --origin: right center;
+  --ry: 9deg;
+  --ex: -1.6rem;
+  --d: 240ms;
+  --o: 0.95;
+  top: 22%;
+  right: calc(100% + 3.2rem);
+}
+
+.pAgenda {
+  --w: 11.5rem;
+  --origin: left center;
+  --ry: -9deg;
+  --ex: 1.6rem;
+  --d: 0ms;
+  top: 2%;
+  left: calc(100% - 0.8rem);
+}
+
+.pBack {
+  --w: 12.25rem;
+  --origin: left center;
+  --ry: -9deg;
+  --ex: 1.6rem;
+  --d: 120ms;
+  top: 49%;
+  left: calc(100% + 0.7rem);
+}
+
+.pKick {
+  margin-bottom: 0.5rem;
   font-size: 0.75rem;
   font-weight: 620;
   line-height: 1.2;
-  color: var(--wuavy-paper);
-  white-space: nowrap;
+  color: var(--wuavy-stone);
 }
 
-.tag::before {
-  content: "";
-  width: 0.36rem;
-  height: 0.36rem;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 0.28);
-  transition: background-color 500ms var(--wuavy-ease-out);
-}
-
-.gNext .sheet {
+.pRow {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.7rem 0.95rem 0.7rem 0.7rem;
+  gap: 0.65rem;
 }
 
-.nextIcon {
+.pAvatar {
   display: grid;
   flex: none;
   place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 0.65rem;
-  background: rgb(255 255 255 / 0.08);
-  color: var(--wuavy-stone);
-  transition:
-    background-color 500ms var(--wuavy-ease-out),
-    color 500ms var(--wuavy-ease-out);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
+  font-size: 0.875rem;
+  font-weight: 650;
 }
 
-.nextText {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 0.05rem;
-}
-
-.nextText small {
-  font-size: 0.75rem;
-  line-height: 1.2;
-  color: var(--wuavy-stone);
-}
-
-.nextText strong {
+.pName {
   font-size: 0.9375rem;
-  font-weight: 620;
-  line-height: 1.15;
+  font-weight: 640;
+  line-height: 1.2;
+}
+
+.pNote {
+  margin-top: 0.1rem;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--wuavy-stone);
+}
+
+.slots {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slots li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.55rem;
+  background: rgb(255 255 255 / 0.05);
+  font-size: 0.8125rem;
+  color: var(--wuavy-stone);
+}
+
+.slots b {
+  font-weight: 650;
   color: var(--wuavy-paper);
 }
 
-/* The story, scene by scene. Contrast moves; nothing else does. */
-.scene:not([data-at="4"]) .gQuote,
-.scene[data-at="4"] .gNext {
+.slots li[data-free] {
+  background: rgb(255 69 19 / 0.2);
+  box-shadow: inset 0 0 0 1px rgb(255 69 19 / 0.5);
+  color: var(--wuavy-paper);
+}
+
+/* The estimate's state: "Sem resposta" until the draft is on the screen, then "Mensagem para revisão". */
+.pChip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.45rem;
+  margin-top: 0.7rem;
+  padding: 0.28rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 999px;
+  background: rgb(10 10 11 / 0.55);
+  font-size: 0.78125rem;
+  font-weight: 620;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.pChip i {
+  grid-area: 1 / 1;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--wuavy-signal);
+}
+
+.pChipText {
+  grid-area: 1 / 2;
+  transition: opacity 500ms var(--wuavy-ease-out);
+}
+
+.pChipText[data-state="review"] {
+  opacity: 0;
+}
+
+.scene[data-at="4"] .pChipText[data-state="waiting"] {
+  opacity: 0;
+}
+
+.scene[data-at="4"] .pChipText[data-state="review"] {
   opacity: 1;
 }
 
-.scene[data-at="4"] .gQuote {
-  opacity: 0.62;
+.scene[data-at="4"] .pChip {
+  border-color: rgb(255 69 19 / 0.55);
 }
 
-.scene:not([data-at="4"]) .gQuote .sheet {
-  border-color: rgb(255 255 255 / 0.3);
-  border-top-color: rgb(255 255 255 / 0.5);
+/* The story: the estimate takes the light as soon as the pieces are in, and keeps it; the other two stay quiet. */
+.sides[data-ready] .pQuote {
+  border-color: rgb(255 255 255 / 0.34);
+  border-top-color: rgb(255 255 255 / 0.55);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.2),
-    0 20px 38px -20px rgb(0 0 0 / 0.95),
-    0 0 44px -14px rgb(255 255 255 / 0.25);
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 22px 40px -22px rgb(0 0 0 / 0.95),
+    0 0 46px -14px rgb(255 255 255 / 0.28);
+  transition-delay: var(--d, 0ms), var(--d, 0ms), 1100ms, 1100ms;
 }
 
-.scene:not([data-at="4"]) .gQuote .tag::before {
-  background: var(--wuavy-signal);
-}
-
-.scene[data-at="4"] .gNext .nextIcon {
-  background: var(--wuavy-signal);
-  color: #0b0b0b;
-}
-
-.scene[data-at="4"] .gNext .sheet {
-  border-color: rgb(255 255 255 / 0.3);
-  border-top-color: rgb(255 255 255 / 0.5);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.2),
-    0 20px 38px -20px rgb(0 0 0 / 0.95),
-    0 0 52px -12px rgb(204 80 30 / 0.55);
-}
-
-/* Back to the first scene: everything returns to rest at once, and unseen. The sides are faded out when
-   the lap ends and fade back in with the new one, so nothing of the last lap may be left to fade away in
-   sight. Last of the rules for these elements on purpose: it must beat the reduced-motion ones too. */
-.scene[data-at="0"] .group,
-.scene[data-at="0"] .sheet,
-.scene[data-at="0"] .tag::before,
-.scene[data-at="0"] .nextIcon,
-.scene[data-at="0"] .arcLit {
+/* The lap starts over at once and unseen: nothing of the last lap may fade away in sight. */
+.scene[data-at="0"] .pChipText {
   transition: none;
 }
 
-/* Reduced motion: the same story, no travel. Contrast changes, and the lit stretch simply is where it ends. */
-.scene[data-soft] .group {
+/* Reduced motion: the same story and the same pieces, with no travel. Things appear, and contrast changes. */
+.scene[data-soft] .piece {
   transition: opacity 250ms linear;
+}
+
+.scene[data-soft] .sides:not([data-ready]) .piece {
+  transform: translate3d(0, 0, 0) perspective(900px) rotateY(var(--ry, 0deg));
 }
 
 .scene[data-soft] .arcLit {
   transition: opacity 250ms linear;
 }
 
-/* ...and the reset to the first scene still happens at once, unseen, in reduced motion too. */
-.scene[data-at="0"][data-soft] .group,
 .scene[data-at="0"][data-soft] .arcLit {
   transition: none;
+}
+
+/* Weaker machines and touch screens drop the blur, as the rest of the site does. */
+html[data-perf="lite"] .piece {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(28 28 31 / 0.94);
 }
 
 /* The note under the laptop sits over the light: it keeps its own contrast. */
@@ -1063,24 +1012,93 @@
   color: rgb(246 244 238 / 0.72);
 }
 
-/* Weaker machines and touch screens drop the blur, as the rest of the site does. */
-html[data-perf="lite"] .sheet {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: linear-gradient(158deg, rgb(48 48 51 / 0.95), rgb(14 14 15 / 0.96));
+/* Window sizes, from a small laptop up: the pieces shrink and move in, and only the smallest sizes lose the agenda. */
+@media (min-width: 64rem) {
+  .sides {
+    display: block;
+    --k: 0.68;
+  }
+
+  .pQuote {
+    right: calc(100% - 0.4rem);
+  }
+
+  .pBack {
+    left: calc(100% - 0.3rem);
+  }
+
+  .pAgenda {
+    display: none;
+  }
 }
 
-/* Wide screens: the groups need the room on both sides of the laptop (about 14rem each). */
 @media (min-width: 75rem) {
   .sides {
+    --k: 0.84;
+  }
+
+  .pQuote {
+    right: calc(100% + 2.4rem);
+  }
+
+  .pBack {
+    left: calc(100% + 0.4rem);
+  }
+
+  .pAgenda {
     display: block;
   }
 }
 
-/* A laptop-sized window: the same scene, a little smaller and a little closer. */
-@media (min-width: 75rem) and (max-width: 89.99rem) {
+@media (min-width: 90rem) {
   .sides {
-    --k: 0.84;
+    --k: 1;
+  }
+
+  .pQuote {
+    right: calc(100% + 3.2rem);
+  }
+
+  .pBack {
+    left: calc(100% + 0.7rem);
+  }
+}
+
+/* The laptop's screen: less empty cream. It is only as tall as the last scene needs, the story starts at the
+   top the way a real screen does and opens downward, and the rows sit a little closer. Same type sizes. */
+@media (min-width: 48rem) {
+  .screen .heroStage {
+    height: 23.5rem;
+    padding: 1.05rem 1.2rem 0.85rem;
+  }
+
+  .screen .heroStage .inner {
+    justify-content: flex-start;
+  }
+
+  .screen .avatar {
+    width: 2.6rem;
+  }
+
+  .screen .caption {
+    padding-bottom: 0.65rem;
+  }
+
+  .screen .head {
+    padding: 0.8rem 1.3rem;
+  }
+
+  .screen .actionRow {
+    padding: 0 1.3rem 0.95rem;
+  }
+
+  .screen .details {
+    padding: 0.5rem 1.3rem 0.6rem;
+  }
+
+  .screen .draft {
+    margin: 0 1.3rem 0.85rem;
+    padding: 0.6rem 1rem 0.65rem;
   }
 }
 
