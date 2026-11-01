@@ -747,14 +747,11 @@ export const ptPT: typeof ptBR = {
         draftLabel: "Mensagem para revisão",
         draft: "Olá Carla! Passo por aqui para saber se ficou alguma dúvida sobre o orçamento de harmonização facial. Se quiser, já deixo um horário reservado para si.",
         draftNote: "É um rascunho. Nada foi enviado.",
-        // The three signals that gather around the screen, and the next step that closes the story.
+        // Around the screen, three small layered compositions. Only their short labels are text.
         aside: {
-          signals: [
-            { id: "quote", title: "Orçamento", note: "sem resposta" },
-            { id: "agenda", title: "Agenda", note: "horário livre" },
-            { id: "back", title: "Regresso", note: "previsto" },
-          ],
-          next: { kicker: "Próximo passo", title: "Rever contacto", note: "Rascunho pronto" },
+          quote: { label: "Orçamento sem resposta" },
+          agenda: { label: "Regresso previsto" },
+          next: { kicker: "Próximo passo", title: "Rever contacto" },
         },
         scenes: [
           { title: "Um orçamento ficou sem resposta.", caption: "Um orçamento ficou sem resposta." },

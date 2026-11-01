@@ -76,36 +76,25 @@ export interface HeroDemoCopy {
   draft: string;
   draftNote: string;
   scenes: readonly { title: string; caption: string }[];
-  /** What gathers around the screen: three signals, and the next step that closes the story. */
+  /** What is laid around the screen: three short labels, the rest is drawn. */
   aside: {
-    signals: readonly { id: string; title: string; note: string }[];
-    next: { kicker: string; title: string; note: string };
+    quote: { label: string };
+    agenda: { label: string };
+    next: { kicker: string; title: string };
   };
 }
 
-/** One quiet line icon per signal, and the arrow of the next step. Drawn here, not imported. */
-const ICONS = {
-  quote: (
-    <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />
-  ),
-  agenda: (
-    <path d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4" />
-  ),
-  back: (
-    <path d="M5 12a7 7 0 0 1 12-4.9M19 12a7 7 0 0 1-12 4.9M17.5 3.5V8H13M6.5 20.5V16H11" />
-  ),
-  next: (
-    <path d="M5 12h13M13 6l6 6-6 6" />
-  ),
-} as const;
-
-function Icon({ name }: { name: keyof typeof ICONS }) {
+/** The arrow of the next step. Drawn here, not imported. */
+function ArrowIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      {ICONS[name]}
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M5 12h13M13 6l6 6-6 6" />
     </svg>
   );
 }
+
+/** Seven columns by four rows of the little calendar; the two lit cells are the predicted return. */
+const CELLS = Array.from({ length: 28 }, (_, n) => n);
 
 export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: string }) {
   const { scenes } = demo;
@@ -209,7 +198,6 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
   const scene = scenes[at] ?? scenes[0];
 
   const { aside } = demo;
-  const lit = at >= 1;
 
   return (
     <div
@@ -222,36 +210,69 @@ export function HeroDemo({ demo, className }: { demo: HeroDemoCopy; className?: 
     >
       {/* The device is the stage: the signals and the next step are laid around it, on the same clock. */}
       <div ref={region} className={styles.device}>
+        {/* The room: a graphite floor, a burnt-orange light low behind the laptop, fine grain, two wide arcs
+            that the laptop hides in part. Static; only the lit stretch of the first arc moves, once a lap. */}
+        <div className={styles.backdrop} aria-hidden="true">
+          <span className={styles.floor} />
+          <span className={styles.glow} />
+          <span className={styles.grain} />
+          <svg className={styles.arcs} viewBox="0 0 1440 743" preserveAspectRatio="xMidYMid slice" fill="none">
+            <defs>
+              <linearGradient id="arcFade" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stopColor="#f6f4ee" stopOpacity="0" />
+                <stop offset="0.24" stopColor="#f6f4ee" stopOpacity="0.55" />
+                <stop offset="0.76" stopColor="#f6f4ee" stopOpacity="0.42" />
+                <stop offset="1" stopColor="#f6f4ee" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path className={styles.arcWide} d="M30 700 C 150 600, 250 460, 368 385 C 520 300, 800 262, 1072 285 C 1200 296, 1320 240, 1410 160" />
+            <path className={styles.arcA} d="M30 700 C 150 600, 250 460, 368 385 C 520 300, 800 262, 1072 285 C 1200 296, 1320 240, 1410 160" />
+            <path className={styles.arcB} d="M1420 400 C 1390 560, 1260 598, 1072 604 L 368 604 C 200 602, 90 560, 40 480" />
+            <path className={styles.arcLit} d="M30 700 C 150 600, 250 460, 368 385 C 520 300, 800 262, 1072 285 C 1200 296, 1320 240, 1410 160" pathLength="100" />
+          </svg>
+        </div>
+
         <div className={styles.sides} aria-hidden="true">
-          <ul className={styles.signals}>
-            {aside.signals.map((signal) => (
-              <li key={signal.id} className={styles.signal} data-id={signal.id} data-lit={signal.id === "quote" && lit ? "" : undefined}>
-                <span className={styles.signalIcon}>
-                  <Icon name={signal.id as keyof typeof ICONS} />
-                </span>
-                <span className={styles.signalText}>
-                  <strong>{signal.title}</strong>
-                  <span>{signal.note}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <svg className={`${styles.trail} ${styles.trailIn}`} viewBox="0 0 40 24">
-            <path d="M0 12 H37" pathLength="100" />
-            <circle cx="37" cy="12" r="2.4" />
-          </svg>
-          <svg className={`${styles.trail} ${styles.trailOut}`} viewBox="0 0 40 24">
-            <path d="M3 12 H40" pathLength="100" />
-            <circle cx="3" cy="12" r="2.4" />
-          </svg>
-          <div className={styles.next} data-on={at >= 4 ? "" : undefined}>
-            <span className={styles.nextIcon}>
-              <Icon name="next" />
+          {/* An estimate that nobody answered: a sheet seen from the side, another under it. */}
+          <div className={`${styles.group} ${styles.gQuote}`}>
+            <span className={styles.under} />
+            <span className={styles.sheet}>
+              <i className={styles.dot} />
+              <i className={styles.ln} style={{ width: "58%" }} />
+              <i className={styles.ln} style={{ width: "92%" }} />
+              <i className={styles.ln} style={{ width: "80%" }} />
+              <i className={styles.ln} style={{ width: "46%" }} />
+              <i className={styles.rule} />
+              <i className={styles.pill} />
             </span>
-            <span className={styles.signalText}>
-              <small>{aside.next.kicker}</small>
-              <strong>{aside.next.title}</strong>
-              <span>{aside.next.note}</span>
+            <span className={styles.tag}>{aside.quote.label}</span>
+          </div>
+
+          {/* The agenda: a month in cells, two of them lit. */}
+          <div className={`${styles.group} ${styles.gAgenda}`}>
+            <span className={styles.under} />
+            <span className={styles.sheet}>
+              <i className={styles.ln} style={{ width: "44%" }} />
+              <span className={styles.cells}>
+                {CELLS.map((n) => (
+                  <i key={n} data-on={n === 9 || n === 17 ? "" : undefined} data-soft={n === 17 ? "" : undefined} />
+                ))}
+              </span>
+            </span>
+            <span className={styles.tag}>{aside.agenda.label}</span>
+          </div>
+
+          {/* The next step, on the other side: it takes the light when the message is on the screen. */}
+          <div className={`${styles.group} ${styles.gNext}`}>
+            <span className={styles.under} />
+            <span className={styles.sheet}>
+              <span className={styles.nextIcon}>
+                <ArrowIcon />
+              </span>
+              <span className={styles.nextText}>
+                <small>{aside.next.kicker}</small>
+                <strong>{aside.next.title}</strong>
+              </span>
             </span>
           </div>
         </div>
