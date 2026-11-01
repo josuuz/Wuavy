@@ -1,7 +1,7 @@
 // Generated from the database (`supabase gen types typescript --linked --schema public`).
 // Regenerate after every migration.
-// Last generated from: Wuavy Pulse Teste (wazxofdzvzfgonmwsdhs), 2026-10-13.
-// Includes clinical tables from migrations 0014–0016.
+// Last generated from: Wuavy Pulse Teste (wazxofdzvzfgonmwsdhs), 2026-10-30.
+// Includes billing_coupons/billing_representatives (migration 0022) and the Pulse subscription-claim columns (0020-0021).
 
 export type Json =
   | string
@@ -577,10 +577,12 @@ export type Database = {
         Row: {
           amount_cents: number
           client_id: string
+          coupon_id: string | null
           created_at: string
           creation_blocked_at: string | null
           creation_claimed_at: string | null
           description: string
+          discount_cents: number
           id: string
           kind: string
           payment_url: string | null
@@ -593,10 +595,12 @@ export type Database = {
         Insert: {
           amount_cents: number
           client_id: string
+          coupon_id?: string | null
           created_at?: string
           creation_blocked_at?: string | null
           creation_claimed_at?: string | null
           description: string
+          discount_cents?: number
           id?: string
           kind?: string
           payment_url?: string | null
@@ -609,10 +613,12 @@ export type Database = {
         Update: {
           amount_cents?: number
           client_id?: string
+          coupon_id?: string | null
           created_at?: string
           creation_blocked_at?: string | null
           creation_claimed_at?: string | null
           description?: string
+          discount_cents?: number
           id?: string
           kind?: string
           payment_url?: string | null
@@ -628,6 +634,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "billing_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_charges_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "billing_coupons"
             referencedColumns: ["id"]
           },
           {
@@ -674,8 +687,139 @@ export type Database = {
           {
             foreignKeyName: "billing_clients_maintenance_client_id_fkey"
             columns: ["maintenance_client_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "maintenance_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_coupon_audit: {
+        Row: {
+          action: string
+          admin_email: string
+          coupon_id: string | null
+          created_at: string
+          detail: string
+          id: string
+          representative_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_email: string
+          coupon_id?: string | null
+          created_at?: string
+          detail: string
+          id?: string
+          representative_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_email?: string
+          coupon_id?: string | null
+          created_at?: string
+          detail?: string
+          id?: string
+          representative_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_coupon_audit_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "billing_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_coupon_audit_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "billing_representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_coupon_services: {
+        Row: {
+          coupon_id: string
+          service_id: string
+        }
+        Insert: {
+          coupon_id: string
+          service_id: string
+        }
+        Update: {
+          coupon_id?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_coupon_services_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "billing_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_coupon_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "billing_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          discount_fixed_cents: number | null
+          discount_percent: number | null
+          discount_type: string
+          first_payment_only: boolean
+          id: string
+          max_uses: number | null
+          representative_id: string
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          discount_fixed_cents?: number | null
+          discount_percent?: number | null
+          discount_type: string
+          first_payment_only?: boolean
+          id?: string
+          max_uses?: number | null
+          representative_id: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          discount_fixed_cents?: number | null
+          discount_percent?: number | null
+          discount_type?: string
+          first_payment_only?: boolean
+          id?: string
+          max_uses?: number | null
+          representative_id?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_coupons_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "billing_representatives"
             referencedColumns: ["id"]
           },
         ]
@@ -717,6 +861,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      billing_representatives: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
       }
       billing_services: {
         Row: {

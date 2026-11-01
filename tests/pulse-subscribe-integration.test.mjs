@@ -1,5 +1,5 @@
 /*
-  Testes de integração do checkout do Pulse (subscribe()/check(),
+  Testes de integração do checkout hospedado do Pulse (subscribe()/check(),
   claimSubscriptionCreation/persistSubscriptionId/blockSubscriptionCreation/
   recordSubscriptionRefusal) — contra o código REAL, não uma reimplementação.
   Mesmo ambiente das Cobranças (tests/billing-integration.test.mjs): Supabase
@@ -8,11 +8,14 @@
   nenhuma credencial real; as credenciais abaixo são fictícias, só para
   passar a checagem de ambiente de lib/mercadopago/environment.ts.
 
-  O que isto prova: depois que o Mercado Pago cria a assinatura, nada é
-  relatado como recusa; um resultado indeterminado trava a linha em vez de
-  tentar de novo sozinho; duas tentativas simultâneas para a mesma linha
-  nunca chamam o Mercado Pago as duas; e uma recusa confirmada fica
-  registrada (nunca apagada).
+  O que isto prova: a criação não envia nenhum dado de cartão e termina
+  redirecionando para o init_point que o Mercado Pago devolveu — nunca
+  inventado; depois que o Mercado Pago cria a assinatura, nada é relatado
+  como recusa; um resultado indeterminado trava a linha em vez de tentar de
+  novo sozinho; duas tentativas simultâneas para a mesma linha nunca chamam o
+  Mercado Pago as duas; uma recusa confirmada fica registrada (nunca
+  apagada); e retomar um checkout pendente reemite a MESMA chamada
+  (idempotente pela referência) em vez de criar uma segunda assinatura.
 */
 
 import { register } from "node:module";
@@ -31,8 +34,8 @@ const { setFakeSession, setFakeSubscription } = await import("./helpers/fake-ses
 const billing = await import("../src/lib/flow/billing.ts");
 const actions = await import("../src/app/(app)/pulse/assinar/actions.ts");
 
-const VALID_TOKEN = "tok-1234567890abcdef";
 const USER = { user: { id: "user-1", email: "cliente@example.com" }, member: null };
+const initPointFor = (id) => `https://www.mercadopago.com/subscriptions/checkout?preapproval_id=${id}`;
 
 function withFetchMock(handler, run) {
   const original = globalThis.fetch;
@@ -43,6 +46,17 @@ function withFetchMock(handler, run) {
 }
 
 const jsonResponse = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
+
+/** Espera que `run()` redirecione (lance NEXT_REDIRECT, como o Next faz de verdade) e devolve o endereço. */
+async function expectRedirect(run) {
+  try {
+    await run();
+  } catch (error) {
+    if (error.__fakeRedirect) return error.__fakeRedirect;
+    throw error;
+  }
+  assert.fail("esperava um redirecionamento (nenhum foi lançado)");
+}
 
 function freshRow(id, overrides = {}) {
   return {
@@ -71,43 +85,65 @@ function setup(rows = []) {
   return admin;
 }
 
-// ── 1. Assinatura aprovada normalmente ──────────────────────────
+// ── 1. Criação normal: pending, com init_point, redireciona ────
 
-test("1) aprovada: cria, salva o id, sincroniza como ativa", async () => {
+test("1) cria a assinatura 'pending' sem nenhum dado de cartão, salva o id e redireciona para o init_point do Mercado Pago", async () => {
   const admin = setup([]);
   setFakeSubscription(null);
+  let sentBody;
 
-  const result = await withFetchMock(async (url) => {
-    if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
-    if (url.endsWith("/preapproval") || url.includes("/preapproval/preapproval-1")) {
-      return jsonResponse(201, { id: "preapproval-1", status: "authorized" });
-    }
-    throw new Error("chamada inesperada: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  const initPoint = await withFetchMock(
+    async (url, init) => {
+      if (url.endsWith("/preapproval")) {
+        sentBody = JSON.parse(init.body);
+        return jsonResponse(201, { id: "preapproval-1", status: "pending", init_point: initPointFor("preapproval-1") });
+      }
+      throw new Error("chamada inesperada: " + url);
+    },
+    () => expectRedirect(() => actions.subscribe()),
+  );
 
-  assert.deepEqual(result, { outcome: "active" });
+  assert.equal(initPoint, initPointFor("preapproval-1"));
+  assert.equal(sentBody.status, "pending");
+  assert.equal("card_token_id" in sentBody, false, "nenhum dado de cartão vai na criação do checkout hospedado");
   const rows = admin.tables.get("subscriptions").rows;
   assert.equal(rows.length, 1);
   assert.equal(rows[0].provider_subscription_id, "preapproval-1");
-  assert.equal(rows[0].status, "active");
+  assert.equal(rows[0].status, "pending", "continua pending — só o webhook ou o retorno do Mercado Pago decidem o estado real");
   assert.equal(rows[0].creation_claimed_at, null);
   assert.equal(rows[0].creation_blocked_at, null);
 });
 
-// ── 2. Cartão recusado pelo antifraude ───────────────────────────
+test("1b) o Mercado Pago cria mas não devolve init_point: 'unresolved' — o id fica salvo mesmo assim, nunca um endereço inventado", async () => {
+  const admin = setup([]);
+  setFakeSubscription(null);
 
-test("2) recusado (cc_rejected_high_risk): 'rejected', a linha fica — nunca apagada, nunca bloqueada", async () => {
+  const result = await withFetchMock(
+    async (url) => {
+      if (url.endsWith("/preapproval")) return jsonResponse(201, { id: "preapproval-1b", status: "pending" });
+      throw new Error("chamada inesperada: " + url);
+    },
+    () => actions.subscribe(),
+  );
+
+  assert.deepEqual(result, { outcome: "unresolved" });
+  assert.equal(admin.row("subscriptions", admin.tables.get("subscriptions").rows[0].id).provider_subscription_id, "preapproval-1b");
+});
+
+// ── 2. Recusa síncrona na criação (configuração, nunca o cartão) ──
+
+test("2) recusado na criação (400): 'rejected', a linha fica — nunca apagada, nunca bloqueada", async () => {
   const admin = setup([]);
   setFakeSubscription(null);
 
   const result = await withFetchMock(
     async (url) => {
       if (url.endsWith("/preapproval")) {
-        return { ok: false, status: 400, json: async () => ({ message: "rejected", cause: [{ description: "cc_rejected_high_risk" }] }) };
+        return { ok: false, status: 400, json: async () => ({ message: "rejected", cause: [{ description: "invalid_payer_email" }] }) };
       }
       throw new Error("chamada inesperada: " + url);
     },
-    () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }),
+    () => actions.subscribe(),
   );
 
   assert.equal(result.outcome, "rejected");
@@ -131,10 +167,10 @@ test("3) o Mercado Pago cria, mas salvar o id falha sempre: 'unresolved', nunca 
     if (url.endsWith("/preapproval")) {
       // O Mercado Pago aceita; é só a partir daqui que o Supabase "cai".
       admin.setWritesFailing(true);
-      return jsonResponse(201, { id: "preapproval-3", status: "authorized" });
+      return jsonResponse(201, { id: "preapproval-3", status: "pending", init_point: initPointFor("preapproval-3") });
     }
     throw new Error("chamada inesperada: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  }, () => actions.subscribe());
 
   assert.equal(result.outcome, "unresolved");
   assert.notEqual(result.outcome, "rejected", "nunca afirma recusa quando a assinatura pode já existir");
@@ -158,7 +194,7 @@ test("4a) falha de rede antes de qualquer resposta: 'unresolved', status continu
 
   const result = await withFetchMock(async () => {
     throw new Error("fetch failed (simulado)");
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  }, () => actions.subscribe());
 
   assert.equal(result.outcome, "unresolved");
   const saved = admin.row("subscriptions", "row-4a");
@@ -167,31 +203,31 @@ test("4a) falha de rede antes de qualquer resposta: 'unresolved', status continu
   assert.ok(saved.creation_blocked_at, "trava para reconciliação manual");
 });
 
-// ── 5. Falha na consulta de sincronização, depois de criar com sucesso ──
+// ── 5. Depois de persistir o id, subscribe() nunca confirma por conta própria ──
+// A confirmação é sempre do webhook ou do retorno do Mercado Pago (check()),
+// nunca de uma releitura síncrona dentro da própria criação — por isso nem
+// /preapproval/{id} nem /authorized_payments/search são chamados aqui.
 
-test("5) cria e salva o id, mas a sincronização final falha: 'pending', o id fica salvo mesmo assim", async () => {
+test("5) cria e salva o id, e redireciona sem perguntar o estado de novo — nenhuma chamada de confirmação na própria criação", async () => {
   const row = freshRow("row-5");
   const admin = setup([row]);
   setFakeSubscription(row);
-  let getCalls = 0;
+  let calls = 0;
 
-  const result = await withFetchMock(async (url) => {
-    if (url.endsWith("/preapproval")) return jsonResponse(201, { id: "preapproval-5", status: "authorized" });
-    if (url.includes("/preapproval/preapproval-5")) {
-      getCalls += 1;
-      throw new Error("timeout (simulado) na confirmação");
-    }
-    throw new Error("chamada inesperada: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  const initPoint = await withFetchMock(async (url) => {
+    calls += 1;
+    if (url.endsWith("/preapproval")) return jsonResponse(201, { id: "preapproval-5", status: "pending", init_point: initPointFor("preapproval-5") });
+    throw new Error("chamada inesperada (deveria ser só a criação): " + url);
+  }, () => expectRedirect(() => actions.subscribe()));
 
-  assert.equal(result.outcome, "pending");
-  assert.equal(getCalls, 1);
+  assert.equal(initPoint, initPointFor("preapproval-5"));
+  assert.equal(calls, 1, "só a criação — nenhuma releitura de confirmação");
   const saved = admin.row("subscriptions", "row-5");
-  assert.equal(saved.provider_subscription_id, "preapproval-5", "o id foi salvo mesmo com a confirmação falhando depois");
+  assert.equal(saved.provider_subscription_id, "preapproval-5");
   assert.equal(saved.status, "pending");
 });
 
-// ── 6. Webhook duplicado ou atrasado ─────────────────────────────
+// ── 6. Webhook duplicado ou atrasado (syncSubscription, não muda com o checkout hospedado) ──
 
 test("6) sincronizar duas vezes com a mesma resposta escreve o mesmo estado, e limpa uma reserva/bloqueio antigo", async () => {
   const row = freshRow("row-6", { provider_subscription_id: "preapproval-6", creation_blocked_at: new Date().toISOString() });
@@ -237,17 +273,13 @@ test("8) reserva abandonada (>30s): 'blocked', e subscribe() nunca chega a chama
   const result = await withFetchMock(async (url) => {
     mpCalls += 1;
     throw new Error("não deveria chamar o Mercado Pago: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  }, () => actions.subscribe());
 
   assert.equal(result.outcome, "unresolved");
   assert.equal(mpCalls, 0, "uma tentativa anterior indeterminada nunca libera uma segunda chamada automática");
 });
 
 // ── 9. Corrida de inserção: duas abas/cliques simultâneos de quem ainda não tem clínica ──
-// Achado da revisão independente (ecc:database-reviewer) sobre a correção de
-// concorrência: claimSubscriptionCreation reserva por linha, não por pessoa.
-// Migration 0021 (subscriptions_one_live_per_user) fecha isto no banco; aqui
-// prova-se o lado do código que lê o 23505 dessa corrida (actions.ts).
 
 function setupRace(winnerOverrides = {}) {
   const winner = freshRow("sub-winner", winnerOverrides);
@@ -267,18 +299,15 @@ function setupRace(winnerOverrides = {}) {
   return admin;
 }
 
-test("9a) perdeu a corrida de inserção (23505), vencedora ainda livre: usa a linha vencedora, nunca cria uma segunda", async () => {
+test("9a) perdeu a corrida de inserção (23505), vencedora ainda livre: usa a linha vencedora, redireciona, nunca cria uma segunda", async () => {
   const admin = setupRace();
 
-  const result = await withFetchMock(async (url) => {
-    if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
-    if (url.endsWith("/preapproval") || url.includes("/preapproval/preapproval-winner")) {
-      return jsonResponse(201, { id: "preapproval-winner", status: "authorized" });
-    }
+  const initPoint = await withFetchMock(async (url) => {
+    if (url.endsWith("/preapproval")) return jsonResponse(201, { id: "preapproval-winner", status: "pending", init_point: initPointFor("preapproval-winner") });
     throw new Error("chamada inesperada: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  }, () => expectRedirect(() => actions.subscribe()));
 
-  assert.equal(result.outcome, "active");
+  assert.equal(initPoint, initPointFor("preapproval-winner"));
   const rows = admin.tables.get("subscriptions").rows;
   assert.equal(rows.length, 1, "nunca cria uma segunda linha quando perde a corrida");
   assert.equal(rows[0].id, "sub-winner");
@@ -292,7 +321,7 @@ test("9b) perdeu a corrida, vencedora já ativa: 'active' direto, nunca chama o 
   const result = await withFetchMock(async (url) => {
     mpCalls += 1;
     throw new Error("não deveria chamar o Mercado Pago: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  }, () => actions.subscribe());
 
   assert.equal(result.outcome, "active");
   assert.equal(mpCalls, 0);
@@ -300,9 +329,6 @@ test("9b) perdeu a corrida, vencedora já ativa: 'active' direto, nunca chama o 
 });
 
 // ── 10. blockSubscriptionCreation nunca re-bloqueia uma linha já resolvida ──
-// Achado da revisão independente: sem o guard em provider_subscription_id
-// null, um bloqueio tardio (depois de um timeout do nosso lado) podia
-// sobrescrever uma linha que um webhook concorrente já tinha resolvido.
 
 test("10) a linha resolveu sozinha (webhook) antes do bloqueio tardio chegar: nunca é re-bloqueada", async () => {
   const row = freshRow("row-10", { status: "active", provider_subscription_id: "preapproval-10", creation_claimed_at: new Date().toISOString() });
@@ -334,15 +360,11 @@ test("11a) clínica já existente, nunca teve nenhuma linha antes: a nova pendin
   setFakeSession({ user: USER.user, member: { organization_id: "org-legacy" } });
   setFakeSubscription(null);
 
-  const result = await withFetchMock(async (url) => {
-    if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
-    if (url.endsWith("/preapproval") || url.includes("/preapproval/preapproval-legacy")) {
-      return jsonResponse(201, { id: "preapproval-legacy", status: "authorized" });
-    }
+  await withFetchMock(async (url) => {
+    if (url.endsWith("/preapproval")) return jsonResponse(201, { id: "preapproval-legacy", status: "pending", init_point: initPointFor("preapproval-legacy") });
     throw new Error("chamada inesperada: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  }, () => expectRedirect(() => actions.subscribe()));
 
-  assert.equal(result.outcome, "active");
   const rows = admin.tables.get("subscriptions").rows;
   assert.equal(rows.length, 1);
   assert.equal(rows[0].legacy_access_transition, true);
@@ -356,12 +378,9 @@ test("11b) clínica com só uma linha 'rejected' (não é legada): a nova pendin
   setFakeSubscription(null); // getSubscription() de verdade também excluiria a rejected — aqui simulado direto
 
   await withFetchMock(async (url) => {
-    if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
-    if (url.endsWith("/preapproval") || url.includes("/preapproval/preapproval-retry")) {
-      return jsonResponse(201, { id: "preapproval-retry", status: "authorized" });
-    }
+    if (url.endsWith("/preapproval")) return jsonResponse(201, { id: "preapproval-retry", status: "pending", init_point: initPointFor("preapproval-retry") });
     throw new Error("chamada inesperada: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  }, () => expectRedirect(() => actions.subscribe()));
 
   const rows = admin.tables.get("subscriptions").rows;
   assert.equal(rows.length, 2, "a linha antiga recusada continua, mais a nova");
@@ -374,12 +393,9 @@ test("11c) cliente novo sem clínica ainda: nunca é transição legada, mesmo s
   setFakeSubscription(null);
 
   await withFetchMock(async (url) => {
-    if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
-    if (url.endsWith("/preapproval") || url.includes("/preapproval/preapproval-new")) {
-      return jsonResponse(201, { id: "preapproval-new", status: "authorized" });
-    }
+    if (url.endsWith("/preapproval")) return jsonResponse(201, { id: "preapproval-new", status: "pending", init_point: initPointFor("preapproval-new") });
     throw new Error("chamada inesperada: " + url);
-  }, () => actions.subscribe({ token: VALID_TOKEN, email: "cliente@example.com" }));
+  }, () => expectRedirect(() => actions.subscribe()));
 
   const rows = admin.tables.get("subscriptions").rows;
   assert.equal(rows.length, 1);
@@ -412,4 +428,111 @@ test("11d) o pagamento confirmado grava first_payment_confirmed_at na linha lega
   const saved = admin.row("subscriptions", "sub-legacy-pay");
   assert.ok(saved.first_payment_confirmed_at, "a primeira cobrança approved grava a prova financeira");
   assert.equal(saved.status, "active");
+});
+
+// ── 12. Retomar um checkout hospedado pendente — nunca cria uma segunda assinatura ──
+// O coração do item "reutilize o link com segurança": uma linha que já tem
+// provider_subscription_id e continua 'pending' (a pessoa nunca terminou o
+// formulário do Mercado Pago, ou acabou de voltar e o webhook ainda não
+// chegou) é sempre retomada, nunca recriada.
+
+test("12a) linha pending com id, Mercado Pago confirma que já está ativa: 'active' direto, sem reemitir a criação", async () => {
+  const row = freshRow("row-12a", { provider_subscription_id: "preapproval-12a", status: "pending" });
+  setup([row]);
+  setFakeSubscription(row);
+
+  const result = await withFetchMock(async (url) => {
+    if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
+    if (url.includes("/preapproval/preapproval-12a")) return jsonResponse(200, { id: "preapproval-12a", status: "authorized", external_reference: "row-12a" });
+    throw new Error("não deveria reemitir a criação: " + url);
+  }, () => actions.subscribe());
+
+  assert.deepEqual(result, { outcome: "active" });
+});
+
+test("12b) linha pending com id, Mercado Pago confirma que foi cancelada (cartão recusado no formulário hospedado): 'declined'", async () => {
+  const row = freshRow("row-12b", { provider_subscription_id: "preapproval-12b", status: "pending" });
+  setup([row]);
+  setFakeSubscription(row);
+
+  const result = await withFetchMock(async (url) => {
+    if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
+    if (url.includes("/preapproval/preapproval-12b")) return jsonResponse(200, { id: "preapproval-12b", status: "cancelled", external_reference: "row-12b" });
+    throw new Error("não deveria reemitir a criação: " + url);
+  }, () => actions.subscribe());
+
+  assert.deepEqual(result, { outcome: "declined" });
+});
+
+test("12c) linha pending com id, ainda pending de verdade: reemite a MESMA criação (idempotente pela referência) e redireciona de novo — nunca cria uma segunda assinatura", async () => {
+  const row = freshRow("row-12c", { provider_subscription_id: "preapproval-12c", status: "pending" });
+  const admin = setup([row]);
+  setFakeSubscription(row);
+  let creationCalls = 0;
+
+  const initPoint = await withFetchMock(
+    async (url, init) => {
+      if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
+      if (url.includes("/preapproval/preapproval-12c") && (!init || !init.method || init.method === "GET")) {
+        return jsonResponse(200, { id: "preapproval-12c", status: "pending", external_reference: "row-12c" });
+      }
+      if (url.endsWith("/preapproval") && init?.method === "POST") {
+        creationCalls += 1;
+        // Mercado Pago, pela MESMA chave de idempotência (a referência = o id
+        // da linha), devolve a mesma assinatura e o mesmo init_point.
+        assert.equal(init.headers["X-Idempotency-Key"], "row-12c");
+        return jsonResponse(200, { id: "preapproval-12c", status: "pending", init_point: initPointFor("preapproval-12c") });
+      }
+      throw new Error("chamada inesperada: " + url);
+    },
+    () => expectRedirect(() => actions.subscribe()),
+  );
+
+  assert.equal(initPoint, initPointFor("preapproval-12c"));
+  assert.equal(creationCalls, 1);
+  const rows = admin.tables.get("subscriptions").rows;
+  assert.equal(rows.length, 1, "nunca cria uma segunda linha ou uma segunda assinatura ao retomar");
+  assert.equal(rows[0].provider_subscription_id, "preapproval-12c");
+});
+
+test("12d) retomar com o Mercado Pago inalcançável: 'pending' — nunca afirma um estado que não foi confirmado", async () => {
+  const row = freshRow("row-12d", { provider_subscription_id: "preapproval-12d", status: "pending" });
+  setup([row]);
+  setFakeSubscription(row);
+
+  const result = await withFetchMock(async () => {
+    throw new Error("fetch failed (simulado)");
+  }, () => actions.subscribe());
+
+  assert.deepEqual(result, { outcome: "pending" });
+});
+
+test("12e) clique duplo ao retomar: as duas chamadas pedem o mesmo init_point, nunca duas assinaturas", async () => {
+  const row = freshRow("row-12e", { provider_subscription_id: "preapproval-12e", status: "pending" });
+  const admin = setup([row]);
+  setFakeSubscription(row);
+  let creationCalls = 0;
+
+  const [first, second] = await withFetchMock(
+    async (url, init) => {
+      if (url.includes("/authorized_payments/search")) return jsonResponse(200, { results: [] });
+      if (url.includes("/preapproval/preapproval-12e") && (!init || !init.method || init.method === "GET")) {
+        return jsonResponse(200, { id: "preapproval-12e", status: "pending", external_reference: "row-12e" });
+      }
+      if (url.endsWith("/preapproval") && init?.method === "POST") {
+        creationCalls += 1;
+        return jsonResponse(200, { id: "preapproval-12e", status: "pending", init_point: initPointFor("preapproval-12e") });
+      }
+      throw new Error("chamada inesperada: " + url);
+    },
+    () =>
+      Promise.all([
+        expectRedirect(() => actions.subscribe()),
+        expectRedirect(() => actions.subscribe()),
+      ]),
+  );
+
+  assert.equal(first, initPointFor("preapproval-12e"));
+  assert.equal(second, initPointFor("preapproval-12e"));
+  assert.equal(admin.tables.get("subscriptions").rows.length, 1, "nunca cria uma segunda linha");
 });
