@@ -29,8 +29,8 @@
   linhas anteriores à virada existirão enquanto existirem assinaturas.
 */
 
-/** Instante da virada (ms desde a época), 2026-11-01T13:00:00Z. */
-export const CLINAVY_PAYLOAD_FROM = Date.UTC(2026, 10, 1, 13, 0, 0);
+/** Instante da virada (ms desde a época), 2026-11-01T12:30:00Z. */
+export const CLINAVY_PAYLOAD_FROM = Date.UTC(2026, 10, 1, 12, 30, 0);
 
 export type SubscriptionCreation = {
   /** O nome que o Mercado Pago mostra e guarda na assinatura. */

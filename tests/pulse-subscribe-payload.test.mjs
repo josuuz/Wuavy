@@ -162,7 +162,7 @@ test("linha nova (criada depois da virada) leva o corpo novo", async () => {
 test("o resto do corpo é idêntico entre os dois: valor, frequência, e-mail, referência e status", async () => {
   const [oldSent] = await sentOnCreation(row("row-same", { created_at: BEFORE }));
   const [newSent] = await sentOnCreation(row("row-same", { created_at: AFTER }));
-  const strip = ({ reason, back_url, ...rest }) => rest;
+  const strip = (body) => Object.fromEntries(Object.entries(body).filter(([key]) => key !== "reason" && key !== "back_url"));
   assert.deepEqual(strip(oldSent.body), strip(newSent.body));
   assert.equal(oldSent.key, newSent.key);
 });
