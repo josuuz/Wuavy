@@ -1,0 +1,608 @@
+/*
+  The two demonstrations: the small scripted one under the first screen, and the
+  clickable one in "Veja como o PULSE ajuda sua equipe a agir".
+
+  They are deliberately small. One card, one idea per scene, and what is not
+  needed to follow the story is not drawn: no menus, no columns, no other
+  patients, no totals. The tour below is where the whole interface is shown.
+
+  Colours: the product's own --pulse-* tokens inside the stage (it is a
+  ProductSurface, light), the page's brand tokens around it.
+
+  Motion, by the project's contract (components/motion/README.md): transform
+  and opacity (and grid-template-rows for a disclosure); the resting style is
+  the end state. Reduced motion reduces — the scenes stay, the cursor, the
+  travel and the typing go.
+*/
+
+/* ── The stage ───────────────────────────────────────────────────────────── */
+
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+  max-width: 36rem;
+  margin-inline: auto;
+}
+
+.stage {
+  position: relative;
+  padding: 0.9rem 1.05rem 1.05rem;
+  overflow: hidden;
+}
+
+.heroStage {
+  height: 21rem;
+}
+
+/* The positioning box of a stage: the cursor and every measurement are relative to it. */
+.inner {
+  position: relative;
+  height: 100%;
+}
+
+/* The Pulse speaking, in one line that changes with the scene. All captions share a cell, so
+   the row is as tall as the longest and nothing moves when one gives way to the next. */
+.caption {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding-bottom: 0.55rem;
+}
+
+.avatar {
+  flex: none;
+  display: block;
+  width: 2.25rem;
+}
+
+.lines {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.line {
+  grid-area: 1 / 1;
+  align-self: center;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.4rem);
+  transition:
+    opacity 450ms var(--wuavy-ease-out),
+    transform 550ms var(--wuavy-ease-out),
+    visibility 0s linear 450ms;
+}
+
+.line[data-on] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 100ms, 100ms, 0s;
+}
+
+/* ── The card: the one thing on stage ────────────────────────────────────── */
+
+.deck {
+  transform: translateY(calc(var(--lift, 0) * 1rem));
+  transition: transform 800ms var(--wuavy-ease-out);
+}
+
+.card {
+  border: 1px solid var(--pulse-border);
+  border-radius: var(--pulse-r-md);
+  background: var(--pulse-card);
+  transition:
+    box-shadow 600ms var(--wuavy-ease-out),
+    border-color 600ms var(--wuavy-ease-out);
+}
+
+/* The Pulse's highlight: one ring, orange, with a soft step around it. */
+.card[data-ring] {
+  border-color: var(--pulse-accent);
+  box-shadow:
+    0 0 0 2px var(--pulse-accent),
+    0 0 0 9px color-mix(in srgb, var(--pulse-accent) 16%, transparent);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.2rem 0.75rem;
+  padding: 0.85rem 1rem;
+}
+
+.name {
+  font-size: 1.0625rem;
+  font-weight: 680;
+  letter-spacing: -0.01em;
+}
+
+.what {
+  grid-column: 1;
+  font-size: 0.8125rem;
+  color: var(--pulse-muted);
+}
+
+.chip {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--pulse-r-pill);
+  background: var(--pulse-accent-soft);
+  font-size: 0.75rem;
+  font-weight: 640;
+  color: var(--pulse-accent-text);
+  white-space: nowrap;
+}
+
+/* A disclosure that opens: rows from 0 to 1, so nothing is measured and nothing jumps. */
+.collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 750ms var(--wuavy-ease-out);
+}
+
+.collapse[data-open] {
+  grid-template-rows: 1fr;
+}
+
+.collapse > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.actionRow {
+  padding: 0 1rem 1rem;
+}
+
+/* The button, drawn like the product's: a pill, and the only thing here that asks to be pressed. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--pulse-r-pill);
+  background: var(--pulse-accent);
+  color: var(--pulse-on-accent);
+  font-size: 0.875rem;
+  font-weight: 650;
+  transition:
+    transform 160ms var(--wuavy-ease-out),
+    background-color 400ms var(--wuavy-ease-out),
+    color 400ms var(--wuavy-ease-out),
+    opacity 400ms var(--wuavy-ease-out);
+}
+
+.action[data-press] {
+  transform: scale(0.93);
+}
+
+/* Done: it did what it said, and stays on the card as a mark of it. */
+.action[data-done] {
+  background: var(--pulse-sand);
+  color: var(--pulse-muted);
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 1rem 0.85rem;
+  border-top: 1px solid var(--pulse-border-soft);
+}
+
+.kicker {
+  font-size: 0.6875rem;
+  font-weight: 620;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--pulse-muted);
+}
+
+.text {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.draft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0 1rem 1rem;
+  padding: 0.75rem 0.85rem 0.8rem;
+  border: 1px solid var(--pulse-field);
+  border-radius: var(--pulse-r-md);
+  background: var(--pulse-raised);
+}
+
+.draftText {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* The part of the draft not typed yet: laid out, so nothing shifts, and not seen. */
+.unwritten {
+  color: transparent;
+}
+
+.note {
+  font-size: 0.75rem;
+  font-weight: 560;
+  color: var(--pulse-muted);
+}
+
+/* ── The cursor ──────────────────────────────────────────────────────────── */
+
+.cursor {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  left: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(calc(var(--x, 380) * 1px), calc(var(--y, 260) * 1px));
+  transition:
+    transform 950ms var(--wuavy-ease-inout),
+    opacity 350ms var(--wuavy-ease-out);
+}
+
+.cursor[data-on] {
+  opacity: 1;
+}
+
+.cursor svg {
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+  transition: transform 160ms var(--wuavy-ease-out);
+}
+
+.cursor[data-press] svg {
+  transform: scale(0.8);
+}
+
+/* The click: a ring that goes out from the point. */
+.cursor::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  border: 2px solid var(--pulse-accent);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.3);
+}
+
+.cursor[data-press]::after {
+  animation: demo-click 650ms var(--wuavy-ease-out) both;
+}
+
+@keyframes demo-click {
+  from {
+    opacity: 0.95;
+    transform: scale(0.3);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+/* ── Controls under the stage ────────────────────────────────────────────── */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.dots {
+  display: flex;
+  gap: 0.2rem;
+}
+
+/* A scene: a touch target of its own, with only a short rule showing. */
+.dot {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  cursor: pointer;
+}
+
+.dotMark {
+  width: 1.5rem;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 26%, transparent);
+  transition:
+    background-color var(--duration-element) var(--wuavy-ease-out),
+    transform var(--duration-element) var(--wuavy-ease-out);
+}
+
+.dot[data-done] .dotMark,
+.dot[aria-selected="true"] .dotMark {
+  background: var(--mark);
+}
+
+.dot[aria-selected="true"] .dotMark {
+  transform: scaleY(1.7);
+}
+
+.ghost {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.9rem;
+  border: var(--rule) solid var(--border);
+  border-radius: var(--radius-button);
+  font-size: var(--fs-micro);
+  font-weight: var(--wuavy-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    color var(--duration-ui) var(--wuavy-ease-out),
+    border-color var(--duration-ui) var(--wuavy-ease-out);
+}
+
+.ghost:hover {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.fine {
+  flex-basis: 100%;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+/* ── The first screen: where the card sits in each scene ─────────────────── */
+
+.heroDeck {
+  --lift: 3.4;
+}
+
+.heroDeck[data-scene="2"][data-clicked] {
+  --lift: 1.8;
+}
+
+.heroDeck[data-scene="3"] {
+  --lift: 0;
+}
+
+/* ── The clickable one ───────────────────────────────────────────────────── */
+
+.sim {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.picks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* The three situations, as buttons that look like buttons: bordered, big enough to press. */
+.pick {
+  min-height: 2.875rem;
+  padding: 0.6rem 1.3rem;
+  border: var(--rule) solid color-mix(in srgb, var(--text) 32%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.9375rem;
+  font-weight: 560;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-ui) var(--wuavy-ease-out),
+    border-color var(--duration-ui) var(--wuavy-ease-out),
+    color var(--duration-ui) var(--wuavy-ease-out);
+}
+
+.pick:hover {
+  border-color: var(--text);
+}
+
+.pick[aria-selected="true"] {
+  background: var(--mark);
+  border-color: var(--mark);
+  color: var(--on-mark);
+}
+
+.simStage {
+  max-width: 40rem;
+  width: 100%;
+  margin-inline: auto;
+  padding-bottom: 1.2rem;
+}
+
+/* "Clique para experimentar": there while there is something to press, gone once it has been. */
+.try {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--pulse-r-pill);
+  background: var(--pulse-ink);
+  font-size: 0.75rem;
+  font-weight: 640;
+  letter-spacing: 0.02em;
+  color: var(--pulse-bg);
+}
+
+.tryRow {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0.9rem 0 0 1rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+/* A real button of the simulation: it takes focus, answers the keyboard and shows where the focus is. */
+.real {
+  cursor: pointer;
+}
+
+.real:disabled {
+  cursor: default;
+}
+
+.real:focus-visible {
+  outline: 2px solid var(--pulse-ink);
+  outline-offset: 3px;
+}
+
+/* Stacked layers: every scenario's card and every step's panel sit in one cell, the stage is as
+   tall as the tallest and nothing moves when the visitor changes scenario or step. */
+.layers {
+  display: grid;
+}
+
+.layer {
+  grid-area: 1 / 1;
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.5rem);
+  transition:
+    opacity 450ms var(--wuavy-ease-out),
+    transform 550ms var(--wuavy-ease-out),
+    visibility 0s linear 450ms;
+}
+
+.layer[data-on] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 80ms, 80ms, 0s;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-top: 0.9rem;
+}
+
+.pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.panel .draft {
+  margin: 0;
+}
+
+/* What waits to be pressed: a ring that goes out and comes back, until the visitor presses it. */
+.await {
+  position: relative;
+}
+
+.await::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--pulse-accent);
+  border-radius: var(--pulse-r-pill);
+  opacity: 0;
+  animation: demo-await 2200ms var(--wuavy-ease-out) infinite;
+  pointer-events: none;
+}
+
+@keyframes demo-await {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.96);
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+.simSteps {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  padding-top: 0.9rem;
+}
+
+.simStep {
+  width: 1.75rem;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--pulse-ink) 18%, transparent);
+  transition: background-color var(--duration-element) var(--wuavy-ease-out);
+}
+
+.simStep[data-on] {
+  background: var(--pulse-accent);
+}
+
+@media (max-width: 36rem) {
+  /* On a phone the lines wrap more, so the stage is taller: the same scenes, with room for them. */
+  .heroStage {
+    height: 28.75rem;
+  }
+}
+
+/* ── Reduced motion: the scenes stay, the cursor, the travel and the loops go ─ */
+
+@media (prefers-reduced-motion: reduce) {
+  .deck,
+  .line,
+  .layer {
+    transform: none;
+  }
+
+  .deck,
+  .collapse,
+  .cursor {
+    transition-duration: 1ms;
+  }
+
+  .line,
+  .layer {
+    transition-duration: 200ms, 1ms, 0s;
+  }
+
+  .cursor {
+    display: none;
+  }
+
+  .await::after {
+    animation: none;
+    opacity: 0.8;
+    transform: none;
+  }
+}

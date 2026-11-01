@@ -754,12 +754,12 @@ export const ptBR = {
     /*
       The first screen is centred, the way the story is told: a short
       identification, the promise in two sentences, one line of explanation, the
-      way in, and then the product — large, and already entering the fold.
+      way in, and then a small demonstration under it.
 
-      `story` is the animation under it. Four beats, one situation, in the order
-      the product really works: a quote went unanswered → the Pulse picks it out
-      and says why → it is opened → the message waits for someone to read it.
-      It never ends at a message sent, and never at a sale.
+      `demo` is that demonstration: one patient card, four scenes, about
+      fifteen seconds, one idea each (components/pulse/HeroDemo.tsx). It ends
+      on a draft waiting for a person, never on a message sent, an answer, a
+      booking or revenue; and it draws nothing the product does not do today.
     */
     hero: {
       label: "Sistema para clínicas de estética",
@@ -770,33 +770,27 @@ export const ptBR = {
       ctaHref: "#como-funciona",
       secondary: { label: "Conhecer o plano", href: "#plano" },
 
-      story: {
-        label: "O PULSE em quatro passos",
+      demo: {
+        label: "O PULSE em quatro cenas",
         note: "Demonstração com dados fictícios. Nada é enviado daqui.",
         play: "Retomar",
         pause: "Pausar",
-        step: "Passo {n} de {total}: {title}",
-        beats: [
-          {
-            tag: "Na clínica",
-            title: "Um orçamento ficou sem resposta.",
-            text: "Carla pediu o orçamento de harmonização facial há seis dias. A recepção enviou, e depois disso ninguém voltou a falar com ela.",
-          },
-          {
-            tag: "O PULSE destaca",
-            title: "O PULSE destaca a oportunidade.",
-            text: "Por que merece atenção: o orçamento está aberto há 3 dias ou mais, sem resposta. É interesse que a pessoa já declarou.",
-          },
-          {
-            tag: "Na tela",
-            title: "A oportunidade é aberta.",
-            text: "O PULSE mostra o que sugere e quem separou para começar, cada pessoa com o procedimento de interesse.",
-          },
-          {
-            tag: "Com a equipe",
-            title: "A mensagem espera a equipe.",
-            text: "O texto já vem pronto. Alguém da equipe lê, ajusta se quiser e decide se envia, pelo WhatsApp da clínica.",
-          },
+        replay: "Repetir",
+        scene: "Cena {n} de {total}: {title}",
+        patient: { name: "Carla", sent: "Orçamento enviado há 6 dias", status: "Sem resposta" },
+        action: "Ver oportunidade",
+        details: [
+          { label: "Procedimento:", text: "harmonização facial." },
+          { label: "Por que aparece:", text: "sem resposta há 3 dias ou mais." },
+        ],
+        draftLabel: "Mensagem para revisão",
+        draft: "Oi Carla! Passando para saber se ficou alguma dúvida sobre o orçamento de harmonização facial. Se quiser, já deixo um horário reservado para você.",
+        draftNote: "É um rascunho. Nada foi enviado.",
+        scenes: [
+          { title: "Um orçamento ficou sem resposta.", caption: "Um orçamento ficou sem resposta." },
+          { title: "O PULSE destaca a oportunidade.", caption: "O PULSE mostra o que merece atenção." },
+          { title: "Um clique abre os detalhes.", caption: "Um clique abre os detalhes." },
+          { title: "A mensagem espera a equipe.", caption: "Sua equipe revisa e decide o contato." },
         ],
       },
     },
@@ -826,113 +820,72 @@ export const ptBR = {
     },
 
     /*
-      The page's centre: three situations a clinic recognises, each one
-      answered by the behaviour the product really has. The names are
-      fictitious; the prepared messages are the engine's own templates
-      (components/flow/demo/views/Opportunities.tsx → selection).
+      The hands-on moment (components/pulse/HowSim.tsx): three situations, one
+      stage, one step at a time. The four paragraphs this section used to carry
+      — what happened, what the Pulse identified, why it deserves attention,
+      what the team can do — are now one short sentence in each step, and a
+      step only appears when the visitor (or the demonstration) asks for it.
+
+      The draft in every situation is the opportunity engine's own template
+      (components/flow/demo/views/Opportunities.tsx), with a fictitious name.
+      The reasons are the engine's rules (KIND in components/flow/demo/copy.ts).
+      No value, no total, no outcome: nothing here is a result.
     */
     scenarios: {
       chapter: "Como funciona",
       title: "Veja como o PULSE ajuda sua equipe a agir.",
-      lead: "Escolha uma situação. Em cada uma, o PULSE mostra o problema, o que identificou e o próximo passo — e quem decide é a equipe.",
-      note: "Demonstração com dados fictícios. Nenhuma mensagem é enviada aqui.",
+      lead: "Escolha uma situação e clique para experimentar.",
       pick: "Escolha uma situação",
+      hint: "Clique para experimentar",
+      note: "Exemplo com dados fictícios. Nada é enviado.",
+      play: "Retomar",
+      pause: "Pausar",
+      replay: "Repetir",
       labels: {
-        happened: "O que aconteceu",
-        found: "O que o PULSE identificou",
-        why: "Por que merece atenção",
-        action: "O que a equipe pode fazer",
-        screen: "No PULSE",
-        draft: "Mensagem preparada para revisão",
-        review: "A equipe revisa e decide enviar pelo WhatsApp da clínica. O PULSE não envia nada sozinho.",
+        reasonLabel: "Por que merece atenção",
+        nextLabel: "Próximo passo",
+        draftLabel: "Sugestão de mensagem",
+        draftNote: "É um rascunho. Nada foi enviado.",
+        explain: "O PULSE explica o motivo e o próximo passo.",
+        closing: "Sua equipe revisa e decide o contato.",
+        step: "Etapa {n} de {total}",
       },
       items: [
         {
           id: "orcamento",
-          choice: "Enviaram orçamento e não responderam.",
-          short: "Orçamento sem resposta",
-          happened:
-            "Carla pediu o orçamento de harmonização facial numa quinta-feira. A recepção enviou no mesmo dia. Depois disso, silêncio.",
-          found:
-            "Orçamento aberto há 6 dias, sem resposta e sem nada marcado na agenda. Com ela, outras duas pessoas estão na mesma situação.",
-          why: "Um orçamento aberto é interesse já declarado: a pessoa pediu o preço. Quanto mais tempo passa sem contato, mais frio o assunto fica.",
-          action:
-            "O PULSE prepara um follow-up com o procedimento de interesse e a oferta de reservar um horário. A equipe revisa, envia pelo WhatsApp e registra o contato.",
-          screen: {
-            tag: "Orçamentos",
-            headline: "3 orçamentos sem resposta",
-            sentence: "3 pessoas receberam orçamento e não responderam há 3 dias ou mais.",
-            value: "R$ 7.400",
-            valueLabel: "em orçamentos abertos",
-            action: "Preparar follow-up",
-            suggestion:
-              "Retomar o procedimento de interesse de cada pessoa, começando pelos orçamentos maiores e mais recentes.",
-            picked: "PULSE selecionou 3 contatos.",
-            people: [
-              { name: "Carla M.", detail: "Harmonização facial · sem resposta há 6 dias", value: "R$ 3.200" },
-              { name: "Renata A.", detail: "Preenchimento labial · sem resposta há 4 dias", value: "R$ 2.400" },
-              { name: "Priscila N.", detail: "Bioestimulador · sem resposta há 3 dias", value: "R$ 1.800" },
-            ],
-            draft:
-              "Oi Carla! Passando para saber se ficou alguma dúvida sobre o orçamento de harmonização facial. Se quiser, já deixo um horário reservado para você.",
-          },
+          choice: "Orçamento esquecido",
+          intro: "Ela pediu um orçamento. Seis dias depois, ninguém retomou.",
+          card: { name: "Carla", what: "Orçamento enviado há 6 dias", status: "Sem resposta" },
+          open: "Ver oportunidade",
+          reason: "O orçamento está aberto há 3 dias ou mais, sem resposta: é interesse que ela já declarou.",
+          next: "Retomar o procedimento de interesse e oferecer um horário.",
+          suggest: "Ver sugestão de mensagem",
+          to: "Para Carla",
+          draft: "Oi Carla! Passando para saber se ficou alguma dúvida sobre o orçamento de harmonização facial. Se quiser, já deixo um horário reservado para você.",
         },
         {
           id: "retorno",
-          choice: "O paciente precisava voltar.",
-          short: "Retorno previsto",
-          happened:
-            "Ana fez skinbooster há quatro meses. O intervalo recomendado do procedimento fechou nesta semana e não há nada marcado para ela.",
-          found:
-            "Retorno previsto para esta semana, sem agendamento. O PULSE compara a última visita com o intervalo do próprio procedimento, cadastrado pela clínica.",
-          why: "Quem já fez o procedimento é quem tem mais chance de repetir. Passado o intervalo, o retorno vai ficando para depois — e às vezes não volta.",
-          action:
-            "O PULSE prepara um convite de retorno e mostra os horários livres da semana. A equipe revisa, envia e agenda ali mesmo.",
-          screen: {
-            tag: "Retornos",
-            headline: "5 pacientes precisam retornar",
-            sentence: "5 pacientes estão no período de retorno, sem nada marcado.",
-            value: "R$ 6.150",
-            valueLabel: "em retornos prováveis",
-            action: "Preparar convites",
-            suggestion:
-              "Um convite de retorno com os horários livres da semana, no intervalo recomendado de cada procedimento.",
-            picked: "PULSE selecionou 5 pacientes, pela chance de retorno.",
-            people: [
-              { name: "Ana P.", detail: "Skinbooster · retorno hoje", value: "R$ 1.450" },
-              { name: "Lívia C.", detail: "Limpeza de pele · retorno em 2 dias", value: "R$ 380" },
-              { name: "Fernanda D.", detail: "Toxina botulínica · atrasado há 5 dias", value: "R$ 1.900" },
-            ],
-            draft:
-              "Oi Ana! Já está na época do seu retorno de skinbooster. Quer que eu veja um horário para você esta semana?",
-          },
+          choice: "Paciente sem retorno",
+          intro: "Ana fez skinbooster há quatro meses. Nada está marcado para ela.",
+          card: { name: "Ana", what: "Skinbooster · última visita há 4 meses", status: "Nada marcado" },
+          open: "Ver oportunidade",
+          reason: "Mais de 90 dias sem visita e nada agendado.",
+          next: "Uma mensagem pessoal, lembrando o último procedimento.",
+          suggest: "Ver sugestão de mensagem",
+          to: "Para Ana",
+          draft: "Oi Ana! Faz um tempo desde o seu skinbooster aqui na clínica. Que tal marcar um horário para cuidarmos de você de novo?",
         },
         {
           id: "horario",
-          choice: "Ficou um horário vazio.",
-          short: "Horário vago",
-          happened:
-            "Um cancelamento de última hora abriu as 14h de amanhã. A agenda do dia continua cheia; só aquele horário ficou aberto.",
-          found: "Horário livre entre hoje e amanhã, com pacientes compatíveis na lista de espera do mesmo período.",
-          why: "Hora de sala e de profissional não volta: o horário que não é preenchido passa. E quem está na lista de espera queria exatamente aquele período.",
-          action:
-            "O PULSE ordena quem mais combina com o horário — a lista de espera primeiro, depois quem tem retorno próximo — e prepara o convite. A equipe envia e confirma.",
-          screen: {
-            tag: "Agenda",
-            headline: "2 horários livres até amanhã",
-            sentence: "2 horários estão livres entre hoje e amanhã.",
-            value: "R$ 980",
-            valueLabel: "em horários a preencher",
-            action: "Preencher horários",
-            suggestion:
-              "Oferecer cada horário a quem mais combina: a lista de espera do mesmo período primeiro, depois quem tem retorno próximo.",
-            picked: "PULSE encontrou 2 pacientes compatíveis, um por horário.",
-            people: [
-              { name: "Juliana R.", detail: "Amanhã às 14h · Limpeza de pele · 92% compatível", value: "R$ 380" },
-              { name: "Marina L.", detail: "Hoje às 17h · Peeling · 78% compatível", value: "R$ 600" },
-            ],
-            draft: "Oi Juliana! Abriu um horário amanhã às 14h para limpeza de pele. Quer que eu reserve para você?",
-          },
+          choice: "Horário vazio",
+          intro: "Um cancelamento abriu o horário de amanhã. O resto do dia está cheio.",
+          card: { name: "Amanhã, 14h", what: "Horário livre desde ontem", status: "Livre" },
+          open: "Ver oportunidade",
+          reason: "Um cancelamento abriu a agenda e o horário está parado até amanhã.",
+          next: "Oferecer a quem mais combina: a lista de espera do período vem primeiro.",
+          suggest: "Ver sugestão de mensagem",
+          to: "Para Juliana, da lista de espera",
+          draft: "Oi Juliana! Abriu um horário amanhã às 14h para limpeza de pele. Quer que eu reserve para você?",
         },
       ],
     },

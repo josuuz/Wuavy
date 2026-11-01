@@ -5,8 +5,8 @@ import { Pulse } from "@/components/flow/Pulse";
 import { Section } from "@/components/layout/Section";
 import { Reveal } from "@/components/motion";
 import { Fronts } from "@/components/pulse/Fronts";
-import { HeroStory } from "@/components/pulse/HeroStory";
-import { Scenarios } from "@/components/pulse/Scenarios";
+import { HeroDemo } from "@/components/pulse/HeroDemo";
+import { HowSim } from "@/components/pulse/HowSim";
 import { Tour } from "@/components/pulse/Tour";
 import { TrackLinks } from "@/components/pulse/TrackLinks";
 import { Button } from "@/components/ui/Button";
@@ -123,13 +123,7 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/pulse">
         </div>
 
         <div className={styles.heroStage}>
-          <HeroStory
-            story={hero.story}
-            // The same front the first situation below states: one source for both.
-            screen={scenarios.items[0].screen}
-            others={[scenarios.items[1].screen, scenarios.items[2].screen]}
-            draftLabel={scenarios.labels.draft}
-          />
+          <HeroDemo demo={hero.demo} />
         </div>
       </Section>
 
@@ -159,12 +153,12 @@ export default async function PulsePage({ params }: PageProps<"/[locale]/pulse">
       {/* ── 3. The same situations, with the product ────────────────────── */}
       <Section id="como-funciona" surface="black" label={scenarios.chapter} className={`tx-grain ${styles.section}`}>
         <div className={styles.wide}>
-          <header className={styles.head}>
-            <h2 className={styles.h2}>{scenarios.title}</h2>
-            <p className={styles.sectionLead}>{scenarios.lead}</p>
+          <header className={`${styles.head} ${styles.headCenter}`}>
+            <h2 className={`${styles.h2} ${styles.center}`}>{scenarios.title}</h2>
+            <p className={`${styles.sectionLead} ${styles.center}`}>{scenarios.lead}</p>
           </header>
 
-          <Scenarios pick={scenarios.pick} labels={scenarios.labels} items={scenarios.items} note={scenarios.note} />
+          <HowSim copy={scenarios} />
         </div>
       </Section>
 
