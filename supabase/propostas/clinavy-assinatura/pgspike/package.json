@@ -1,0 +1,13 @@
+{
+  "name": "pgspike-clinavy-assinatura",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prova local (PGlite, em memória) da migration 0023. Não toca nenhum projeto Supabase.",
+  "type": "commonjs",
+  "scripts": {
+    "prova": "node --test prova-0023.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.3.11"
+  }
+}

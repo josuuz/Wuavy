@@ -100,6 +100,8 @@ export const PLAN = {
     topic: "assinar o Clinavy",
   },
   /** The plan's chip, by status: discreet once the clinic pays. */
+  // Não é um estado da assinatura (ver notice.unverified): a leitura falhou, e dizer "ativo" seria afirmar o que não se sabe.
+  unverifiedChip: "Assinatura não confirmada",
   chip: {
     active: "Plano Clinavy",
     past_due: "Pagamento em atraso",
@@ -171,6 +173,11 @@ export const PLAN = {
       title: "Sua assinatura do Clinavy foi cancelada.",
       text: "Seus dados continuam aqui, só para consulta. Assine de novo para voltar a criar e editar.",
       cta: "Assinar de novo",
+    },
+    // Não é um estado da assinatura: a leitura falhou (lib/flow/session.ts). Não manda assinar — a pessoa pode estar em dia.
+    unverified: {
+      title: "Não conseguimos confirmar a sua assinatura agora.",
+      text: "Seus dados continuam aqui, só para consulta. Tente de novo em instantes — você não precisa assinar de novo.",
     },
   },
 };

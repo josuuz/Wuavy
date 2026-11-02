@@ -4,7 +4,7 @@ import { randomInt } from "node:crypto";
 
 import { refresh } from "next/cache";
 
-import { READ_ONLY_MESSAGE } from "@/lib/flow/access";
+import { denialMessage, READ_ONLY_MESSAGE } from "@/lib/flow/access";
 import { clinicNow } from "@/lib/flow/clock";
 import { toMessage, type Message } from "@/lib/flow/conversations";
 import { permissionsFor, type Permissions } from "@/lib/flow/roles";
@@ -58,7 +58,8 @@ async function allowed(need: (can: Permissions) => boolean) {
   const session = await getSession();
   if (!session?.member) return { error: "Sua sessão expirou ou seu acesso mudou. Entre de novo." } as const;
   if (!need(permissionsFor(session.member.role))) return { error: NO_PERMISSION } as const;
-  if (!(await getClinicAccess())?.canEdit) return { error: READ_ONLY_MESSAGE } as const;
+  const access = await getClinicAccess();
+  if (!access?.canEdit) return { error: access ? denialMessage(access) : READ_ONLY_MESSAGE } as const;
   return { session, org: session.member.organization_id, userId: session.user.id } as const;
 }
 

@@ -42,8 +42,14 @@ class FakeQuery {
     this.orderAsc = true;
     this.limitN = null;
   }
-  select(cols) {
+  select(cols, options) {
     this.selectCols = cols;
+    // { count: "exact", head: true }: so a contagem, nenhuma linha (como o PostgREST de verdade).
+    this.headOnly = Boolean(options && options.head);
+    return this;
+  }
+  gte(col, val) {
+    this.filters.push({ kind: "gte", col, val: String(val) });
     return this;
   }
   eq(col, val) {
@@ -81,7 +87,9 @@ class FakeQuery {
   _matches(row) {
     const plain = this.filters.every(({ kind, col, val }) => {
       const actual = String(row[col] ?? null);
-      return kind === "neq" ? actual !== val : actual === val;
+      if (kind === "neq") return actual !== val;
+      if (kind === "gte") return actual >= val; // texto ISO 8601 ordena como data
+      return actual === val;
     });
     if (!plain) return false;
     if (!this.orClauses) return true;
@@ -98,6 +106,10 @@ class FakeQuery {
         });
       }
       if (this.limitN != null) matched = matched.slice(0, this.limitN);
+      if (this.headOnly) {
+        resolve({ data: null, count: matched.length, error: null });
+        return;
+      }
       if (this.wantsSingle) {
         resolve({ data: matched[0] ? pick(matched[0], this.selectCols) : null, error: null });
         return;
@@ -110,12 +122,33 @@ class FakeQuery {
 }
 
 export class FakeServerClient {
-  constructor({ user, tables = {} } = {}) {
+  /**
+   * `failTables`: as tabelas cuja LEITURA falha, como falha o Supabase de
+   * verdade (a coluna que não existe, uma queda, um timeout): a consulta
+   * responde `{ data: null, error }`. É o que prova o fail-open de
+   * lib/flow/session.ts — o fake de antes nunca devolvia erro.
+   */
+  constructor({ user, tables = {}, failTables = [] } = {}) {
     this._user = user ?? null;
     this.tables = new Map(Object.entries(tables));
+    this.failTables = new Set(failTables);
     this.auth = { getUser: async () => ({ data: { user: this._user } }) };
   }
   from(name) {
+    if (this.failTables.has(name)) {
+      const failing = {
+        select: () => failing,
+        eq: () => failing,
+        neq: () => failing,
+        or: () => failing,
+        order: () => failing,
+        limit: () => failing,
+        gte: () => failing,
+        maybeSingle: () => failing,
+        then: (resolve) => resolve({ data: null, error: { message: `simulado: falha ao ler ${name}` } }),
+      };
+      return failing;
+    }
     return new FakeQuery(this.tables.get(name) ?? []);
   }
 }

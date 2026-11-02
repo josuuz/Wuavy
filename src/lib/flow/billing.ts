@@ -500,7 +500,9 @@ export const syncSubscription = async (providerId: string): Promise<Subscription
  * row again (lib/flow/session.ts reads it through a memoized cache, which
  * would still hold the value from before this write).
  */
-export async function syncStanding(providerId: string): Promise<Standing | null> {
+export async function syncStanding(
+  providerId: string,
+): Promise<(Standing & { chargesRead: boolean; chargesHttpStatus: number | null }) | null> {
   if (!PROVIDER_ID.test(providerId)) return null;
   const subscription = await mp<Preapproval>(`/preapproval/${providerId}`);
   // The id goes into a URL and into the filter string below: whatever answered,
@@ -509,10 +511,15 @@ export async function syncStanding(providerId: string): Promise<Standing | null>
   // Failed (not merely empty): told apart from a genuine "no charges yet" so
   // that one lost request never reads as "nothing was ever paid" below.
   let chargesFetchFailed = false;
+  // O status HTTP da busca que falhou (null: a rede, ou nada falhou). Quem DECIDE com
+  // base nisto precisa distinguir um 400 ("ainda não há cobrança nenhuma", ver
+  // inspectSubscription) de um 5xx ou uma queda ("não sei").
+  let chargesHttpStatus: number | null = null;
   const charges = await mp<{ results?: Charge[] }>(
     `/authorized_payments/search?preapproval_id=${encodeURIComponent(subscription.id)}`,
-  ).catch((): { results?: Charge[] } => {
+  ).catch((error: unknown): { results?: Charge[] } => {
     chargesFetchFailed = true;
+    chargesHttpStatus = error instanceof MercadoPagoError ? error.status : null;
     return { results: [] };
   });
   const status = statusFrom(subscription, latestCharge(charges.results));
@@ -553,7 +560,8 @@ export async function syncStanding(providerId: string): Promise<Standing | null>
 
   // Prova financeira, nunca inferida do status (migration 0017): a primeira
   // vez que uma busca de verdade mostra um pagamento "approved" nesta
-  // assinatura, grava uma vez e nunca mais muda — é o único jeito financeiro
+  // assinatura, grava e nunca apaga (dois syncs simultâneos podem regravar o instante;
+  // ninguém usa o valor, só a existência) — é o único jeito financeiro
   // de encerrar a proteção de transição legada (lib/flow/access.ts), sem
   // depender de status==='active' sozinho (que um 5xx futuro ou uma leitura
   // perdida não devem apagar).
@@ -574,11 +582,66 @@ export async function syncStanding(providerId: string): Promise<Standing | null>
       // nothing left to reconcile once the real status is known.
       creation_claimed_at: null,
       creation_blocked_at: null,
-      ...(row.legacy_access_transition && !row.first_payment_confirmed_at && hasConfirmedPayment ? { first_payment_confirmed_at: now } : {}),
+      // Uma vez, para qualquer linha (não só a de transição legada): é a prova
+      // de que dinheiro entrou, e a única coisa que a criação de uma clínica
+      // nova aceita (paymentEvidence, abaixo). Nunca é apagada nem inferida do status.
+      ...(!row.first_payment_confirmed_at && hasConfirmedPayment ? { first_payment_confirmed_at: now } : {}),
     })
     .eq("id", row.id);
   if (error) throw error;
-  return { status, current_period_end: periodEnd };
+  return {
+    status,
+    current_period_end: periodEnd,
+    first_payment_confirmed_at: row.first_payment_confirmed_at ?? (hasConfirmedPayment ? now : null),
+    // false = a busca de cobranças falhou: "sem prova" aqui NÃO quer dizer "nunca pagou".
+    chargesRead: !chargesFetchFailed,
+    chargesHttpStatus,
+  };
+}
+
+/**
+ * A leitura das cobranças respondeu o bastante para se decidir com ela?
+ *
+ * Sim quando a busca respondeu, e TAMBÉM quando respondeu 400: o Mercado Pago
+ * devolve 400 a /authorized_payments/search para uma assinatura que ainda não gerou
+ * nenhuma cobrança (observado ao validar o painel; ver inspectSubscription), em vez
+ * de uma lista vazia. Isso é "ainda não há pagamento", não "não sei". Um 5xx, um
+ * 401/403/429 ou uma queda de rede SIM são "não sei".
+ *
+ * Quem CONCEDE acesso lê o 400 como "sem prova" (recusa). Quem evita uma cobrança em
+ * dobro lê como "nada a proteger" — e é esta a leitura que sustenta o caminho comum
+ * de trocar o pagador de uma tentativa que nunca cobrou.
+ */
+export const chargesKnown = (synced: { chargesRead: boolean; chargesHttpStatus: number | null }): boolean =>
+  synced.chargesRead || synced.chargesHttpStatus === 400;
+
+/**
+ * Há prova financeira positiva de que esta assinatura recebeu dinheiro?
+ *
+ * "confirmed": uma cobrança foi processada E aprovada pelo Mercado Pago (gravada
+ * uma vez em first_payment_confirmed_at, ou lida agora). "none": o Mercado Pago
+ * respondeu e não há cobrança aprovada. "unavailable": não foi possível
+ * perguntar, ou a busca de cobranças falhou — não se sabe, e quem decide acesso
+ * novo trata isto como "não": nada se concede por falta de resposta.
+ *
+ * Existe porque o status sozinho não prova pagamento: statusFrom devolve "active"
+ * para uma assinatura autorizada cujo último débito não falhou, mesmo antes de a
+ * primeira cobrança ser aprovada, e "past_due" (que também libera) para uma
+ * pausada. Quem CRIA acesso pago novo — a criação da clínica — exige a prova.
+ */
+export type Evidence = "confirmed" | "none" | "unavailable";
+export async function paymentEvidence(row: { first_payment_confirmed_at?: string | null; provider_subscription_id: string | null }): Promise<Evidence> {
+  if (row.first_payment_confirmed_at) return "confirmed";
+  if (!row.provider_subscription_id) return "none";
+  try {
+    const synced = await syncStanding(row.provider_subscription_id);
+    if (!synced) return "unavailable";
+    if (synced.first_payment_confirmed_at) return "confirmed";
+    return chargesKnown(synced) ? "none" : "unavailable";
+  } catch (error) {
+    console.error("paymentEvidence: Mercado Pago", error);
+    return "unavailable";
+  }
 }
 
 /** A monthly charge's notice: the subscription it belongs to is synced. */

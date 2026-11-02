@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { whatsappHref } from "@/lib/contact";
-import { READ_ONLY_MESSAGE } from "@/lib/flow/access";
+import { denialMessage } from "@/lib/flow/access";
 import { addEntry, loadThread, startConversation, updateConversation } from "@/lib/flow/conversation-actions";
 import { brl, dayAt, dayLabel, daysFrom, hour, relDay } from "@/lib/flow/format";
 import { createClient } from "@/lib/supabase/client";
@@ -1238,7 +1238,7 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
     event.preventDefault();
     const body = text.trim();
     if (!body || saving) return;
-    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    if (!access.canEdit) return setError(denialMessage(access));
     if (who === "send") {
       if (!c) return;
       setSaving(true);
@@ -1284,7 +1284,7 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
 
   const change = async (patch: Parameters<typeof updateConversation>[1], said: string) => {
     if (!c) return;
-    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    if (!access.canEdit) return setError(denialMessage(access));
     const result = await updateConversation(c.id, patch);
     if (result.error) setError(result.error);
     else setNotice(said);
@@ -1513,7 +1513,7 @@ function LiveThread({ conversation: c, person, draft, onBack, onInfo, onBook, on
           </p>
         </form>
       ) : (
-        <p className={`${ui.fine} ${styles.empty}`}>{READ_ONLY_MESSAGE}</p>
+        <p className={`${ui.fine} ${styles.empty}`}>{denialMessage(access)}</p>
       )}
     </section>
   );
@@ -1531,7 +1531,7 @@ function LivePerson({ conversation: c, onBack, onBook }: { conversation: Convers
   const team = data.users.filter((u) => (u.status ?? "active") === "active" && u.role !== "professional");
 
   const change = async (patch: Parameters<typeof updateConversation>[1], said: string) => {
-    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    if (!access.canEdit) return setError(denialMessage(access));
     const result = await updateConversation(c.id, patch);
     setError(result.error ?? null);
     if (!result.error) setNotice(said);
@@ -1662,7 +1662,7 @@ function StartConversation({ onDone }: { onDone: (id: ID) => void }) {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    if (!access.canEdit) return setError(denialMessage(access));
     setSaving(true);
     setError(null);
     const result = await startConversation(new FormData(event.currentTarget));

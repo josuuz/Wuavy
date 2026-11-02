@@ -306,7 +306,8 @@ function AccountSettings() {
 function PlanSettings() {
   const { access, account } = useFlow();
   const status = access.subscriptionStatus;
-  const notice = status && status !== "active" ? PLAN.notice[status] : null;
+  // Leitura que falhou: nem "ativo" nem "cancelado" — não se sabe, e a tela diz isso.
+  const notice = access.unverified ? PLAN.notice.unverified : status && status !== "active" ? PLAN.notice[status] : null;
   // Esta seção já só é montada sob `can.admin` (hoje, só o responsável). O
   // papel é conferido de novo aqui e uma terceira vez no servidor: se a tabela
   // de permissões mudar um dia, trocar o cartão e cancelar não vão junto.
@@ -329,8 +330,8 @@ function PlanSettings() {
         </span>
       </div>
       <p>
-        <span className={styles.status} data-status={status === "active" || !status ? undefined : "em_andamento"}>
-          {status ? PLAN.chip[status] : PLAN.chip.active}
+        <span className={styles.status} data-status={access.unverified || (status && status !== "active") ? "em_andamento" : undefined}>
+          {access.unverified ? PLAN.unverifiedChip : status ? PLAN.chip[status] : PLAN.chip.active}
         </span>
       </p>
       {next ? (

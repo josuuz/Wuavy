@@ -3,9 +3,9 @@
 import { refresh } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { paidThrough, PRICE, type SubscriptionStatus } from "./access";
+import { paidThrough, PRICE, UNVERIFIED_MESSAGE, type SubscriptionStatus } from "./access";
 import { billingReady, cancelSubscription, changeCard, describeError, MercadoPagoError, payerEmail, testMode } from "./billing";
-import { getSession, getSubscription } from "./session";
+import { getSession, getStanding, SubscriptionReadError } from "./session";
 
 /*
   Managing the subscription from inside Clinavy: cancelling it, and pointing
@@ -68,13 +68,25 @@ const CONFIRM = "CANCELAR";
  */
 type Owning =
   | { ok: false; error: string }
-  | { ok: true; session: NonNullable<Awaited<ReturnType<typeof getSession>>>; subscription: NonNullable<Awaited<ReturnType<typeof getSubscription>>> };
+  | { ok: true; session: NonNullable<Awaited<ReturnType<typeof getSession>>>; subscription: NonNullable<Awaited<ReturnType<typeof getStanding>>> };
 
 async function owning(): Promise<Owning> {
   const session = await getSession();
   if (!session?.member) return { ok: false, error: "Sua sessão expirou ou seu acesso mudou. Entre de novo." };
   if (session.member.role !== "owner") return { ok: false, error: NOT_OWNER };
-  const subscription = await getSubscription();
+  // A assinatura que responde pela clínica (getStanding), não a tentativa
+  // mais nova: cancelar ou trocar o cartão tem de agir sobre a assinatura
+  // real, nunca sobre uma tentativa pendente deixada para trás — era por
+  // onde um "cancelar" podia encerrar a tentativa e deixar intacta a
+  // assinatura que de fato cobra todo mês.
+  let subscription: Awaited<ReturnType<typeof getStanding>>;
+  try {
+    subscription = await getStanding();
+  } catch (error) {
+    // Não se leu a assinatura: nada de cancelar nem de trocar cartão às cegas.
+    if (error instanceof SubscriptionReadError) return { ok: false, error: UNVERIFIED_MESSAGE };
+    throw error;
+  }
   if (!subscription) return { ok: false, error: NO_SUBSCRIPTION };
   return { ok: true, session, subscription };
 }

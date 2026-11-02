@@ -284,6 +284,20 @@ function PlanNotice({ onSubscribe }: { onSubscribe: () => void }) {
       </aside>
     );
   }
+  if (access.unverified) {
+    // A leitura da assinatura falhou: o acesso fechou, e a tela diz isso sem dizer que a assinatura acabou.
+    const notice = PLAN.notice.unverified;
+    return (
+      <aside className={styles.notice} data-tone="ended" aria-labelledby="aviso-do-plano">
+        <div className={styles.noticeBody}>
+          <p id="aviso-do-plano" className={styles.noticeTitle}>
+            {notice.title}
+          </p>
+          <p className={styles.noticeText}>{notice.text}</p>
+        </div>
+      </aside>
+    );
+  }
   if (status === "past_due" || status === "pending" || status === "cancelled") {
     const notice = PLAN.notice[status];
     return (

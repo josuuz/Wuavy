@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useId, useState, useTransition, type FormEvent, type ReactNode } from "react";
 
 import { whatsappHref } from "@/lib/contact";
-import { READ_ONLY_MESSAGE } from "@/lib/flow/access";
+import { denialMessage } from "@/lib/flow/access";
 import type { Result } from "@/lib/flow/actions";
 import { createClient } from "@/lib/supabase/client";
 import { focusHref } from "./copy";
@@ -26,7 +26,7 @@ export function useWrite() {
 
   const write = (action: () => Promise<Result>, onDone?: () => void) => {
     // Read-only: say why next to the form, without a round trip (the server refuses too).
-    if (!access.canEdit) return setError(READ_ONLY_MESSAGE);
+    if (!access.canEdit) return setError(denialMessage(access));
     start(async () => {
       const result = await action();
       setError(result.error ?? null);
@@ -258,7 +258,7 @@ function useSendNote() {
   if (access.isDemoMode) {
     return "Na demo, nada é enviado. No Clinavy da clínica, o botão abre o WhatsApp com o número e a mensagem prontos.";
   }
-  if (!access.canReachOut) return READ_ONLY_MESSAGE;
+  if (!access.canReachOut) return denialMessage(access);
   return "O botão abre o WhatsApp da clínica com o número e a mensagem prontos: você revisa e envia. Envio automático: em breve.";
 }
 

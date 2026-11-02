@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 
-import { check, subscribe, type CheckoutOutcome, type Subscribed } from "@/app/(app)/clinavy/assinar/actions";
+import { check, subscribe, subscribeWithPayerEmail, type CheckoutOutcome, type Subscribed } from "@/app/(app)/clinavy/assinar/actions";
 import { site } from "@/data/site";
 import { contactHref } from "@/lib/contact";
 import { PRICE } from "@/lib/flow/access";
@@ -26,6 +26,9 @@ import styles from "./AuthFrame.module.css";
 
 type Stage = CheckoutOutcome | "form";
 
+/** O que a ação devolve, e de qual formulário veio: o erro do pagador e o motivo de recusa do "Assinar" (modo de teste) não dividem o mesmo canal. */
+type Result = Subscribed & { from?: "payer" };
+
 /** While "pending", how often the page asks again on its own. */
 const POLL_MS = 8000;
 
@@ -38,15 +41,36 @@ interface CheckoutProps {
   ready: boolean;
   /** Test credentials in use: say so, and say why an attempt was refused. */
   test: boolean;
+  /**
+   * O e-mail que o Mercado Pago vai pedir nesta tentativa: o da conta, ou o
+   * que a pessoa já declarou numa tentativa anterior. É o que ela precisa ver
+   * para saber com qual conta entrar lá.
+   */
+  payer: string;
+  /** Só o responsável pela clínica (ou quem ainda não tem clínica) pode trocar quem paga: aos demais o servidor sempre recusa. */
+  canDeclarePayer: boolean;
 }
 
-export function Checkout({ stage: initial, email, hasClinic, ready, test }: CheckoutProps) {
-  const [result, submitAction, submitting] = useActionState<Subscribed | null>(() => subscribe(), null);
+export function Checkout({ stage: initial, email, hasClinic, ready, test, payer, canDeclarePayer }: CheckoutProps) {
+  // Uma máquina de estado só para os dois caminhos: assinar (sem campo) e
+  // assinar declarando outro e-mail do Mercado Pago (com o campo "payer").
+  // Assim um desfecho novo sempre vence o anterior, venha de qual vier.
+  const [result, submitAction, submitting] = useActionState<Result | null, FormData>(async (_previous, form) => {
+    // O formulário de pagador SEMPRE vai por subscribeWithPayerEmail, mesmo com o campo vazio
+    // ou só com espaços: o servidor responde "confira o e-mail". Cair no "Assinar" simples
+    // ignoraria em silêncio a intenção de trocar o pagador.
+    if (form.has("payer")) return { ...(await subscribeWithPayerEmail(String(form.get("payer") ?? ""))), from: "payer" as const };
+    return subscribe();
+  }, null);
   // A manual override — set only from event handlers (retry, recheck, the
   // slow poll below), never mirrored from `result` in an effect. When a new
   // submit actually finishes, the fresh `result` must win over a stale
   // override; adjusting state during render (comparing against the last
   // `result` seen) is React's own pattern for that, not an effect.
+  // O e-mail digitado vive aqui, não no formulário: o React 19 reinicia um formulário quando a
+  // ação termina, e uma ação que devolve um ERRO (e-mail com erro de digitação, "muitas
+  // tentativas") também TROCA a tela e desmonta o campo — a pessoa redigitaria a cada tentativa.
+  const [payerInput, setPayerInput] = useState("");
   const [manualStage, setManualStage] = useState<Stage | null>(null);
   const [syncedResult, setSyncedResult] = useState(result);
   if (result !== syncedResult) {
@@ -89,6 +113,7 @@ export function Checkout({ stage: initial, email, hasClinic, ready, test }: Chec
             </button>
           </form>
         </div>
+        {canDeclarePayer ? <PayerEmail payer={payer} action={submitAction} submitting={submitting} detail={result?.from === "payer" ? result.detail : undefined} value={payerInput} onValue={setPayerInput} /> : null}
       </section>
     );
   }
@@ -97,8 +122,10 @@ export function Checkout({ stage: initial, email, hasClinic, ready, test }: Chec
     return (
       <section className={styles.state} aria-live="polite">
         <h1 className={ui.title}>Não foi possível iniciar o pagamento.</h1>
-        <p className={ui.lead}>Nada foi cobrado. Tente novamente; se persistir, fale com a Wuavy.</p>
-        {test && result?.detail ? <p className={ui.fine}>Teste: {result.detail}</p> : null}
+        <p className={ui.lead}>
+          {result?.from === "payer" && result.detail ? result.detail : "Nada foi cobrado. Tente novamente; se persistir, fale com a Wuavy."}
+        </p>
+        {test && result?.detail && result.from !== "payer" ? <p className={ui.fine}>Teste: {result.detail}</p> : null}
         <button type="button" className={ui.primary} onClick={retry}>
           Tentar novamente
         </button>
@@ -117,6 +144,27 @@ export function Checkout({ stage: initial, email, hasClinic, ready, test }: Chec
         <button type="button" className={ui.primary} onClick={retry}>
           Tentar novamente
         </button>
+        {canDeclarePayer ? <PayerEmail payer={payer} action={submitAction} submitting={submitting} detail={result?.from === "payer" ? result.detail : undefined} value={payerInput} onValue={setPayerInput} /> : null}
+      </section>
+    );
+  }
+
+  if (stage === "limited") {
+    return (
+      <section className={styles.state} aria-live="polite">
+        <h1 className={ui.title}>Muitas tentativas em pouco tempo.</h1>
+        <p className={ui.lead}>
+          Por segurança, esperamos um pouco antes de abrir outro pagamento. Tente de novo daqui a cerca de uma hora, ou
+          fale com a Wuavy, que resolve com você. Estas tentativas não geraram nenhuma cobrança.
+        </p>
+        <a
+          href={contactHref(site.contact.primary, `${PLAN.subscribe.topic} — muitas tentativas (${email})`)}
+          className={ui.primary}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Falar com a Wuavy
+        </a>
       </section>
     );
   }
@@ -167,10 +215,74 @@ export function Checkout({ stage: initial, email, hasClinic, ready, test }: Chec
       </form>
       <p className={ui.fine}>
         Você será levado ao ambiente oficial do Mercado Pago para concluir o pagamento com segurança. O Clinavy não vê
-        nem guarda os dados do seu cartão.
+        nem guarda os dados do seu cartão. Entre lá com a conta de <strong>{payer}</strong> — é esse o e-mail que
+        identifica esta assinatura.
         {test ? " Ambiente de teste: use um cartão de teste do Mercado Pago; nada é cobrado." : ""}
       </p>
+      {canDeclarePayer ? <PayerEmail payer={payer} action={submitAction} submitting={submitting} detail={result?.from === "payer" ? result.detail : undefined} value={payerInput} onValue={setPayerInput} /> : null}
     </>
+  );
+}
+
+/**
+ * A saída para "Seu e-mail não corresponde ao da assinatura": o Mercado Pago
+ * identifica quem paga pelo e-mail gravado na assinatura, e a conta do Mercado
+ * Pago da pessoa pode usar outro endereço que não o da conta do Clinavy.
+ * Declarar o e-mail certo aqui encerra a tentativa pendente e abre uma nova
+ * por ele — sem criar outra conta, e sem cobrança duplicada.
+ *
+ * Não burla nada: o Mercado Pago continua sendo quem valida, e quem não
+ * entrar com aquela conta segue recusado. O e-mail só muda quem a assinatura
+ * nomeia como pagador; quem autentica no Clinavy continua sendo o Supabase Auth.
+ */
+function PayerEmail({
+  payer,
+  action,
+  submitting,
+  detail,
+  value,
+  onValue,
+}: {
+  payer: string;
+  action: (form: FormData) => void;
+  submitting: boolean;
+  detail?: string;
+  /** O que a pessoa digitou. Vive no Checkout, não aqui: este componente desmonta quando a ação troca a tela. */
+  value: string;
+  onValue: (value: string) => void;
+}) {
+  return (
+    // Aberto quando há o que dizer: o erro (e-mail inválido, "só o responsável") ficaria escondido num bloco fechado.
+    <details className={ui.field} open={Boolean(detail)}>
+      <summary className={ui.fine}>Minha conta do Mercado Pago usa outro e-mail</summary>
+      <p className={ui.fine}>
+        Se o Mercado Pago disse que o e-mail não corresponde ao da assinatura, é porque esta assinatura está no nome de{" "}
+        <strong>{payer}</strong> e você entrou lá com outra conta. Informe o e-mail da sua conta do Mercado Pago: a
+        tentativa atual é encerrada e uma nova é aberta por ele. Você não precisa criar outra conta no Clinavy.
+      </p>
+      <form action={action}>
+        <label className={ui.label} htmlFor="payer-email">
+          <span>E-mail da sua conta do Mercado Pago</span>
+          <input
+            id="payer-email"
+            name="payer"
+            type="email"
+            required
+            autoComplete="email"
+            inputMode="email"
+            maxLength={254}
+            className={ui.input}
+            placeholder="voce@exemplo.com"
+            value={value}
+            onChange={(event) => onValue(event.target.value)}
+          />
+        </label>
+        {detail ? <p className={ui.fine}>{detail}</p> : null}
+        <button type="submit" className={ui.secondary} disabled={submitting} aria-busy={submitting}>
+          {submitting ? "Abrindo o Mercado Pago…" : "Usar este e-mail e continuar"}
+        </button>
+      </form>
+    </details>
   );
 }
 

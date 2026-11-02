@@ -176,7 +176,12 @@ test("duas tentativas da mesma linha antiga enviam corpos byte a byte iguais", a
 
 // ── a leitura da data da linha falha: nunca se adivinha um corpo ──
 
-/** Faz só a leitura de created_at falhar (o resto do banco responde normalmente). */
+/**
+ * Faz só a leitura dos dados da linha falhar (o resto do banco responde
+ * normalmente). A mesma leitura passou a trazer o pagador junto da data
+ * (rowFacts, assinar/actions.ts), então o alvo é a leitura que contém
+ * created_at — não uma lista de colunas exata.
+ */
 function breakCreatedAtRead(admin, { asMissingRow = false } = {}) {
   const realFrom = admin.from.bind(admin);
   admin.from = (table) => {
@@ -184,7 +189,7 @@ function breakCreatedAtRead(admin, { asMissingRow = false } = {}) {
     if (table !== "subscriptions") return query;
     const realSelect = query.select.bind(query);
     query.select = (cols) =>
-      cols === "created_at"
+      typeof cols === "string" && cols.split(",").some((col) => col.trim() === "created_at")
         ? { eq: () => ({ maybeSingle: async () => (asMissingRow ? { data: null, error: null } : { data: null, error: { message: "simulado: leitura falhou" } }) }) }
         : realSelect(cols);
     return query;

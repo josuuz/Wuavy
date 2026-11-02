@@ -3,9 +3,10 @@
 import { redirect } from "next/navigation";
 
 import { RULE_TEMPLATES } from "@/data/flow-demo";
-import { releases } from "@/lib/flow/access";
+import { releases, UNVERIFIED_MESSAGE } from "@/lib/flow/access";
+import { paymentEvidence } from "@/lib/flow/billing";
 import { LOGO_ERROR, logoFormat, logoFrom, saveLogo } from "@/lib/flow/logo";
-import { getSession, getSubscription } from "@/lib/flow/session";
+import { getSession, getStanding, SubscriptionReadError } from "@/lib/flow/session";
 import { SEGMENTS, TEAM_SIZES } from "@/lib/flow/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -32,8 +33,29 @@ export async function createClinic(_: ClinicState | null, form: FormData): Promi
   const session = await getSession();
   if (!session) redirect("/clinavy/entrar");
   if (session.member) redirect("/clinavy/app");
-  const subscription = await getSubscription();
+  // A linha que responde pelo pagamento (getStanding), não a tentativa mais
+  // nova: quem já pagou e abriu outro checkout sem concluir não pode ficar
+  // preso aqui — e é essa mesma linha, a paga, que vira a da clínica abaixo.
+  let subscription: Awaited<ReturnType<typeof getStanding>>;
+  try {
+    subscription = await getStanding();
+  } catch (error) {
+    // A leitura falhou: sem prova, nenhuma clínica nasce. Fechar, não presumir.
+    if (error instanceof SubscriptionReadError) return { error: UNVERIFIED_MESSAGE };
+    throw error;
+  }
   if (!subscription || !releases(subscription.status) || subscription.organization_id) redirect("/clinavy/assinar");
+
+  // O status sozinho não prova pagamento (uma assinatura autorizada cujo débito
+  // ainda não foi aprovado já aparece como "active", e uma pausada como
+  // "past_due", que também libera). Uma clínica NOVA só nasce com uma cobrança
+  // aprovada pelo Mercado Pago — a prova gravada, ou lida agora — e se o
+  // Mercado Pago não respondeu, nada é concedido por falta de resposta.
+  const evidence = await paymentEvidence(subscription);
+  if (evidence === "none") {
+    return { error: "O Mercado Pago ainda não confirmou o pagamento desta assinatura. Assim que ele confirmar, você configura a clínica por aqui." };
+  }
+  if (evidence === "unavailable") return { error: "Não conseguimos confirmar o pagamento agora. Tente de novo em instantes." };
 
   const clinic = field(form, "clinic", 120);
   const name = field(form, "name", 120);

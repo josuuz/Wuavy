@@ -1928,6 +1928,7 @@ export type Database = {
           legacy_transition_cleared_by: string | null
           legacy_transition_cleared_reason: string | null
           organization_id: string | null
+          payer_email: string | null
           provider: string
           provider_subscription_id: string | null
           started_at: string | null
@@ -1949,6 +1950,7 @@ export type Database = {
           legacy_transition_cleared_by?: string | null
           legacy_transition_cleared_reason?: string | null
           organization_id?: string | null
+          payer_email?: string | null
           provider?: string
           provider_subscription_id?: string | null
           started_at?: string | null
@@ -1970,6 +1972,7 @@ export type Database = {
           legacy_transition_cleared_by?: string | null
           legacy_transition_cleared_reason?: string | null
           organization_id?: string | null
+          payer_email?: string | null
           provider?: string
           provider_subscription_id?: string | null
           started_at?: string | null

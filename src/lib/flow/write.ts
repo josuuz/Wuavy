@@ -4,7 +4,7 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { refresh } from "next/cache";
 
 import type { Database } from "@/lib/supabase/database.types";
-import { READ_ONLY_MESSAGE } from "./access";
+import { denialMessage, READ_ONLY_MESSAGE } from "./access";
 import { permissionsFor, type Permissions } from "./roles";
 import { getClinicAccess, getSession } from "./session";
 
@@ -45,7 +45,9 @@ export async function write(
   const can = permissionsFor(session.member.role);
   if (allow && !allow(can)) return { error: NO_PERMISSION };
   // A subscription that is not active reads, never writes: checked here, whatever the screen showed.
-  if (!(await getClinicAccess())?.canEdit) return { error: READ_ONLY_MESSAGE };
+  // Inativa lê, nunca escreve — e uma assinatura que não se conseguiu confirmar também não (denialMessage diz qual das duas).
+  const access = await getClinicAccess();
+  if (!access?.canEdit) return { error: access ? denialMessage(access) : READ_ONLY_MESSAGE };
   try {
     const error = await step(session.supabase, session.member.organization_id, {
       userId: session.user.id,
